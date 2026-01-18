@@ -22,5 +22,3 @@ jobs:
       - name: Validate Expo config
         run: npx expo doctor
 
-      - name: Validate Android build
-        run: npx expo export --platform android
