@@ -4,9 +4,20 @@ on:
   workflow_call:
 
 jobs:
+  commit-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Commit Message
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: '^(feat|fix|style|ci|docs|chore|refactor|test)(\(.*\))?: .+'
+          error: 'Le message de commit ne respecte pas la norme (ex: "feat: add login" ou "fix(api): bug checkout").'
+          excludeDescription: 'true' 
+          checkAllCommitMessages: 'true' 
+
   verify:
     runs-on: ubuntu-latest
-
+    needs: commit-lint 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,4 +38,3 @@ jobs:
 
       - name: Validate Android build
         run: npx expo export --platform android
-
