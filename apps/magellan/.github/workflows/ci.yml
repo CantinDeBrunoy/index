@@ -1,0 +1,11 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    uses: ./.github/workflows/verify-project.yml
