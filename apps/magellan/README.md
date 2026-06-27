@@ -1,50 +1,102 @@
-# Welcome to your Expo app 👋
+# Magellan 🌍
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application mobile de voyage : un **globe 3D interactif** qui met en valeur les pays
+visités (colorés en vert) et les villes visitées (drapeaux posés sur leurs coordonnées).
 
-## Get started
+> Projet [Expo](https://expo.dev) / React Native, écrit en TypeScript, routing par
+> fichiers via [expo-router](https://docs.expo.dev/router/introduction).
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## La vision
 
-2. Start the app
+Ouvrir l'app, c'est voir **sa propre carte du monde** : une planète qui tourne, les pays
+déjà visités en vert, un drapeau sur chaque ville parcourue. On tape un pays pour le
+marquer visité, on ajoute une ville, et l'app récapitule la progression (nombre de pays,
+de villes, % du monde couvert).
 
-   ```bash
-   npx expo start
-   ```
+## La stack
 
-In the output, you'll find options to open the app in a
+- **Expo ~54** / **React Native 0.81** / **React 19** — TypeScript
+- **expo-router 6** — navigation par onglets et écrans modaux
+- **react-native-webview** — héberge le globe
+- **[globe.gl](https://globe.gl)** (basé sur three-globe) — rendu du globe 3D, coloration
+  des pays au GeoJSON, marqueurs en lat/lng
+- **AsyncStorage** — persistance locale des voyages
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+> Choix de rendu : on démarre avec **globe.gl dans une WebView** (mise en route rapide,
+> features pays + marqueurs prêtes à l'emploi). Un passage en rendu natif
+> (react-three-fiber ou Mapbox globe) reste possible plus tard si la performance l'exige.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Architecture
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+app/
+  _layout.tsx              # layout racine
+  (tabs)/index.tsx         # écran Globe (WebView plein écran)
+  (tabs)/explore.tsx       # liste & stats des voyages
+features/
+  globe/
+    GlobeView.tsx          # composant WebView + bridge RN ↔ globe.gl
+    globe.html.ts          # template HTML/JS (globe.gl) injecté dans la WebView
+    bridge.ts              # types des messages échangés
+  trips/
+    store.ts               # état des voyages + persistance
+    types.ts               # VisitedCountry (ISO3), VisitedCity {name,country,lat,lng}
+data/
+  countries.geo.json       # frontières des pays (Natural Earth, simplifié)
+  countries.ts             # ISO3 → { nom, drapeau, centroïde }
+components/ hooks/ constants/   # primitives UI & thème
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Le bridge WebView (point central)
 
-## Learn more
+- **RN → globe** : `injectJavaScript` pousse `{ visitedISO3[], cities[] }` ; le JS rappelle
+  `.polygonsData(...)` / `.pointsData(...)` pour redessiner.
+- **globe → RN** : `window.ReactNativeWebView.postMessage(...)` au tap d'un pays ou d'un
+  marqueur ; `onMessage` côté RN met à jour le store.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Démarrage
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm install
+npx expo start
+```
 
-## Join the community
+Puis ouvre l'app dans un [build de dev](https://docs.expo.dev/develop/development-builds/introduction/),
+un simulateur iOS / émulateur Android, ou [Expo Go](https://expo.dev/go).
 
-Join our community of developers creating universal apps.
+```bash
+npm run android   # émulateur Android
+npm run ios       # simulateur iOS
+npm run web       # navigateur
+npm run lint      # ESLint (eslint-config-expo)
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Feuille de route
+
+- [ ] **Phase 0** — Reset du template, arborescence, modèle de données
+- [ ] **Phase 1** — Données de référence (GeoJSON pays, table ISO, drapeaux)
+- [ ] **Phase 2** — Globe MVP (planète, rotation, gestures)
+- [ ] **Phase 3** — Pays visités colorés en vert
+- [ ] **Phase 4** — Drapeaux sur les villes visitées
+- [ ] **Phase 5** — Interaction : tap pour (dé)marquer, ajout de ville, panneau détail
+- [ ] **Phase 6** — Persistance locale (AsyncStorage)
+- [ ] **Phase 7** — Polish : onboarding, thème, perfs, partage de carte
+
+## Intégration continue
+
+Le workflow GitHub Actions [`ci.yml`](.github/workflows/ci.yml) (sur push / PR vers `main`)
+vérifie : **format des messages de commit** (Conventional Commits), **ESLint**,
+**expo-doctor**, et un **export Android** (`expo export --platform android`).
+
+## Convention de commits
+
+[Conventional Commits](https://www.conventionalcommits.org) imposés par la CI :
+
+```
+feat(globe): afficher la planète en plein écran
+fix(trips): corriger le centroïde du Japon
+```
+
+Types acceptés : `feat`, `fix`, `style`, `ci`, `docs`, `chore`, `refactor`, `test`.
