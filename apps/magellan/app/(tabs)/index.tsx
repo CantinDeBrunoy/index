@@ -9,7 +9,7 @@ export default function GlobeScreen() {
 
   return (
     <View style={styles.container}>
-      <GlobeView />
+      <GlobeView visitedCountries={visitedCountries} />
       <View style={styles.badge}>
         <ThemedText style={styles.badgeText}>
           {visitedCountries.length} pays · {cities.length} villes

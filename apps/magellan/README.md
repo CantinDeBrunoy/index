@@ -80,13 +80,13 @@ npm run lint      # ESLint (eslint-config-expo)
 
 ## Feuille de route
 
-- [ ] **Phase 0** — Reset du template, arborescence, modèle de données
-- [ ] **Phase 1** — Données de référence (GeoJSON pays, table ISO, drapeaux)
-- [ ] **Phase 2** — Globe MVP (planète, rotation, gestures)
-- [ ] **Phase 3** — Pays visités colorés en vert
+- [x] **Phase 0** — Nettoyage du template, arborescence, modèle de données
+- [~] **Phase 1** — Données de référence (GeoJSON pays via CDN ✔, table ISO de départ ✔, drapeaux emoji ✔ ; table complète + GeoJSON local à venir)
+- [x] **Phase 2** — Globe MVP (planète, rotation, gestures)
+- [x] **Phase 3** — Pays visités colorés en vert
 - [ ] **Phase 4** — Drapeaux sur les villes visitées
 - [ ] **Phase 5** — Interaction : tap pour (dé)marquer, ajout de ville, panneau détail
-- [ ] **Phase 6** — Persistance locale (AsyncStorage)
+- [x] **Phase 6** — Persistance locale (AsyncStorage) _(socle posé dès la Phase 0)_
 - [ ] **Phase 7** — Polish : onboarding, thème, perfs, partage de carte
 
 ## Intégration continue

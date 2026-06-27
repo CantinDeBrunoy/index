@@ -1,17 +1,17 @@
 import { StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-import { buildGlobeHtml } from './globeHtml';
+import { buildGlobeHtml, type GlobeViewProps } from './globeHtml';
 
 /**
  * Variante mobile (iOS/Android) : globe.gl rendu dans une WebView.
  * La variante web vit dans GlobeView.web.tsx.
  */
-export function GlobeView() {
+export function GlobeView({ visitedCountries }: GlobeViewProps) {
   return (
     <WebView
       originWhitelist={['*']}
-      source={{ html: buildGlobeHtml() }}
+      source={{ html: buildGlobeHtml(visitedCountries) }}
       style={styles.webview}
       javaScriptEnabled
       domStorageEnabled
