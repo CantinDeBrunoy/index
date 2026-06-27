@@ -9,28 +9,50 @@ import {
   type ReactNode,
 } from 'react';
 
-import type { CountryCode, TripsState, VisitedCity } from './types';
+import type { CountryCode, Trip, TripStop, TripsState } from './types';
 
-const STORAGE_KEY = 'magellan.trips.v1';
+const STORAGE_KEY = 'magellan.trips.v2';
+
+/** Palette de couleurs attribuées aux tracés des voyages. */
+const PALETTE = ['#ffd166', '#06d6a0', '#ef476f', '#118ab2', '#f78c6b', '#b388eb'];
 
 /** État de départ tant que l'utilisateur n'a rien enregistré (jeu de démo). */
 const SEED: TripsState = {
-  visitedCountries: ['FRA', 'JPN'],
-  cities: [
-    { id: 'seed-paris', name: 'Paris', country: 'FRA', lat: 48.8566, lng: 2.3522 },
-    { id: 'seed-tokyo', name: 'Tokyo', country: 'JPN', lat: 35.6762, lng: 139.6503 },
+  trips: [
+    {
+      id: 'seed-fr',
+      name: 'Roadtrip France',
+      color: PALETTE[0],
+      stops: [
+        { id: 'fr-1', name: 'Paris', country: 'FRA', lat: 48.8566, lng: 2.3522 },
+        { id: 'fr-2', name: 'Lyon', country: 'FRA', lat: 45.764, lng: 4.8357 },
+        { id: 'fr-3', name: 'Marseille', country: 'FRA', lat: 43.2965, lng: 5.3698 },
+      ],
+    },
+    {
+      id: 'seed-jp',
+      name: 'Japon',
+      color: PALETTE[1],
+      stops: [
+        { id: 'jp-1', name: 'Tokyo', country: 'JPN', lat: 35.6762, lng: 139.6503 },
+        { id: 'jp-2', name: 'Kyoto', country: 'JPN', lat: 35.0116, lng: 135.7681 },
+      ],
+    },
   ],
 };
 
 type TripsContextValue = {
   /** `true` tant que l'état n'a pas été chargé depuis le stockage local. */
   loading: boolean;
+  trips: Trip[];
+  /** Toutes les étapes, à plat (pour les drapeaux et les stats). */
+  cities: TripStop[];
+  /** Pays visités (ISO3), dérivés des étapes — pour colorer le globe en vert. */
   visitedCountries: CountryCode[];
-  cities: VisitedCity[];
-  isVisited: (code: CountryCode) => boolean;
-  toggleCountry: (code: CountryCode) => void;
-  addCity: (city: Omit<VisitedCity, 'id'>) => void;
-  removeCity: (id: string) => void;
+  addTrip: (name: string) => string;
+  removeTrip: (tripId: string) => void;
+  addStop: (tripId: string, stop: Omit<TripStop, 'id'>) => void;
+  removeStop: (tripId: string, stopId: string) => void;
 };
 
 const TripsContext = createContext<TripsContextValue | null>(null);
@@ -69,48 +91,51 @@ export function TripsProvider({ children }: { children: ReactNode }) {
     });
   }, [state, loading]);
 
-  const toggleCountry = useCallback((code: CountryCode) => {
-    setState((prev) => {
-      const visited = prev.visitedCountries.includes(code);
-      return {
-        ...prev,
-        visitedCountries: visited
-          ? prev.visitedCountries.filter((c) => c !== code)
-          : [...prev.visitedCountries, code],
-      };
-    });
+  const addTrip = useCallback((name: string) => {
+    const id = makeId();
+    setState((prev) => ({
+      trips: [
+        ...prev.trips,
+        { id, name: name.trim() || 'Nouveau voyage', color: PALETTE[prev.trips.length % PALETTE.length], stops: [] },
+      ],
+    }));
+    return id;
   }, []);
 
-  const addCity = useCallback((city: Omit<VisitedCity, 'id'>) => {
-    setState((prev) => {
-      // Marque aussi le pays comme visité, par cohérence.
-      const visitedCountries = prev.visitedCountries.includes(city.country)
-        ? prev.visitedCountries
-        : [...prev.visitedCountries, city.country];
-      return {
-        ...prev,
-        visitedCountries,
-        cities: [...prev.cities, { ...city, id: makeId() }],
-      };
-    });
+  const removeTrip = useCallback((tripId: string) => {
+    setState((prev) => ({ trips: prev.trips.filter((t) => t.id !== tripId) }));
   }, []);
 
-  const removeCity = useCallback((id: string) => {
-    setState((prev) => ({ ...prev, cities: prev.cities.filter((c) => c.id !== id) }));
+  const addStop = useCallback((tripId: string, stop: Omit<TripStop, 'id'>) => {
+    setState((prev) => ({
+      trips: prev.trips.map((t) =>
+        t.id === tripId ? { ...t, stops: [...t.stops, { ...stop, id: makeId() }] } : t,
+      ),
+    }));
   }, []);
 
-  const value = useMemo<TripsContextValue>(
-    () => ({
+  const removeStop = useCallback((tripId: string, stopId: string) => {
+    setState((prev) => ({
+      trips: prev.trips.map((t) =>
+        t.id === tripId ? { ...t, stops: t.stops.filter((s) => s.id !== stopId) } : t,
+      ),
+    }));
+  }, []);
+
+  const value = useMemo<TripsContextValue>(() => {
+    const cities = state.trips.flatMap((t) => t.stops);
+    const visitedCountries = Array.from(new Set(cities.map((s) => s.country)));
+    return {
       loading,
-      visitedCountries: state.visitedCountries,
-      cities: state.cities,
-      isVisited: (code) => state.visitedCountries.includes(code),
-      toggleCountry,
-      addCity,
-      removeCity,
-    }),
-    [loading, state, toggleCountry, addCity, removeCity],
-  );
+      trips: state.trips,
+      cities,
+      visitedCountries,
+      addTrip,
+      removeTrip,
+      addStop,
+      removeStop,
+    };
+  }, [loading, state, addTrip, removeTrip, addStop, removeStop]);
 
   return <TripsContext.Provider value={value}>{children}</TripsContext.Provider>;
 }

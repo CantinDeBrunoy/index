@@ -7,11 +7,11 @@ import { buildGlobeHtml, type GlobeViewProps } from './globeHtml';
  * Variante mobile (iOS/Android) : globe.gl rendu dans une WebView.
  * La variante web vit dans GlobeView.web.tsx.
  */
-export function GlobeView({ visitedCountries }: GlobeViewProps) {
+export function GlobeView({ visitedCountries, trips }: GlobeViewProps) {
   return (
     <WebView
       originWhitelist={['*']}
-      source={{ html: buildGlobeHtml(visitedCountries) }}
+      source={{ html: buildGlobeHtml(visitedCountries, trips) }}
       style={styles.webview}
       javaScriptEnabled
       domStorageEnabled

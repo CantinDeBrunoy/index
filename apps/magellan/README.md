@@ -14,9 +14,11 @@ visités (colorés en vert) et les villes visitées (drapeaux posés sur leurs c
 ## La vision
 
 Ouvrir l'app, c'est voir **sa propre carte du monde** : une planète qui tourne, les pays
-déjà visités en vert, un drapeau sur chaque ville parcourue. On tape un pays pour le
-marquer visité, on ajoute une ville, et l'app récapitule la progression (nombre de pays,
-de villes, % du monde couvert).
+déjà visités en vert, un drapeau sur chaque ville parcourue.
+
+L'objet central est le **voyage (road trip)** : une suite ordonnée d'**étapes** (villes).
+Sur le globe, les étapes d'un même voyage sont reliées par un **arc** ; un pays devient
+vert dès qu'une étape s'y trouve. L'app récapitule la progression (voyages, villes, pays).
 
 ## La stack
 
@@ -84,8 +86,8 @@ npm run lint      # ESLint (eslint-config-expo)
 - [~] **Phase 1** — Données de référence (GeoJSON pays via CDN ✔, table ISO de départ ✔, drapeaux emoji ✔ ; table complète + GeoJSON local à venir)
 - [x] **Phase 2** — Globe MVP (planète, rotation, gestures)
 - [x] **Phase 3** — Pays visités colorés en vert
-- [ ] **Phase 4** — Drapeaux sur les villes visitées
-- [ ] **Phase 5** — Interaction : tap pour (dé)marquer, ajout de ville, panneau détail
+- [x] **Phase 4** — Voyages (road trips) : drapeaux des villes + arcs reliant les étapes
+- [ ] **Phase 5** — Interaction : tap sur le globe, recherche de ville (coordonnées précises), panneau détail
 - [x] **Phase 6** — Persistance locale (AsyncStorage) _(socle posé dès la Phase 0)_
 - [ ] **Phase 7** — Polish : onboarding, thème, perfs, partage de carte
 

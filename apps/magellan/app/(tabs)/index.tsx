@@ -5,14 +5,14 @@ import { GlobeView } from '@/features/globe/GlobeView';
 import { useTrips } from '@/features/trips/store';
 
 export default function GlobeScreen() {
-  const { visitedCountries, cities } = useTrips();
+  const { visitedCountries, cities, trips } = useTrips();
 
   return (
     <View style={styles.container}>
-      <GlobeView visitedCountries={visitedCountries} />
+      <GlobeView visitedCountries={visitedCountries} trips={trips} />
       <View style={styles.badge}>
         <ThemedText style={styles.badgeText}>
-          {visitedCountries.length} pays · {cities.length} villes
+          {trips.length} voyages · {cities.length} villes · {visitedCountries.length} pays
         </ThemedText>
       </View>
     </View>
