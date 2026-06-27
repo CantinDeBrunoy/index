@@ -41,3 +41,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Outils de debug locaux (dépendances non déclarées)
+scripts/debug-globe.js

@@ -8,7 +8,6 @@
 // Phase 4 : étapes des voyages reliées par des arcs + drapeaux 3D des villes.
 // Phase 4b : drapeaux = vrai modèle 3D (mât + tissu texturé ondulant, image flagcdn).
 
-import { countryAlpha2 } from '@/data/countries';
 import type { Trip } from '@/features/trips/types';
 
 const THREE_URL = 'https://esm.sh/three@0.180.0';
@@ -44,15 +43,12 @@ type RouteArc = {
 /** Aplatit les voyages en drapeaux (une étape = un drapeau). */
 function toFlagMarkers(trips: Trip[]): FlagMarker[] {
   return trips.flatMap((t) =>
-    t.stops.map((s) => {
-      const a2 = countryAlpha2(s.country);
-      return {
-        lat: s.lat,
-        lng: s.lng,
-        name: s.name,
-        flagUrl: a2 ? `https://flagcdn.com/w320/${a2}.png` : '',
-      };
-    }),
+    t.stops.map((s) => ({
+      lat: s.lat,
+      lng: s.lng,
+      name: s.name,
+      flagUrl: s.alpha2 ? `https://flagcdn.com/w320/${s.alpha2}.png` : '',
+    })),
   );
 }
 

@@ -87,7 +87,7 @@ npm run lint      # ESLint (eslint-config-expo)
 - [x] **Phase 2** — Globe MVP (planète, rotation, gestures)
 - [x] **Phase 3** — Pays visités colorés en vert
 - [x] **Phase 4** — Voyages (road trips) : drapeaux 3D des villes (mât + tissu texturé ondulant) + arcs reliant les étapes
-- [ ] **Phase 5** — Interaction : tap sur le globe, recherche de ville (coordonnées précises), panneau détail
+- [~] **Phase 5** — Recherche de ville (coordonnées précises via géocodeur) ✔ ; tap sur le globe + panneau détail à venir
 - [x] **Phase 6** — Persistance locale (AsyncStorage) _(socle posé dès la Phase 0)_
 - [ ] **Phase 7** — Polish : onboarding, thème, perfs, partage de carte
 

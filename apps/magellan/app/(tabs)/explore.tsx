@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { COUNTRIES, countryFlag, countryName } from '@/data/countries';
+import { flagEmoji } from '@/data/isoCodes';
+import { searchCity, type GeoResult } from '@/features/trips/geocode';
 import { useTrips } from '@/features/trips/store';
-import type { Trip } from '@/features/trips/types';
+import type { Trip, TripStop } from '@/features/trips/types';
 
 export default function VoyagesScreen() {
   const { trips, cities, visitedCountries, addTrip, removeTrip, addStop, removeStop } = useTrips();
@@ -13,7 +14,7 @@ export default function VoyagesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <ThemedText type="title">Mes voyages</ThemedText>
         <ThemedText style={styles.stats}>
           {trips.length} voyages · {cities.length} villes · {visitedCountries.length} pays
@@ -65,30 +66,35 @@ function TripCard({
 }: {
   trip: Trip;
   onRemove: () => void;
-  onAddStop: (stop: { name: string; country: string; lat: number; lng: number }) => void;
+  onAddStop: (stop: Omit<TripStop, 'id'>) => void;
   onRemoveStop: (stopId: string) => void;
 }) {
   const [adding, setAdding] = useState(false);
-  const [cityName, setCityName] = useState('');
-  const [country, setCountry] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<GeoResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState(false);
 
-  const countryCodes = useMemo(
-    () => Object.keys(COUNTRIES).sort((a, b) => countryName(a).localeCompare(countryName(b))),
-    [],
-  );
+  const runSearch = async () => {
+    if (query.trim().length < 2) return;
+    setSearching(true);
+    setSearched(true);
+    setResults(await searchCity(query));
+    setSearching(false);
+  };
 
-  const submit = () => {
-    if (!country) return;
-    const info = COUNTRIES[country];
+  const pick = (r: GeoResult) => {
     onAddStop({
-      name: cityName.trim() || countryName(country),
-      country,
-      // Coordonnées = centre du pays pour l'instant (recherche de ville précise en Phase 5).
-      lat: info.lat,
-      lng: info.lng,
+      name: r.name,
+      country: r.country,
+      alpha2: r.alpha2,
+      countryName: r.countryName,
+      lat: r.lat,
+      lng: r.lng,
     });
-    setCityName('');
-    setCountry(null);
+    setQuery('');
+    setResults([]);
+    setSearched(false);
     setAdding(false);
   };
 
@@ -110,7 +116,7 @@ function TripCard({
         trip.stops.map((stop, i) => (
           <View key={stop.id} style={styles.stopRow}>
             <ThemedText>
-              {i + 1}. {countryFlag(stop.country)}  {stop.name}
+              {i + 1}. {flagEmoji(stop.alpha2)}  {stop.name}
             </ThemedText>
             <Pressable onPress={() => onRemoveStop(stop.id)} hitSlop={8}>
               <ThemedText style={styles.remove}>✕</ThemedText>
@@ -121,33 +127,46 @@ function TripCard({
 
       {adding ? (
         <View style={styles.addStop}>
-          <TextInput
-            value={cityName}
-            onChangeText={setCityName}
-            placeholder="Nom de la ville"
-            placeholderTextColor="#8a8f98"
-            style={styles.input}
-          />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
-            {countryCodes.map((code) => (
-              <Pressable
-                key={code}
-                onPress={() => setCountry(code)}
-                style={[styles.chip, country === code && styles.chipActive]}>
-                <ThemedText style={styles.chipText}>
-                  {countryFlag(code)} {countryName(code)}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <View style={styles.addStopActions}>
-            <Pressable onPress={() => setAdding(false)}>
-              <ThemedText style={styles.cancel}>Annuler</ThemedText>
-            </Pressable>
-            <Pressable style={[styles.addBtn, !country && styles.addBtnDisabled]} onPress={submit}>
-              <ThemedText style={styles.addBtnText}>Ajouter l’étape</ThemedText>
+          <View style={styles.searchRow}>
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Rechercher une ville…"
+              placeholderTextColor="#8a8f98"
+              style={styles.input}
+              autoFocus
+              returnKeyType="search"
+              onSubmitEditing={runSearch}
+            />
+            <Pressable style={styles.addBtn} onPress={runSearch}>
+              <ThemedText style={styles.addBtnText}>Rechercher</ThemedText>
             </Pressable>
           </View>
+
+          {searching && <ActivityIndicator style={styles.searchState} />}
+          {!searching && searched && results.length === 0 && (
+            <ThemedText style={styles.searchState}>Aucune ville trouvée.</ThemedText>
+          )}
+          {results.map((r, idx) => (
+            <Pressable key={`${r.lat},${r.lng},${idx}`} style={styles.result} onPress={() => pick(r)}>
+              <ThemedText>
+                {flagEmoji(r.alpha2)}  {r.name}
+              </ThemedText>
+              <ThemedText style={styles.resultSub}>
+                {[r.admin1, r.countryName].filter(Boolean).join(', ')}
+              </ThemedText>
+            </Pressable>
+          ))}
+
+          <Pressable
+            onPress={() => {
+              setAdding(false);
+              setQuery('');
+              setResults([]);
+              setSearched(false);
+            }}>
+            <ThemedText style={styles.cancel}>Annuler</ThemedText>
+          </Pressable>
         </View>
       ) : (
         <Pressable onPress={() => setAdding(true)} style={styles.addStopTrigger}>
@@ -183,18 +202,16 @@ const styles = StyleSheet.create({
   addStopTrigger: { paddingVertical: 8 },
   addStopTriggerText: { color: '#118ab2', fontWeight: '600' },
   addStop: { gap: 10, marginTop: 6 },
-  chips: { flexGrow: 0 },
-  chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    marginRight: 8,
-    backgroundColor: 'rgba(127, 127, 127, 0.15)',
+  searchRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  searchState: { paddingVertical: 6, opacity: 0.7 },
+  result: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(127, 127, 127, 0.12)',
   },
-  chipActive: { backgroundColor: 'rgba(46, 160, 67, 0.30)' },
-  chipText: { fontSize: 13 },
-  addStopActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 16 },
-  cancel: { opacity: 0.7 },
+  resultSub: { fontSize: 12, opacity: 0.6, marginTop: 2 },
+  cancel: { opacity: 0.7, paddingVertical: 4 },
   newTrip: { flexDirection: 'row', gap: 10, marginTop: 8, alignItems: 'center' },
   input: {
     flex: 1,
@@ -211,6 +228,5 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#118ab2',
   },
-  addBtnDisabled: { opacity: 0.4 },
   addBtnText: { color: '#fff', fontWeight: '700' },
 });

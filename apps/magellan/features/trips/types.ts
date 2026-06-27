@@ -10,8 +10,10 @@ export type CountryCode = string;
 /** Une étape d'un voyage : une ville positionnée par ses coordonnées. */
 export type TripStop = {
   id: string;
-  name: string;
-  country: CountryCode; // ISO3 du pays
+  name: string; // ville
+  country: CountryCode; // alpha-3, pour colorer le pays sur le globe
+  alpha2: string; // alpha-2 minuscule, pour l'image du drapeau (flagcdn)
+  countryName: string; // nom du pays (fr), pour l'affichage
   lat: number;
   lng: number;
   date?: string; // ISO 8601, optionnel
