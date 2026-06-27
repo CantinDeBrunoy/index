@@ -16,8 +16,8 @@ const COLOR_OTHER = 'rgba(255, 255, 255, 0.05)';
 // Altitude des polygones : volontairement très faible pour rester collé au globe.
 // Un pays visité est à peine surélevé par rapport aux autres (le signal est la couleur,
 // pas le relief), sinon il semble « flotter » au-dessus de la surface en rotation.
-const ALTITUDE_VISITED = 0.008;
-const ALTITUDE_OTHER = 0.004;
+const ALTITUDE_VISITED = 0.003;
+const ALTITUDE_OTHER = 0.001;
 
 export type GlobeViewProps = {
   /** Pays visités (codes ISO 3166-1 alpha-3) à colorer en vert. */
