@@ -13,6 +13,12 @@ const COUNTRIES_GEOJSON =
 const COLOR_VISITED = 'rgba(46, 160, 67, 0.85)'; // vert
 const COLOR_OTHER = 'rgba(255, 255, 255, 0.05)';
 
+// Altitude des polygones : volontairement très faible pour rester collé au globe.
+// Un pays visité est à peine surélevé par rapport aux autres (le signal est la couleur,
+// pas le relief), sinon il semble « flotter » au-dessus de la surface en rotation.
+const ALTITUDE_VISITED = 0.008;
+const ALTITUDE_OTHER = 0.004;
+
 export type GlobeViewProps = {
   /** Pays visités (codes ISO 3166-1 alpha-3) à colorer en vert. */
   visitedCountries: string[];
@@ -65,7 +71,7 @@ export function buildGlobeHtml(visitedCountries: string[] = []): string {
         const countries = features.filter((f) => f.properties.ISO_A2 !== 'AQ'); // hors Antarctique
         world
           .polygonsData(countries)
-          .polygonAltitude((f) => (isVisited(f) ? 0.025 : 0.006))
+          .polygonAltitude((f) => (isVisited(f) ? ${ALTITUDE_VISITED} : ${ALTITUDE_OTHER}))
           .polygonCapColor((f) => (isVisited(f) ? '${COLOR_VISITED}' : '${COLOR_OTHER}'))
           .polygonSideColor(() => 'rgba(0,0,0,0.15)')
           .polygonStrokeColor(() => 'rgba(255,255,255,0.25)')
