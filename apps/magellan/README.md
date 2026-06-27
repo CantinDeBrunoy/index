@@ -5,6 +5,9 @@ visités (colorés en vert) et les villes visitées (drapeaux posés sur leurs c
 
 > Projet [Expo](https://expo.dev) / React Native, écrit en TypeScript, routing par
 > fichiers via [expo-router](https://docs.expo.dev/router/introduction).
+>
+> **Une seule base de code, trois plateformes** : iOS, Android et **Web** (via
+> `react-native-web`). Pas de backend — l'app est _local-first_.
 
 ---
 
@@ -24,9 +27,10 @@ de villes, % du monde couvert).
   des pays au GeoJSON, marqueurs en lat/lng
 - **AsyncStorage** — persistance locale des voyages
 
-> Choix de rendu : on démarre avec **globe.gl dans une WebView** (mise en route rapide,
-> features pays + marqueurs prêtes à l'emploi). Un passage en rendu natif
-> (react-three-fiber ou Mapbox globe) reste possible plus tard si la performance l'exige.
+> Choix de rendu : **globe.gl**, monté dans une **WebView** sur mobile et **directement
+> dans la page** sur web (`GlobeView.web.tsx`). La logique de données est partagée ; seul
+> l'hôte du rendu diffère. Un passage en rendu natif (react-three-fiber ou Mapbox globe)
+> reste possible plus tard si la performance l'exige.
 
 ## Architecture
 
@@ -37,8 +41,9 @@ app/
   (tabs)/explore.tsx       # liste & stats des voyages
 features/
   globe/
-    GlobeView.tsx          # composant WebView + bridge RN ↔ globe.gl
-    globe.html.ts          # template HTML/JS (globe.gl) injecté dans la WebView
+    GlobeView.tsx          # mobile : globe.gl dans une WebView + bridge
+    GlobeView.web.tsx      # web : globe.gl monté directement dans la page
+    globe.html.ts          # template HTML/JS (globe.gl), partagé
     bridge.ts              # types des messages échangés
   trips/
     store.ts               # état des voyages + persistance

@@ -13,7 +13,10 @@ comportement par défaut.
 (colorés en vert) et les **villes visitées** (drapeaux sur leurs coordonnées).
 
 - **Expo ~54** / **React Native 0.81** / **React 19**, TypeScript, **expo-router 6**.
-- Globe rendu via **`globe.gl` dans une `react-native-webview`** (cf. README › Architecture).
+- **Une seule base de code → iOS, Android et Web** (`react-native-web`). App _local-first_,
+  pas de backend.
+- Globe rendu via **`globe.gl`** : dans une `react-native-webview` sur mobile, monté
+  directement dans la page sur web (`GlobeView.web.tsx`). Cf. README › Architecture.
 - Persistance locale via **AsyncStorage**.
 
 Voir [README.md](README.md) pour la vision, l'architecture détaillée et la feuille de route.
@@ -31,6 +34,10 @@ Voir [README.md](README.md) pour la vision, l'architecture détaillée et la feu
 - **Honnêteté sur l'état réel.** Si quelque chose n'est pas testé, ne marche pas sur device,
   ou est laissé en TODO, je le dis explicitement — pas de « c'est fait » approximatif.
 - **Je demande avant d'élargir le périmètre** ou d'ajouter une dépendance lourde non prévue.
+- **Multi-plateforme par défaut.** Le code doit rester compatible **iOS, Android et Web**.
+  Quand un comportement diffère par plateforme, j'utilise les fichiers `.web.tsx` /
+  `.native.tsx` ou `Platform.select`, jamais un hack qui casse une cible. Idéalement je
+  vérifie sur **web _et_ mobile** avant de conclure qu'une feature marche.
 
 ---
 
