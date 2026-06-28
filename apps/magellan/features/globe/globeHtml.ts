@@ -383,7 +383,7 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
     function recomputeClusters(alt) {
       // Seuil de regroupement proportionnel à l'altitude : très regroupé vu de loin,
       // séparé en zoomant.
-      const threshold = Math.min(10, Math.max(0.35, alt * 5));
+      const threshold = Math.min(2.5, Math.max(0.1, alt * 0.6));
       world.objectsData(clusterFlags(threshold));
     }
 
