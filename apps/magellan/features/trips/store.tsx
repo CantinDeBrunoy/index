@@ -9,10 +9,11 @@ import {
   type ReactNode,
 } from 'react';
 
+import { INITIAL_TRIPS } from '@/data/initialTrips';
 import { alpha3ToAlpha2 } from '@/data/isoCodes';
 import type { CountryCode, Trip, TripStop, TripsState } from './types';
 
-const STORAGE_KEY = 'magellan.trips.v3';
+const STORAGE_KEY = 'magellan.trips.v4';
 
 /**
  * Complète les champs manquants des données chargées (compat données plus anciennes) :
@@ -34,30 +35,8 @@ function migrate(state: TripsState): TripsState {
 /** Palette de couleurs attribuées aux tracés des voyages. */
 const PALETTE = ['#ffd166', '#06d6a0', '#ef476f', '#118ab2', '#f78c6b', '#b388eb'];
 
-/** État de départ tant que l'utilisateur n'a rien enregistré (jeu de démo). */
-const SEED: TripsState = {
-  trips: [
-    {
-      id: 'seed-fr',
-      name: 'Roadtrip France',
-      color: PALETTE[0],
-      stops: [
-        { id: 'fr-1', name: 'Paris', country: 'FRA', alpha2: 'fr', countryName: 'France', lat: 48.8566, lng: 2.3522 },
-        { id: 'fr-2', name: 'Lyon', country: 'FRA', alpha2: 'fr', countryName: 'France', lat: 45.764, lng: 4.8357 },
-        { id: 'fr-3', name: 'Marseille', country: 'FRA', alpha2: 'fr', countryName: 'France', lat: 43.2965, lng: 5.3698 },
-      ],
-    },
-    {
-      id: 'seed-jp',
-      name: 'Japon',
-      color: PALETTE[1],
-      stops: [
-        { id: 'jp-1', name: 'Tokyo', country: 'JPN', alpha2: 'jp', countryName: 'Japon', lat: 35.6762, lng: 139.6503 },
-        { id: 'jp-2', name: 'Kyoto', country: 'JPN', alpha2: 'jp', countryName: 'Japon', lat: 35.0116, lng: 135.7681 },
-      ],
-    },
-  ],
-};
+/** État de départ : les voyages réels de l'utilisateur. */
+const SEED: TripsState = { trips: INITIAL_TRIPS };
 
 type TripsContextValue = {
   /** `true` tant que l'état n'a pas été chargé depuis le stockage local. */
