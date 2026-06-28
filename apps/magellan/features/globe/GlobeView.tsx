@@ -8,7 +8,7 @@ import { buildGlobeHtml, type GlobeViewProps } from './globeHtml';
  * Variante mobile (iOS/Android) : globe.gl rendu dans une WebView.
  * La variante web vit dans GlobeView.web.tsx.
  */
-export function GlobeView({ visitedCountries, trips, onCountryPress, focus }: GlobeViewProps) {
+export function GlobeView({ visitedCountries, trips, onCountryPress, focus, paused }: GlobeViewProps) {
   const ref = useRef<WebView>(null);
 
   // Source mémoïsée : évite de recharger la WebView à chaque rendu (focus/sélection) ;
@@ -18,19 +18,27 @@ export function GlobeView({ visitedCountries, trips, onCountryPress, focus }: Gl
     [visitedCountries, trips],
   );
 
-  // Centre la caméra (et stoppe la rotation auto) quand un voyage est sélectionné.
+  // Centre la caméra (avec un niveau de zoom) quand `focus` change.
   useEffect(() => {
     if (!focus) return;
+    const alt = focus.altitude ?? 0.6;
     ref.current?.injectJavaScript(
-      `(function(){var g=window.__magellanGlobe;if(g){g.controls().autoRotate=false;` +
-        `g.pointOfView({lat:${focus.lat},lng:${focus.lng},altitude:0.6},1000);}})();true;`,
+      `(function(){var g=window.__magellanGlobe;if(g){` +
+        `g.pointOfView({lat:${focus.lat},lng:${focus.lng},altitude:${alt}},900);}})();true;`,
     );
   }, [focus]);
+
+  // Met en pause / reprend la rotation automatique.
+  useEffect(() => {
+    ref.current?.injectJavaScript(
+      `(function(){var g=window.__magellanGlobe;if(g){g.controls().autoRotate=${!paused};}})();true;`,
+    );
+  }, [paused]);
 
   const onMessage = (e: WebViewMessageEvent) => {
     try {
       const m = JSON.parse(e.nativeEvent.data);
-      if (m?.type === 'countryClick') onCountryPress?.(m.iso, m.name);
+      if (m?.type === 'countryClick') onCountryPress?.(m.iso, m.name, m.lat, m.lng);
     } catch {
       // message non JSON ignoré
     }

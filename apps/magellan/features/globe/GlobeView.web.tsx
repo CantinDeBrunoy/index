@@ -2,15 +2,17 @@ import { useEffect, useMemo, useRef } from 'react';
 
 import { buildGlobeHtml, type GlobeViewProps } from './globeHtml';
 
+type GlobeWindow = { __magellanGlobe?: any };
+
 /**
  * Variante web : on est déjà dans un navigateur, donc globe.gl tourne dans une
  * iframe (même HTML que la variante mobile). La variante mobile vit dans GlobeView.tsx.
  */
-export function GlobeView({ visitedCountries, trips, onCountryPress, focus }: GlobeViewProps) {
+export function GlobeView({ visitedCountries, trips, onCountryPress, focus, paused }: GlobeViewProps) {
   const ref = useRef<HTMLIFrameElement>(null);
+  const globe = () => (ref.current?.contentWindow as unknown as GlobeWindow)?.__magellanGlobe;
 
-  // HTML mémoïsé : ne change (donc ne recharge l'iframe) que si les données changent,
-  // pas sur un simple changement de focus/sélection.
+  // HTML mémoïsé : ne recharge l'iframe que si les données changent.
   const html = useMemo(() => buildGlobeHtml(visitedCountries, trips), [visitedCountries, trips]);
 
   // Reçoit les messages émis par le globe (tap d'un pays).
@@ -19,7 +21,7 @@ export function GlobeView({ visitedCountries, trips, onCountryPress, focus }: Gl
       if (ref.current && e.source !== ref.current.contentWindow) return;
       try {
         const m = JSON.parse(e.data);
-        if (m?.type === 'countryClick') onCountryPress?.(m.iso, m.name);
+        if (m?.type === 'countryClick') onCountryPress?.(m.iso, m.name, m.lat, m.lng);
       } catch {
         // message non JSON ignoré
       }
@@ -28,16 +30,17 @@ export function GlobeView({ visitedCountries, trips, onCountryPress, focus }: Gl
     return () => window.removeEventListener('message', handler);
   }, [onCountryPress]);
 
-  // Centre la caméra (et stoppe la rotation auto) quand un voyage est sélectionné.
-  // L'iframe srcdoc est de même origine : on accède directement au globe exposé.
+  // Centre la caméra (avec un niveau de zoom) quand `focus` change.
   useEffect(() => {
     if (!focus) return;
-    const g = (ref.current?.contentWindow as unknown as { __magellanGlobe?: any })?.__magellanGlobe;
-    if (g) {
-      g.controls().autoRotate = false;
-      g.pointOfView({ lat: focus.lat, lng: focus.lng, altitude: 0.6 }, 1000);
-    }
+    globe()?.pointOfView({ lat: focus.lat, lng: focus.lng, altitude: focus.altitude ?? 0.6 }, 900);
   }, [focus]);
+
+  // Met en pause / reprend la rotation automatique.
+  useEffect(() => {
+    const g = globe();
+    if (g) g.controls().autoRotate = !paused;
+  }, [paused]);
 
   return (
     <iframe

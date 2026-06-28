@@ -29,10 +29,12 @@ export type GlobeViewProps = {
   visitedCountries: string[];
   /** Voyages : leurs étapes deviennent des drapeaux 3D, reliés par des arcs. */
   trips: Trip[];
-  /** Appelé au tap d'un pays sur le globe (code alpha-3 + nom). */
-  onCountryPress?: (iso: string, name: string) => void;
-  /** Centre la caméra du globe sur ce point (ex. un voyage sélectionné). */
-  focus?: { lat: number; lng: number } | null;
+  /** Appelé au tap d'un pays (code alpha-3, nom, et point cliqué lat/lng). */
+  onCountryPress?: (iso: string, name: string, lat: number | null, lng: number | null) => void;
+  /** Centre la caméra sur ce point, avec une altitude (zoom) optionnelle. */
+  focus?: { lat: number; lng: number; altitude?: number } | null;
+  /** Met en pause la rotation automatique (ex. quand un panneau est ouvert). */
+  paused?: boolean;
 };
 
 type FlagMarker = { lat: number; lng: number; name: string; alpha2: string; flagUrl: string };
@@ -125,12 +127,14 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
         window.parent.postMessage(s, '*');
       }
     }
-    world.onPolygonClick((poly) => {
+    world.onPolygonClick((poly, ev, coords) => {
       if (!poly || !poly.properties) return;
       sendToApp({
         type: 'countryClick',
         iso: isoOf(poly.properties),
         name: poly.properties.ADMIN || poly.properties.NAME || '',
+        lat: coords ? coords.lat : null,
+        lng: coords ? coords.lng : null,
       });
     });
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { alpha3ToAlpha2, flagEmoji } from '@/data/isoCodes';
@@ -7,13 +7,18 @@ import { GlobeView } from '@/features/globe/GlobeView';
 import { useTrips } from '@/features/trips/store';
 import type { Trip } from '@/features/trips/types';
 
-type SelectedCountry = { iso: string; name: string };
+type SelectedCountry = { iso: string; name: string; lat: number | null; lng: number | null };
 
 export default function GlobeScreen() {
   const { visitedCountries, cities, trips } = useTrips();
+  const { width } = useWindowDimensions();
   const [country, setCountry] = useState<SelectedCountry | null>(null);
   const [tripId, setTripId] = useState<string | null>(null);
-  const [focus, setFocus] = useState<{ lat: number; lng: number } | null>(null);
+  const [focus, setFocus] = useState<{ lat: number; lng: number; altitude?: number } | null>(null);
+
+  // Panneau à droite : ~40 % sur grand écran (plafonné), plus large en proportion
+  // sur écran étroit pour rester lisible.
+  const panelWidth = width < 560 ? Math.round(width * 0.6) : Math.min(440, width * 0.4);
 
   const tripsHere = useMemo(
     () => (country ? trips.filter((t) => t.stops.some((s) => s.country === country.iso)) : []),
@@ -21,47 +26,54 @@ export default function GlobeScreen() {
   );
   const selectedTrip = tripId ? trips.find((t) => t.id === tripId) : null;
 
+  const onCountryPress = (iso: string, name: string, lat: number | null, lng: number | null) => {
+    setCountry({ iso, name, lat, lng });
+    setTripId(null);
+    // Dézoome et centre sur le pays cliqué ; le globe rétrécit à gauche.
+    if (lat != null && lng != null) setFocus({ lat, lng, altitude: 1.4 });
+  };
+
   const openTrip = (t: Trip) => {
     setTripId(t.id);
     if (t.stops.length) {
       const lat = t.stops.reduce((a, s) => a + s.lat, 0) / t.stops.length;
       const lng = t.stops.reduce((a, s) => a + s.lng, 0) / t.stops.length;
-      setFocus({ lat, lng });
+      setFocus({ lat, lng, altitude: 0.55 });
     }
   };
 
   const close = () => {
     setCountry(null);
     setTripId(null);
+    setFocus(null);
   };
 
   return (
     <View style={styles.container}>
-      <GlobeView
-        visitedCountries={visitedCountries}
-        trips={trips}
-        focus={focus}
-        onCountryPress={(iso, name) => {
-          setCountry({ iso, name });
-          setTripId(null);
-        }}
-      />
-
-      <View style={styles.badge}>
-        <ThemedText style={styles.badgeText}>
-          {trips.length} voyages · {cities.length} villes · {visitedCountries.length} pays
-        </ThemedText>
+      <View style={styles.globeWrap}>
+        <GlobeView
+          visitedCountries={visitedCountries}
+          trips={trips}
+          focus={focus}
+          paused={country !== null}
+          onCountryPress={onCountryPress}
+        />
+        <View style={styles.badge}>
+          <ThemedText style={styles.badgeText}>
+            {trips.length} voyages · {cities.length} villes · {visitedCountries.length} pays
+          </ThemedText>
+        </View>
       </View>
 
       {country && (
-        <View style={styles.panel}>
+        <View style={[styles.panel, { width: panelWidth }]}>
           <View style={styles.panelHeader}>
             {selectedTrip ? (
               <Pressable onPress={() => setTripId(null)} hitSlop={8}>
                 <ThemedText style={styles.back}>‹ {country.name}</ThemedText>
               </Pressable>
             ) : (
-              <ThemedText type="subtitle">
+              <ThemedText type="subtitle" numberOfLines={1} style={styles.headerTitle}>
                 {flagEmoji(alpha3ToAlpha2(country.iso))}  {country.name}
               </ThemedText>
             )}
@@ -70,7 +82,7 @@ export default function GlobeScreen() {
             </Pressable>
           </View>
 
-          <ScrollView style={styles.panelBody} contentContainerStyle={styles.panelContent}>
+          <ScrollView contentContainerStyle={styles.panelContent}>
             {selectedTrip ? (
               <>
                 <View style={styles.tripTitle}>
@@ -109,7 +121,8 @@ export default function GlobeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0b1026' },
+  container: { flex: 1, flexDirection: 'row', backgroundColor: '#0b1026' },
+  globeWrap: { flex: 1 },
   badge: {
     position: 'absolute',
     top: 56,
@@ -122,37 +135,34 @@ const styles = StyleSheet.create({
   },
   badgeText: { color: '#fff', fontWeight: '600' },
   panel: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    maxHeight: '50%',
     backgroundColor: '#11162a',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: 'rgba(255,255,255,0.12)',
     paddingHorizontal: 18,
-    paddingTop: 14,
+    paddingTop: 56,
     paddingBottom: 24,
   },
   panelHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
+  headerTitle: { flex: 1, marginRight: 8 },
   back: { color: '#7cc7ff', fontWeight: '600', fontSize: 16 },
   close: { color: '#fff', fontWeight: '700', fontSize: 18 },
-  panelBody: { flexGrow: 0 },
   panelContent: { gap: 6, paddingBottom: 8 },
   tripRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   tripTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 12, height: 12, borderRadius: 6 },
   count: { color: '#7cc7ff' },
-  stop: { color: '#e6e9f0', paddingVertical: 4 },
+  stop: { color: '#e6e9f0', paddingVertical: 5 },
   empty: { color: '#aeb4c0', paddingVertical: 6 },
 });
