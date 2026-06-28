@@ -301,21 +301,118 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
       cloth.position.set(FLAG_W / 2 + 0.12, POLE_HEIGHT - 0.4 - FLAG_H / 2, 0);
       flag.add(cloth);
 
+      // Badge compteur pour un regroupement (drapeau du pays + nombre de villes).
+      if (d.count && d.count > 1) {
+        const bs = 72;
+        const bc = document.createElement('canvas');
+        bc.width = bs;
+        bc.height = bs;
+        const bx = bc.getContext('2d');
+        bx.beginPath();
+        bx.arc(36, 36, 32, 0, Math.PI * 2);
+        bx.fillStyle = '#e63946';
+        bx.fill();
+        bx.lineWidth = 5;
+        bx.strokeStyle = '#ffffff';
+        bx.stroke();
+        bx.fillStyle = '#ffffff';
+        bx.font = 'bold ' + (d.count > 9 ? 34 : 42) + 'px sans-serif';
+        bx.textAlign = 'center';
+        bx.textBaseline = 'middle';
+        bx.fillText(String(d.count), 36, 39);
+        const badge = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.8, 1.8),
+          new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(bc), transparent: true, side: THREE.DoubleSide }),
+        );
+        badge.position.set(FLAG_W + 0.7, POLE_HEIGHT - 0.4, 0.2);
+        flag.add(badge);
+      }
+
       wavingFlags.push({ geo, base: Float32Array.from(geo.attributes.position.array) });
       return root;
     }
 
+    // Chaque marqueur (drapeau seul ou regroupement) n'est construit qu'une fois puis
+    // réutilisé : la texture n'est pas rechargée quand il entre/sort d'un regroupement.
+    const objCache = {};
+    function objectFor(d) {
+      if (!objCache[d.id]) objCache[d.id] = makeFlag(d);
+      return objCache[d.id];
+    }
+
+    // Regroupe uniquement les drapeaux du MÊME pays et proches (distance < seuil).
+    // France reste avec France, jamais mélangé avec un autre pays.
+    function clusterFlags(threshold) {
+      const used = new Array(FLAGS.length).fill(false);
+      const out = [];
+      for (let i = 0; i < FLAGS.length; i++) {
+        if (used[i]) continue;
+        const group = [FLAGS[i]];
+        used[i] = true;
+        for (let j = i + 1; j < FLAGS.length; j++) {
+          if (used[j] || FLAGS[j].alpha2 !== FLAGS[i].alpha2) continue;
+          const dLat = FLAGS[i].lat - FLAGS[j].lat;
+          const dLng = (FLAGS[i].lng - FLAGS[j].lng) * Math.cos((FLAGS[i].lat * Math.PI) / 180);
+          if (Math.sqrt(dLat * dLat + dLng * dLng) < threshold) {
+            group.push(FLAGS[j]);
+            used[j] = true;
+          }
+        }
+        if (group.length === 1) {
+          out.push(FLAGS[i]);
+        } else {
+          let lat = 0, lng = 0;
+          for (const g of group) { lat += g.lat; lng += g.lng; }
+          lat /= group.length;
+          lng /= group.length;
+          out.push({
+            id: 'cl-' + FLAGS[i].alpha2 + '-' + group.length + '-' + lat.toFixed(1) + '-' + lng.toFixed(1),
+            cluster: true,
+            count: group.length,
+            lat,
+            lng,
+            alpha2: FLAGS[i].alpha2,
+            flagUrl: FLAGS[i].flagUrl,
+          });
+        }
+      }
+      return out;
+    }
+
+    let lastClusterAlt = -1;
+    function recomputeClusters(alt) {
+      // Seuil de regroupement proportionnel à l'altitude : très regroupé vu de loin,
+      // séparé en zoomant.
+      const threshold = Math.min(10, Math.max(0.35, alt * 5));
+      world.objectsData(clusterFlags(threshold));
+    }
+
     world
-      .objectsData(FLAGS)
       .objectLat((d) => d.lat)
       .objectLng((d) => d.lng)
       .objectAltitude(0)
-      .objectThreeObject(makeFlag)
+      .objectThreeObject(objectFor)
       .onObjectClick((d) => {
-        if (!d || !d.id) return;
+        if (!d) return;
+        if (d.cluster) {
+          // Zoome sur le groupe pour le séparer.
+          const alt = world.pointOfView().altitude;
+          world.pointOfView({ lat: d.lat, lng: d.lng, altitude: Math.max(0.18, alt * 0.4) }, 800);
+          return;
+        }
+        if (!d.id) return;
         lastFlagClick = Date.now();
         sendToApp({ type: 'flagClick', stopId: d.id });
       });
+
+    // Recalcule le regroupement quand l'altitude change sensiblement.
+    world.onZoom((pov) => {
+      if (lastClusterAlt < 0 || Math.abs(pov.altitude - lastClusterAlt) / lastClusterAlt > 0.12) {
+        lastClusterAlt = pov.altitude;
+        recomputeClusters(pov.altitude);
+      }
+    });
+    recomputeClusters(2.5);
 
     // ---- Arcs reliant les étapes consécutives de chaque voyage ----
     world
