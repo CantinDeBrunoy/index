@@ -35,7 +35,7 @@ export type GlobeViewProps = {
   focus?: { lat: number; lng: number } | null;
 };
 
-type FlagMarker = { lat: number; lng: number; name: string; flagUrl: string };
+type FlagMarker = { lat: number; lng: number; name: string; alpha2: string; flagUrl: string };
 type RouteArc = {
   startLat: number;
   startLng: number;
@@ -51,6 +51,7 @@ function toFlagMarkers(trips: Trip[]): FlagMarker[] {
       lat: s.lat,
       lng: s.lng,
       name: s.name,
+      alpha2: s.alpha2,
       flagUrl: s.alpha2 ? `https://flagcdn.com/w320/${s.alpha2}.png` : '',
     })),
   );
@@ -190,13 +191,41 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
         color: 0xcfd3da,
         side: THREE.DoubleSide,
       });
+      // Repli si l'image du drapeau ne charge pas (CDN bloqué, hors-ligne, CORS) :
+      // un fond bleu avec le code pays, plutôt qu'un drapeau gris vide.
+      function applyFallback() {
+        const c = document.createElement('canvas');
+        c.width = 160;
+        c.height = 100;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#3a4a6b';
+        ctx.fillRect(0, 0, 160, 100);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 54px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText((d.alpha2 || '?').toUpperCase(), 80, 54);
+        mat.map = new THREE.CanvasTexture(c);
+        mat.color.set(0xffffff);
+        mat.needsUpdate = true;
+      }
+
       if (d.flagUrl) {
-        texLoader.load(d.flagUrl, (tex) => {
-          tex.colorSpace = THREE.SRGBColorSpace;
-          mat.map = tex;
-          mat.color.set(0xffffff);
-          mat.needsUpdate = true;
-        });
+        // Le paramètre force une entrée de cache distincte (évite une image
+        // déjà mise en cache sans en-tête CORS, qui « salirait » la texture).
+        texLoader.load(
+          d.flagUrl + '?magellan',
+          (tex) => {
+            tex.colorSpace = THREE.SRGBColorSpace;
+            mat.map = tex;
+            mat.color.set(0xffffff);
+            mat.needsUpdate = true;
+          },
+          undefined,
+          applyFallback,
+        );
+      } else {
+        applyFallback();
       }
       const cloth = new THREE.Mesh(geo, mat);
       // Hampe ancrée au mât, près du sommet.

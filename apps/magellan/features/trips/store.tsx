@@ -9,9 +9,27 @@ import {
   type ReactNode,
 } from 'react';
 
+import { alpha3ToAlpha2 } from '@/data/isoCodes';
 import type { CountryCode, Trip, TripStop, TripsState } from './types';
 
 const STORAGE_KEY = 'magellan.trips.v3';
+
+/**
+ * Complète les champs manquants des données chargées (compat données plus anciennes) :
+ * `alpha2` est re-déduit du code pays alpha-3, sans perdre les voyages enregistrés.
+ */
+function migrate(state: TripsState): TripsState {
+  return {
+    trips: (state.trips ?? []).map((t) => ({
+      ...t,
+      stops: (t.stops ?? []).map((s) => ({
+        ...s,
+        alpha2: s.alpha2 || alpha3ToAlpha2(s.country),
+        countryName: s.countryName ?? '',
+      })),
+    })),
+  };
+}
 
 /** Palette de couleurs attribuées aux tracés des voyages. */
 const PALETTE = ['#ffd166', '#06d6a0', '#ef476f', '#118ab2', '#f78c6b', '#b388eb'];
@@ -70,7 +88,7 @@ export function TripsProvider({ children }: { children: ReactNode }) {
     let active = true;
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
-        if (active && raw) setState(JSON.parse(raw) as TripsState);
+        if (active && raw) setState(migrate(JSON.parse(raw) as TripsState));
       })
       .catch(() => {
         // Stockage illisible : on garde le SEED, sans bloquer l'app.
