@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
@@ -12,6 +13,7 @@ type SelectedCountry = { iso: string; name: string; lat: number | null; lng: num
 export default function GlobeScreen() {
   const { visitedCountries, cities, trips } = useTrips();
   const { width } = useWindowDimensions();
+  const router = useRouter();
   const [country, setCountry] = useState<SelectedCountry | null>(null);
   const [tripId, setTripId] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ lat: number; lng: number; altitude?: number } | null>(null);
@@ -89,10 +91,18 @@ export default function GlobeScreen() {
                   <View style={[styles.dot, { backgroundColor: selectedTrip.color || '#ffd166' }]} />
                   <ThemedText type="defaultSemiBold">{selectedTrip.name}</ThemedText>
                 </View>
+                <Pressable
+                  style={styles.detailBtn}
+                  onPress={() => router.push(`/trip/${selectedTrip.id}`)}>
+                  <ThemedText style={styles.detailBtnText}>📌 Ouvrir la fiche du voyage</ThemedText>
+                </Pressable>
                 {selectedTrip.stops.map((s, i) => (
-                  <ThemedText key={s.id} style={styles.stop}>
-                    {i + 1}. {flagEmoji(s.alpha2)}  {s.name}
-                  </ThemedText>
+                  <Pressable key={s.id} onPress={() => router.push(`/stop/${s.id}`)} style={styles.stopRow2}>
+                    <ThemedText style={styles.stop}>
+                      {i + 1}. {flagEmoji(s.alpha2)}  {s.name}
+                    </ThemedText>
+                    <ThemedText style={styles.chev}>›</ThemedText>
+                  </Pressable>
                 ))}
               </>
             ) : tripsHere.length === 0 ? (
@@ -164,5 +174,16 @@ const styles = StyleSheet.create({
   dot: { width: 12, height: 12, borderRadius: 6 },
   count: { color: '#7cc7ff' },
   stop: { color: '#e6e9f0', paddingVertical: 5 },
+  stopRow2: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  chev: { color: '#7cc7ff', fontSize: 16 },
+  detailBtn: {
+    backgroundColor: 'rgba(124, 199, 255, 0.15)',
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    marginVertical: 6,
+    alignItems: 'center',
+  },
+  detailBtnText: { color: '#7cc7ff', fontWeight: '700' },
   empty: { color: '#aeb4c0', paddingVertical: 6 },
 });

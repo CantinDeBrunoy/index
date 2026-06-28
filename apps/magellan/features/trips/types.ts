@@ -7,6 +7,14 @@
 /** Code pays ISO 3166-1 alpha-3, ex. "FRA", "JPN". */
 export type CountryCode = string;
 
+/** Budget d'une étape, en euros, par poste. */
+export type Budget = {
+  hotel: number;
+  food: number;
+  activities: number;
+  transport: number;
+};
+
 /** Une étape d'un voyage : une ville positionnée par ses coordonnées. */
 export type TripStop = {
   id: string;
@@ -16,7 +24,11 @@ export type TripStop = {
   countryName: string; // nom du pays (fr), pour l'affichage
   lat: number;
   lng: number;
-  date?: string; // ISO 8601, optionnel
+  date?: string; // période de la visite (texte libre)
+  days?: number; // durée en jours
+  people?: string[]; // avec qui
+  budget?: Budget; // dépenses par poste
+  photos?: string[]; // URIs de photos (à venir)
 };
 
 /** Un voyage : une suite ordonnée d'étapes, reliées par un tracé sur le globe. */
