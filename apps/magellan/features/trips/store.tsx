@@ -13,7 +13,7 @@ import { INITIAL_TRIPS } from '@/data/initialTrips';
 import { alpha3ToAlpha2 } from '@/data/isoCodes';
 import type { CountryCode, Trip, TripStop, TripsState } from './types';
 
-const STORAGE_KEY = 'magellan.trips.v4';
+const STORAGE_KEY = 'magellan.trips.v5';
 
 /**
  * Complète les champs manquants des données chargées (compat données plus anciennes) :
