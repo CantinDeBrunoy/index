@@ -17,6 +17,7 @@ export default function GlobeScreen() {
   const [country, setCountry] = useState<SelectedCountry | null>(null);
   const [tripId, setTripId] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ lat: number; lng: number; altitude?: number } | null>(null);
+  const [replay, setReplay] = useState<{ tripId: string; key: number } | null>(null);
 
   // Panneau à droite : ~40 % sur grand écran (plafonné), plus large en proportion
   // sur écran étroit pour rester lisible.
@@ -58,6 +59,7 @@ export default function GlobeScreen() {
           trips={trips}
           focus={focus}
           paused={country !== null}
+          replay={replay}
           onCountryPress={onCountryPress}
           onFlagPress={(stopId) => router.push(`/stop/${stopId}`)}
         />
@@ -97,6 +99,13 @@ export default function GlobeScreen() {
                   onPress={() => router.push(`/trip/${selectedTrip.id}`)}>
                   <ThemedText style={styles.detailBtnText}>📌 Ouvrir la fiche du voyage</ThemedText>
                 </Pressable>
+                {selectedTrip.stops.length > 1 ? (
+                  <Pressable
+                    style={styles.replayBtn}
+                    onPress={() => setReplay({ tripId: selectedTrip.id, key: Date.now() })}>
+                    <ThemedText style={styles.replayBtnText}>▶ Rejouer l’itinéraire</ThemedText>
+                  </Pressable>
+                ) : null}
                 {selectedTrip.stops.map((s, i) => (
                   <Pressable key={s.id} onPress={() => router.push(`/stop/${s.id}`)} style={styles.stopRow2}>
                     <ThemedText style={styles.stop}>
@@ -186,5 +195,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailBtnText: { color: '#7cc7ff', fontWeight: '700' },
+  replayBtn: {
+    backgroundColor: 'rgba(46, 160, 67, 0.18)',
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    marginBottom: 6,
+    alignItems: 'center',
+  },
+  replayBtnText: { color: '#5fd07a', fontWeight: '700' },
   empty: { color: '#aeb4c0', paddingVertical: 6 },
 });

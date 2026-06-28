@@ -15,6 +15,7 @@ export function GlobeView({
   onFlagPress,
   focus,
   paused,
+  replay,
 }: GlobeViewProps) {
   const ref = useRef<WebView>(null);
 
@@ -41,6 +42,14 @@ export function GlobeView({
       `(function(){var g=window.__magellanGlobe;if(g){g.controls().autoRotate=${!paused};}})();true;`,
     );
   }, [paused]);
+
+  // Rejoue l'itinéraire demandé.
+  useEffect(() => {
+    if (!replay) return;
+    ref.current?.injectJavaScript(
+      `window.__magellanReplay && window.__magellanReplay(${JSON.stringify(replay.tripId)});true;`,
+    );
+  }, [replay]);
 
   const onMessage = (e: WebViewMessageEvent) => {
     try {

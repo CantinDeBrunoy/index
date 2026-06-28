@@ -15,6 +15,7 @@ export function GlobeView({
   onFlagPress,
   focus,
   paused,
+  replay,
 }: GlobeViewProps) {
   const ref = useRef<HTMLIFrameElement>(null);
   const globe = () => (ref.current?.contentWindow as unknown as GlobeWindow)?.__magellanGlobe;
@@ -49,6 +50,13 @@ export function GlobeView({
     const g = globe();
     if (g) g.controls().autoRotate = !paused;
   }, [paused]);
+
+  // Rejoue l'itinéraire demandé.
+  useEffect(() => {
+    if (!replay) return;
+    const g = ref.current?.contentWindow as unknown as { __magellanReplay?: (id: string) => void };
+    g?.__magellanReplay?.(replay.tripId);
+  }, [replay]);
 
   return (
     <iframe

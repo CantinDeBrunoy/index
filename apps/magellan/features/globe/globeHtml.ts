@@ -38,6 +38,8 @@ export type GlobeViewProps = {
   focus?: { lat: number; lng: number; altitude?: number } | null;
   /** Met en pause la rotation automatique (ex. quand un panneau est ouvert). */
   paused?: boolean;
+  /** Rejoue l'itinéraire du voyage `tripId` ; `key` change pour relancer le même. */
+  replay?: { tripId: string; key: number } | null;
 };
 
 type FlagMarker = {
@@ -88,6 +90,10 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
   const visitedJson = JSON.stringify(visitedCountries);
   const flagsJson = JSON.stringify(toFlagMarkers(trips));
   const arcsJson = JSON.stringify(toRouteArcs(trips));
+  // Séquence ordonnée des étapes par voyage (pour rejouer l'itinéraire).
+  const tripsSeqJson = JSON.stringify(
+    trips.map((t) => ({ id: t.id, pts: t.stops.map((s) => [s.lat, s.lng]) })),
+  );
 
   return `<!DOCTYPE html>
 <html>
@@ -111,6 +117,7 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
     const VISITED = new Set(${visitedJson});
     const FLAGS = ${flagsJson};
     const ARCS = ${arcsJson};
+    const TRIPS_SEQ = ${tripsSeqJson};
 
     // Code ISO alpha-3 d'un pays : ISO_A3 sauf valeur invalide (-99), sinon ADM0_A3.
     function isoOf(props) {
@@ -177,6 +184,24 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.6;
     controls.enableZoom = true;
+
+    // Rejoue un itinéraire : la caméra survole chaque étape dans l'ordre.
+    let replayTimer = null;
+    window.__magellanReplay = function (tripId) {
+      const t = TRIPS_SEQ.find((x) => x.id === tripId);
+      if (!t || !t.pts.length) return;
+      if (replayTimer) clearTimeout(replayTimer);
+      controls.autoRotate = false;
+      let i = 0;
+      (function step() {
+        if (i >= t.pts.length) return;
+        const p = t.pts[i];
+        // Plus serré sur la 1re étape, puis vue d'itinéraire.
+        world.pointOfView({ lat: p[0], lng: p[1], altitude: i === 0 ? 0.45 : 0.6 }, 1100);
+        i += 1;
+        replayTimer = setTimeout(step, 1500);
+      })();
+    };
 
     // Lumières pour le mât (MeshLambert) ; le tissu (MeshBasic) reste lisible sans.
     world.scene().add(new THREE.AmbientLight(0xffffff, 0.95));
