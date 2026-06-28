@@ -29,8 +29,8 @@ export default function GlobeScreen() {
   const onCountryPress = (iso: string, name: string, lat: number | null, lng: number | null) => {
     setCountry({ iso, name, lat, lng });
     setTripId(null);
-    // Dézoome et centre sur le pays cliqué ; le globe rétrécit à gauche.
-    if (lat != null && lng != null) setFocus({ lat, lng, altitude: 1.4 });
+    // Centre la caméra sur le pays cliqué (le globe rétrécit à gauche).
+    if (lat != null && lng != null) setFocus({ lat, lng, altitude: 1.1 });
   };
 
   const openTrip = (t: Trip) => {

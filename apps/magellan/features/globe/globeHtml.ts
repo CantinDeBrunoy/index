@@ -127,14 +127,30 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
         window.parent.postMessage(s, '*');
       }
     }
-    world.onPolygonClick((poly, ev, coords) => {
+    // Centre approximatif d'un pays : moyenne des sommets de son plus grand anneau
+    // (la plus grande masse continentale), pour centrer la caméra sur le pays entier.
+    function countryCentroid(geom) {
+      let rings = [];
+      if (!geom) return null;
+      if (geom.type === 'Polygon') rings = [geom.coordinates[0]];
+      else if (geom.type === 'MultiPolygon') rings = geom.coordinates.map((p) => p[0]);
+      let ring = rings[0] || [];
+      for (const r of rings) if (r.length > ring.length) ring = r;
+      if (!ring.length) return null;
+      let sx = 0, sy = 0;
+      for (const c of ring) { sx += c[0]; sy += c[1]; }
+      return { lat: sy / ring.length, lng: sx / ring.length };
+    }
+
+    world.onPolygonClick((poly) => {
       if (!poly || !poly.properties) return;
+      const c = countryCentroid(poly.geometry);
       sendToApp({
         type: 'countryClick',
         iso: isoOf(poly.properties),
         name: poly.properties.ADMIN || poly.properties.NAME || '',
-        lat: coords ? coords.lat : null,
-        lng: coords ? coords.lng : null,
+        lat: c ? c.lat : null,
+        lng: c ? c.lng : null,
       });
     });
 
