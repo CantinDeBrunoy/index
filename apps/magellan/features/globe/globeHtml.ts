@@ -230,11 +230,12 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
         mat.needsUpdate = true;
       }
 
-      if (d.flagUrl) {
-        // Le paramètre force une entrée de cache distincte (évite une image
-        // déjà mise en cache sans en-tête CORS, qui « salirait » la texture).
+      // Charge l'image du drapeau avec réessais : on télécharge beaucoup de drapeaux
+      // d'un coup et le CDN peut en lâcher quelques-uns. Chaque essai utilise une URL
+      // distincte (cache-buster) pour repartir d'une requête fraîche. Repli après 3 essais.
+      function loadFlag(attempt) {
         texLoader.load(
-          d.flagUrl + '?magellan',
+          d.flagUrl + '?m=' + attempt,
           (tex) => {
             tex.colorSpace = THREE.SRGBColorSpace;
             mat.map = tex;
@@ -242,11 +243,15 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
             mat.needsUpdate = true;
           },
           undefined,
-          applyFallback,
+          () => {
+            if (attempt < 3) setTimeout(() => loadFlag(attempt + 1), 500 * attempt);
+            else applyFallback();
+          },
         );
-      } else {
-        applyFallback();
       }
+
+      if (d.flagUrl) loadFlag(1);
+      else applyFallback();
       const cloth = new THREE.Mesh(geo, mat);
       // Hampe ancrée au mât, près du sommet.
       cloth.position.set(FLAG_W / 2 + 0.12, POLE_HEIGHT - 0.4 - FLAG_H / 2, 0);
