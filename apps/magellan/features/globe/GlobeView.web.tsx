@@ -8,7 +8,14 @@ type GlobeWindow = { __magellanGlobe?: any };
  * Variante web : on est déjà dans un navigateur, donc globe.gl tourne dans une
  * iframe (même HTML que la variante mobile). La variante mobile vit dans GlobeView.tsx.
  */
-export function GlobeView({ visitedCountries, trips, onCountryPress, focus, paused }: GlobeViewProps) {
+export function GlobeView({
+  visitedCountries,
+  trips,
+  onCountryPress,
+  onFlagPress,
+  focus,
+  paused,
+}: GlobeViewProps) {
   const ref = useRef<HTMLIFrameElement>(null);
   const globe = () => (ref.current?.contentWindow as unknown as GlobeWindow)?.__magellanGlobe;
 
@@ -22,13 +29,14 @@ export function GlobeView({ visitedCountries, trips, onCountryPress, focus, paus
       try {
         const m = JSON.parse(e.data);
         if (m?.type === 'countryClick') onCountryPress?.(m.iso, m.name, m.lat, m.lng);
+        else if (m?.type === 'flagClick') onFlagPress?.(m.stopId);
       } catch {
         // message non JSON ignoré
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [onCountryPress]);
+  }, [onCountryPress, onFlagPress]);
 
   // Centre la caméra (avec un niveau de zoom) quand `focus` change.
   useEffect(() => {

@@ -59,6 +59,7 @@ export default function GlobeScreen() {
           focus={focus}
           paused={country !== null}
           onCountryPress={onCountryPress}
+          onFlagPress={(stopId) => router.push(`/stop/${stopId}`)}
         />
         <View style={styles.badge}>
           <ThemedText style={styles.badgeText}>

@@ -8,7 +8,14 @@ import { buildGlobeHtml, type GlobeViewProps } from './globeHtml';
  * Variante mobile (iOS/Android) : globe.gl rendu dans une WebView.
  * La variante web vit dans GlobeView.web.tsx.
  */
-export function GlobeView({ visitedCountries, trips, onCountryPress, focus, paused }: GlobeViewProps) {
+export function GlobeView({
+  visitedCountries,
+  trips,
+  onCountryPress,
+  onFlagPress,
+  focus,
+  paused,
+}: GlobeViewProps) {
   const ref = useRef<WebView>(null);
 
   // Source mémoïsée : évite de recharger la WebView à chaque rendu (focus/sélection) ;
@@ -39,6 +46,7 @@ export function GlobeView({ visitedCountries, trips, onCountryPress, focus, paus
     try {
       const m = JSON.parse(e.nativeEvent.data);
       if (m?.type === 'countryClick') onCountryPress?.(m.iso, m.name, m.lat, m.lng);
+      else if (m?.type === 'flagClick') onFlagPress?.(m.stopId);
     } catch {
       // message non JSON ignoré
     }

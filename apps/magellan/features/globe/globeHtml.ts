@@ -13,6 +13,7 @@ import type { Trip } from '@/features/trips/types';
 const THREE_URL = 'https://esm.sh/three@0.180.0';
 const GLOBE_URL = 'https://esm.sh/globe.gl@2.33.0?external=three';
 const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
+const NIGHT_SKY = 'https://unpkg.com/three-globe/example/img/night-sky.png';
 const COUNTRIES_GEOJSON =
   'https://cdn.jsdelivr.net/gh/vasturiano/globe.gl@master/example/datasets/ne_110m_admin_0_countries.geojson';
 
@@ -31,13 +32,22 @@ export type GlobeViewProps = {
   trips: Trip[];
   /** Appelé au tap d'un pays (code alpha-3, nom, et point cliqué lat/lng). */
   onCountryPress?: (iso: string, name: string, lat: number | null, lng: number | null) => void;
+  /** Appelé au tap d'un drapeau (id de l'étape). */
+  onFlagPress?: (stopId: string) => void;
   /** Centre la caméra sur ce point, avec une altitude (zoom) optionnelle. */
   focus?: { lat: number; lng: number; altitude?: number } | null;
   /** Met en pause la rotation automatique (ex. quand un panneau est ouvert). */
   paused?: boolean;
 };
 
-type FlagMarker = { lat: number; lng: number; name: string; alpha2: string; flagUrl: string };
+type FlagMarker = {
+  id: string;
+  lat: number;
+  lng: number;
+  name: string;
+  alpha2: string;
+  flagUrl: string;
+};
 type RouteArc = {
   startLat: number;
   startLng: number;
@@ -50,6 +60,7 @@ type RouteArc = {
 function toFlagMarkers(trips: Trip[]): FlagMarker[] {
   return trips.flatMap((t) =>
     t.stops.map((s) => ({
+      id: s.id,
       lat: s.lat,
       lng: s.lng,
       name: s.name,
@@ -110,7 +121,7 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
 
     const world = Globe()(document.getElementById('globe'))
       .globeImageUrl('${EARTH_TEXTURE}')
-      .backgroundColor('rgba(0,0,0,0)')
+      .backgroundImageUrl('${NIGHT_SKY}')
       .showAtmosphere(true)
       .atmosphereColor('#7cc7ff')
       .atmosphereAltitude(0.18);
@@ -142,16 +153,24 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
       return { lat: sy / ring.length, lng: sx / ring.length };
     }
 
+    // Un clic sur un drapeau touche aussi le pays en dessous. On diffère l'ouverture du
+    // pays de quelques ms : si un clic drapeau a eu lieu (même clic), il l'annule — peu
+    // importe l'ordre des callbacks globe.gl. Le détail ville prime.
+    let lastFlagClick = 0;
+
     world.onPolygonClick((poly) => {
       if (!poly || !poly.properties) return;
       const c = countryCentroid(poly.geometry);
-      sendToApp({
+      const payload = {
         type: 'countryClick',
         iso: isoOf(poly.properties),
         name: poly.properties.ADMIN || poly.properties.NAME || '',
         lat: c ? c.lat : null,
         lng: c ? c.lng : null,
-      });
+      };
+      setTimeout(() => {
+        if (Date.now() - lastFlagClick > 150) sendToApp(payload);
+      }, 70);
     });
 
     const controls = world.controls();
@@ -266,7 +285,12 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
       .objectLat((d) => d.lat)
       .objectLng((d) => d.lng)
       .objectAltitude(0)
-      .objectThreeObject(makeFlag);
+      .objectThreeObject(makeFlag)
+      .onObjectClick((d) => {
+        if (!d || !d.id) return;
+        lastFlagClick = Date.now();
+        sendToApp({ type: 'flagClick', stopId: d.id });
+      });
 
     // ---- Arcs reliant les étapes consécutives de chaque voyage ----
     world
