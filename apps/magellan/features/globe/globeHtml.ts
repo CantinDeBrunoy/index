@@ -29,6 +29,10 @@ export type GlobeViewProps = {
   visitedCountries: string[];
   /** Voyages : leurs étapes deviennent des drapeaux 3D, reliés par des arcs. */
   trips: Trip[];
+  /** Appelé au tap d'un pays sur le globe (code alpha-3 + nom). */
+  onCountryPress?: (iso: string, name: string) => void;
+  /** Centre la caméra du globe sur ce point (ex. un voyage sélectionné). */
+  focus?: { lat: number; lng: number } | null;
 };
 
 type FlagMarker = { lat: number; lng: number; name: string; flagUrl: string };
@@ -108,8 +112,26 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
       .atmosphereColor('#7cc7ff')
       .atmosphereAltitude(0.18);
 
-    // Exposé pour le débogage et les mises à jour live (Phase 5).
+    // Exposé pour le débogage et le pilotage depuis l'app (centrage caméra).
     window.__magellanGlobe = world;
+
+    // Émet un message vers l'app (WebView mobile ou iframe web) au tap d'un pays.
+    function sendToApp(obj) {
+      const s = JSON.stringify(obj);
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(s);
+      } else if (window.parent && window.parent !== window) {
+        window.parent.postMessage(s, '*');
+      }
+    }
+    world.onPolygonClick((poly) => {
+      if (!poly || !poly.properties) return;
+      sendToApp({
+        type: 'countryClick',
+        iso: isoOf(poly.properties),
+        name: poly.properties.ADMIN || poly.properties.NAME || '',
+      });
+    });
 
     const controls = world.controls();
     controls.autoRotate = true;

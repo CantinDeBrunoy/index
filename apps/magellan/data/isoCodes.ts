@@ -259,6 +259,15 @@ export function alpha2ToAlpha3(a2: string): string {
   return A2_TO_A3[(a2 || '').toUpperCase()] ?? '';
 }
 
+const A3_TO_A2: Record<string, string> = Object.fromEntries(
+  Object.entries(A2_TO_A3).map(([a2, a3]) => [a3, a2]),
+);
+
+/** Convertit un code alpha-3 (ex. "FRA") en alpha-2 minuscule (ex. "fr"), ou '' si inconnu. */
+export function alpha3ToAlpha2(a3: string): string {
+  return (A3_TO_A2[(a3 || '').toUpperCase()] ?? '').toLowerCase();
+}
+
 /** Emoji drapeau dérivé d'un code alpha-2 (ex. "fr" → 🇫🇷). Générique, tout pays. */
 export function flagEmoji(alpha2: string): string {
   const cc = (alpha2 || '').toUpperCase();
