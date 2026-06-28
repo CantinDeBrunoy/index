@@ -58,6 +58,22 @@ export function GlobeView({
     g?.__magellanReplay?.(replay.tripId);
   }, [replay]);
 
+  // Barre espace : stoppe / relance la rotation (quand la page, pas l'iframe, a le focus).
+  // On ignore la saisie dans un champ texte (pour ne pas casser l'espace de la recherche).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        const g = globe();
+        if (g) g.controls().autoRotate = !g.controls().autoRotate;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   return (
     <iframe
       ref={ref}

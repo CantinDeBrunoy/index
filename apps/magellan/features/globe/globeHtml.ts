@@ -185,6 +185,14 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
     controls.autoRotateSpeed = 0.6;
     controls.enableZoom = true;
 
+    // Barre espace : stoppe / relance la rotation automatique (si l'iframe a le focus).
+    window.addEventListener('keydown', function (e) {
+      if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        controls.autoRotate = !controls.autoRotate;
+      }
+    });
+
     // Rejoue un itinéraire : la caméra survole chaque étape dans l'ordre.
     let replayTimer = null;
     window.__magellanReplay = function (tripId) {
