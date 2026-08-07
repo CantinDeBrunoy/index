@@ -1,91 +1,98 @@
 import { useLocalSearchParams } from 'expo-router';
 
 import { flagEmoji } from '@/data/isoCodes';
+import {
+  BudgetBar,
+  Card,
+  Chips,
+  DetailPage,
+  Hero,
+  Muted,
+  Section,
+  StatRow,
+  TotalRow,
+  euros,
+} from '@/features/detail/DetailKit';
 import { budgetTotal, peopleLabel } from '@/features/trips/aggregates';
-import { CardLabel, CardText, Corkboard, PinnedCard } from '@/features/corkboard/Corkboard';
 import { useTrips } from '@/features/trips/store';
-import type { Budget } from '@/features/trips/types';
-
-function euros(n: number): string {
-  return `${n} €`;
-}
 
 export default function StopDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { trips } = useTrips();
 
-  const stop = trips.flatMap((t) => t.stops).find((s) => s.id === id);
-  if (!stop) {
+  // On remonte au voyage parent : il porte la couleur d'accent et le fil du périple.
+  const parent = trips.find((t) => t.stops.some((s) => s.id === id));
+  const stop = parent?.stops.find((s) => s.id === id);
+
+  if (!stop || !parent) {
     return (
-      <Corkboard title="Étape">
-        <PinnedCard>
-          <CardText>Étape introuvable.</CardText>
-        </PinnedCard>
-      </Corkboard>
+      <DetailPage>
+        <Hero title="Étape introuvable" />
+        <Section title="Oups">
+          <Card>
+            <Muted>Cette étape n’existe plus. Reviens en arrière pour choisir une autre étape.</Muted>
+          </Card>
+        </Section>
+      </DetailPage>
     );
   }
 
+  const color = parent.color || '#ffd166';
+  const rank = parent.stops.findIndex((s) => s.id === stop.id) + 1;
+  const budget = stop.budget;
+  const total = budgetTotal(budget);
+  const maxPost = budget
+    ? Math.max(budget.hotel, budget.food, budget.activities, budget.transport)
+    : 0;
+
+  const stats: { value: string; label: string }[] = [];
+  if (stop.days) stats.push({ value: String(stop.days), label: stop.days > 1 ? 'jours' : 'jour' });
+  if (total) stats.push({ value: euros(total), label: 'budget' });
+  if (stop.people?.length) stats.push({ value: String(stop.people.length), label: 'personnes' });
+
   return (
-    <Corkboard title={stop.name}>
-      <PinnedCard rotate="-1.5deg">
-        <CardText big>
-          {flagEmoji(stop.alpha2)}  {stop.name}
-        </CardText>
-        <CardText>{stop.countryName}</CardText>
-      </PinnedCard>
+    <DetailPage>
+      <Hero
+        color={color}
+        eyebrow={`${parent.name}  ·  étape ${rank}/${parent.stops.length}`}
+        title={stop.name}
+        subtitle={stop.date}
+        chips={[`${flagEmoji(stop.alpha2)}  ${stop.countryName}`]}
+      />
 
-      {stop.date ? (
-        <PinnedCard rotate="1.2deg" tint="#fff7e6" pin="#ef8a17">
-          <CardLabel>Quand</CardLabel>
-          <CardText>📅 {stop.date}</CardText>
-        </PinnedCard>
-      ) : null}
+      {stats.length > 0 ? <StatRow items={stats} /> : null}
 
-      {stop.days ? (
-        <PinnedCard rotate="-1deg" tint="#eef7ee" pin="#2e7d32">
-          <CardLabel>Durée</CardLabel>
-          <CardText>⏱️ {stop.days} jour{stop.days > 1 ? 's' : ''}</CardText>
-        </PinnedCard>
+      {budget && total > 0 ? (
+        <Section title="Budget">
+          <Card>
+            <BudgetBar label="Hôtel" value={budget.hotel} max={maxPost} color={color} />
+            <BudgetBar label="Nourriture" value={budget.food} max={maxPost} color={color} />
+            <BudgetBar label="Activités" value={budget.activities} max={maxPost} color={color} />
+            <BudgetBar label="Transport" value={budget.transport} max={maxPost} color={color} />
+            <TotalRow label="Total" value={total} />
+          </Card>
+        </Section>
       ) : null}
 
       {stop.people && stop.people.length > 0 ? (
-        <PinnedCard rotate="1.6deg" tint="#eef3ff" pin="#1565c0">
-          <CardLabel>Avec qui</CardLabel>
-          <CardText>👥 {peopleLabel(stop.people)}</CardText>
-        </PinnedCard>
+        <Section title="Avec qui">
+          <Chips items={stop.people.map((p) => peopleLabel([p]))} />
+        </Section>
       ) : null}
 
-      {stop.budget ? <BudgetCard budget={stop.budget} /> : null}
+      <Section title="Position">
+        <Card>
+          <Muted>
+            📍  {stop.lat.toFixed(3)}, {stop.lng.toFixed(3)}
+          </Muted>
+        </Card>
+      </Section>
 
-      <PinnedCard rotate="-1.2deg" tint="#fbeff7" pin="#8e24aa">
-        <CardLabel>Photos</CardLabel>
-        <CardText>📷 Bientôt</CardText>
-      </PinnedCard>
-
-      <PinnedCard rotate="0.8deg">
-        <CardLabel>Position</CardLabel>
-        <CardText>📍 {stop.lat.toFixed(3)}, {stop.lng.toFixed(3)}</CardText>
-      </PinnedCard>
-    </Corkboard>
-  );
-}
-
-function BudgetCard({ budget }: { budget: Budget }) {
-  const rows: [string, number][] = [
-    ['Hôtel', budget.hotel],
-    ['Nourriture', budget.food],
-    ['Activités', budget.activities],
-    ['Transport', budget.transport],
-  ];
-  return (
-    <PinnedCard rotate="-0.6deg" tint="#fffef0" pin="#c0a000">
-      <CardLabel>Budget</CardLabel>
-      {rows.map(([label, value]) => (
-        <CardText key={label}>
-          {label} · {euros(value)}
-        </CardText>
-      ))}
-      <CardText big>💶 {euros(budgetTotal(budget))}</CardText>
-    </PinnedCard>
+      <Section title="Photos">
+        <Card>
+          <Muted>📷  Bientôt — les photos de l’étape s’afficheront ici.</Muted>
+        </Card>
+      </Section>
+    </DetailPage>
   );
 }

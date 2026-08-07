@@ -20,6 +20,10 @@ L'objet central est le **voyage (road trip)** : une suite ordonnée d'**étapes*
 Sur le globe, les étapes d'un même voyage sont reliées par un **arc** ; un pays devient
 vert dès qu'une étape s'y trouve. L'app récapitule la progression (voyages, villes, pays).
 
+Taper un voyage ouvre sa **fiche détail** : en-tête coloré, chiffres clés, itinéraire en
+**timeline** et budget en barres proportionnelles. La couleur d'accent d'une fiche est celle
+du tracé du voyage sur le globe — un voyage garde son identité d'un écran à l'autre.
+
 ## La stack
 
 - **Expo ~54** / **React Native 0.81** / **React 19** — TypeScript
@@ -50,6 +54,8 @@ features/
   trips/
     store.ts               # état des voyages + persistance
     types.ts               # VisitedCountry (ISO3), VisitedCity {name,country,lat,lng}
+  detail/
+    DetailKit.tsx          # primitives des fiches détail (hero, stats, timeline, budget)
 data/
   countries.geo.json       # frontières des pays (Natural Earth, simplifié)
   countries.ts             # ISO3 → { nom, drapeau, centroïde }

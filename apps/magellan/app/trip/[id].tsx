@@ -1,7 +1,19 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable } from 'react-native';
 
 import { flagEmoji } from '@/data/isoCodes';
+import {
+  BudgetBar,
+  Card,
+  Chips,
+  DetailPage,
+  Hero,
+  Muted,
+  Section,
+  StatRow,
+  TimelineStop,
+  TotalRow,
+  euros,
+} from '@/features/detail/DetailKit';
 import {
   budgetTotal,
   peopleLabel,
@@ -10,7 +22,6 @@ import {
   tripDays,
   tripPeople,
 } from '@/features/trips/aggregates';
-import { CardLabel, CardText, Corkboard, PinnedCard } from '@/features/corkboard/Corkboard';
 import { useTrips } from '@/features/trips/store';
 
 export default function TripDetail() {
@@ -21,63 +32,88 @@ export default function TripDetail() {
   const trip = trips.find((t) => t.id === id);
   if (!trip) {
     return (
-      <Corkboard title="Voyage">
-        <PinnedCard>
-          <CardText>Voyage introuvable.</CardText>
-        </PinnedCard>
-      </Corkboard>
+      <DetailPage>
+        <Hero title="Voyage introuvable" />
+        <Section title="Oups">
+          <Card>
+            <Muted>Ce voyage n’existe plus. Reviens en arrière pour choisir un autre voyage.</Muted>
+          </Card>
+        </Section>
+      </DetailPage>
     );
   }
 
+  const color = trip.color || '#ffd166';
   const budget = tripBudget(trip);
   const total = budgetTotal(budget);
   const days = tripDays(trip);
   const people = tripPeople(trip);
   const countries = tripCountries(trip);
+  // Échelle des barres : le poste le plus lourd occupe toute la largeur.
+  const maxPost = Math.max(budget.hotel, budget.food, budget.activities, budget.transport);
+
+  // Période du voyage : dates de la première et de la dernière étape qui en portent une.
+  const dated = trip.stops.filter((s) => s.date);
+  const period =
+    dated.length === 0
+      ? undefined
+      : dated.length === 1 || dated[0].date === dated[dated.length - 1].date
+        ? dated[0].date
+        : `${dated[0].date} → ${dated[dated.length - 1].date}`;
+
+  const stats: { value: string; label: string }[] = [
+    { value: String(trip.stops.length), label: trip.stops.length > 1 ? 'étapes' : 'étape' },
+    { value: String(countries.length), label: 'pays' },
+  ];
+  if (days) stats.push({ value: String(days), label: 'jours' });
+  if (total) stats.push({ value: euros(total), label: 'budget' });
 
   return (
-    <Corkboard title={trip.name}>
-      <PinnedCard rotate="-1.2deg" pin={trip.color || '#e63946'}>
-        <CardText big>{trip.name}</CardText>
-        <CardText>
-          {trip.stops.length} étape{trip.stops.length > 1 ? 's' : ''} · {countries.length} pays
-          {days ? ` · ${days} jours` : ''}
-        </CardText>
-      </PinnedCard>
+    <DetailPage>
+      <Hero
+        color={color}
+        eyebrow="Voyage"
+        title={trip.name}
+        subtitle={period}
+        chips={countries.map((c) => `${flagEmoji(c.alpha2)}  ${c.countryName}`)}
+      />
 
-      <PinnedCard rotate="1deg" tint="#eef3ff" pin="#1565c0">
-        <CardLabel>Itinéraire</CardLabel>
+      <StatRow items={stats} />
+
+      <Section title="Itinéraire">
         {trip.stops.map((s, i) => (
-          <Pressable key={s.id} onPress={() => router.push(`/stop/${s.id}`)}>
-            <CardText>
-              {i + 1}. {flagEmoji(s.alpha2)}  {s.name} ›
-            </CardText>
-          </Pressable>
+          <TimelineStop
+            key={s.id}
+            index={i + 1}
+            color={color}
+            title={`${flagEmoji(s.alpha2)}  ${s.name}`}
+            right={s.date}
+            meta={[s.days ? `${s.days} j` : null, s.budget ? euros(budgetTotal(s.budget)) : null]
+              .filter(Boolean)
+              .join('  ·  ')}
+            last={i === trip.stops.length - 1}
+            onPress={() => router.push(`/stop/${s.id}`)}
+          />
         ))}
-      </PinnedCard>
+      </Section>
 
       {total > 0 ? (
-        <PinnedCard rotate="-0.8deg" tint="#fffef0" pin="#c0a000">
-          <CardLabel>Budget total</CardLabel>
-          <CardText>Hôtel · {budget.hotel} €</CardText>
-          <CardText>Nourriture · {budget.food} €</CardText>
-          <CardText>Activités · {budget.activities} €</CardText>
-          <CardText>Transport · {budget.transport} €</CardText>
-          <CardText big>💶 {total} €</CardText>
-        </PinnedCard>
+        <Section title="Budget">
+          <Card>
+            <BudgetBar label="Hôtel" value={budget.hotel} max={maxPost} color={color} />
+            <BudgetBar label="Nourriture" value={budget.food} max={maxPost} color={color} />
+            <BudgetBar label="Activités" value={budget.activities} max={maxPost} color={color} />
+            <BudgetBar label="Transport" value={budget.transport} max={maxPost} color={color} />
+            <TotalRow label="Total" value={total} />
+          </Card>
+        </Section>
       ) : null}
 
       {people.length > 0 ? (
-        <PinnedCard rotate="1.4deg" tint="#eef7ee" pin="#2e7d32">
-          <CardLabel>Avec qui</CardLabel>
-          <CardText>👥 {peopleLabel(people)}</CardText>
-        </PinnedCard>
+        <Section title="Avec qui">
+          <Chips items={people.map((p) => peopleLabel([p]))} />
+        </Section>
       ) : null}
-
-      <PinnedCard rotate="-1deg" tint="#fbeff7" pin="#8e24aa">
-        <CardLabel>Pays</CardLabel>
-        <CardText>{countries.map((c) => `${flagEmoji(c.alpha2)} ${c.countryName}`).join('   ·   ')}</CardText>
-      </PinnedCard>
-    </Corkboard>
+    </DetailPage>
   );
 }
