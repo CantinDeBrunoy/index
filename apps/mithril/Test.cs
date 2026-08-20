@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using MdpGen;
 
 namespace Banc
@@ -110,8 +112,112 @@ namespace Banc
                 Generateur.SymbolesMobiles.Length, poolMobile, Generateur.Entropie(poolMobile, 32)));
             Verifier(Generateur.Entropie(poolMobile, 32) > 190, "entropie mobile a 32 car. > 190 bits");
 
+            // 7. Le coffre : chiffrement, maître, altération, protection mémoire.
+            TesterCoffre();
+
             Console.WriteLine(echecs == 0 ? "\nTOUS LES TESTS PASSENT" : "\n" + echecs + " ECHEC(S)");
             Environment.Exit(echecs == 0 ? 0 : 1);
+        }
+
+        static void TesterCoffre()
+        {
+            string dossier = Path.Combine(Path.GetTempPath(), "MithrilBanc_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                // 7a. SecretMemoire : aller-retour et effacement du tampon d'origine.
+                byte[] original = Encoding.UTF8.GetBytes("tres-secret");
+                byte[] copieAttendue = (byte[])original.Clone();
+                var secret = new SecretMemoire(original);
+                bool efface = true;
+                foreach (byte octet in original) if (octet != 0) efface = false;
+                Verifier(efface, "coffre : le tampon d'origine est efface apres protection");
+                byte[] revele = secret.Reveler();
+                bool identique = revele.Length == copieAttendue.Length;
+                for (int i = 0; identique && i < revele.Length; i++)
+                    if (revele[i] != copieAttendue[i]) identique = false;
+                Verifier(identique, "coffre : aller-retour CryptProtectMemory fidele");
+                secret.Dispose();
+
+                // 7b. Aller-retour sans maitre (DPAPI seul).
+                var coffre = new Coffre(dossier);
+                coffre.Ouvrir();
+                coffre.Ajouter("Site A", "didier", "MotDePasse#1");
+                coffre.Ajouter("Site B", "", "autre$mdp2");
+                var relecture = new Coffre(dossier);
+                relecture.Ouvrir();
+                Verifier(relecture.Deverrouille && relecture.Entrees.Count == 2
+                      && relecture.Entrees[0].Libelle == "Site A"
+                      && relecture.Entrees[0].RevelerMdp() == "MotDePasse#1"
+                      && relecture.Entrees[1].RevelerMdp() == "autre$mdp2",
+                    "coffre : aller-retour DPAPI sans maitre");
+
+                // 7c. Pose du maitre : verrouille a la relecture, mauvais maitre rejete.
+                relecture.DefinirMaitre("grand-maitre-solide");
+                var verrouille = new Coffre(dossier);
+                verrouille.Ouvrir();
+                Verifier(verrouille.MaitreActif && !verrouille.Deverrouille,
+                    "coffre : maitre actif => verrouille a l'ouverture");
+                bool rejete = false;
+                try { verrouille.Deverrouiller("mauvais"); }
+                catch (CoffreException) { rejete = true; }
+                Verifier(rejete && !verrouille.Deverrouille, "coffre : mauvais maitre rejete (HMAC)");
+                verrouille.Deverrouiller("grand-maitre-solide");
+                Verifier(verrouille.Deverrouille && verrouille.Entrees.Count == 2
+                      && verrouille.Entrees[0].RevelerMdp() == "MotDePasse#1",
+                    "coffre : bon maitre => donnees restituees");
+
+                // 7d. Verrouiller efface l'etat ; redeverrouillage apres rechargement.
+                verrouille.Verrouiller();
+                Verifier(!verrouille.Deverrouille && verrouille.Entrees.Count == 0,
+                    "coffre : verrouillage vide l'etat en memoire");
+                verrouille.Ouvrir();
+                verrouille.Deverrouiller("grand-maitre-solide");
+                Verifier(verrouille.Entrees.Count == 2, "coffre : redeverrouillage apres verrouillage");
+
+                // 7e. Changement puis retrait du maitre.
+                verrouille.DefinirMaitre("nouveau-maitre");
+                var rechange = new Coffre(dossier);
+                rechange.Ouvrir();
+                bool ancienRejete = false;
+                try { rechange.Deverrouiller("grand-maitre-solide"); }
+                catch (CoffreException) { ancienRejete = true; }
+                rechange.Deverrouiller("nouveau-maitre");
+                Verifier(ancienRejete && rechange.Entrees.Count == 2, "coffre : changement de maitre");
+                rechange.RetirerMaitre();
+                var sansMaitre = new Coffre(dossier);
+                sansMaitre.Ouvrir();
+                Verifier(sansMaitre.Deverrouille && !sansMaitre.MaitreActif && sansMaitre.Entrees.Count == 2,
+                    "coffre : retrait du maitre, donnees intactes");
+
+                // 7f. Suppression persistante.
+                sansMaitre.Supprimer(sansMaitre.Entrees[0]);
+                var apresSuppr = new Coffre(dossier);
+                apresSuppr.Ouvrir();
+                Verifier(apresSuppr.Entrees.Count == 1 && apresSuppr.Entrees[0].Libelle == "Site B",
+                    "coffre : suppression persistee");
+
+                // 7g. Fichier altere detecte (un octet retourne).
+                string fichier = Path.Combine(dossier, "coffre.mithril");
+                byte[] brut = File.ReadAllBytes(fichier);
+                brut[brut.Length / 2] ^= 0xFF;
+                File.WriteAllBytes(fichier, brut);
+                bool altere = false;
+                var casse = new Coffre(dossier);
+                try { casse.Ouvrir(); }
+                catch (CoffreException) { altere = true; }
+                Verifier(altere, "coffre : fichier altere detecte a l'ouverture");
+
+                // 7h. Export en clair.
+                sansMaitre.Verrouiller();
+                // (le coffre en memoire 'apresSuppr' est reste deverrouille et intact)
+                string export = Path.Combine(dossier, "export.txt");
+                apresSuppr.Exporter(export);
+                Verifier(File.ReadAllText(export).Contains("autre$mdp2"), "coffre : export en clair complet");
+            }
+            finally
+            {
+                try { Directory.Delete(dossier, true); } catch { }
+            }
         }
     }
 }

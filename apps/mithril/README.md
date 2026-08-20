@@ -1,8 +1,8 @@
 # GenerateurMdp
 
 Petit générateur de mots de passe pour Windows, destiné à alimenter un gestionnaire de
-mots de passe. Application de bureau autonome (WinForms), sans installation, sans réseau,
-sans écriture sur disque.
+mots de passe. Application de bureau autonome (WinForms), sans installation, sans réseau.
+N'écrit rien sur disque, sauf si tu utilises le coffre optionnel (chiffré, voir plus bas).
 
 ![aucune dépendance](https://img.shields.io/badge/d%C3%A9pendances-aucune-brightgreen)
 ![.NET Framework 4](https://img.shields.io/badge/.NET%20Framework-4.0-blue)
@@ -22,9 +22,10 @@ même**. Le bouton n'apparaît qu'après le premier clic.
 Tu as évidemment raison d'être méfiant devant un `.exe` reçu par message, surtout pour
 générer des mots de passe. Trois façons de vérifier plutôt que de me croire sur parole :
 
-1. **Lis le code.** Tout tient dans [`MdpGen.cs`](MdpGen.cs), environ 300 lignes
-   commentées. Aucun accès réseau, aucune écriture sur disque : cherche `System.Net` ou
-   `System.IO`, tu ne les trouveras pas, ils ne sont même pas importés.
+1. **Lis le code.** Trois fichiers commentés : [`MdpGen.cs`](MdpGen.cs) (génération et
+   interface), [`Coffre.cs`](Coffre.cs) (chiffrement du coffre) et
+   [`CoffreUi.cs`](CoffreUi.cs) (fenêtres du coffre). Aucun accès réseau : cherche
+   `System.Net`, il n'est importé nulle part. Le disque n'est touché que par le coffre.
 2. **Vérifie l'empreinte** du fichier téléchargé, indiquée sur la page de la release :
    ```powershell
    Get-FileHash .\GenerateurMdp.exe -Algorithm SHA256
@@ -44,8 +45,16 @@ Double-clic sur `GenerateurMdp.exe`.
   symboles sur iOS, sur Gboard, ou sur les deux.
 - Option d'exclusion des caractères ambigus (`I l 1 O 0 B 8 S 5 Z 2`), utile quand le mot
   de passe doit parfois être relu ou retapé à la main
-- Entropie affichée en bits, avec un verdict indicatif (faible / correct / fort / très fort)
-- Copie dans le presse-papiers, avec vidage optionnel au bout de 60 secondes
+- Entropie affichée en bits, avec une jauge et un verdict indicatif (faible / correct /
+  fort / très fort)
+- Mot de passe coloré par famille (lettres, chiffres en bleu, symboles en ambre) pour
+  faciliter la relecture
+- Copie dans le presse-papiers via le bouton ou **Ctrl+C**, avec vidage optionnel au bout
+  de 60 secondes (compte à rebours affiché). Les copies sont exclues de l'historique
+  Windows (Win+V) et du presse-papiers cloud.
+- **Coffre optionnel** pour garder les mots de passe générés sur la machine (voir plus bas)
+- Interface sombre ; tout est pilotable au clavier (Entrée génère, Alt+G / Alt+C,
+  flèches sur le curseur de longueur)
 
 Les réglages par défaut (32 caractères, alphabet de 94) donnent **~210 bits d'entropie**.
 Avec la restriction mobile, l'alphabet tombe à 75 et l'entropie à **~199 bits** : la perte
@@ -61,6 +70,35 @@ C'est le seul point qui compte vraiment pour ce genre d'outil.
   strictement équiprobable. Un modulo naïf favorise légèrement les premiers caractères.
 - Un caractère imposé par famille cochée (pour satisfaire les règles de complexité des
   sites), puis mélange de Fisher-Yates : aucune position n'est prévisible.
+
+## Coffre (optionnel)
+
+Le bouton « Enregistrer » garde un mot de passe généré sur la machine, avec un libellé et
+un identifiant. Tant que tu ne l'utilises pas, l'application n'écrit rien sur disque.
+
+Le fichier (`%APPDATA%\Mithril\coffre.mithril`) est chiffré en deux couches :
+
+1. **DPAPI, toujours** : le chiffrement natif de Windows, lié à ta session. Le fichier est
+   illisible depuis un autre compte, une autre machine, ou une copie du disque. C'est le
+   même mécanisme que Chrome utilise pour ses mots de passe enregistrés.
+2. **Mot de passe maître, en option** : une couche AES-256 + HMAC-SHA256 par-dessus, clé
+   dérivée par PBKDF2 (600 000 itérations). Elle protège aussi contre un programme
+   malveillant qui tournerait sous ton compte — tant que le coffre est verrouillé.
+   **Il est irrécupérable : oublié = coffre perdu.**
+
+Réductions de la fenêtre d'exposition quand le coffre est ouvert :
+
+- Chaque mot de passe n'est déchiffré qu'à l'instant où tu le copies ou l'affiches ; le
+  reste du temps il est chiffré, même en mémoire (`CryptProtectMemory`).
+- L'affichage est masqué par défaut (`●●●`), la révélation dure 8 secondes.
+- Verrouillage automatique : après 5 minutes d'inactivité, à la fermeture de la fenêtre,
+  et dès que la session Windows se verrouille.
+- L'enregistrement rapide depuis la fenêtre principale reverrouille aussitôt.
+
+Limites honnêtes : DPAPI meurt avec ton profil Windows (réinstallation, réinitialisation
+forcée du mot de passe d'un compte local). Le bouton **Exporter** produit une sauvegarde
+de secours *en clair*, à ranger en lieu sûr. Et aucun coffre, le nôtre comme les autres,
+ne protège une machine déjà compromise par un malware actif.
 
 ## Compilation
 
@@ -84,12 +122,15 @@ Le script compile l'application, compile le banc de test et l'exécute.
 | Absence de collision sur 32 caractères | 50 000 mots de passe |
 | Aucun symbole pénible sous contrainte mobile | 20 000 mots de passe |
 | Filtrage des ambigus, jeu mobile, calcul d'entropie | assertions directes |
+| Coffre : aller-retour DPAPI et maître, mauvais maître rejeté, altération détectée, protection mémoire, export | 13 assertions |
 
 ## Structure
 
 | Fichier | Rôle |
 | --- | --- |
-| `MdpGen.cs` | Tirage aléatoire, génération et interface |
+| `MdpGen.cs` | Tirage aléatoire, génération et fenêtre principale |
+| `Coffre.cs` | Chiffrement et stockage du coffre (DPAPI, AES, PBKDF2) |
+| `CoffreUi.cs` | Fenêtres du coffre et dialogues du mot de passe maître |
 | `Test.cs` | Banc de test (hors exécutable final) |
 | `build.ps1` | Compilation + tests |
 
