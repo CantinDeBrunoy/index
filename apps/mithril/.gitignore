@@ -1,0 +1,7 @@
+# Binaires produits par build.ps1
+*.exe
+*.pdb
+
+# Dossiers de build
+bin/
+obj/
