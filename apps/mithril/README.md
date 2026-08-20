@@ -7,6 +7,31 @@ sans écriture sur disque.
 ![aucune dépendance](https://img.shields.io/badge/d%C3%A9pendances-aucune-brightgreen)
 ![.NET Framework 4](https://img.shields.io/badge/.NET%20Framework-4.0-blue)
 
+## Installation
+
+Télécharge `GenerateurMdp.exe` depuis la page
+[Releases](https://github.com/CantinDeBrunoy/Mithril/releases) et double-clique dessus.
+Il n'y a rien à installer et rien à configurer.
+
+**Windows va afficher un avertissement au premier lancement.** L'exécutable n'est pas signé
+(un certificat coûte plusieurs centaines d'euros par an, ce qui n'a pas de sens pour un
+outil gratuit), donc SmartScreen affiche un bandeau bleu « Windows a protégé votre
+ordinateur ». Clique sur **Informations complémentaires**, puis sur **Exécuter quand
+même**. Le bouton n'apparaît qu'après le premier clic.
+
+Tu as évidemment raison d'être méfiant devant un `.exe` reçu par message, surtout pour
+générer des mots de passe. Trois façons de vérifier plutôt que de me croire sur parole :
+
+1. **Lis le code.** Tout tient dans [`MdpGen.cs`](MdpGen.cs), environ 300 lignes
+   commentées. Aucun accès réseau, aucune écriture sur disque : cherche `System.Net` ou
+   `System.IO`, tu ne les trouveras pas, ils ne sont même pas importés.
+2. **Vérifie l'empreinte** du fichier téléchargé, indiquée sur la page de la release :
+   ```powershell
+   Get-FileHash .\GenerateurMdp.exe -Algorithm SHA256
+   ```
+3. **Recompile toi-même** (voir plus bas) : le compilateur est déjà sur ta machine, et tu
+   obtiens un binaire construit à partir du code que tu viens de lire.
+
 ## Utilisation
 
 Double-clic sur `GenerateurMdp.exe`.
@@ -25,9 +50,6 @@ Double-clic sur `GenerateurMdp.exe`.
 Les réglages par défaut (32 caractères, alphabet de 94) donnent **~210 bits d'entropie**.
 Avec la restriction mobile, l'alphabet tombe à 75 et l'entropie à **~199 bits** : la perte
 est négligeable à cette longueur, un mot de passe reste hors de portée de toute attaque.
-
-L'exécutable n'est pas signé : au premier lancement, SmartScreen peut afficher un
-avertissement (« Informations complémentaires » → « Exécuter quand même »).
 
 ## Qualité de l'aléa
 
@@ -72,3 +94,8 @@ Le script compile l'application, compile le banc de test et l'exécute.
 | `build.ps1` | Compilation + tests |
 
 Les exécutables produits ne sont pas versionnés : ils se reconstruisent en une seconde.
+Le binaire distribué est publié en pièce jointe des [Releases](https://github.com/CantinDeBrunoy/Mithril/releases).
+
+## Licence
+
+MIT — fais-en ce que tu veux, sans garantie.
