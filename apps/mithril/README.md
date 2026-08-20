@@ -114,6 +114,23 @@ automatiquement au premier auto-type ; sinon (et pour les sites web, dont le fav
 pas récupérable sans réseau), un monogramme coloré tiré du libellé. Les icônes sont
 stockées dans le fichier chiffré, comme le reste.
 
+### Barre d'état et raccourci global
+
+Fermer la fenêtre principale ne quitte pas l'appli : Mithril se réduit dans la **barre
+d'état système** et reste actif. Depuis là :
+
+- **Ctrl+Alt+M** remplit la **fenêtre actuellement active** sans rouvrir le coffre :
+  Mithril lit le titre de la fenêtre, retrouve l'entrée correspondante (un sélecteur
+  s'affiche s'il y en a plusieurs) et la tape. Tu ne saisis le mot de passe maître **qu'une
+  fois par session**.
+- Le menu de l'icône donne accès au générateur, au coffre, au remplissage et à
+  « Verrouiller le coffre ».
+
+Le coffre reste déverrouillé en mémoire pendant la session, puis se **reverrouille
+automatiquement** après 5 minutes d'inactivité, au verrouillage de la session Windows, ou
+via « Verrouiller ». « Quitter » (menu de l'icône) ferme réellement l'appli et efface les
+secrets.
+
 Réductions de la fenêtre d'exposition quand le coffre est ouvert :
 
 - Chaque mot de passe n'est déchiffré qu'à l'instant où tu le copies ou l'affiches ; le
@@ -127,6 +144,18 @@ Limites honnêtes : DPAPI meurt avec ton profil Windows (réinstallation, réini
 forcée du mot de passe d'un compte local). Le bouton **Exporter** produit une sauvegarde
 de secours *en clair*, à ranger en lieu sûr. Et aucun coffre, le nôtre comme les autres,
 ne protège une machine déjà compromise par un malware actif.
+
+## Réglages
+
+L'icône ⚙ (ou « Réglages… » dans le menu de la barre d'état) ouvre une fenêtre de
+configuration : délai de verrouillage automatique, verrouillage à la session Windows / à la
+réduction, robustesse du maître (itérations PBKDF2), délai de vidage du presse-papiers,
+raccourci global **modifiable**, séquence identifiant + Tab, validation par Entrée, vitesse
+de frappe, apprentissage des icônes, lancement au démarrage de Windows, et fermeture réduite
+dans la barre d'état.
+
+Les réglages sont stockés dans `%APPDATA%\Mithril\reglages.mithril` — un fichier texte
+**en clair** (aucun secret), lisible et modifiable à la main.
 
 ## Compilation
 
@@ -161,6 +190,8 @@ Le script compile l'application, compile le banc de test et l'exécute.
 | `Coffre.cs` | Chiffrement et stockage du coffre (DPAPI, AES, PBKDF2) |
 | `CoffreUi.cs` | Fenêtres du coffre, dialogues du maître, compte à rebours de frappe |
 | `AutoType.cs` | Frappe automatique dans une autre fenêtre (SendInput Unicode) |
+| `Reglages.cs` | Réglages et persistance dans `reglages.mithril` |
+| `ReglagesUi.cs` | Fenêtre de réglages (sélecteurs, capture de raccourci) |
 | `Test.cs` | Banc de test (hors exécutable final) |
 | `build.ps1` | Compilation + tests |
 

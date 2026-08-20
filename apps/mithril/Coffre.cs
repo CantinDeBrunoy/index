@@ -147,6 +147,29 @@ namespace MdpGen
         public IList<EntreeCoffre> Entrees { get { return entrees.AsReadOnly(); } }
 
         /// <summary>
+        /// Entrées dont le libellé apparaît dans le titre de fenêtre donné (appariement de
+        /// l'auto-type contextuel). Casse ignorée ; les plus longs libellés d'abord, pour que
+        /// « Amazon AWS » l'emporte sur « Amazon ». Vide si le coffre n'est pas déverrouillé.
+        /// </summary>
+        public List<EntreeCoffre> Correspondances(string titreFenetre)
+        {
+            var trouvees = new List<EntreeCoffre>();
+            if (!deverrouille || string.IsNullOrEmpty(titreFenetre)) return trouvees;
+            string titre = titreFenetre.ToLowerInvariant();
+            foreach (var e in entrees)
+            {
+                if (string.IsNullOrEmpty(e.Libelle)) continue;
+                if (titre.IndexOf(e.Libelle.ToLowerInvariant(), StringComparison.Ordinal) >= 0)
+                    trouvees.Add(e);
+            }
+            trouvees.Sort(delegate(EntreeCoffre a, EntreeCoffre b)
+            {
+                return b.Libelle.Length.CompareTo(a.Libelle.Length);
+            });
+            return trouvees;
+        }
+
+        /// <summary>
         /// Ouvre le fichier : sans maître, charge les entrées ; avec maître, s'arrête au
         /// seuil et attend Deverrouiller(). Un coffre inexistant s'ouvre vide, déverrouillé.
         /// </summary>
@@ -261,7 +284,7 @@ namespace MdpGen
             ExigerDeverrouille();
             sel = new byte[16];
             using (var rng = new RNGCryptoServiceProvider()) rng.GetBytes(sel);
-            iterations = IterationsDefaut;
+            iterations = Reglages.Actuels.IterationsMaitre > 0 ? Reglages.Actuels.IterationsMaitre : IterationsDefaut;
             byte[] derive = Deriver(nouveau, sel, iterations);
             if (cle != null) cle.Dispose();
             cle = new SecretMemoire(derive);

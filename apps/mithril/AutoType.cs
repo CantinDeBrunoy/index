@@ -22,6 +22,9 @@ namespace MdpGen
         const ushort VK_TAB = 0x09;
         const ushort VK_RETURN = 0x0D;
 
+        /// <summary>Délai entre caractères (ms), réglable ; voir « Vitesse de frappe ».</summary>
+        public static int DelaiCarMs = 6;
+
         [StructLayout(LayoutKind.Sequential)]
         struct INPUT
         {
@@ -215,7 +218,7 @@ namespace MdpGen
             foreach (char c in texte)
             {
                 envoyes += EnvoyerDeux(EvenementUnicode(c, false), EvenementUnicode(c, true));
-                Thread.Sleep(6);
+                Thread.Sleep(DelaiCarMs);
             }
             return envoyes;
         }

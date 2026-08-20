@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace MdpGen
 {
@@ -517,10 +518,26 @@ namespace MdpGen
         string dernierCopie = "";
         int secondesRestantes;
         bool pret;
-        Coffre coffre;
+
+        // --- Session : coffre partagé, barre d'état, raccourci global, verrouillage auto ---
+        readonly Coffre coffre = Coffre.ParDefaut();
+        NotifyIcon tray;
+        readonly Timer verrouAuto = new Timer();
+        bool vraimentQuitter;
+        bool astuceTrayMontree;
+        bool frappeEnCours;
+        const int IdRaccourci = 0xB12;      // identifiant arbitraire du hotkey
 
         [DllImport("dwmapi.dll")]
         static extern int DwmSetWindowAttribute(IntPtr fenetre, int attribut, ref int valeur, int taille);
+
+        [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr fenetre, int id, uint modificateurs, uint touche);
+        [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr fenetre, int id);
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct DERNIERE_ENTREE { public uint cbSize; public uint dwTime; }
+        [DllImport("user32.dll")] static extern bool GetLastInputInfo(ref DERNIERE_ENTREE info);
+        [DllImport("kernel32.dll")] static extern uint GetTickCount();
 
         public Fenetre()
         {
@@ -547,7 +564,7 @@ namespace MdpGen
             };
             Controls.Add(pnlMdp);
 
-            txtMdp.SetBounds(24, 16, 410, 52);
+            txtMdp.SetBounds(24, 16, 366, 52);
             txtMdp.Font = new Font("Consolas", 15F);
             txtMdp.ReadOnly = true;
             txtMdp.Multiline = true;
@@ -560,19 +577,24 @@ namespace MdpGen
             pnlMdp.Controls.Add(txtMdp);
 
             var icoRegen = new BoutonIcone("", "Régénérer (Entrée)", infobulle);
-            icoRegen.SetBounds(442, 24, 36, 36);
+            icoRegen.SetBounds(398, 24, 36, 36);
             icoRegen.Click += delegate { Generer(); };
             pnlMdp.Controls.Add(icoRegen);
 
             var icoCopie = new BoutonIcone("", "Copier (Ctrl+C)", infobulle);
-            icoCopie.SetBounds(486, 24, 36, 36);
+            icoCopie.SetBounds(440, 24, 36, 36);
             icoCopie.Click += delegate { Copier(); };
             pnlMdp.Controls.Add(icoCopie);
 
             var icoCoffre = new BoutonIcone("", "Enregistrer dans le coffre", infobulle);
-            icoCoffre.SetBounds(530, 24, 36, 36);
+            icoCoffre.SetBounds(482, 24, 36, 36);
             icoCoffre.Click += delegate { EnregistrerAuCoffre(); };
             pnlMdp.Controls.Add(icoCoffre);
+
+            var icoReglages = new BoutonIcone("", "Réglages", infobulle);
+            icoReglages.SetBounds(524, 24, 36, 36);
+            icoReglages.Click += delegate { OuvrirReglages(); };
+            pnlMdp.Controls.Add(icoReglages);
 
             jauge.SetBounds(28, 124, 584, 6);
             Controls.Add(jauge);
@@ -673,6 +695,7 @@ namespace MdpGen
 
             pret = true;
             Generer();
+            InitialiserSession(); // barre d'état, raccourci global, verrouillage auto
         }
 
         /// <summary>Barre de titre sombre (Windows 10 1809+) ; sans effet ailleurs.</summary>
@@ -686,6 +709,42 @@ namespace MdpGen
                     DwmSetWindowAttribute(Handle, 19, ref sombre, 4);
             }
             catch { }
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            // WM_HOTKEY = 0x0312 : le raccourci global Ctrl+Alt+M a été pressé.
+            if (m.Msg == 0x0312 && m.WParam.ToInt32() == IdRaccourci)
+            {
+                RemplirFenetreActive();
+                return;
+            }
+            base.WndProc(ref m);
+        }
+
+        /// <summary>Fermer réduit dans la barre d'état ; « Quitter » ferme réellement.</summary>
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (!vraimentQuitter && e.CloseReason == CloseReason.UserClosing && Reglages.Actuels.FermerReduit)
+            {
+                e.Cancel = true;
+                Hide();
+                if (Reglages.Actuels.VerrouReduction && coffre.Deverrouille) VerrouillerCoffre(null);
+                if (!astuceTrayMontree)
+                {
+                    astuceTrayMontree = true;
+                    Notifier("Mithril reste actif ici. " +
+                        Reglages.DecrireRaccourci(Reglages.Actuels.RaccourciMods, Reglages.Actuels.RaccourciTouche) +
+                        " remplit la fenêtre active.");
+                }
+                return;
+            }
+            UnregisterHotKey(Handle, IdRaccourci);
+            verrouAuto.Stop();
+            SystemEvents.SessionSwitch -= SurSessionWindows;
+            if (tray != null) { tray.Visible = false; tray.Dispose(); }
+            coffre.Verrouiller();
+            base.OnFormClosing(e);
         }
 
         /// <summary>Ctrl+C copie le mot de passe entier, sauf sélection manuelle en cours.</summary>
@@ -822,31 +881,39 @@ namespace MdpGen
             txtMdp.Select(mdp.Length, 0);
         }
 
-        // --- Coffre ---
+        // --- Coffre (session) ---
 
-        Coffre ObtenirCoffre()
+        /// <summary>
+        /// Garantit un coffre prêt à l'emploi : ouvert, et déverrouillé une seule fois si un
+        /// maître est actif. Reste déverrouillé en mémoire pour toute la session (jusqu'au
+        /// verrouillage auto, au verrouillage de session Windows, ou à « Verrouiller »).
+        /// </summary>
+        bool AssurerCoffrePret(IWin32Window parent)
         {
-            if (coffre == null) coffre = Coffre.ParDefaut();
-            return coffre;
+            if (coffre.Deverrouille) return true;
+            try { coffre.Ouvrir(); }
+            catch (CoffreException ex)
+            {
+                MessageBox.Show((Form)parent, ex.Message, "Mithril", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+            if (coffre.MaitreActif && !coffre.Deverrouille)
+                using (var verrou = new DialogueDeverrouiller(coffre))
+                    if (verrou.ShowDialog(parent) != DialogResult.OK) return false;
+            return coffre.Deverrouille;
         }
 
-        /// <summary>Enregistre le mot de passe affiché, puis reverrouille aussitôt :
-        /// le coffre ne reste jamais ouvert en arrière-plan.</summary>
         void EnregistrerAuCoffre()
         {
             if (txtMdp.Text.Length == 0) return;
-            var c = ObtenirCoffre();
+            if (!AssurerCoffrePret(this)) return;
             try
             {
-                c.Ouvrir();
-                if (c.MaitreActif && !c.Deverrouille)
-                    using (var verrou = new DialogueDeverrouiller(c))
-                        if (verrou.ShowDialog(this) != DialogResult.OK) return;
                 using (var dialogue = new DialogueAjout())
                 {
                     if (dialogue.ShowDialog(this) == DialogResult.OK)
                     {
-                        c.Ajouter(dialogue.Libelle, dialogue.Identifiant, txtMdp.Text);
+                        coffre.Ajouter(dialogue.Libelle, dialogue.Identifiant, txtMdp.Text);
                         lblEtat.ForeColor = Palette.Accent;
                         lblEtat.Text = "Enregistré dans le coffre.";
                     }
@@ -857,16 +924,168 @@ namespace MdpGen
                 lblEtat.ForeColor = Palette.Faible;
                 lblEtat.Text = ex.Message;
             }
-            finally
-            {
-                c.Verrouiller();
-            }
         }
 
         void OuvrirCoffre()
         {
-            using (var fenetre = new FenetreCoffre(ObtenirCoffre()))
+            if (!AssurerCoffrePret(this)) return;
+            using (var fenetre = new FenetreCoffre(coffre))
                 fenetre.ShowDialog(this);
+        }
+
+        // --- Barre d'état système + raccourci global + verrouillage auto ---
+
+        void InitialiserSession()
+        {
+            tray = new NotifyIcon();
+            tray.Icon = Icon ?? SystemIcons.Application;
+            tray.Text = "Mithril — générateur et coffre";
+            tray.Visible = true;
+            tray.DoubleClick += delegate { AfficherFenetre(); };
+
+            var menu = new ContextMenuStrip();
+            menu.Items.Add("Générateur", null, delegate { AfficherFenetre(); });
+            menu.Items.Add("Coffre", null, delegate { AfficherFenetre(); OuvrirCoffre(); });
+            menu.Items.Add("Remplir la fenêtre active", null, delegate { RemplirFenetreActive(); });
+            menu.Items.Add("Réglages…", null, delegate { AfficherFenetre(); OuvrirReglages(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Verrouiller le coffre", null, delegate { VerrouillerCoffre("Coffre verrouillé."); });
+            menu.Items.Add("Quitter", null, delegate { QuitterReellement(); });
+            tray.ContextMenuStrip = menu;
+
+            verrouAuto.Interval = 15000;
+            verrouAuto.Tick += delegate { VerifierVerrouillageAuto(); };
+            verrouAuto.Start();
+            SystemEvents.SessionSwitch += SurSessionWindows;
+
+            AppliquerReglages(); // enregistre le raccourci, la vitesse de frappe, le démarrage
+        }
+
+        /// <summary>(Ré)applique les réglages qui ne sont pas lus à l'usage : raccourci global,
+        /// vitesse de frappe, démarrage avec Windows.</summary>
+        void AppliquerReglages()
+        {
+            var r = Reglages.Actuels;
+            AutoType.DelaiCarMs = r.VitesseFrappeMs;
+            UnregisterHotKey(Handle, IdRaccourci);
+            if (!RegisterHotKey(Handle, IdRaccourci, r.RaccourciMods, r.RaccourciTouche))
+                Notifier("Raccourci « " + Reglages.DecrireRaccourci(r.RaccourciMods, r.RaccourciTouche) +
+                         " » indisponible (déjà utilisé). Choisis-en un autre dans les réglages.");
+            r.AppliquerDemarrage();
+        }
+
+        void OuvrirReglages()
+        {
+            using (var fenetre = new FenetreReglages(Reglages.Actuels))
+                if (fenetre.ShowDialog(this) == DialogResult.OK)
+                    AppliquerReglages();
+        }
+
+        void SurSessionWindows(object s, SessionSwitchEventArgs e)
+        {
+            if (e.Reason == SessionSwitchReason.SessionLock && coffre.Deverrouille
+                && Reglages.Actuels.VerrouSession)
+                VerrouillerCoffre(null);
+        }
+
+        /// <summary>Inactivité utilisateur globale (souris/clavier) via GetLastInputInfo.</summary>
+        void VerifierVerrouillageAuto()
+        {
+            int minutes = Reglages.Actuels.VerrouInactiviteMin;
+            if (minutes <= 0 || !coffre.Deverrouille || !coffre.MaitreActif) return;
+            var info = new DERNIERE_ENTREE();
+            info.cbSize = (uint)Marshal.SizeOf(info);
+            if (!GetLastInputInfo(ref info)) return;
+            uint inactifMs = GetTickCount() - info.dwTime;
+            if (inactifMs >= (uint)minutes * 60u * 1000u)
+                VerrouillerCoffre("Coffre verrouillé après " + minutes + " min d'inactivité.");
+        }
+
+        void VerrouillerCoffre(string message)
+        {
+            coffre.Verrouiller();
+            if (tray != null && message != null)
+                tray.ShowBalloonTip(2000, "Mithril", message, ToolTipIcon.None);
+        }
+
+        void AfficherFenetre()
+        {
+            Show();
+            WindowState = FormWindowState.Normal;
+            Activate();
+        }
+
+        void QuitterReellement()
+        {
+            vraimentQuitter = true;
+            Close();
+        }
+
+        /// <summary>
+        /// Raccourci global / menu : remplit la fenêtre actuellement au premier plan sans
+        /// ouvrir le coffre. Trouve l'entrée d'après le titre de la fenêtre ; propose un choix
+        /// s'il y en a plusieurs. Déverrouille une fois si nécessaire.
+        /// </summary>
+        void RemplirFenetreActive()
+        {
+            if (frappeEnCours) return; // anti-réentrance (rafales de raccourci)
+            IntPtr cible = AutoType.FenetreActive();
+            string titre = AutoType.TitreFenetreActive();
+            if (cible == IntPtr.Zero || cible == Handle)
+            {
+                Notifier("Aucune fenêtre cible active.");
+                return;
+            }
+            if (AutoType.CibleProbablementElevee(cible))
+            {
+                Notifier("Fenêtre en mode administrateur : Windows y bloque la frappe. Utilise la copie.");
+                return;
+            }
+            if (!coffre.Deverrouille)
+            {
+                AfficherFenetre();
+                if (!AssurerCoffrePret(this)) return;
+            }
+
+            var candidats = coffre.Correspondances(titre);
+            EntreeCoffre choisie;
+            if (candidats.Count == 1)
+            {
+                choisie = candidats[0];
+            }
+            else if (candidats.Count > 1)
+            {
+                using (var s = new DialogueChoixEntree(candidats, titre))
+                {
+                    if (s.ShowDialog(this) != DialogResult.OK) return;
+                    choisie = s.Choisie;
+                }
+            }
+            else
+            {
+                using (var s = new DialogueChoixEntree(new System.Collections.Generic.List<EntreeCoffre>(coffre.Entrees), titre))
+                {
+                    if (s.ShowDialog(this) != DialogResult.OK) return;
+                    choisie = s.Choisie;
+                }
+            }
+            if (choisie == null) return;
+
+            AutoType.RamenerAuPremierPlan(cible);
+            var cible2 = choisie;
+            frappeEnCours = true;
+            AutoTypeCoffre.Frapper(cible, choisie, Reglages.Actuels.ValiderEntree, this, delegate(uint envoyes, byte[] png)
+            {
+                frappeEnCours = false;
+                if (envoyes == 0) { Notifier("Rien n'a été tapé (fenêtre cible perdue)."); return; }
+                if (png != null && cible2.Icone == null && coffre.Deverrouille)
+                    try { coffre.DefinirIcone(cible2, png); } catch (CoffreException) { }
+            });
+        }
+
+        void Notifier(string message)
+        {
+            if (tray != null) tray.ShowBalloonTip(2000, "Mithril", message, ToolTipIcon.None);
         }
 
         // --- Presse-papiers ---
@@ -878,10 +1097,11 @@ namespace MdpGen
             dernierCopie = txtMdp.Text;
             lblEtat.ForeColor = Palette.Accent;
             minuteur.Stop();
-            if (intEffacer.Coche)
+            int delai = Reglages.Actuels.VidagePressePapiersS;
+            if (intEffacer.Coche && delai > 0)
             {
-                secondesRestantes = 60;
-                lblEtat.Text = "Copié — le presse-papiers sera vidé dans 60 s.";
+                secondesRestantes = delai;
+                lblEtat.Text = "Copié — le presse-papiers sera vidé dans " + delai + " s.";
                 minuteur.Start();
             }
             else

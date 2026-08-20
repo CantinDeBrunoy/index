@@ -118,6 +118,14 @@ namespace Banc
             // 8. Auto-type : primitives sûres (sans envoyer de vraies frappes).
             TesterAutoType();
 
+            // 9. Réglages : logique pure (sans toucher au fichier de config réel).
+            Verifier(Reglages.DecrireRaccourci(0x0002 | 0x0001, 0x4D) == "Ctrl+Alt+M",
+                "reglages : description du raccourci Ctrl+Alt+M");
+            var copie = Reglages.Actuels.Copie();
+            copie.VerrouInactiviteMin = 99;
+            Verifier(copie.VerrouInactiviteMin == 99 && Reglages.Actuels.VerrouInactiviteMin != 99,
+                "reglages : la copie de travail est independante de l'original");
+
             Console.WriteLine(echecs == 0 ? "\nTOUS LES TESTS PASSENT" : "\n" + echecs + " ECHEC(S)");
             Environment.Exit(echecs == 0 ? 0 : 1);
         }
@@ -207,6 +215,13 @@ namespace Banc
                       && AutoType.EstNavigateur(@"D:\Program Files\Microsoft\msedge.EXE")
                       && !AutoType.EstNavigateur(@"C:\Windows\notepad.exe"),
                     "autotype : detection des navigateurs");
+
+                // 7j. Appariement titre de fenêtre → entrée (auto-type contextuel).
+                var m1 = sansMaitre.Correspondances("Connexion — Site A — Google Chrome");
+                Verifier(m1.Count == 1 && m1[0].Libelle == "Site A",
+                    "coffre : appariement par titre de fenetre");
+                Verifier(sansMaitre.Correspondances("Fenetre sans rapport").Count == 0,
+                    "coffre : aucun appariement hors sujet");
 
                 // 7f. Suppression persistante.
                 sansMaitre.Supprimer(sansMaitre.Entrees[0]);

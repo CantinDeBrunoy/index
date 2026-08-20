@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
+using Thread = System.Threading.Thread;
 
 namespace MdpGen
 {
@@ -592,7 +593,7 @@ namespace MdpGen
     /// la session Windows, fermeture de la fenêtre — dans tous les cas les secrets sont
     /// effacés de la mémoire.
     /// </summary>
-    class FenetreCoffre : FormeSombre, IMessageFilter
+    class FenetreCoffre : FormeSombre
     {
         readonly Coffre coffre;
         readonly Panel pnlListe = new Panel();
@@ -609,7 +610,6 @@ namespace MdpGen
         readonly Interrupteur intEntree = new Interrupteur();
         readonly Timer surveillance = new Timer();
         readonly ToolTip infobulle = new ToolTip();
-        DateTime derniereActivite = DateTime.Now;
 
         public readonly Font PoliceLibelle = new Font("Segoe UI Semibold", 9.75F);
         public readonly Font PoliceSous = new Font("Segoe UI", 8.5F);
@@ -645,6 +645,7 @@ namespace MdpGen
 
             intEntree.SetBounds(28, 424, 544, 24);
             intEntree.Text = "Valider : appuyer sur Entrée après la frappe";
+            intEntree.Coche = Reglages.Actuels.ValiderEntree; // défaut réglable
             Controls.Add(intEntree);
             infobulle.SetToolTip(intEntree,
                 "Envoie Entrée à la fin de l'auto-type pour soumettre le formulaire. " +
@@ -701,66 +702,45 @@ namespace MdpGen
             Controls.Add(pnlVerrou);
             AcceptButton = btnOuvrir; // Entrée déverrouille depuis le champ du maître
 
-            surveillance.Interval = 10000;
-            surveillance.Tick += delegate { VerifierInactivite(); };
+            surveillance.Interval = 1000;
+            surveillance.Tick += delegate { VeillerVerrou(); };
         }
 
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            try
+            // La session a normalement déjà déverrouillé ; sinon on ouvre pour atteindre le seuil.
+            if (!coffre.Deverrouille)
             {
-                coffre.Ouvrir();
+                try { coffre.Ouvrir(); }
+                catch (CoffreException ex)
+                {
+                    MessageBox.Show(this, ex.Message, "Mithril", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Close();
+                    return;
+                }
             }
-            catch (CoffreException ex)
-            {
-                MessageBox.Show(this, ex.Message, "Mithril", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Close();
-                return;
-            }
-            Application.AddMessageFilter(this);
-            SystemEvents.SessionSwitch += SurSession;
             surveillance.Start();
             AfficherVue();
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            // Ne PAS verrouiller ici : la session garde le coffre ouvert (barre d'état,
+            // raccourci global). Le verrouillage est géré par la fenêtre principale.
             surveillance.Stop();
-            Application.RemoveMessageFilter(this);
-            SystemEvents.SessionSwitch -= SurSession;
-            coffre.Verrouiller(); // fermer = effacer les secrets de la mémoire
             base.OnFormClosed(e);
         }
 
-        // --- Verrouillages automatiques ---
+        // Conservé pour les appelants ; l'inactivité est désormais suivie au niveau session.
+        public void SignalerActivite() { }
 
-        public bool PreFilterMessage(ref Message m)
+        /// <summary>Si la session a verrouillé le coffre pendant qu'il était affiché, repasser
+        /// en vue verrouillée.</summary>
+        void VeillerVerrou()
         {
-            // 0x100 = WM_KEYDOWN, 0x200 = WM_MOUSEMOVE, 0x201 = WM_LBUTTONDOWN
-            if (m.Msg == 0x100 || m.Msg == 0x200 || m.Msg == 0x201) derniereActivite = DateTime.Now;
-            return false;
-        }
-
-        public void SignalerActivite() { derniereActivite = DateTime.Now; }
-
-        void VerifierInactivite()
-        {
-            if (coffre.Deverrouille && coffre.MaitreActif &&
-                (DateTime.Now - derniereActivite).TotalMinutes >= 5)
-            {
+            if (!coffre.Deverrouille && !pnlVerrou.Visible)
                 RetournerAuSeuil();
-                MontrerStatut("Coffre verrouillé après 5 minutes d'inactivité.", false);
-            }
-        }
-
-        void SurSession(object s, SessionSwitchEventArgs e)
-        {
-            if (e.Reason == SessionSwitchReason.SessionLock)
-            {
-                coffre.Verrouiller();
-                Close(); // session Windows verrouillée : le coffre se ferme avec
-            }
         }
 
         // --- Vues ---
@@ -923,7 +903,7 @@ namespace MdpGen
             if (!coffre.Deverrouille) return;
             SignalerActivite();
 
-            bool avecIdentifiant = !string.IsNullOrEmpty(entree.Identifiant);
+            bool avecIdentifiant = !string.IsNullOrEmpty(entree.Identifiant) && Reglages.Actuels.SequenceIdentifiant;
             var rebours = new CompteRebours(Handle);
             rebours.Consigne = avecIdentifiant
                 ? "Clique dans le champ identifiant"
@@ -969,7 +949,7 @@ namespace MdpGen
                             MontrerStatut((avecIdentifiant ? "Identifiant + mot de passe tapés dans : "
                                                            : "Mot de passe tapé dans : ") + titreCible, false);
                             // Apprendre l'icône de l'appli cible (hors navigateur) la 1re fois.
-                            if (entree.Icone == null && coffre.Deverrouille)
+                            if (entree.Icone == null && coffre.Deverrouille && Reglages.Actuels.ApprendreIcones)
                             {
                                 byte[] png = AutoType.IconePng(AutoType.CheminExecutable(cible));
                                 if (png != null)
@@ -1002,6 +982,88 @@ namespace MdpGen
         {
             lblStatut.Text = texte;
             lblStatut.ForeColor = erreur ? Palette.Faible : Palette.Accent;
+        }
+    }
+
+    /// <summary>
+    /// Frappe partagée (barre d'état / raccourci global) : tape l'entrée dans une fenêtre
+    /// cible déjà au premier plan, sur un thread d'arrière-plan, puis rappelle sur le thread
+    /// UI de <paramref name="invoke"/>. Sert aussi à apprendre l'icône de l'appli.
+    /// </summary>
+    static class AutoTypeCoffre
+    {
+        public static void Frapper(IntPtr cible, EntreeCoffre entree, bool validerEntree,
+                                   Control invoke, Action<uint, byte[]> apres)
+        {
+            string mdp = entree.RevelerMdp();
+            string id = (Reglages.Actuels.SequenceIdentifiant && !string.IsNullOrEmpty(entree.Identifiant))
+                ? entree.Identifiant : null;
+            bool capterIcone = entree.Icone == null && Reglages.Actuels.ApprendreIcones;
+            var fil = new Thread(delegate()
+            {
+                uint envoyes = AutoType.TaperSequence(id, mdp, validerEntree);
+                byte[] png = null;
+                if (capterIcone && envoyes > 0)
+                    png = AutoType.IconePng(AutoType.CheminExecutable(cible));
+                if (invoke == null || invoke.IsDisposed) return;
+                try { invoke.BeginInvoke((MethodInvoker)delegate { apres(envoyes, png); }); }
+                catch (InvalidOperationException) { }
+            });
+            fil.IsBackground = true;
+            fil.Start();
+        }
+    }
+
+    /// <summary>Choix d'une entrée quand plusieurs (ou aucune) correspondent à la fenêtre.</summary>
+    class DialogueChoixEntree : FormeSombre
+    {
+        public EntreeCoffre Choisie;
+
+        public DialogueChoixEntree(List<EntreeCoffre> entrees, string titreFenetre)
+        {
+            Text = "Quel mot de passe ?";
+            StartPosition = FormStartPosition.CenterScreen;
+            int hauteurListe = Math.Min(entrees.Count, 7) * 44 + 8;
+            ClientSize = new Size(420, 84 + hauteurListe);
+
+            var titre = Ui.Etiquette(this, 20, 16, 380, "Remplir « " + Raccourcir(titreFenetre, 40) + " »", false);
+            titre.Font = new Font("Segoe UI Semibold", 10.5F);
+            titre.Height = 22;
+            Ui.Etiquette(this, 20, 40, 380,
+                entrees.Count == 0 ? "Aucune entrée ne correspond — choisis-en une :"
+                                   : "Plusieurs entrées correspondent :", true).Height = 20;
+
+            var liste = new Panel();
+            liste.SetBounds(20, 68, 380, hauteurListe);
+            liste.AutoScroll = true;
+            liste.BackColor = Palette.Fond;
+            Controls.Add(liste);
+
+            int y = 0;
+            foreach (var e in entrees)
+            {
+                var entree = e;
+                var b = new Bouton();
+                b.SetBounds(0, y, 360, 38);
+                b.Text = string.IsNullOrEmpty(entree.Identifiant)
+                    ? entree.Libelle : entree.Libelle + "   ·   " + entree.Identifiant;
+                b.Font = new Font("Segoe UI", 9.75F);
+                b.Click += delegate { Choisie = entree; DialogResult = DialogResult.OK; };
+                liste.Controls.Add(b);
+                y += 44;
+            }
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys donnee)
+        {
+            if (donnee == Keys.Escape) { DialogResult = DialogResult.Cancel; return true; }
+            return base.ProcessCmdKey(ref msg, donnee);
+        }
+
+        static string Raccourcir(string s, int max)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            return s.Length <= max ? s : s.Substring(0, max - 1) + "…";
         }
     }
 }
