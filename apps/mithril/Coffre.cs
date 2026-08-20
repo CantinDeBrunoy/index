@@ -71,6 +71,7 @@ namespace MdpGen
         public string Libelle;
         public string Identifiant;
         public DateTime Creation;
+        public byte[] Icone; // PNG de l'appli cible (facultatif) ; null = avatar monogramme
         SecretMemoire secret;
 
         public void DefinirMdp(byte[] mdpUtf8)
@@ -105,13 +106,14 @@ namespace MdpGen
     class Coffre
     {
         // --- Format du bloc interne (sous DPAPI) ---
-        // [0..7]  magie "MITHRIL1"
+        // [0..7]  magie : "MITHRIL1" (entrées sans icône) ou "MITHRIL2" (avec icône)
         // [8]     drapeaux : bit 0 = maître actif
         // maître actif :   [9..24] sel  [25..28] itérations  [29..44] IV
         //                  [45..76] HMAC-SHA256(magie|drapeaux|sel|itérations|IV|chiffré)
         //                  [77..]  données chiffrées AES-256-CBC
         // sans maître :    [9..]   données en clair (mais toujours sous DPAPI)
-        static readonly byte[] Magie = Encoding.ASCII.GetBytes("MITHRIL1");
+        static readonly byte[] Magie = Encoding.ASCII.GetBytes("MITHRIL1");  // ancien, encore lu
+        static readonly byte[] Magie2 = Encoding.ASCII.GetBytes("MITHRIL2"); // écrit désormais
         static readonly byte[] EntropieDpapi = Encoding.ASCII.GetBytes("Mithril.Coffre.v1");
         public const int IterationsDefaut = 600000;
 
@@ -120,6 +122,7 @@ namespace MdpGen
         readonly List<EntreeCoffre> entrees = new List<EntreeCoffre>();
 
         bool maitreActif;
+        bool avecIcones; // format de la charge en cours (déterminé par la magie lue)
         byte[] sel;
         int iterations;
         SecretMemoire cle;       // 64 octets dérivés : 32 AES + 32 HMAC
@@ -165,7 +168,9 @@ namespace MdpGen
                     "Le coffre est illisible sur cette session Windows (autre compte, profil réinstallé, ou fichier altéré).");
             }
 
-            if (bloc.Length < 9 || !Compare(bloc, 0, Magie))
+            bool magie1 = bloc.Length >= 9 && Compare(bloc, 0, Magie);
+            avecIcones = bloc.Length >= 9 && Compare(bloc, 0, Magie2);
+            if (!magie1 && !avecIcones)
                 throw new CoffreException("Ce fichier n'est pas un coffre Mithril valide.");
 
             maitreActif = (bloc[8] & 1) != 0;
@@ -242,6 +247,14 @@ namespace MdpGen
             Sauver();
         }
 
+        /// <summary>Associe (ou retire, avec null) l'icône d'une entrée et enregistre.</summary>
+        public void DefinirIcone(EntreeCoffre entree, byte[] png)
+        {
+            ExigerDeverrouille();
+            entree.Icone = png;
+            Sauver();
+        }
+
         /// <summary>Active le maître ou le remplace (le coffre doit être déverrouillé).</summary>
         public void DefinirMaitre(string nouveau)
         {
@@ -295,7 +308,7 @@ namespace MdpGen
                 byte[] chiffre = Aes(derive, iv, charge, 0, charge.Length, true);
 
                 bloc = new byte[77 + chiffre.Length];
-                Array.Copy(Magie, bloc, 8);
+                Array.Copy(Magie2, bloc, 8);
                 bloc[8] = 1;
                 Array.Copy(sel, 0, bloc, 9, 16);
                 Array.Copy(BitConverter.GetBytes(iterations), 0, bloc, 25, 4);
@@ -308,7 +321,7 @@ namespace MdpGen
             else
             {
                 bloc = new byte[9 + charge.Length];
-                Array.Copy(Magie, bloc, 8);
+                Array.Copy(Magie2, bloc, 8);
                 bloc[8] = 0;
                 Array.Copy(charge, 0, bloc, 9, charge.Length);
             }
@@ -340,6 +353,10 @@ namespace MdpGen
                     ecrivain.Write(mdp.Length);
                     ecrivain.Write(mdp);
                     Array.Clear(mdp, 0, mdp.Length);
+                    // Icône (format v2, écrit toujours) : longueur puis octets ; 0 = aucune.
+                    byte[] icone = e.Icone;
+                    if (icone == null) ecrivain.Write(0);
+                    else { ecrivain.Write(icone.Length); ecrivain.Write(icone); }
                 }
                 ecrivain.Flush();
                 byte[] resultat = flux.ToArray();
@@ -369,6 +386,12 @@ namespace MdpGen
                         int taille = lecteur.ReadInt32();
                         if (taille < 0 || taille > 4096) throw new CoffreException("Coffre altéré.");
                         e.DefinirMdp(lecteur.ReadBytes(taille));
+                        if (avecIcones)
+                        {
+                            int tIcone = lecteur.ReadInt32();
+                            if (tIcone < 0 || tIcone > 1048576) throw new CoffreException("Coffre altéré.");
+                            if (tIcone > 0) e.Icone = lecteur.ReadBytes(tIcone);
+                        }
                         entrees.Add(e);
                     }
                 }

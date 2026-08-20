@@ -192,18 +192,25 @@ namespace MdpGen
         }
     }
 
-    /// <summary>Libellé + identifiant pour enregistrer le mot de passe affiché.</summary>
+    /// <summary>
+    /// Libellé + identifiant pour enregistrer un mot de passe. Avec <c>avecMdp</c>, ajoute
+    /// un champ pour saisir un mot de passe qui n'a pas été généré par l'appli.
+    /// </summary>
     class DialogueAjout : FormeSombre
     {
         public string Libelle;
         public string Identifiant;
+        public string Mdp; // renseigné seulement en mode saisie manuelle
+        readonly ToolTip infobulle = new ToolTip();
 
-        public DialogueAjout()
+        public DialogueAjout() : this(false) { }
+
+        public DialogueAjout(bool avecMdp)
         {
-            Text = "Enregistrer dans le coffre";
-            ClientSize = new Size(440, 262);
+            Text = avecMdp ? "Ajouter au coffre" : "Enregistrer dans le coffre";
+            ClientSize = new Size(440, avecMdp ? 330 : 262);
 
-            var titre = Ui.Etiquette(this, 24, 20, 392, "Enregistrer dans le coffre", false);
+            var titre = Ui.Etiquette(this, 24, 20, 392, Text, false);
             titre.Font = new Font("Segoe UI Semibold", 11F);
             titre.Height = 24;
 
@@ -212,12 +219,31 @@ namespace MdpGen
             Ui.Etiquette(this, 24, 122, 392, "Identifiant (optionnel)", false);
             var champId = Ui.Champ(this, 24, 142, 392, false);
 
-            var lblErreur = Ui.Etiquette(this, 24, 184, 392, "", false);
+            TextBox champMdp = null;
+            int yBoutons = 198;
+            if (avecMdp)
+            {
+                Ui.Etiquette(this, 24, 188, 392, "Mot de passe", false);
+                champMdp = Ui.Champ(this, 24, 208, 392, true);
+                champMdp.Width -= 40; // place pour l'œil
+                var oeil = new BoutonIcone("", "Afficher / masquer", infobulle);
+                oeil.SetBounds(378, 213, 28, 24);
+                oeil.Click += delegate
+                {
+                    champMdp.UseSystemPasswordChar = !champMdp.UseSystemPasswordChar;
+                    champMdp.Focus();
+                };
+                Controls.Add(oeil);
+                oeil.BringToFront();
+                yBoutons = 266;
+            }
+
+            var lblErreur = Ui.Etiquette(this, 24, yBoutons - 14, 392, "", false);
             lblErreur.ForeColor = Palette.Faible;
 
-            var btnAnnuler = Ui.Fabriquer(this, 200, 198, 94, 42, "Annuler", false);
+            var btnAnnuler = Ui.Fabriquer(this, 200, yBoutons, 94, 42, "Annuler", false);
             btnAnnuler.DialogResult = DialogResult.Cancel;
-            var btnOk = Ui.Fabriquer(this, 306, 198, 110, 42, "Enregistrer", true);
+            var btnOk = Ui.Fabriquer(this, 306, yBoutons, 110, 42, "Enregistrer", true);
             btnOk.Click += delegate
             {
                 if (champLibelle.Text.Trim().Length == 0)
@@ -225,12 +251,194 @@ namespace MdpGen
                     lblErreur.Text = "Donne un libellé pour retrouver l'entrée.";
                     return;
                 }
+                if (avecMdp && champMdp.Text.Length == 0)
+                {
+                    lblErreur.Text = "Saisis le mot de passe à enregistrer.";
+                    return;
+                }
                 Libelle = champLibelle.Text.Trim();
                 Identifiant = champId.Text.Trim();
+                if (avecMdp) Mdp = champMdp.Text;
                 DialogResult = DialogResult.OK;
             };
             AcceptButton = btnOk;
             CancelButton = btnAnnuler;
+        }
+    }
+
+    /// <summary>
+    /// Petite fenêtre de compte à rebours avant la frappe. Topmost mais ne prend jamais le
+    /// focus (WS_EX_NOACTIVATE) : ainsi la fenêtre au premier plan reste la cible visée par
+    /// l'utilisateur. Affiche en direct le titre de cette cible et s'annule par Échap.
+    /// </summary>
+    class CompteRebours : Form
+    {
+        public event Action<IntPtr> Termine; // handle de la cible, ou IntPtr.Zero si annulé
+        public string TitreCible = "";
+        public string Consigne = "Clique dans le champ cible"; // à régler avant Demarrer()
+
+        readonly Timer tic = new Timer();
+        readonly Label lblNombre = new Label();
+        readonly Label lblCible = new Label();
+        readonly Label lblConsigne = new Label();
+        readonly IntPtr proprePoignee;
+        int ticks;
+        bool fini;
+
+        protected override bool ShowWithoutActivation { get { return true; } }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var cp = base.CreateParams;
+                cp.ExStyle |= 0x08000000 | 0x00000080; // WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW
+                return cp;
+            }
+        }
+
+        public CompteRebours(IntPtr poigneeAExclure)
+        {
+            proprePoignee = poigneeAExclure;
+            FormBorderStyle = FormBorderStyle.None;
+            StartPosition = FormStartPosition.Manual;
+            Size = new Size(360, 116);
+            var zone = Screen.PrimaryScreen.WorkingArea;
+            Location = new Point(zone.Right - Width - 24, zone.Bottom - Height - 24);
+            TopMost = true;
+            ShowInTaskbar = false;
+            BackColor = Palette.Carte;
+
+            lblConsigne.SetBounds(20, 14, 320, 18);
+            lblConsigne.ForeColor = Palette.TexteSecondaire;
+            lblConsigne.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            Controls.Add(lblConsigne);
+
+            lblNombre.SetBounds(20, 30, 60, 56);
+            lblNombre.Text = "3";
+            lblNombre.ForeColor = Palette.Accent;
+            lblNombre.Font = new Font("Segoe UI", 34F, FontStyle.Bold);
+            Controls.Add(lblNombre);
+
+            lblCible.SetBounds(88, 36, 252, 44);
+            lblCible.ForeColor = Palette.Texte;
+            lblCible.Font = new Font("Segoe UI", 9.75F);
+            Controls.Add(lblCible);
+
+            var aide = new Label();
+            aide.SetBounds(88, 82, 252, 16);
+            aide.Text = "Échap pour annuler";
+            aide.ForeColor = Palette.TexteSecondaire;
+            aide.Font = new Font("Segoe UI", 8F);
+            Controls.Add(aide);
+
+            tic.Interval = 100;
+            tic.Tick += Tic;
+        }
+
+        public void Demarrer()
+        {
+            lblConsigne.Text = Consigne;
+            Show();
+            RafraichirCible();
+            tic.Start();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            using (var stylo = new Pen(Palette.Accent, 2))
+                e.Graphics.DrawRectangle(stylo, 1, 1, Width - 2, Height - 2);
+        }
+
+        void RafraichirCible()
+        {
+            IntPtr avant = AutoType.FenetreActive();
+            if (avant == proprePoignee || avant == Handle) return; // ne jamais se cibler soi-même
+            string titre = AutoType.TitreFenetreActive();
+            TitreCible = titre;
+            lblCible.Text = string.IsNullOrEmpty(titre) ? "(fenêtre sans titre)" : titre;
+        }
+
+        void Tic(object s, EventArgs e)
+        {
+            if (fini) return;
+
+            if (AutoType.EchapPresse())
+            {
+                Terminer(IntPtr.Zero);
+                return;
+            }
+            RafraichirCible();
+
+            ticks++;
+            int reste = 3 - ticks / 10;
+            lblNombre.Text = reste > 0 ? reste.ToString() : "0";
+            if (ticks >= 30)
+            {
+                IntPtr cible = AutoType.FenetreActive();
+                Terminer(cible == Handle ? IntPtr.Zero : cible);
+            }
+        }
+
+        void Terminer(IntPtr cible)
+        {
+            if (fini) return;
+            fini = true;
+            tic.Stop();
+            Hide();
+            var gestionnaire = Termine;
+            if (gestionnaire != null) gestionnaire(cible);
+            Close();
+        }
+
+        protected override void Dispose(bool liberation)
+        {
+            if (liberation) tic.Dispose();
+            base.Dispose(liberation);
+        }
+    }
+
+    /// <summary>
+    /// Vignette d'une entrée : l'icône de l'appli si on l'a capturée, sinon un monogramme
+    /// (initiale sur pastille colorée) — le repli propre quand aucun logo n'est disponible,
+    /// notamment pour les sites web (dont on ne peut pas connaître le favicon sans réseau).
+    /// </summary>
+    static class Avatar
+    {
+        static readonly Color[] Teintes =
+        {
+            Color.FromArgb(93, 135, 255), Color.FromArgb(226, 124, 95),
+            Color.FromArgb(127, 191, 142), Color.FromArgb(197, 124, 214),
+            Color.FromArgb(224, 169, 95), Color.FromArgb(94, 197, 204),
+            Color.FromArgb(214, 110, 150), Color.FromArgb(120, 148, 180)
+        };
+
+        static Color Teinte(string s)
+        {
+            int h = 0;
+            if (s != null) foreach (char c in s) h = h * 31 + c;
+            return Teintes[((h % Teintes.Length) + Teintes.Length) % Teintes.Length];
+        }
+
+        public static void Dessiner(Graphics g, Rectangle r, EntreeCoffre entree, Image icone)
+        {
+            if (icone != null)
+            {
+                var etat = g.Save();
+                using (var clip = Dessin.Arrondi(r, 8)) g.SetClip(clip);
+                g.DrawImage(icone, r);
+                g.Restore(etat);
+                return;
+            }
+            using (var chemin = Dessin.Arrondi(r, 8))
+            using (var pinceau = new SolidBrush(Teinte(entree.Libelle)))
+                g.FillPath(pinceau, chemin);
+            string lettre = string.IsNullOrEmpty(entree.Libelle)
+                ? "?" : entree.Libelle.Substring(0, 1).ToUpperInvariant();
+            using (var police = new Font("Segoe UI Semibold", r.Height * 0.42F, GraphicsUnit.Pixel))
+                TextRenderer.DrawText(g, lettre, police, r, Color.White,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
     }
 
@@ -244,6 +452,7 @@ namespace MdpGen
         readonly BoutonIcone icoSuppr;
         readonly Timer remasque = new Timer();
         readonly Timer confirmation = new Timer();
+        readonly Image imgIcone; // icône décodée une fois, ou null (monogramme)
         string mdpVisible; // non null = révélé
         bool confirmeSuppr;
 
@@ -252,6 +461,9 @@ namespace MdpGen
             this.parent = parent;
             this.coffre = coffre;
             this.entree = entree;
+            if (entree.Icone != null)
+                try { imgIcone = Image.FromStream(new System.IO.MemoryStream(entree.Icone)); }
+                catch { imgIcone = null; }
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint |
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
             Height = 52;
@@ -260,6 +472,10 @@ namespace MdpGen
             icoOeil = new BoutonIcone("", "Afficher 8 secondes", infobulle);
             icoOeil.Click += delegate { BasculerRevelation(); };
             Controls.Add(icoOeil);
+
+            var icoTaper = new BoutonIcone("", "Taper dans une autre fenêtre", infobulle);
+            icoTaper.Click += delegate { parent.LancerAutoType(entree); };
+            Controls.Add(icoTaper);
 
             var icoCopie = new BoutonIcone("", "Copier", infobulle);
             icoCopie.Click += delegate
@@ -280,7 +496,8 @@ namespace MdpGen
 
             Resize += delegate
             {
-                icoOeil.SetBounds(Width - 106, 12, 28, 28);
+                icoOeil.SetBounds(Width - 140, 12, 28, 28);
+                icoTaper.SetBounds(Width - 106, 12, 28, 28);
                 icoCopie.SetBounds(Width - 72, 12, 28, 28);
                 icoSuppr.SetBounds(Width - 38, 12, 28, 28);
             };
@@ -336,20 +553,22 @@ namespace MdpGen
                 using (var stylo = new Pen(Palette.Bordure)) g.DrawPath(stylo, chemin);
             }
 
+            Avatar.Dessiner(g, new Rectangle(12, 10, 32, 32), entree, imgIcone);
+
             TextRenderer.DrawText(g, entree.Libelle, parent.PoliceLibelle,
-                new Rectangle(14, 7, 210, 20), Palette.Texte,
+                new Rectangle(54, 7, 176, 20), Palette.Texte,
                 TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
 
             string sousTexte = string.IsNullOrEmpty(entree.Identifiant)
                 ? entree.Creation.ToString("dd/MM/yyyy")
                 : entree.Identifiant + "  ·  " + entree.Creation.ToString("dd/MM/yyyy");
             TextRenderer.DrawText(g, sousTexte, parent.PoliceSous,
-                new Rectangle(14, 28, 210, 18), Palette.TexteSecondaire,
+                new Rectangle(54, 28, 176, 18), Palette.TexteSecondaire,
                 TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
 
             string affiche = mdpVisible != null ? mdpVisible : "●●●●●●●●";
             TextRenderer.DrawText(g, affiche, parent.PoliceMdp,
-                new Rectangle(230, 0, Width - 230 - 112, Height),
+                new Rectangle(230, 0, Width - 230 - 148, Height),
                 mdpVisible != null ? Palette.Texte : Palette.TexteSecondaire,
                 TextFormatFlags.Right | TextFormatFlags.VerticalCenter |
                 TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
@@ -361,6 +580,7 @@ namespace MdpGen
             {
                 remasque.Dispose();
                 confirmation.Dispose();
+                if (imgIcone != null) imgIcone.Dispose();
                 mdpVisible = null;
             }
             base.Dispose(liberation);
@@ -386,6 +606,7 @@ namespace MdpGen
         readonly Bouton btnExport;
         readonly Bouton btnMaitre;
         readonly Bouton btnRetirer;
+        readonly Interrupteur intEntree = new Interrupteur();
         readonly Timer surveillance = new Timer();
         readonly ToolTip infobulle = new ToolTip();
         DateTime derniereActivite = DateTime.Now;
@@ -408,19 +629,31 @@ namespace MdpGen
             eyebrow.ForeColor = Palette.TexteSecondaire;
             Controls.Add(eyebrow);
 
-            lblCompte.SetBounds(300, 18, 272, 18);
+            lblCompte.SetBounds(240, 20, 218, 18);
             lblCompte.TextAlign = ContentAlignment.MiddleRight;
             lblCompte.ForeColor = Palette.TexteSecondaire;
             Controls.Add(lblCompte);
 
-            pnlListe.SetBounds(28, 48, 544, 396);
+            var btnAjouter = Ui.Fabriquer(this, 470, 14, 102, 30, "＋ Ajouter", true);
+            btnAjouter.Click += delegate { AjouterManuel(); };
+            infobulle.SetToolTip(btnAjouter, "Enregistrer un mot de passe qui n'a pas été généré ici");
+
+            pnlListe.SetBounds(28, 48, 544, 368);
             pnlListe.AutoScroll = true;
             pnlListe.BackColor = Palette.Fond;
             Controls.Add(pnlListe);
 
+            intEntree.SetBounds(28, 424, 544, 24);
+            intEntree.Text = "Valider : appuyer sur Entrée après la frappe";
+            Controls.Add(intEntree);
+            infobulle.SetToolTip(intEntree,
+                "Envoie Entrée à la fin de l'auto-type pour soumettre le formulaire. " +
+                "Désactivé par défaut : Entrée valide, donc à n'utiliser que si tu es sûr de la cible.");
+
             lblVide.SetBounds(28, 200, 544, 60);
             lblVide.Text = "Aucun mot de passe enregistré.\r\n" +
-                "Génère un mot de passe puis utilise le bouton « Enregistrer » de la fenêtre principale.";
+                "Utilise « ＋ Ajouter » pour saisir un mot de passe existant, ou « Enregistrer » " +
+                "dans la fenêtre principale pour un mot de passe généré.";
             lblVide.TextAlign = ContentAlignment.MiddleCenter;
             lblVide.ForeColor = Palette.TexteSecondaire;
             Controls.Add(lblVide);
@@ -617,6 +850,23 @@ namespace MdpGen
 
         // --- Actions ---
 
+        /// <summary>Saisir et enregistrer un mot de passe qui n'a pas été généré par l'appli.</summary>
+        void AjouterManuel()
+        {
+            if (!coffre.Deverrouille) return;
+            using (var dialogue = new DialogueAjout(true))
+            {
+                if (dialogue.ShowDialog(this) != DialogResult.OK) return;
+                try
+                {
+                    coffre.Ajouter(dialogue.Libelle, dialogue.Identifiant, dialogue.Mdp);
+                    MontrerStatut("Mot de passe ajouté au coffre.", false);
+                }
+                catch (CoffreException ex) { MontrerStatut(ex.Message, true); }
+            }
+            Rafraichir();
+        }
+
         void DefinirOuChangerMaitre()
         {
             using (var dialogue = new DialogueMaitre(!coffre.MaitreActif))
@@ -662,6 +912,90 @@ namespace MdpGen
                 }
                 catch (CoffreException ex) { MontrerStatut(ex.Message, true); }
             }
+        }
+
+        /// <summary>
+        /// Masque le coffre, laisse 3 s pour cliquer dans le champ cible, puis y tape le mot
+        /// de passe. Rien ne passe par le presse-papiers ; aucune touche Entrée n'est envoyée.
+        /// </summary>
+        public void LancerAutoType(EntreeCoffre entree)
+        {
+            if (!coffre.Deverrouille) return;
+            SignalerActivite();
+
+            bool avecIdentifiant = !string.IsNullOrEmpty(entree.Identifiant);
+            var rebours = new CompteRebours(Handle);
+            rebours.Consigne = avecIdentifiant
+                ? "Clique dans le champ identifiant"
+                : "Clique dans le champ mot de passe";
+            rebours.Termine += delegate(IntPtr cible)
+            {
+                if (IsDisposed) return;
+                if (cible == IntPtr.Zero)
+                {
+                    Restaurer();
+                    MontrerStatut("Frappe annulée.", false);
+                    return;
+                }
+                if (AutoType.CibleProbablementElevee(cible))
+                {
+                    Restaurer();
+                    MontrerStatut("Fenêtre en mode administrateur : Windows y bloque la frappe. Utilise la copie.", true);
+                    return;
+                }
+                // Taper AVANT de restaurer le coffre : sinon c'est le coffre qui a le focus.
+                AutoType.RamenerAuPremierPlan(cible);
+                string mdp = entree.RevelerMdp();
+                string id = avecIdentifiant ? entree.Identifiant : null;
+                string titreCible = rebours.TitreCible;
+                bool valider = intEntree.Coche;
+
+                // La frappe (avec ses délais) tourne à part : ne pas geler l'UI et surtout ne
+                // pas reprendre le focus à la cible avant qu'elle ait tout reçu.
+                var frappeur = new System.Threading.Thread(delegate()
+                {
+                    uint envoyes = AutoType.TaperSequence(id, mdp, valider);
+                    try
+                    {
+                        if (IsDisposed) return;
+                        BeginInvoke((MethodInvoker)delegate
+                        {
+                            Restaurer();
+                            if (envoyes == 0)
+                            {
+                                MontrerStatut("Rien n'a été tapé (fenêtre cible perdue).", true);
+                                return;
+                            }
+                            MontrerStatut((avecIdentifiant ? "Identifiant + mot de passe tapés dans : "
+                                                           : "Mot de passe tapé dans : ") + titreCible, false);
+                            // Apprendre l'icône de l'appli cible (hors navigateur) la 1re fois.
+                            if (entree.Icone == null && coffre.Deverrouille)
+                            {
+                                byte[] png = AutoType.IconePng(AutoType.CheminExecutable(cible));
+                                if (png != null)
+                                {
+                                    try { coffre.DefinirIcone(entree, png); Rafraichir(); }
+                                    catch (CoffreException) { }
+                                }
+                            }
+                        });
+                    }
+                    catch (InvalidOperationException) { } // fenêtre fermée entre-temps
+                });
+                frappeur.IsBackground = true;
+                frappeur.Start();
+            };
+
+            // Réduire (et non masquer) : masquer une fenêtre modale la ferme et la détruit.
+            WindowState = FormWindowState.Minimized;
+            rebours.Demarrer();
+        }
+
+        void Restaurer()
+        {
+            if (IsDisposed) return;
+            WindowState = FormWindowState.Normal;
+            Activate();
         }
 
         public void MontrerStatut(string texte, bool erreur)

@@ -115,6 +115,9 @@ namespace Banc
             // 7. Le coffre : chiffrement, maître, altération, protection mémoire.
             TesterCoffre();
 
+            // 8. Auto-type : primitives sûres (sans envoyer de vraies frappes).
+            TesterAutoType();
+
             Console.WriteLine(echecs == 0 ? "\nTOUS LES TESTS PASSENT" : "\n" + echecs + " ECHEC(S)");
             Environment.Exit(echecs == 0 ? 0 : 1);
         }
@@ -189,6 +192,22 @@ namespace Banc
                 Verifier(sansMaitre.Deverrouille && !sansMaitre.MaitreActif && sansMaitre.Entrees.Count == 2,
                     "coffre : retrait du maitre, donnees intactes");
 
+                // 7i. Icône : aller-retour v2 (avant la suppression, 2 entrées disponibles).
+                byte[] fauxPng = { 1, 2, 3, 4, 5, 6, 7, 8 };
+                sansMaitre.DefinirIcone(sansMaitre.Entrees[0], fauxPng);
+                var reIcone = new Coffre(dossier);
+                reIcone.Ouvrir();
+                byte[] relu = reIcone.Entrees[0].Icone;
+                bool iconeOk = relu != null && relu.Length == fauxPng.Length;
+                for (int k = 0; iconeOk && k < relu.Length; k++) if (relu[k] != fauxPng[k]) iconeOk = false;
+                Verifier(iconeOk, "coffre : icone conservee (format v2)");
+                Verifier(reIcone.Entrees.Count > 1 && reIcone.Entrees[1].Icone == null,
+                    "coffre : entree sans icone reste sans icone");
+                Verifier(AutoType.EstNavigateur(@"C:\x\chrome.exe")
+                      && AutoType.EstNavigateur(@"D:\Program Files\Microsoft\msedge.EXE")
+                      && !AutoType.EstNavigateur(@"C:\Windows\notepad.exe"),
+                    "autotype : detection des navigateurs");
+
                 // 7f. Suppression persistante.
                 sansMaitre.Supprimer(sansMaitre.Entrees[0]);
                 var apresSuppr = new Coffre(dossier);
@@ -218,6 +237,24 @@ namespace Banc
             {
                 try { Directory.Delete(dossier, true); } catch { }
             }
+        }
+
+        static void TesterAutoType()
+        {
+            // On n'appelle PAS Taper() : cela enverrait de vraies frappes. On vérifie que les
+            // primitives d'introspection répondent sans exception et de façon cohérente.
+            bool sansPlantage = true;
+            try
+            {
+                string titre = AutoType.TitreFenetreActive();
+                if (titre == null) sansPlantage = false;
+                AutoType.EchapPresse();
+                AutoType.FenetreActive();
+            }
+            catch { sansPlantage = false; }
+            Verifier(sansPlantage, "autotype : primitives d'introspection sans exception");
+            Verifier(!AutoType.CibleProbablementElevee(IntPtr.Zero),
+                "autotype : fenetre nulle n'est pas consideree elevee");
         }
     }
 }

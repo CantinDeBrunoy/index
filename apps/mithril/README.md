@@ -74,7 +74,9 @@ C'est le seul point qui compte vraiment pour ce genre d'outil.
 ## Coffre (optionnel)
 
 Le bouton « Enregistrer » garde un mot de passe généré sur la machine, avec un libellé et
-un identifiant. Tant que tu ne l'utilises pas, l'application n'écrit rien sur disque.
+un identifiant. Le bouton **« ＋ Ajouter »** de la fenêtre du coffre permet aussi de saisir
+un mot de passe **existant** (qui n'a pas été généré ici). Tant que tu n'enregistres rien,
+l'application n'écrit rien sur disque.
 
 Le fichier (`%APPDATA%\Mithril\coffre.mithril`) est chiffré en deux couches :
 
@@ -85,6 +87,32 @@ Le fichier (`%APPDATA%\Mithril\coffre.mithril`) est chiffré en deux couches :
    dérivée par PBKDF2 (600 000 itérations). Elle protège aussi contre un programme
    malveillant qui tournerait sous ton compte — tant que le coffre est verrouillé.
    **Il est irrécupérable : oublié = coffre perdu.**
+
+### Frappe automatique (auto-type)
+
+Plutôt que de copier-coller, l'icône ⌨ d'une entrée tape le mot de passe **directement
+dans une autre fenêtre**, comme un clavier — sans jamais passer par le presse-papiers.
+Utile pour le navigateur, une session RDP, ou les champs qui interdisent le collage.
+
+Déroulé : clic sur ⌨ → le coffre se réduit → un compte à rebours de 3 s te laisse cliquer
+dans le champ cible → Mithril affiche le **titre de la fenêtre visée** puis y tape le mot
+de passe. **Échap** annule à tout moment.
+
+- Si l'entrée a un identifiant, Mithril tape **identifiant → Tab → mot de passe** ; sinon
+  le mot de passe seul.
+- Par défaut, **aucune touche Entrée n'est envoyée** (rien n'est validé sans toi). Un
+  interrupteur du coffre permet d'ajouter Entrée pour soumettre le formulaire, à activer
+  seulement si tu es sûr de la cible.
+- Frappe en Unicode : indépendante de la disposition clavier (AZERTY, accents, symboles).
+- Une fenêtre lancée en administrateur refuse la frappe (protection Windows) : Mithril le
+  détecte et te renvoie vers la copie au lieu d'échouer en silence.
+- Limite honnête : une frappe injectée est visible d'un keylogger, comme si tu tapais
+  toi-même — ni plus ni moins qu'une saisie normale, mais mieux que le presse-papiers.
+
+Chaque entrée porte une **vignette** : pour une appli de bureau, son icône est apprise
+automatiquement au premier auto-type ; sinon (et pour les sites web, dont le favicon n'est
+pas récupérable sans réseau), un monogramme coloré tiré du libellé. Les icônes sont
+stockées dans le fichier chiffré, comme le reste.
 
 Réductions de la fenêtre d'exposition quand le coffre est ouvert :
 
@@ -123,6 +151,7 @@ Le script compile l'application, compile le banc de test et l'exécute.
 | Aucun symbole pénible sous contrainte mobile | 20 000 mots de passe |
 | Filtrage des ambigus, jeu mobile, calcul d'entropie | assertions directes |
 | Coffre : aller-retour DPAPI et maître, mauvais maître rejeté, altération détectée, protection mémoire, export | 13 assertions |
+| Auto-type : introspection des fenêtres, détection de cible élevée | 2 assertions |
 
 ## Structure
 
@@ -130,7 +159,8 @@ Le script compile l'application, compile le banc de test et l'exécute.
 | --- | --- |
 | `MdpGen.cs` | Tirage aléatoire, génération et fenêtre principale |
 | `Coffre.cs` | Chiffrement et stockage du coffre (DPAPI, AES, PBKDF2) |
-| `CoffreUi.cs` | Fenêtres du coffre et dialogues du mot de passe maître |
+| `CoffreUi.cs` | Fenêtres du coffre, dialogues du maître, compte à rebours de frappe |
+| `AutoType.cs` | Frappe automatique dans une autre fenêtre (SendInput Unicode) |
 | `Test.cs` | Banc de test (hors exécutable final) |
 | `build.ps1` | Compilation + tests |
 
