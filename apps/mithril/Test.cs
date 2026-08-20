@@ -71,6 +71,45 @@ namespace Banc
             Verifier(Generateur.Filtrer(Generateur.Chiffres, true) == "34679", "exclusion des chiffres ambigus (0 1 2 5 8)");
             Verifier(Math.Abs(Generateur.Entropie(94, 32) - 209.75) < 0.5, "entropie 32 car. / alphabet 94 ~ 210 bits");
 
+            // 6. Restriction aux symboles faciles a taper sur mobile.
+            bool sousEnsemble = true;
+            foreach (char c in Generateur.SymbolesMobiles)
+                if (Generateur.Symboles.IndexOf(c) < 0) sousEnsemble = false;
+            Verifier(sousEnsemble, "les symboles mobiles sont un sous-ensemble du jeu complet");
+
+            const string Penibles = "#%*+<>[]^_{|}~";
+            bool aucunPenible = true;
+            foreach (char c in Generateur.SymbolesMobiles)
+                if (Penibles.IndexOf(c) >= 0) aucunPenible = false;
+            Verifier(aucunPenible, "aucun symbole de 2e page de clavier dans le jeu mobile");
+
+            Verifier(Generateur.JeuSymboles(true) == Generateur.SymbolesMobiles
+                  && Generateur.JeuSymboles(false) == Generateur.Symboles, "selection du jeu de symboles");
+
+            // Un mot de passe genere sous contrainte mobile ne doit contenir aucun symbole penible.
+            string[] jeuxMobiles = {
+                Generateur.Minuscules, Generateur.Majuscules,
+                Generateur.Chiffres, Generateur.JeuSymboles(true)
+            };
+            bool mobileOk = true;
+            for (int i = 0; i < 20000; i++)
+            {
+                string mdp = Generateur.Generer(jeuxMobiles, 24);
+                foreach (char c in mdp) if (Penibles.IndexOf(c) >= 0) { mobileOk = false; break; }
+                if (!mobileOk) break;
+            }
+            Verifier(mobileOk, "20 000 mdp sous contrainte mobile, aucun caractere penible");
+
+            // La contrainte reste combinable avec l'exclusion des ambigus.
+            string mobileSansAmbigus = Generateur.Filtrer(Generateur.JeuSymboles(true), true);
+            Verifier(mobileSansAmbigus.IndexOf('|') < 0 && mobileSansAmbigus.Length > 8,
+                "jeu mobile + exclusion des ambigus reste exploitable");
+
+            int poolMobile = 26 + 26 + 10 + Generateur.SymbolesMobiles.Length;
+            Console.WriteLine(string.Format("     alphabet mobile = {0} symboles, pool = {1}, 32 car. = {2:0} bits",
+                Generateur.SymbolesMobiles.Length, poolMobile, Generateur.Entropie(poolMobile, 32)));
+            Verifier(Generateur.Entropie(poolMobile, 32) > 190, "entropie mobile a 32 car. > 190 bits");
+
             Console.WriteLine(echecs == 0 ? "\nTOUS LES TESTS PASSENT" : "\n" + echecs + " ECHEC(S)");
             Environment.Exit(echecs == 0 ? 0 : 1);
         }

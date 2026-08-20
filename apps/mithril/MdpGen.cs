@@ -43,7 +43,20 @@ namespace MdpGen
         public const string Majuscules = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         public const string Chiffres = "0123456789";
         public const string Symboles = "!#$%&()*+,-./:;<=>?@[]^_{|}~";
+
+        // Symboles atteignables en une seule bascule de clavier sur mobile : presents a la
+        // fois sur la page "123" d'iOS et sur la premiere page de symboles de Gboard. Les
+        // autres (# % * + < > [ ] ^ _ { | } ~) exigent une seconde bascule sur au moins
+        // l'une des deux plateformes.
+        public const string SymbolesMobiles = "!$&(),-./:;?@";
+
         const string Ambigus = "Il1|O0oB8S5Z2";
+
+        /// <summary>Jeu de symboles retenu selon la contrainte de saisie au clavier mobile.</summary>
+        public static string JeuSymboles(bool mobileSeulement)
+        {
+            return mobileSeulement ? SymbolesMobiles : Symboles;
+        }
 
         public static string Filtrer(string jeu, bool sansAmbigus)
         {
@@ -86,6 +99,7 @@ namespace MdpGen
         readonly CheckBox cbMaj = new CheckBox();
         readonly CheckBox cbNum = new CheckBox();
         readonly CheckBox cbSym = new CheckBox();
+        readonly CheckBox cbSymMobiles = new CheckBox();
         readonly CheckBox cbAmbigus = new CheckBox();
         readonly CheckBox cbEffacer = new CheckBox();
         readonly TextBox txtMdp = new TextBox();
@@ -98,7 +112,7 @@ namespace MdpGen
         public Fenetre()
         {
             Text = "Générateur de mots de passe";
-            ClientSize = new Size(600, 340);
+            ClientSize = new Size(600, 368);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
@@ -145,25 +159,31 @@ namespace MdpGen
             PlacerCase(cbMaj, 160, 150, 135, "Majuscules (A-Z)", true);
             PlacerCase(cbNum, 300, 150, 120, "Chiffres (0-9)", true);
             PlacerCase(cbSym, 425, 150, 155, "Symboles (!#$...)", true);
-            PlacerCase(cbAmbigus, 20, 178, 420, "Exclure les caractères ambigus (I l 1 O 0 B 8 S 5 Z 2)", false);
-            PlacerCase(cbEffacer, 20, 206, 420, "Vider le presse-papiers 60 s après la copie", false);
+            PlacerCase(cbSymMobiles, 20, 178, 560,
+                "Symboles faciles à taper au téléphone uniquement (! $ & ( ) , - . / : ; ? @)", false);
+            PlacerCase(cbAmbigus, 20, 206, 560, "Exclure les caractères ambigus (I l 1 O 0 B 8 S 5 Z 2)", false);
+            PlacerCase(cbEffacer, 20, 234, 560, "Vider le presse-papiers 60 s après la copie", false);
+
+            // La restriction mobile n'a de sens que si les symboles sont actifs.
+            cbSym.CheckedChanged += SurSymboles;
+            cbSymMobiles.Enabled = cbSym.Checked;
 
             // --- Boutons ---
             var btnGen = new Button();
-            btnGen.SetBounds(20, 243, 275, 44);
+            btnGen.SetBounds(20, 271, 275, 44);
             btnGen.Text = "Générer";
             btnGen.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             btnGen.Click += delegate { Generer(); };
             Controls.Add(btnGen);
 
             var btnCopie = new Button();
-            btnCopie.SetBounds(305, 243, 275, 44);
+            btnCopie.SetBounds(305, 271, 275, 44);
             btnCopie.Text = "Copier";
             btnCopie.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             btnCopie.Click += delegate { Copier(); };
             Controls.Add(btnCopie);
 
-            lblEtat.SetBounds(20, 297, 560, 20);
+            lblEtat.SetBounds(20, 325, 560, 20);
             lblEtat.TextAlign = ContentAlignment.MiddleCenter;
             lblEtat.ForeColor = Color.SeaGreen;
             Controls.Add(lblEtat);
@@ -187,6 +207,11 @@ namespace MdpGen
             if ((int)numLongueur.Value != barre.Value) numLongueur.Value = barre.Value;
         }
 
+        void SurSymboles(object s, EventArgs e)
+        {
+            cbSymMobiles.Enabled = cbSym.Checked;
+        }
+
         void PlacerCase(CheckBox cb, int x, int y, int largeur, string texte, bool coche)
         {
             cb.SetBounds(x, y, largeur, 24);
@@ -205,7 +230,8 @@ namespace MdpGen
             if (cbMin.Checked) jeux.Add(Generateur.Filtrer(Generateur.Minuscules, sansAmbigus));
             if (cbMaj.Checked) jeux.Add(Generateur.Filtrer(Generateur.Majuscules, sansAmbigus));
             if (cbNum.Checked) jeux.Add(Generateur.Filtrer(Generateur.Chiffres, sansAmbigus));
-            if (cbSym.Checked) jeux.Add(Generateur.Filtrer(Generateur.Symboles, sansAmbigus));
+            if (cbSym.Checked)
+                jeux.Add(Generateur.Filtrer(Generateur.JeuSymboles(cbSymMobiles.Checked), sansAmbigus));
 
             if (jeux.Count == 0)
             {
