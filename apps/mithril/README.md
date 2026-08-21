@@ -147,6 +147,35 @@ forcée du mot de passe d'un compte local). Le bouton **Exporter** produit une s
 de secours *en clair*, à ranger en lieu sûr. Et aucun coffre, le nôtre comme les autres,
 ne protège une machine déjà compromise par un malware actif.
 
+### Coffre portable (synchronisation entre PC)
+
+Par défaut le coffre est **local** : la couche DPAPI le rend illisible hors de ta session
+Windows — une vraie protection, mais qui interdit toute synchronisation.
+
+Le bouton **Portable…** de la fenêtre du coffre crée (ou ouvre) un **coffre portable** :
+un fichier `MITHRIL3` chiffré **par le mot de passe maître seul** — AES-256-CBC +
+HMAC-SHA256 (encrypt-then-MAC), PBKDF2 à **1 300 000 itérations** minimum — sans couche
+DPAPI. Ce fichier s'ouvre sur n'importe quel PC avec Mithril et le bon maître : il peut
+donc voyager par un partage privé (Syncthing, lecteur commun via Tailscale…).
+
+Ce que ça change, en toute franchise :
+
+- **Ce qui reste protégé** : le contenu est chiffré de bout en bout (rien à voir avec
+  « Exporter », qui écrit en clair). Sans le maître, le fichier est inutilisable, et
+  toute altération est détectée avant le moindre déchiffrement.
+- **Ce qui ne l'est plus** : la liaison à la machine disparaît. Quiconque obtient le
+  fichier (partage mal configuré, sauvegarde qui traîne, relais compromis) peut tenter
+  des mots de passe **hors ligne, sans limite**. La seule barrière est le maître :
+  choisis une **phrase de passe longue**, pas un mot.
+- Le maître d'un coffre portable est **obligatoire et irrévocable** : la création est
+  refusée sans lui, et « Retirer le maître » n'existe pas dans ce mode.
+- La bascule est explicite et réversible : « Créer » **copie** le coffre local — qui
+  reste intact sur la machine — et « Revenir au coffre local » rebascule à tout moment.
+- **Synchronisation concurrente** : Mithril ne fusionne pas. Si deux PC modifient le
+  fichier en même temps, le dernier enregistrement gagne, la version écrasée bascule
+  dans le `.bak` à côté du fichier, et Mithril le signale. Modifie le coffre depuis un
+  seul PC à la fois.
+
 ## Réglages
 
 L'icône ⚙ (ou « Réglages… » dans le menu de la barre d'état) ouvre une fenêtre de
@@ -182,6 +211,7 @@ Le script compile l'application, compile le banc de test et l'exécute.
 | Aucun symbole pénible sous contrainte mobile | 20 000 mots de passe |
 | Filtrage des ambigus, jeu mobile, calcul d'entropie | assertions directes |
 | Coffre : aller-retour DPAPI et maître, mauvais maître rejeté, altération détectée, protection mémoire, export | 13 assertions |
+| Coffre portable : aller-retour sans DPAPI, fichier forgé « autre machine », maître obligatoire, rétrocompatibilité DPAPI | 12 assertions |
 | Auto-type : introspection des fenêtres, détection de cible élevée | 2 assertions |
 
 ### Couverture
@@ -200,7 +230,7 @@ L'interface est mesurée et affichée, mais ne conditionne rien.
 
 ## Audit de sécurité
 
-Un second garde-fou complète les tests : 34 contrôles statiques qui vérifient que les
+Un second garde-fou complète les tests : 35 contrôles statiques qui vérifient que les
 propriétés annoncées ici restent vraies au fil des modifications.
 
 ```powershell
@@ -239,7 +269,7 @@ outils/   compilation et audit de sécurité
 | `src/ReglagesUi.cs` | Fenêtre de réglages (sélecteurs, capture de raccourci) |
 | `tests/Banc.cs` | Banc de test |
 | `outils/build.ps1` | Compilation + tests |
-| `outils/audit-securite.ps1` | 34 contrôles de sécurité sur le code (voir plus haut) |
+| `outils/audit-securite.ps1` | 35 contrôles de sécurité sur le code (voir plus haut) |
 | `outils/couverture.ps1` | Mesure de la couverture du banc de test |
 
 Les exécutables produits ne sont pas versionnés : ils se reconstruisent en une seconde.
