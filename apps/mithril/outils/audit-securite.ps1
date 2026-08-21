@@ -242,6 +242,12 @@ Exiger "R25" "Coffre" "copie de secours avant ecriture" "MOYEN" `
 Exiger "R26" "Coffre" "vidage du presse-papiers" "MOYEN" `
     'Clipboard\.Clear' "le presse-papiers n'est plus vide" $sourcesProduction
 
+# Promesse du README : un coffre portable (MITHRIL3, sans DPAPI) est TOUJOURS chiffre par
+# un maitre - c'est sa seule protection. Le garde-fou de Sauver() ne doit pas disparaitre.
+Exiger "R35" "Coffre" "coffre portable jamais ecrit sans maitre" "ELEVE" `
+    'portable\s*&&\s*!maitreActif' `
+    "le garde-fou refusant d'ecrire un coffre portable sans maitre a disparu" (Get-Item "src/Coffre.cs")
+
 # ---------------------------------------------------------------------------
 Write-Host "5. Hygiene des secrets" -ForegroundColor Cyan
 
