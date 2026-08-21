@@ -92,8 +92,22 @@ Ajouter une dépendance externe, même limitée au build, se discute avant d'êt
   `outils/couverture.ps1` ne peut pas s'y exécuter sans
   `dotnet tool install --global dotnet-coverage`. Aujourd'hui, seule la CI le fait.
 - Les exécutables produits ne sont pas versionnés, y compris celui qui est distribué.
-- Messages de commit : conventionnels (`feat:`, `docs:`, `chore:`), en français, **sans
+
+## Travail avec git
+
+- Une modification passe par une branche, pas par un commit direct sur `main`.
+- Messages de commit conventionnels (`feat:`, `docs:`, `chore:`), en français, **sans
   accents** — c'est la convention de l'historique existant.
+- **Supprimer la branche dès qu'elle est fusionnée**, en local et sur le distant :
+
+  ```powershell
+  git branch -d <branche>
+  git push origin --delete <branche>
+  ```
+
+  Une branche fusionnée qui reste ouverte diverge peu à peu de `main` et finit par être
+  reprise par erreur, avec un état obsolète. Et quand plusieurs branches sont empilées, les
+  laisser traîner rend illisible ce qui reste réellement à fusionner.
 
 ## Skills du dépôt
 
