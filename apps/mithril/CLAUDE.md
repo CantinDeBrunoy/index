@@ -111,20 +111,23 @@ La seule exception défendable est de réparer un `main` déjà cassé, quand le
 la réparation. Tout le reste — « c'est juste une ligne », « c'est juste de la doc » — n'en
 est pas une : le coût d'une branche est de vingt secondes.
 
+### Supprimer la branche dès la fusion
+
+En local et sur le distant :
+
+```powershell
+git branch -d <branche>
+git push origin --delete <branche>
+```
+
+Une branche fusionnée qui reste ouverte diverge peu à peu de `main` et finit par être
+reprise par erreur, avec un état obsolète. Et quand plusieurs branches sont empilées, les
+laisser traîner rend illisible ce qui reste réellement à fusionner.
+
 ### Commits
 
 Conventionnels (`feat:`, `fix:`, `chore:`, `docs:`), en français, **sans accents** — c'est
 la convention de l'historique existant.
-- **Supprimer la branche dès qu'elle est fusionnée**, en local et sur le distant :
-
-  ```powershell
-  git branch -d <branche>
-  git push origin --delete <branche>
-  ```
-
-  Une branche fusionnée qui reste ouverte diverge peu à peu de `main` et finit par être
-  reprise par erreur, avec un état obsolète. Et quand plusieurs branches sont empilées, les
-  laisser traîner rend illisible ce qui reste réellement à fusionner.
 
 ## Skills du dépôt
 
