@@ -184,6 +184,20 @@ Le script compile l'application, compile le banc de test et l'exécute.
 | Coffre : aller-retour DPAPI et maître, mauvais maître rejeté, altération détectée, protection mémoire, export | 13 assertions |
 | Auto-type : introspection des fenêtres, détection de cible élevée | 2 assertions |
 
+### Couverture
+
+```powershell
+powershell -ExecutionPolicy Bypass -File outils/couverture.ps1
+```
+
+Nécessite `dotnet tool install --global dotnet-coverage` (Coverlet ne convient pas : il
+exige des PDB portables, que le compilateur du .NET Framework 4 ne produit pas).
+
+La couverture n'est exigée que sur le **cœur** — `Generateur.cs`, `Coffre.cs`,
+`AutoType.cs`, `Reglages.cs` : le reste est de l'interface WinForms, qu'un banc console ne
+peut pas exercer. Un taux global mélangeant les deux serait un chiffre figé sans valeur.
+L'interface est mesurée et affichée, mais ne conditionne rien.
+
 ## Audit de sécurité
 
 Un second garde-fou complète les tests : 34 contrôles statiques qui vérifient que les
@@ -226,6 +240,7 @@ outils/   compilation et audit de sécurité
 | `tests/Banc.cs` | Banc de test |
 | `outils/build.ps1` | Compilation + tests |
 | `outils/audit-securite.ps1` | 34 contrôles de sécurité sur le code (voir plus haut) |
+| `outils/couverture.ps1` | Mesure de la couverture du banc de test |
 
 Les exécutables produits ne sont pas versionnés : ils se reconstruisent en une seconde.
 Le binaire distribué est publié en pièce jointe des [Releases](https://github.com/CantinDeBrunoy/Mithril/releases).

@@ -1,8 +1,9 @@
 name: CI
 
-# Deux garde-fous, avec des portees differentes :
+# Trois garde-fous, avec des portees differentes :
 #   1. tests           - a chaque push, sur n'importe quelle branche
-#   2. audit-securite  - sur toute pull request vers main, et sur main lui-meme
+#   2. couverture      - a chaque push : mesure la couverture du banc, publie un bilan
+#   3. audit-securite  - sur toute pull request vers main, et sur main lui-meme
 #                        (34 controles + CodeQL, avec bilan)
 #
 # L'audit tourne sur la pull request pour pouvoir la BLOQUER avant le merge ; il tourne
@@ -56,6 +57,59 @@ jobs:
       - name: Compiler et executer le banc de test
         shell: pwsh
         run: ./outils/build.ps1
+
+  couverture:
+    name: Couverture des tests
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Coverlet est inutilisable ici : il exige des PDB portables, or le csc.exe du
+      # .NET Framework 4 produit des PDB Windows. dotnet-coverage instrumente
+      # dynamiquement et supporte le Framework. Le SDK .NET est preinstalle sur le runner.
+      - name: Installer dotnet-coverage
+        shell: pwsh
+        run: dotnet tool install --global dotnet-coverage
+
+      # Seuil a 0 tant que la premiere mesure reelle n'a pas eu lieu : le job mesure et
+      # publie sans bloquer. A relever une fois le taux du coeur connu.
+      - name: Mesurer la couverture
+        id: couverture
+        continue-on-error: true
+        shell: pwsh
+        run: ./outils/couverture.ps1 -Seuil 0 -Rapport rapport-couverture.md
+
+      - name: Publier le bilan dans le resume
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path rapport-couverture.md) {
+            Get-Content rapport-couverture.md | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          } else {
+            "## Couverture des tests`n`nLa mesure n'a pas abouti : voir le journal du job." |
+              Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+
+      - name: Publier le bilan en artefact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bilan-couverture
+          path: |
+            rapport-couverture.md
+            couverture.xml
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Verdict
+        if: always()
+        shell: pwsh
+        run: |
+          if ("${{ steps.couverture.outcome }}" -ne "success") {
+            throw "La mesure de couverture a echoue (voir le journal). Aucun seuil n'est encore applique."
+          }
+          Write-Host "Couverture mesuree et publiee."
 
   audit-securite:
     name: Audit de securite

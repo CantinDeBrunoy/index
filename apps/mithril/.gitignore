@@ -8,3 +8,7 @@ obj/
 
 # Bilan produit par audit-securite.ps1
 rapport-audit.md
+
+# Artefacts de mesure de couverture
+couverture.xml
+rapport-couverture.md
