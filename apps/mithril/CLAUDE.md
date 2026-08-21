@@ -95,9 +95,26 @@ Ajouter une dépendance externe, même limitée au build, se discute avant d'êt
 
 ## Travail avec git
 
-- Une modification passe par une branche, pas par un commit direct sur `main`.
-- Messages de commit conventionnels (`feat:`, `docs:`, `chore:`), en français, **sans
-  accents** — c'est la convention de l'historique existant.
+### On ne code pas sur `main`
+
+Tout développement part d'une branche, nommée `type/sujet-court` avec le même vocabulaire
+que les commits : `feat/`, `fix/`, `chore/`, `docs/`. Elle rejoint `main` par une pull
+request.
+
+Ce n'est pas une préférence de style, c'est ce qui fait fonctionner la CI de ce dépôt :
+**l'audit de sécurité ne tourne que sur les pull requests vers `main` et sur `main`
+lui-même**. Une pull request peut donc être bloquée avant la fusion, alors qu'un commit
+poussé directement sur `main` n'est audité qu'une fois arrivé — l'audit constate au lieu
+d'empêcher. Court-circuiter la branche revient à désactiver le garde-fou qu'on a construit.
+
+La seule exception défendable est de réparer un `main` déjà cassé, quand le détour retarde
+la réparation. Tout le reste — « c'est juste une ligne », « c'est juste de la doc » — n'en
+est pas une : le coût d'une branche est de vingt secondes.
+
+### Commits
+
+Conventionnels (`feat:`, `fix:`, `chore:`, `docs:`), en français, **sans accents** — c'est
+la convention de l'historique existant.
 - **Supprimer la branche dès qu'elle est fusionnée**, en local et sur le distant :
 
   ```powershell
