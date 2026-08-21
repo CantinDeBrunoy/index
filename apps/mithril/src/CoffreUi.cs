@@ -1023,6 +1023,7 @@ namespace Mithril
         {
             Text = "Quel mot de passe ?";
             StartPosition = FormStartPosition.CenterScreen;
+            TopMost = true; // invoqué par le raccourci global : doit passer devant la fenêtre cible
             int hauteurListe = Math.Min(entrees.Count, 7) * 44 + 8;
             ClientSize = new Size(420, 84 + hauteurListe);
 
@@ -1052,6 +1053,15 @@ namespace Mithril
                 liste.Controls.Add(b);
                 y += 44;
             }
+        }
+
+        /// <summary>Windows refuse le focus à une appli en arrière-plan : on le prend de force,
+        /// ce que le processus qui a reçu le raccourci global est autorisé à faire.</summary>
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            Activate();
+            AutoType.RamenerAuPremierPlan(Handle);
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys donnee)

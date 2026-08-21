@@ -524,6 +524,7 @@ namespace Mithril
             Show();
             WindowState = FormWindowState.Normal;
             Activate();
+            AutoType.RamenerAuPremierPlan(Handle); // Activate() seul ne suffit pas depuis l'arrière-plan
         }
 
         void QuitterReellement()
