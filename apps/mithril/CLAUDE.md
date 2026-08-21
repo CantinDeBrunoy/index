@@ -12,7 +12,7 @@ code est en français — noms de classes, de variables, commentaires, messages 
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File outils/build.ps1           # compile + lance le banc
-powershell -ExecutionPolicy Bypass -File outils/audit-securite.ps1  # 34 contrôles de sécurité
+powershell -ExecutionPolicy Bypass -File outils/audit-securite.ps1  # 35 contrôles de sécurité
 powershell -ExecutionPolicy Bypass -File outils/couverture.ps1      # couverture (voir Pièges)
 ```
 
@@ -20,7 +20,7 @@ powershell -ExecutionPolicy Bypass -File outils/couverture.ps1      # couverture
 par glob : ajouter un fichier dans `src/` ne demande aucune modification du build ni de la CI.
 
 **Il n'existe aucun moyen de lancer un test isolé.** Le banc est un `Main` unique
-(`tests/Banc.cs`) qui enchaîne 35 appels à `Verifier(condition, libellé)`, affiche une ligne
+(`tests/Banc.cs`) qui enchaîne 47 appels à `Verifier(condition, libellé)`, affiche une ligne
 `OK`/`ECHEC` par vérification et renvoie un code de sortie non nul si l'une échoue. Pour
 cibler une vérification pendant une mise au point, il faut commenter les autres : il n'y a
 ni framework de test, ni filtre.
@@ -32,8 +32,9 @@ Ces trois commandes doivent rester vertes ; la CI les rejoue.
 ### Le coffre est le cœur du sujet
 
 `src/Coffre.cs` — chiffrement emboîté `DPAPI( AES-256-CBC( données ) )`. Le format du bloc
-interne est documenté en tête de fichier : magie (`MITHRIL1` sans icônes, `MITHRIL2` avec),
-drapeaux, sel, itérations, IV, HMAC-SHA256, puis les données chiffrées.
+interne est documenté en tête de fichier : magie (`MITHRIL1` sans icônes, `MITHRIL2` avec,
+`MITHRIL3` pour le coffre portable écrit nu, sans DPAPI, maître obligatoire), drapeaux,
+sel, itérations, IV, HMAC-SHA256, puis les données chiffrées.
 
 Invariants à ne jamais casser — l'audit les vérifie explicitement (règles R20 à R26) :
 

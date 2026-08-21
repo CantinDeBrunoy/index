@@ -34,6 +34,7 @@ namespace Mithril
         // Application
         public bool DemarrerAvecWindows = false;
         public bool FermerReduit = true;
+        public string CheminCoffrePortable = ""; // vide = coffre local DPAPI (un chemin n'est pas un secret)
 
         public static Reglages Actuels = Charger();
 
@@ -83,6 +84,7 @@ namespace Mithril
                 case "apprendre_icones": ApprendreIcones = BoolOu(val, ApprendreIcones); break;
                 case "demarrer_avec_windows": DemarrerAvecWindows = BoolOu(val, DemarrerAvecWindows); break;
                 case "fermer_reduit": FermerReduit = BoolOu(val, FermerReduit); break;
+                case "chemin_coffre_portable": CheminCoffrePortable = val; break;
             }
         }
 
@@ -106,6 +108,7 @@ namespace Mithril
                 sb.AppendLine("apprendre_icones=" + (ApprendreIcones ? "1" : "0"));
                 sb.AppendLine("demarrer_avec_windows=" + (DemarrerAvecWindows ? "1" : "0"));
                 sb.AppendLine("fermer_reduit=" + (FermerReduit ? "1" : "0"));
+                sb.AppendLine("chemin_coffre_portable=" + CheminCoffrePortable);
                 File.WriteAllText(Chemin, sb.ToString(), Encoding.UTF8);
             }
             catch { /* disque non inscriptible : réglages non persistés, sans planter */ }
