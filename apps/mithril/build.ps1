@@ -13,11 +13,11 @@ if (-not (Test-Path $csc)) {
 }
 
 Write-Host "Compilation de l'application..." -ForegroundColor Cyan
-& $csc -nologo -target:winexe -codepage:65001 -optimize+ -out:GenerateurMdp.exe MdpGen.cs
+& $csc -nologo -target:winexe -codepage:65001 -optimize+ -r:System.Security.dll -out:GenerateurMdp.exe MdpGen.cs Coffre.cs CoffreUi.cs AutoType.cs Reglages.cs ReglagesUi.cs
 if ($LASTEXITCODE -ne 0) { throw "Echec de la compilation." }
 
 Write-Host "Compilation du banc de test..." -ForegroundColor Cyan
-& $csc -nologo -target:exe -codepage:65001 -main:Banc.Programme -out:banc-test.exe MdpGen.cs Test.cs
+& $csc -nologo -target:exe -codepage:65001 -main:Banc.Programme -r:System.Security.dll -out:banc-test.exe MdpGen.cs Coffre.cs CoffreUi.cs AutoType.cs Reglages.cs ReglagesUi.cs Test.cs
 if ($LASTEXITCODE -ne 0) { throw "Echec de la compilation des tests." }
 
 Write-Host "Execution des tests..." -ForegroundColor Cyan
