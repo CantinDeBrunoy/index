@@ -113,7 +113,11 @@ namespace Mithril
     {
         public string Maitre;
 
-        public DialogueMaitre(bool premier)
+        public DialogueMaitre(bool premier) : this(premier,
+            "Il chiffre le coffre par-dessus ta session Windows. Il n'existe aucun moyen " +
+            "de le récupérer : oublié = coffre perdu. Vise 12 caractères ou plus.") { }
+
+        public DialogueMaitre(bool premier, string description)
         {
             Text = premier ? "Définir le mot de passe maître" : "Changer le mot de passe maître";
             ClientSize = new Size(440, 320);
@@ -122,9 +126,7 @@ namespace Mithril
             titre.Font = new Font("Segoe UI Semibold", 11F);
             titre.Height = 24;
 
-            Ui.Etiquette(this, 24, 52, 392,
-                "Il chiffre le coffre par-dessus ta session Windows. Il n'existe aucun moyen " +
-                "de le récupérer : oublié = coffre perdu. Vise 12 caractères ou plus.", true);
+            Ui.Etiquette(this, 24, 52, 392, description, true);
 
             Ui.Etiquette(this, 24, 120, 392, "Nouveau mot de passe maître", false);
             var champ1 = Ui.Champ(this, 24, 140, 392, true);
@@ -596,6 +598,11 @@ namespace Mithril
     class FenetreCoffre : FormeSombre
     {
         readonly Coffre coffre;
+
+        /// <summary>Renseigné quand l'utilisateur bascule de coffre (portable ou retour au
+        /// local) : la fenêtre principale adopte ce coffre après la fermeture.</summary>
+        public Coffre CoffreRemplacant;
+
         readonly Panel pnlListe = new Panel();
         readonly Panel pnlVerrou = new Panel();
         readonly Label lblCompte = new Label();
@@ -610,6 +617,9 @@ namespace Mithril
         readonly Interrupteur intEntree = new Interrupteur();
         readonly Timer surveillance = new Timer();
         readonly ToolTip infobulle = new ToolTip();
+        readonly Label lblEyebrow = new Label();
+        readonly ContextMenuStrip menuPortable = new ContextMenuStrip();
+        readonly ToolStripMenuItem itemRevenir;
 
         public readonly Font PoliceLibelle = new Font("Segoe UI Semibold", 9.75F);
         public readonly Font PoliceSous = new Font("Segoe UI", 8.5F);
@@ -622,17 +632,31 @@ namespace Mithril
             ClientSize = new Size(600, 540);
 
             // --- Vue liste ---
-            var eyebrow = new Label();
-            eyebrow.SetBounds(28, 20, 200, 16);
-            eyebrow.Text = "COFFRE";
-            eyebrow.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
-            eyebrow.ForeColor = Palette.TexteSecondaire;
-            Controls.Add(eyebrow);
+            lblEyebrow.SetBounds(28, 20, 170, 16);
+            lblEyebrow.Text = "COFFRE";
+            lblEyebrow.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            lblEyebrow.ForeColor = Palette.TexteSecondaire;
+            Controls.Add(lblEyebrow);
 
-            lblCompte.SetBounds(240, 20, 218, 18);
+            lblCompte.SetBounds(200, 20, 144, 18);
             lblCompte.TextAlign = ContentAlignment.MiddleRight;
             lblCompte.ForeColor = Palette.TexteSecondaire;
             Controls.Add(lblCompte);
+
+            var btnPortable = Ui.Fabriquer(this, 352, 14, 110, 30, "Portable…", false);
+            infobulle.SetToolTip(btnPortable,
+                "Coffre portable : un fichier chiffré par le maître seul, synchronisable entre PC");
+            var itemCreer = new ToolStripMenuItem("Créer un coffre portable (copie)…");
+            itemCreer.Click += delegate { CreerPortable(); };
+            var itemOuvrir = new ToolStripMenuItem("Ouvrir un coffre portable…");
+            itemOuvrir.Click += delegate { OuvrirPortable(); };
+            itemRevenir = new ToolStripMenuItem("Revenir au coffre local");
+            itemRevenir.Click += delegate { RevenirAuCoffreLocal(); };
+            menuPortable.Items.Add(itemCreer);
+            menuPortable.Items.Add(itemOuvrir);
+            menuPortable.Items.Add(new ToolStripSeparator());
+            menuPortable.Items.Add(itemRevenir);
+            btnPortable.Click += delegate { menuPortable.Show(btnPortable, new Point(0, btnPortable.Height)); };
 
             var btnAjouter = Ui.Fabriquer(this, 470, 14, 102, 30, "＋ Ajouter", true);
             btnAjouter.Click += delegate { AjouterManuel(); };
@@ -812,9 +836,16 @@ namespace Mithril
             lblVide.Visible = nombre == 0;
             lblCompte.Text = nombre == 0 ? "" : nombre == 1 ? "1 mot de passe" : nombre + " mots de passe";
 
+            bool estPortable = coffre.Portable;
+            Text = estPortable
+                ? "Mithril — Coffre portable (" + Path.GetFileName(coffre.Chemin) + ")"
+                : "Mithril — Coffre";
+            lblEyebrow.Text = estPortable ? "COFFRE PORTABLE" : "COFFRE";
+            itemRevenir.Enabled = estPortable;
+
             bool maitre = coffre.MaitreActif;
             btnVerrou.Visible = maitre;
-            btnRetirer.Visible = maitre;
+            btnRetirer.Visible = maitre && !estPortable; // en portable, le maître est irrévocable
             btnMaitre.Text = maitre ? "Changer le maître" : "Définir un mot de passe maître";
             if (maitre)
             {
@@ -875,6 +906,77 @@ namespace Mithril
             }
             catch (CoffreException ex) { MontrerStatut(ex.Message, true); }
             Rafraichir();
+        }
+
+        /// <summary>Copie le coffre courant vers un fichier portable, qui devient le coffre
+        /// actif. Le coffre local n'est ni modifié ni supprimé : la bascule est réversible.</summary>
+        void CreerPortable()
+        {
+            if (!coffre.Deverrouille) return;
+            var reponse = MessageBox.Show(this,
+                "Un coffre portable est un fichier qui voyage entre machines (partage privé, synchronisation).\n\n" +
+                "Il n'est protégé QUE par son mot de passe maître : quiconque obtient le fichier peut essayer " +
+                "des mots de passe sans limite, hors ligne. Choisis une phrase de passe longue.\n\n" +
+                "Le coffre local actuel reste intact sur cette machine. Continuer ?",
+                "Créer un coffre portable", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (reponse != DialogResult.Yes) return;
+            using (var fichier = new SaveFileDialog())
+            {
+                fichier.Title = "Créer le coffre portable";
+                fichier.Filter = "Coffre Mithril|*.mithril";
+                fichier.FileName = "coffre-portable.mithril";
+                if (fichier.ShowDialog(this) != DialogResult.OK) return;
+                using (var dialogue = new DialogueMaitre(true,
+                    "Il est la SEULE protection du fichier portable, sur toutes les machines. " +
+                    "Il n'existe aucun moyen de le récupérer : oublié = coffre perdu. " +
+                    "Vise une phrase de passe (12 caractères ou plus)."))
+                {
+                    if (dialogue.ShowDialog(this) != DialogResult.OK) return;
+                    try
+                    {
+                        var nouveau = coffre.CopierVersPortable(fichier.FileName, dialogue.Maitre);
+                        Reglages.Actuels.CheminCoffrePortable = fichier.FileName;
+                        Reglages.Actuels.Sauver();
+                        CoffreRemplacant = nouveau;
+                        Close();
+                    }
+                    catch (CoffreException ex) { MontrerStatut(ex.Message, true); }
+                }
+            }
+        }
+
+        void OuvrirPortable()
+        {
+            using (var fichier = new OpenFileDialog())
+            {
+                fichier.Title = "Ouvrir un coffre portable";
+                fichier.Filter = "Coffre Mithril|*.mithril|Tous les fichiers|*.*";
+                if (fichier.ShowDialog(this) != DialogResult.OK) return;
+                var nouveau = Coffre.PortableSur(fichier.FileName);
+                try { nouveau.Ouvrir(); }
+                catch (CoffreException ex) { MontrerStatut(ex.Message, true); return; }
+                if (!nouveau.Portable)
+                {
+                    // Fichier DPAPI : lisible ici, mais pas un coffre qui voyage — on refuse la
+                    // bascule plutôt que de laisser croire qu'il se synchronisera.
+                    nouveau.Verrouiller();
+                    MontrerStatut("Ce fichier est un coffre local lié à une session Windows, pas un coffre portable.", true);
+                    return;
+                }
+                Reglages.Actuels.CheminCoffrePortable = fichier.FileName;
+                Reglages.Actuels.Sauver();
+                CoffreRemplacant = nouveau;
+                Close();
+            }
+        }
+
+        void RevenirAuCoffreLocal()
+        {
+            if (!coffre.Portable) return;
+            Reglages.Actuels.CheminCoffrePortable = "";
+            Reglages.Actuels.Sauver();
+            CoffreRemplacant = Coffre.ParDefaut();
+            Close();
         }
 
         void Exporter()
