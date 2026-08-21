@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Thread = System.Threading.Thread;
 
-namespace MdpGen
+namespace Mithril
 {
     /// <summary>Copie durcie : demande à Windows d'exclure le texte de l'historique
     /// du presse-papiers (Win+V) et de la synchronisation cloud.</summary>

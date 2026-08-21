@@ -4,7 +4,7 @@ using System.Text;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-namespace MdpGen
+namespace Mithril
 {
     /// <summary>
     /// Réglages de l'application, dans %APPDATA%\Mithril\reglages.mithril (texte clé=valeur,

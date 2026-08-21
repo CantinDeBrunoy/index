@@ -1,15 +1,16 @@
-# GenerateurMdp
+# Mithril
 
-Petit générateur de mots de passe pour Windows, destiné à alimenter un gestionnaire de
-mots de passe. Application de bureau autonome (WinForms), sans installation, sans réseau.
-N'écrit rien sur disque, sauf si tu utilises le coffre optionnel (chiffré, voir plus bas).
+Générateur de mots de passe et coffre local pour Windows : tirage cryptographique, coffre
+chiffré optionnel, frappe automatique dans n'importe quelle fenêtre. Application de bureau
+autonome (WinForms), sans installation, sans réseau. N'écrit rien sur disque tant que tu
+n'utilises pas le coffre.
 
 ![aucune dépendance](https://img.shields.io/badge/d%C3%A9pendances-aucune-brightgreen)
 ![.NET Framework 4](https://img.shields.io/badge/.NET%20Framework-4.0-blue)
 
 ## Installation
 
-Télécharge `GenerateurMdp.exe` depuis la page
+Télécharge `Mithril.exe` depuis la page
 [Releases](https://github.com/CantinDeBrunoy/Mithril/releases) et double-clique dessus.
 Il n'y a rien à installer et rien à configurer.
 
@@ -22,20 +23,21 @@ même**. Le bouton n'apparaît qu'après le premier clic.
 Tu as évidemment raison d'être méfiant devant un `.exe` reçu par message, surtout pour
 générer des mots de passe. Trois façons de vérifier plutôt que de me croire sur parole :
 
-1. **Lis le code.** Trois fichiers commentés : [`MdpGen.cs`](MdpGen.cs) (génération et
-   interface), [`Coffre.cs`](Coffre.cs) (chiffrement du coffre) et
-   [`CoffreUi.cs`](CoffreUi.cs) (fenêtres du coffre). Aucun accès réseau : cherche
+1. **Lis le code.** Trois fichiers suffisent pour l'essentiel :
+   [`src/Generateur.cs`](src/Generateur.cs) (tirage aléatoire et génération),
+   [`src/Coffre.cs`](src/Coffre.cs) (chiffrement du coffre) et
+   [`src/CoffreUi.cs`](src/CoffreUi.cs) (fenêtres du coffre). Aucun accès réseau : cherche
    `System.Net`, il n'est importé nulle part. Le disque n'est touché que par le coffre.
 2. **Vérifie l'empreinte** du fichier téléchargé, indiquée sur la page de la release :
    ```powershell
-   Get-FileHash .\GenerateurMdp.exe -Algorithm SHA256
+   Get-FileHash .\Mithril.exe -Algorithm SHA256
    ```
 3. **Recompile toi-même** (voir plus bas) : le compilateur est déjà sur ta machine, et tu
    obtiens un binaire construit à partir du code que tu viens de lire.
 
 ## Utilisation
 
-Double-clic sur `GenerateurMdp.exe`.
+Double-clic sur `Mithril.exe`.
 
 - Longueur réglable de 8 à 128 caractères (défaut : 32)
 - Familles activables : minuscules, majuscules, chiffres, symboles `!#$%&()*+,-./:;<=>?@[]^_{|}~`
@@ -162,14 +164,14 @@ Les réglages sont stockés dans `%APPDATA%\Mithril\reglages.mithril` — un fic
 Aucun SDK à installer : le compilateur C# du .NET Framework 4, livré avec Windows, suffit.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File build.ps1
+powershell -ExecutionPolicy Bypass -File outils/build.ps1
 ```
 
 Le script compile l'application, compile le banc de test et l'exécute.
 
 ## Tests
 
-`Test.cs` exerce le vrai code de génération, pas une copie :
+`tests/Banc.cs` exerce le vrai code de génération, pas une copie :
 
 | Vérification | Volume |
 | --- | --- |
@@ -182,18 +184,48 @@ Le script compile l'application, compile le banc de test et l'exécute.
 | Coffre : aller-retour DPAPI et maître, mauvais maître rejeté, altération détectée, protection mémoire, export | 13 assertions |
 | Auto-type : introspection des fenêtres, détection de cible élevée | 2 assertions |
 
+## Audit de sécurité
+
+Un second garde-fou complète les tests : 34 contrôles statiques qui vérifient que les
+propriétés annoncées ici restent vraies au fil des modifications.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File outils/audit-securite.ps1
+```
+
+Il interdit ce qui doit rester absent (accès réseau, `new Random()`, primitives obsolètes,
+désérialisation dangereuse, secrets commités — y compris dans l'historique git) et **exige
+ce qui doit rester présent** : comparaison de HMAC en temps constant, vérification du MAC
+*avant* déchiffrement, effacement des tampons, DPAPI limité à l'utilisateur courant,
+600 000 itérations PBKDF2 au minimum. Les constats CRITIQUE et ELEVE font échouer l'audit ;
+MOYEN et FAIBLE sont seulement reportés au bilan.
+
+En intégration continue, les tests tournent à chaque push, sur n'importe quelle branche.
+L'audit tourne sur toute pull request vers `main` — qu'il peut bloquer — ainsi que sur
+`main` lui-même, complété par une analyse statique CodeQL, et publie un bilan détaillé
+téléchargeable en artefact.
+
 ## Structure
+
+```
+src/      code de l'application
+tests/    banc de test (hors exécutable final)
+outils/   compilation et audit de sécurité
+```
 
 | Fichier | Rôle |
 | --- | --- |
-| `MdpGen.cs` | Tirage aléatoire, génération et fenêtre principale |
-| `Coffre.cs` | Chiffrement et stockage du coffre (DPAPI, AES, PBKDF2) |
-| `CoffreUi.cs` | Fenêtres du coffre, dialogues du maître, compte à rebours de frappe |
-| `AutoType.cs` | Frappe automatique dans une autre fenêtre (SendInput Unicode) |
-| `Reglages.cs` | Réglages et persistance dans `reglages.mithril` |
-| `ReglagesUi.cs` | Fenêtre de réglages (sélecteurs, capture de raccourci) |
-| `Test.cs` | Banc de test (hors exécutable final) |
-| `build.ps1` | Compilation + tests |
+| `src/Generateur.cs` | Tirage aléatoire sans biais et génération des mots de passe |
+| `src/Fenetre.cs` | Fenêtre principale, raccourci global, veille de session |
+| `src/Widgets.cs` | Contrôles dessinés à la main (palette, boutons, curseur, jauge) |
+| `src/Coffre.cs` | Chiffrement et stockage du coffre (DPAPI, AES, PBKDF2) |
+| `src/CoffreUi.cs` | Fenêtres du coffre, dialogues du maître, compte à rebours de frappe |
+| `src/AutoType.cs` | Frappe automatique dans une autre fenêtre (SendInput Unicode) |
+| `src/Reglages.cs` | Réglages et persistance dans `reglages.mithril` |
+| `src/ReglagesUi.cs` | Fenêtre de réglages (sélecteurs, capture de raccourci) |
+| `tests/Banc.cs` | Banc de test |
+| `outils/build.ps1` | Compilation + tests |
+| `outils/audit-securite.ps1` | 34 contrôles de sécurité sur le code (voir plus haut) |
 
 Les exécutables produits ne sont pas versionnés : ils se reconstruisent en une seconde.
 Le binaire distribué est publié en pièce jointe des [Releases](https://github.com/CantinDeBrunoy/Mithril/releases).

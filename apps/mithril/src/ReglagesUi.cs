@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
-namespace MdpGen
+namespace Mithril
 {
     /// <summary>Sélecteur segmenté (choix unique) dessiné dans le thème sombre.</summary>
     class Segment : Control

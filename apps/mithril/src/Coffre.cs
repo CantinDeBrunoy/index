@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace MdpGen
+namespace Mithril
 {
     /// <summary>Erreur du coffre présentable à l'utilisateur (mauvais maître, fichier altéré...).</summary>
     class CoffreException : Exception

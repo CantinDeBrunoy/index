@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
-namespace MdpGen
+namespace Mithril
 {
     /// <summary>
     /// Frappe un texte dans la fenêtre au premier plan via SendInput, en Unicode

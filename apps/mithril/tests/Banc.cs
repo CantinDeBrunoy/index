@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using MdpGen;
+using Mithril;
 
 namespace Banc
 {
