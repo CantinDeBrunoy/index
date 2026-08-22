@@ -38,15 +38,13 @@ namespace Mithril
 
         public static Reglages Actuels = Charger();
 
-        static string Chemin
+        /// <summary>Le dossier de Mithril dans le profil : réglages, coffre local, identité de synchronisation.</summary>
+        public static string Dossier
         {
-            get
-            {
-                return Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "Mithril", "reglages.mithril");
-            }
+            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mithril"); }
         }
+
+        static string Chemin { get { return Path.Combine(Dossier, "reglages.mithril"); } }
 
         public static Reglages Charger()
         {

@@ -33,6 +33,7 @@ namespace Mithril
 
         // --- Session : coffre partagé, barre d'état, raccourci global, verrouillage auto ---
         Coffre coffre; // remplacé lors d'une bascule locale <-> portable (voir OuvrirCoffre)
+        Synchroniseur synchro; // moteur de synchronisation native (docs/SYNCHRO.md), null tant qu'aucun coffre synchronisé n'est réglé
         string avertissementDemarrage; // à montrer une fois la barre d'état créée
         NotifyIcon tray;
         readonly Timer verrouAuto = new Timer();
@@ -212,6 +213,7 @@ namespace Mithril
             pret = true;
             Generer();
             InitialiserSession(); // barre d'état, raccourci global, verrouillage auto
+            DemarrerSynchro();
             if (avertissementDemarrage != null) Notifier(avertissementDemarrage);
         }
 
@@ -225,6 +227,43 @@ namespace Mithril
             avertissementDemarrage = "Coffre portable introuvable (" + cheminPortable +
                 ") : repli sur le coffre local. Le réglage est conservé.";
             return Coffre.ParDefaut();
+        }
+
+        // --- Synchronisation native ---
+
+        /// <summary>
+        /// Démarre le moteur dès qu'un coffre synchronisé est réglé (sinon on n'écoute rien :
+        /// pas de demande du pare-feu pour quelqu'un qui n'a qu'un PC). Les messages du moteur
+        /// arrivent d'un fil d'arrière-plan et sont ramenés sur le fil de l'interface.
+        /// </summary>
+        void DemarrerSynchro()
+        {
+            if (synchro != null || string.IsNullOrEmpty(Reglages.Actuels.CheminCoffrePortable)) return;
+            try
+            {
+                string dossier = Reglages.Dossier;
+                synchro = new Synchroniseur(dossier, Environment.MachineName,
+                    delegate { return string.IsNullOrEmpty(Reglages.Actuels.CheminCoffrePortable) ? null : Reglages.Actuels.CheminCoffrePortable; });
+                synchro.Journal += delegate(string message, bool alerte) { BeginInvoke((Action)delegate { Notifier(message); }); };
+                synchro.CoffreRecu += delegate(AppareilAppaire appareil) { BeginInvoke((Action)delegate { SurCoffreRecu(appareil); }); };
+                synchro.Demarrer(false);
+            }
+            catch (SynchroException ex)
+            {
+                Notifier("Synchronisation indisponible : " + ex.Message);
+                synchro = null;
+            }
+        }
+
+        /// <summary>Le fichier du coffre vient d'être remplacé par la version d'un appareil : ce
+        /// qui est en mémoire est périmé, on verrouille pour relire à la prochaine ouverture.</summary>
+        void SurCoffreRecu(AppareilAppaire appareil)
+        {
+            if (coffre.Portable && coffre.Deverrouille)
+            {
+                coffre.Verrouiller();
+                Notifier("Coffre mis à jour depuis " + appareil.Nom + " : il sera relu au prochain déverrouillage.");
+            }
         }
 
         /// <summary>Barre de titre sombre (Windows 10 1809+) ; sans effet ailleurs.</summary>
@@ -277,6 +316,7 @@ namespace Mithril
                 if (tray.Icon != null) tray.Icon.Dispose(); // icône construite pour elle seule
                 tray.Dispose();
             }
+            if (synchro != null) synchro.Dispose();
             coffre.Verrouiller();
             base.OnFormClosing(e);
         }
@@ -464,6 +504,7 @@ namespace Mithril
             if (synchronise == null) return false;
             Reglages.Actuels.CheminCoffrePortable = synchronise.Chemin;
             Reglages.Actuels.Sauver();
+            DemarrerSynchro();
             coffre.AvertissementSynchro -= Notifier;
             coffre = synchronise;
             coffre.AvertissementSynchro += Notifier;
@@ -499,12 +540,13 @@ namespace Mithril
             while (true)
             {
                 Coffre remplacant;
-                using (var fenetre = new FenetreCoffre(coffre))
+                DemarrerSynchro(); // un coffre synchronisé vient peut-être d'être réglé
+                using (var fenetre = new FenetreCoffre(coffre, synchro))
                 {
                     fenetre.ShowDialog(this);
                     remplacant = fenetre.CoffreRemplacant;
                 }
-                if (remplacant == null) return;
+                if (remplacant == null) { DemarrerSynchro(); return; }
                 // Bascule locale <-> portable : l'ancien coffre est verrouillé (secrets effacés)
                 // et la fenêtre rouvre sur le nouveau, en le déverrouillant si besoin.
                 coffre.Verrouiller();

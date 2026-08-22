@@ -330,6 +330,159 @@ namespace Mithril
         }
     }
 
+    /// <summary>
+    /// Synchronisation native (docs/SYNCHRO.md) : appairer un téléphone par code à 6 chiffres,
+    /// voir et retirer les appareils appairés. Le moteur tourne dans la fenêtre principale ;
+    /// ses événements arrivent d'un fil d'arrière-plan et sont ramenés ici par Invoke.
+    /// </summary>
+    class DialogueSynchro : FormeSombre
+    {
+        readonly Synchroniseur synchro;
+        readonly Label lblEtat;
+        readonly Label lblCode;
+        readonly Panel pnlAppareils = new Panel();
+        readonly Bouton btnAppairer;
+        readonly Timer horloge = new Timer();
+
+        public DialogueSynchro(Synchroniseur synchro)
+        {
+            this.synchro = synchro;
+            Text = "Synchroniser avec un téléphone";
+            ClientSize = new Size(520, 460);
+
+            var titre = Ui.Etiquette(this, 24, 20, 472, "Synchroniser avec un téléphone", false);
+            titre.Font = new Font("Segoe UI Semibold", 11F);
+            titre.Height = 24;
+
+            if (synchro == null)
+            {
+                Ui.Etiquette(this, 24, 56, 472,
+                    "La synchronisation démarre avec un coffre synchronisé : choisis-en un (menu Portable…) " +
+                    "ou crée-le, puis reviens ici.", true).Height = 60;
+                var btnFermerSeul = Ui.Fabriquer(this, 402, 404, 94, 42, "Fermer", true);
+                btnFermerSeul.DialogResult = DialogResult.Cancel;
+                CancelButton = btnFermerSeul;
+                return;
+            }
+
+            Ui.Etiquette(this, 24, 52, 472,
+                "Ce PC : " + synchro.Nom + " — empreinte " + Identite.EmpreinteLisible(synchro.Empreinte).Substring(0, 23) + "…",
+                true).Height = 40;
+
+            btnAppairer = Ui.Fabriquer(this, 24, 96, 240, 44, "Appairer un téléphone", true);
+            btnAppairer.Click += delegate { Appairer(); };
+            lblEtat = Ui.Etiquette(this, 280, 96, 216,
+                "Sur le téléphone : Mithril → Appairer un PC → choisir « " + synchro.Nom + " ».", true);
+            lblEtat.Height = 48;
+
+            lblCode = Ui.Etiquette(this, 24, 150, 472, "", false);
+            lblCode.Font = new Font("Consolas", 28F, FontStyle.Bold);
+            lblCode.Height = 48;
+            lblCode.TextAlign = ContentAlignment.MiddleCenter;
+            lblCode.ForeColor = Palette.Accent;
+
+            Ui.Etiquette(this, 24, 212, 472, "APPAREILS APPAIRÉS", false).ForeColor = Palette.TexteSecondaire;
+            pnlAppareils.SetBounds(24, 234, 472, 160);
+            pnlAppareils.BackColor = Palette.Fond;
+            pnlAppareils.AutoScroll = true;
+            Controls.Add(pnlAppareils);
+            RafraichirAppareils();
+
+            var btnFermer = Ui.Fabriquer(this, 402, 404, 94, 42, "Fermer", true);
+            btnFermer.DialogResult = DialogResult.Cancel;
+            CancelButton = btnFermer;
+
+            synchro.CodeAppairage += SurCode;
+            synchro.Appaire += SurAppaire;
+            synchro.Journal += SurJournal;
+            horloge.Interval = 1000;
+            horloge.Tick += delegate
+            {
+                if (!synchro.AppairageOuvert && btnAppairer.Text != "Appairer un téléphone")
+                {
+                    btnAppairer.Text = "Appairer un téléphone";
+                    btnAppairer.Enabled = true;
+                    if (lblCode.Text.Length == 0) lblEtat.Text = "Appairage terminé ou expiré.";
+                }
+            };
+            horloge.Start();
+        }
+
+        void Appairer()
+        {
+            synchro.OuvrirAppairage();
+            btnAppairer.Text = "En attente… (2 min)";
+            btnAppairer.Enabled = false;
+            lblCode.Text = "";
+            lblEtat.Text = "Sur le téléphone : Mithril → Appairer un PC → choisir « " + synchro.Nom + " ». Le code s'affichera ici.";
+        }
+
+        void SurCode(int code)
+        {
+            if (IsDisposed) return;
+            BeginInvoke((Action)delegate
+            {
+                if (code < 0) { lblCode.Text = ""; return; }
+                lblCode.Text = code.ToString("000000");
+                lblEtat.Text = "Tape ce code sur le téléphone. Il n'est valable que pour cet appairage.";
+            });
+        }
+
+        void SurAppaire(AppareilAppaire appareil)
+        {
+            if (IsDisposed) return;
+            BeginInvoke((Action)delegate
+            {
+                lblCode.Text = "";
+                lblEtat.Text = "Appairé : " + appareil.Nom + ". La synchronisation se fera à chaque ouverture de Mithril sur le téléphone.";
+                RafraichirAppareils();
+            });
+        }
+
+        void SurJournal(string message, bool alerte)
+        {
+            if (IsDisposed || !alerte) return;
+            BeginInvoke((Action)delegate { lblEtat.Text = message; });
+        }
+
+        void RafraichirAppareils()
+        {
+            pnlAppareils.Controls.Clear();
+            int y = 0;
+            var appareils = new List<AppareilAppaire>(synchro.Annuaire.Appareils);
+            if (appareils.Count == 0)
+                Ui.Etiquette(pnlAppareils, 0, 0, 440, "Aucun appareil pour l'instant.", true).Height = 20;
+            foreach (var a in appareils)
+            {
+                var appareil = a;
+                var lbl = Ui.Etiquette(pnlAppareils, 0, y + 8, 330,
+                    appareil.Nom + (appareil.Adresses.Count > 0 ? "  —  " + appareil.Adresses[0] : ""), false);
+                var btnRetirer = Ui.Fabriquer(pnlAppareils, 340, y, 100, 32, "Retirer", false);
+                btnRetirer.Click += delegate
+                {
+                    if (MessageBox.Show(this, "Retirer « " + appareil.Nom + " » ? Il devra être appairé de nouveau pour synchroniser.",
+                        "Mithril", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    synchro.Annuaire.Retirer(appareil.Empreinte);
+                    RafraichirAppareils();
+                };
+                y += 40;
+            }
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            horloge.Stop();
+            if (synchro != null)
+            {
+                synchro.CodeAppairage -= SurCode;
+                synchro.Appaire -= SurAppaire;
+                synchro.Journal -= SurJournal;
+                synchro.FermerAppairage();
+            }
+            base.OnFormClosed(e);
+        }
+    }
+
     /// <summary>Saisie du maître pour ouvrir un coffre verrouillé ; valide sur place.</summary>
     class DialogueDeverrouiller : FormeSombre
     {
@@ -772,6 +925,7 @@ namespace Mithril
     class FenetreCoffre : FormeSombre
     {
         readonly Coffre coffre;
+        readonly Synchroniseur synchro; // null tant qu'aucun coffre synchronisé n'est réglé
 
         /// <summary>Renseigné quand l'utilisateur bascule de coffre (portable ou retour au
         /// local) : la fenêtre principale adopte ce coffre après la fermeture.</summary>
@@ -799,9 +953,10 @@ namespace Mithril
         public readonly Font PoliceSous = new Font("Segoe UI", 8.5F);
         public readonly Font PoliceMdp = new Font("Consolas", 9.75F);
 
-        public FenetreCoffre(Coffre coffre)
+        public FenetreCoffre(Coffre coffre, Synchroniseur synchro)
         {
             this.coffre = coffre;
+            this.synchro = synchro;
             Text = "Mithril — Coffre";
             ClientSize = new Size(600, 540);
 
@@ -826,7 +981,12 @@ namespace Mithril
             itemOuvrir.Click += delegate { OuvrirPortable(); };
             itemRevenir = new ToolStripMenuItem("Revenir au coffre local");
             itemRevenir.Click += delegate { RevenirAuCoffreLocal(); };
-            var itemAppairer = new ToolStripMenuItem("Appairer un téléphone (QR)…");
+            var itemSynchro = new ToolStripMenuItem("Synchroniser avec un téléphone…");
+            itemSynchro.Click += delegate
+            {
+                using (var dialogue = new DialogueSynchro(synchro)) dialogue.ShowDialog(this);
+            };
+            var itemAppairer = new ToolStripMenuItem("Syncthing (QR de l'identifiant)…");
             itemAppairer.Click += delegate
             {
                 string dossier = coffre.Portable ? Path.GetDirectoryName(coffre.Chemin) : "(aucun coffre synchronisé pour l'instant)";
@@ -834,6 +994,7 @@ namespace Mithril
             };
             menuPortable.Items.Add(itemCreer);
             menuPortable.Items.Add(itemOuvrir);
+            menuPortable.Items.Add(itemSynchro);
             menuPortable.Items.Add(itemAppairer);
             menuPortable.Items.Add(new ToolStripSeparator());
             menuPortable.Items.Add(itemRevenir);

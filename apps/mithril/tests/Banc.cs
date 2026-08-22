@@ -2,7 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Net;
+using System.Net.Security;
+using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Text;
 using Mithril;
 
@@ -139,6 +145,9 @@ namespace Banc
 
             // 12. Synchronisation native (MSYN1) : socle sans reseau.
             TesterSynchroSocle();
+
+            // 13. Synchronisation native : le moteur du PC en boucle locale, le banc joue le telephone.
+            TesterSynchroBoucleLocale();
 
             Console.WriteLine(echecs == 0 ? "\nTOUS LES TESTS PASSENT" : "\n" + echecs + " ECHEC(S)");
             Environment.Exit(echecs == 0 ? 0 : 1);
@@ -623,6 +632,231 @@ namespace Banc
             {
                 try { System.Security.Cryptography.CngKey.Open(nomCle).Delete(); } catch (System.Security.Cryptography.CryptographicException) { }
                 try { Directory.Delete(dossier, true); } catch (IOException) { }
+            }
+        }
+
+        // --- Un « telephone » minimal pour eprouver le moteur du PC ---
+
+        sealed class TelephoneBanc : IDisposable
+        {
+            public readonly X509Certificate2 Identite;
+            public readonly byte[] Empreinte;
+            public byte[] DernierEchange = new byte[32];
+            public string Chemin;
+            public Decision DerniereDecision;
+            public TelephoneBanc(string dossier, string nomCle, string chemin)
+            {
+                Identite = Mithril.Identite.Charger(dossier, nomCle);
+                Empreinte = Mithril.Identite.Empreinte(Identite);
+                Chemin = chemin;
+            }
+
+            /// <summary>Ouvre une connexion TLS mutuelle vers le PC ; renvoie le flux et l'empreinte vue du PC.</summary>
+            public SslStream Connecter(int port, out byte[] empreintePc, out TcpClient client)
+            {
+                client = new TcpClient("127.0.0.1", port);
+                client.ReceiveTimeout = 10000;
+                X509Certificate2 vu = null;
+                var tls = new SslStream(client.GetStream(), false,
+                    delegate(object s, X509Certificate c, X509Chain ch, SslPolicyErrors e) { vu = new X509Certificate2(c); return true; });
+                tls.AuthenticateAsClient("mithril", new X509Certificate2Collection(Identite), (SslProtocols)3072, false);
+                empreintePc = Mithril.Identite.Empreinte(vu);
+                return tls;
+            }
+
+            /// <summary>Deroule l'appairage cote telephone ; codeVu recoit le code affiche par le PC.</summary>
+            public string Appairer(int port, Func<int> codeAffiche, int? codeForce)
+            {
+                byte[] fpPc; TcpClient client;
+                using (var tls = Connecter(port, out fpPc, out client))
+                using (client)
+                using (var app = new Appairage(fpPc, Empreinte))
+                {
+                    string type;
+                    Trame.Ecrire(tls, "APP1", app.TelEngagement());
+                    byte[] app2 = Trame.Lire(tls, out type);
+                    Trame.Ecrire(tls, "APP3", app.TelReveler(app2));
+                    int code = codeAffiche();
+                    if (codeForce.HasValue) code = codeForce.Value;
+                    if (!app.TelVerifierCode(code))
+                    {
+                        Trame.Ecrire(tls, "APP4", new byte[32]); // le vrai telephone s'arreterait ; on force le refus cote PC
+                        return null;
+                    }
+                    Trame.Ecrire(tls, "APP4", app.TelPreuve());
+                    byte[] app5 = Trame.Lire(tls, out type);
+                    string nomPc = app.TelVerifierPc(app5);
+                    Trame.Ecrire(tls, "NOMT", Trame.Chaine("Banc"));
+                    return nomPc;
+                }
+            }
+
+            /// <summary>Une session complete, selon la regle du protocole, cote telephone.</summary>
+            public void Synchroniser(int port)
+            {
+                byte[] fpPc; TcpClient client;
+                using (var tls = Connecter(port, out fpPc, out client))
+                using (client)
+                {
+                    string type;
+                    var moi = EtatCoffre.Lire(Chemin, DernierEchange);
+                    Trame.Ecrire(tls, "ETAT", moi.Encoder());
+                    var pc = EtatCoffre.Decoder(Trame.Lire(tls, out type));
+                    DerniereDecision = Synchroniseur.Decider(moi, pc);
+                    switch (DerniereDecision)
+                    {
+                        case Decision.Rien:
+                            if (!moi.Absent) DernierEchange = moi.Empreinte;
+                            break;
+                        case Decision.JEnvoie:
+                        case Decision.ConflitJEnvoie:
+                            {
+                                byte[] contenu = File.ReadAllBytes(Chemin);
+                                var charge = new byte[8 + contenu.Length];
+                                for (int i = 0; i < 8; i++) charge[i] = (byte)(moi.Mtime >> (56 - 8 * i));
+                                Array.Copy(contenu, 0, charge, 8, contenu.Length);
+                                Trame.Ecrire(tls, "FICH", charge);
+                                byte[] recu = Trame.Lire(tls, out type);
+                                if (type != "RECU") throw new Exception("RECU attendu");
+                                DernierEchange = recu;
+                                break;
+                            }
+                        case Decision.JeRecois:
+                        case Decision.ConflitJeRecois:
+                            {
+                                byte[] charge = Trame.Lire(tls, out type);
+                                if (type != "FICH") throw new Exception("FICH attendu");
+                                byte[] contenu = new byte[charge.Length - 8];
+                                Array.Copy(charge, 8, contenu, 0, contenu.Length);
+                                if (DerniereDecision == Decision.ConflitJeRecois && File.Exists(Chemin))
+                                    File.Copy(Chemin, Chemin + ".conflit", true);
+                                File.WriteAllBytes(Chemin, contenu);
+                                DernierEchange = Reseau.Sha256(contenu);
+                                Trame.Ecrire(tls, "RECU", DernierEchange);
+                                break;
+                            }
+                    }
+                    Trame.Lire(tls, out type); if (type != "ADRS") throw new Exception("ADRS attendu");
+                    Trame.Lire(tls, out type); if (type != "FINI") throw new Exception("FINI attendu");
+                }
+            }
+
+            public void Dispose() { Identite.Dispose(); }
+        }
+
+        static void EcrireCoffrePortable(string chemin, string maitre, string libelle)
+        {
+            var c = Coffre.PortableSur(chemin);
+            c.Ouvrir();
+            if (c.MaitreActif) c.Deverrouiller(maitre); else c.DefinirMaitre(maitre);
+            c.Ajouter(libelle, "", "mdp-" + libelle);
+            c.Verrouiller();
+        }
+
+        static void TesterSynchroBoucleLocale()
+        {
+            string racine = Path.Combine(Path.GetTempPath(), "MithrilBancL_" + Guid.NewGuid().ToString("N"));
+            string dossierPc = Path.Combine(racine, "pc"), dossierTel = Path.Combine(racine, "tel"), dossierAutre = Path.Combine(racine, "autre");
+            string cheminPc = Path.Combine(racine, "sync", "coffre-portable.mithril");
+            string cheminTel = Path.Combine(dossierTel, "coffre-portable.mithril");
+            string clePc = "Mithril.Banc.PC." + Guid.NewGuid().ToString("N");
+            string cleTel = "Mithril.Banc.Tel." + Guid.NewGuid().ToString("N");
+            string cleAutre = "Mithril.Banc.Autre." + Guid.NewGuid().ToString("N");
+            Directory.CreateDirectory(dossierPc); Directory.CreateDirectory(dossierTel); Directory.CreateDirectory(dossierAutre);
+            var journal = new List<string>();
+            int codeAffiche = -1;
+            var codePret = new ManualResetEvent(false);
+            try
+            {
+                using (var pc = new Synchroniseur(dossierPc, "DJ", delegate { return cheminPc; }, clePc, 0))
+                using (var tel = new TelephoneBanc(dossierTel, cleTel, cheminTel))
+                {
+                    pc.Journal += delegate(string m, bool alerte) { lock (journal) journal.Add((alerte ? "! " : "  ") + m); };
+                    pc.CodeAppairage += delegate(int code) { if (code >= 0) { codeAffiche = code; codePret.Set(); } };
+                    int recus = 0;
+                    pc.CoffreRecu += delegate { recus++; };
+                    pc.Demarrer(true);
+                    int port = pc.PortEcoute;
+                    Func<int> attendreCode = delegate { codePret.WaitOne(10000); codePret.Reset(); return codeAffiche; };
+
+                    // 13a. Inconnu hors appairage : la connexion est fermee sans un mot.
+                    bool fermeSansMot = false;
+                    try
+                    {
+                        byte[] fp; TcpClient cl;
+                        using (var tls = tel.Connecter(port, out fp, out cl))
+                        using (cl)
+                        {
+                            string t;
+                            Trame.Ecrire(tls, "ETAT", new byte[76]);
+                            try { Trame.Lire(tls, out t); } catch (SynchroException) { fermeSansMot = true; } catch (IOException) { fermeSansMot = true; }
+                        }
+                    }
+                    catch (IOException) { fermeSansMot = true; }
+                    Verifier(fermeSansMot && pc.Annuaire.Appareils.Count == 0, "synchro : appareil inconnu hors appairage ferme sans reponse");
+
+                    // 13b. Appairage avec un code faux : refuse, annuaire intact.
+                    pc.OuvrirAppairage();
+                    string nomPcVu = tel.Appairer(port, attendreCode, 0);
+                    Thread.Sleep(200);
+                    Verifier(nomPcVu == null && pc.Annuaire.Appareils.Count == 0, "synchro : appairage avec un code faux refuse");
+
+                    // 13c. Appairage avec le bon code : le PC se nomme, le telephone entre a l'annuaire.
+                    nomPcVu = tel.Appairer(port, attendreCode, null);
+                    Thread.Sleep(200);
+                    var entree = pc.Annuaire.Trouver(tel.Empreinte);
+                    Verifier(nomPcVu == "DJ" && entree != null && entree.Nom == "Banc" && !pc.AppairageOuvert,
+                        "synchro : appairage en boucle locale TLS, appareil memorise");
+
+                    // 13d. Premier echange : le PC a un coffre, le telephone rien -> le telephone recoit.
+                    EcrireCoffrePortable(cheminPc, "maitre banc", "Depuis PC");
+                    tel.Synchroniser(port);
+                    Verifier(tel.DerniereDecision == Decision.JeRecois && File.Exists(cheminTel)
+                          && Coffre.ComparerConstant(File.ReadAllBytes(cheminTel), File.ReadAllBytes(cheminPc)),
+                        "synchro : premier echange, le telephone recoit le coffre du PC");
+
+                    // 13e. Rien a faire quand les deux sont a jour.
+                    tel.Synchroniser(port);
+                    Verifier(tel.DerniereDecision == Decision.Rien, "synchro : coffres identiques, rien n'est transfere");
+
+                    // 13f. Le telephone modifie seul -> le PC recoit, pose un .bak, signale.
+                    EcrireCoffrePortable(cheminTel, "maitre banc", "Depuis tel");
+                    tel.Synchroniser(port);
+                    Verifier(tel.DerniereDecision == Decision.JEnvoie && recus == 1 && File.Exists(cheminPc + ".bak")
+                          && Coffre.ComparerConstant(File.ReadAllBytes(cheminTel), File.ReadAllBytes(cheminPc)),
+                        "synchro : modification du telephone recue par le PC, .bak pose");
+                    var relu = Coffre.PortableSur(cheminPc); relu.Ouvrir(); relu.Deverrouiller("maitre banc");
+                    Verifier(relu.Entrees.Count == 2, "synchro : le coffre recu s'ouvre avec le maitre et contient les deux entrees");
+                    relu.Verrouiller();
+
+                    // 13g. Conflit : les deux modifient ; le PC est plus ancien -> il recoit et garde sa version en .conflit.
+                    EcrireCoffrePortable(cheminPc, "maitre banc", "Conflit PC");
+                    File.SetLastWriteTimeUtc(cheminPc, DateTime.UtcNow.AddMinutes(-5));
+                    EcrireCoffrePortable(cheminTel, "maitre banc", "Conflit tel");
+                    tel.Synchroniser(port);
+                    string[] conflits = Directory.GetFiles(Path.GetDirectoryName(cheminPc), "*.conflit-*.mithril");
+                    Verifier(tel.DerniereDecision == Decision.ConflitJEnvoie && conflits.Length == 1
+                          && Coffre.ComparerConstant(File.ReadAllBytes(cheminTel), File.ReadAllBytes(cheminPc)),
+                        "synchro : conflit tranche par le plus recent, version perdante conservee en .conflit");
+                    bool alerteConflit = false;
+                    lock (journal) foreach (string l in journal) if (l.StartsWith("! Conflit")) alerteConflit = true;
+                    Verifier(alerteConflit, "synchro : le conflit est signale a l'utilisateur");
+
+                    // 13h. Un autre appareil, jamais appaire, meme avec le bon protocole : refuse.
+                    using (var autre = new TelephoneBanc(dossierAutre, cleAutre, null))
+                    {
+                        bool refuse = false;
+                        try { autre.Synchroniser(port); } catch (SynchroException) { refuse = true; } catch (IOException) { refuse = true; }
+                        Verifier(refuse, "synchro : appareil non appaire refuse en session");
+                    }
+                    pc.Arreter();
+                }
+            }
+            finally
+            {
+                foreach (string k in new[] { clePc, cleTel, cleAutre })
+                    try { CngKey.Open(k).Delete(); } catch (CryptographicException) { }
+                try { Directory.Delete(racine, true); } catch (IOException) { }
             }
         }
 
