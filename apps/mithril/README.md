@@ -251,7 +251,7 @@ L'interface est mesurée et affichée, mais ne conditionne rien.
 
 ## Audit de sécurité
 
-Un second garde-fou complète les tests : 35 contrôles statiques qui vérifient que les
+Un second garde-fou complète les tests : 37 contrôles statiques qui vérifient que les
 propriétés annoncées ici restent vraies au fil des modifications.
 
 ```powershell
@@ -291,7 +291,7 @@ outils/   compilation et audit de sécurité
 | `src/Embleme.cs` | Emblème dessiné par le code, et fabrication des `.ico` |
 | `tests/Banc.cs` | Banc de test |
 | `outils/build.ps1` | Compilation + tests |
-| `outils/audit-securite.ps1` | 35 contrôles de sécurité sur le code (voir plus haut) |
+| `outils/audit-securite.ps1` | 37 contrôles de sécurité sur le code (voir plus haut) |
 | `outils/couverture.ps1` | Mesure de la couverture du banc de test |
 
 Les exécutables produits ne sont pas versionnés : ils se reconstruisent en une seconde.

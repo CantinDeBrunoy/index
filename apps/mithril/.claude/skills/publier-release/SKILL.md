@@ -20,7 +20,7 @@ Tout le reste de cette procédure découle de ce point.
 ```powershell
 git status --short                                                   # arbre propre attendu
 git log --oneline -1                                                 # sur main, à jour
-powershell -ExecutionPolicy Bypass -File outils/build.ps1            # 35 vérifications vertes
+powershell -ExecutionPolicy Bypass -File outils/build.ps1            # banc vert
 powershell -ExecutionPolicy Bypass -File outils/audit-securite.ps1   # aucun constat bloquant
 ```
 

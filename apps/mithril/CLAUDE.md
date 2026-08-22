@@ -12,7 +12,7 @@ code est en français — noms de classes, de variables, commentaires, messages 
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File outils/build.ps1           # compile + lance le banc
-powershell -ExecutionPolicy Bypass -File outils/audit-securite.ps1  # 35 contrôles de sécurité
+powershell -ExecutionPolicy Bypass -File outils/audit-securite.ps1  # 37 contrôles de sécurité
 powershell -ExecutionPolicy Bypass -File outils/couverture.ps1      # couverture (voir Pièges)
 ```
 
@@ -76,8 +76,12 @@ Chaque mot de passe n'est déchiffré qu'à l'instant précis où il est copié,
 Mécaniquement vérifiées par `outils/audit-securite.ps1` : un constat CRITIQUE ou ELEVE fait
 échouer la CI.
 
-- Aucun accès réseau, sous aucune forme — y compris via une DLL native : seules `user32`,
-  `kernel32`, `crypt32` et `dwmapi` sont en liste blanche.
+- Aucun accès réseau **hors de `src/Synchro.cs`** (règle R01), y compris via une DLL
+  native : seules `user32`, `kernel32`, `crypt32` et `dwmapi` sont en liste blanche. Et
+  même dans `Synchro.cs` : sockets bruts uniquement, jamais HTTP, DNS ni proxy (R36), filtre
+  d'adresses privées et comparaison en temps constant obligatoires (R37). Le protocole
+  est fixé par `docs/SYNCHRO.md` (MSYN1), commun à Mithril Android : le modifier, c'est
+  modifier les deux implémentations.
 - `System.Random` interdit : uniquement le CSPRNG.
 - Aucune primitive obsolète (MD5, SHA-1 employé directement, 3DES, RC2/RC4), aucun mode
   ECB/OFB/CFB, aucun `PaddingMode.None`.

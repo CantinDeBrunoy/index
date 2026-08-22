@@ -86,9 +86,32 @@ Write-Host ""
 # ---------------------------------------------------------------------------
 Write-Host "1. Isolement et surface d'attaque" -ForegroundColor Cyan
 
-Interdire "R01" "Isolement" "aucun acces reseau" "CRITIQUE" `
+# Le réseau n'existe que dans src/Synchro.cs (protocole MSYN1, docs/SYNCHRO.md) : partout
+# ailleurs, la promesse « aucun réseau » reste entière.
+$sourcesSansSynchro = @($sourcesToutes | Where-Object { $_.Name -ne "Synchro.cs" })
+Interdire "R01" "Isolement" "aucun acces reseau hors du module de synchronisation" "CRITIQUE" `
     'System\.Net|WebClient|HttpClient|HttpWebRequest|WebRequest|TcpClient|UdpClient|SmtpClient|NetworkStream|new\s+Socket|Dns\.Get' `
-    "l'application ne doit joindre aucun reseau" $sourcesToutes
+    "seul src/Synchro.cs a le droit de toucher au reseau" $sourcesSansSynchro
+
+# Même dans Synchro.cs : des sockets bruts et rien d'autre. Aucun protocole applicatif,
+# aucune résolution de nom — une adresse publique ne peut pas s'écrire sans DNS ni HTTP.
+Interdire "R36" "Isolement" "aucun protocole applicatif ni resolution de nom" "CRITIQUE" `
+    'WebClient|HttpClient|HttpWebRequest|WebRequest|SmtpClient|WebSocket|FtpWebRequest|Dns\.|ServicePointManager|WebProxy' `
+    "le module de synchronisation ne parle qu'en trames MSYN1 sur IP privee" $sourcesToutes
+
+# Invariants du module de synchronisation, s'il existe : filtre d'adresses privées et
+# comparaison en temps constant pour les MAC et les codes d'appairage.
+$synchro = $sourcesProduction | Where-Object { $_.Name -eq "Synchro.cs" }
+if ($synchro) {
+    $manques = @()
+    foreach ($motif in @('EstAdressePrivee\(', 'ComparerConstant\(')) {
+        if (-not ($synchro | Select-String -Pattern $motif -Quiet)) { $manques += $motif }
+    }
+    foreach ($m in $manques) { Constat "R37" "ELEVE" "src/Synchro.cs" "protection absente : $m" }
+    Controle "R37" "Isolement" "synchro : adresses privees et comparaison en temps constant" "ELEVE" ($manques.Count -eq 0) ""
+} else {
+    Controle "R37" "Isolement" "synchro : adresses privees et comparaison en temps constant" "ELEVE" $true "pas de module de synchronisation"
+}
 
 # Liste blanche de DLL natives : wininet, winhttp, ws2_32 ou urlmon ouvriraient une
 # voie reseau sans jamais passer par System.Net.
