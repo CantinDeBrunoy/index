@@ -599,6 +599,9 @@ namespace Mithril
         DateTime finAppairage = DateTime.MinValue;
         int echecsAppairage;
         readonly HashSet<string> sessionsEnCours = new HashSet<string>();
+        int connexionsActives;
+        const int ConnexionsMax = 8;
+        bool appairageEnCours;
 
         /// <summary>Message d'information (faux) ou d'alerte (vrai) pour l'utilisateur, depuis un fil d'arrière-plan.</summary>
         public event Action<string, bool> Journal;
@@ -716,7 +719,14 @@ namespace Mithril
                 catch (SocketException) { continue; }
                 catch (ObjectDisposedException) { return; }
                 catch (InvalidOperationException) { return; }
-                var fil = new Thread(delegate() { Servir(client); });
+                if (Interlocked.Increment(ref connexionsActives) > ConnexionsMax)
+                {
+                    // Plafond : un voisin qui ouvre des connexions en rafale n'épuise ni fils ni mémoire.
+                    Interlocked.Decrement(ref connexionsActives);
+                    try { client.Close(); } catch (SocketException) { }
+                    continue;
+                }
+                var fil = new Thread(delegate() { try { Servir(client); } finally { Interlocked.Decrement(ref connexionsActives); } });
                 fil.IsBackground = true;
                 fil.Name = "Mithril.Synchro.Session";
                 fil.Start();
@@ -730,6 +740,7 @@ namespace Mithril
             {
                 var distant = (IPEndPoint)client.Client.RemoteEndPoint;
                 if (!Reseau.EstAdressePrivee(distant.Address)) return; // fermé sans lire un octet
+                Dire("Connexion reçue de " + distant.Address + ", poignée de main TLS…", false);
                 client.ReceiveTimeout = Reseau.DelaiPoigneeMs;
                 client.SendTimeout = Reseau.DelaiTrameMs;
 
@@ -745,7 +756,11 @@ namespace Mithril
                 {
                     tls.AuthenticateAsServer(identite, true, (SslProtocols)3072 /* Tls12 */, false);
                     client.ReceiveTimeout = Reseau.DelaiTrameMs;
-                    if (certificatDistant == null || !tls.IsMutuallyAuthenticated) return;
+                    if (certificatDistant == null || !tls.IsMutuallyAuthenticated)
+                    {
+                        Dire("Poignée de main TLS sans certificat du téléphone (" + (certificatDistant == null ? "aucun certificat" : "non mutuelle") + ", " + tls.SslProtocol + ", " + tls.CipherAlgorithm + ").", true);
+                        return;
+                    }
                     byte[] empreinteDistante = Identite.Empreinte(certificatDistant);
                     cle = Convert.ToBase64String(empreinteDistante);
 
@@ -772,13 +787,15 @@ namespace Mithril
                     }
                     else if (AppairageOuvert)
                     {
-                        Appairer(tls, empreinteDistante, distant.Address.ToString());
+                        lock (verrou) { if (appairageEnCours) return; appairageEnCours = true; } // un seul code affiché à la fois
+                        try { Appairer(tls, empreinteDistante, distant.Address.ToString()); }
+                        finally { lock (verrou) appairageEnCours = false; }
                     }
                     else Dire("Un appareil inconnu (" + distant.Address + ") a tenté de se connecter. Pour l'appairer : Portable… → Synchroniser avec un téléphone → Appairer.", true);
                 }
             }
             catch (SynchroException ex) { Dire("Synchronisation : " + ex.Message, true); }
-            catch (IOException) { }             // connexion coupée : le téléphone réessaiera
+            catch (IOException ex) { Dire("Connexion coupée pendant l'échange : " + (ex.InnerException != null ? ex.InnerException.Message : ex.Message), true); }
             catch (AuthenticationException ex) { Dire("Poignée de main TLS refusée : " + (ex.InnerException != null ? ex.InnerException.Message : ex.Message), true); }
             catch (SocketException) { }
             catch (ObjectDisposedException) { }

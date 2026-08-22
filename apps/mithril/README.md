@@ -222,6 +222,9 @@ Comment c'est protégé (détail dans [`docs/SYNCHRO.md`](docs/SYNCHRO.md)) :
   modifié le coffre depuis le dernier échange, le plus récent gagne et l'autre est conservé
   en `coffre-portable.conflit-<date>.mithril`, et les deux applis te le disent.
 
+Quand ça ne marche pas : `%APPDATA%\Mithril\synchro.log` trace chaque connexion reçue et la
+cause de chaque refus (sans jamais rien de secret), et le téléphone affiche la cause complète.
+
 *Variante Syncthing* : le coffre portable reste un simple fichier, que Syncthing peut faire
 voyager (Portable… → Syncthing (QR de l'identifiant)… aide à l'appairage). Utile pour un
 relais permanent ; plus nécessaire.
