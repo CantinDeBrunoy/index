@@ -102,6 +102,8 @@ namespace Mithril
     /// couche AES-256 + HMAC-SHA256 dérivée d'un mot de passe maître (PBKDF2).
     /// Emboîtement : DPAPI( AES_maître( données ) ) — illisible hors de la machine même
     /// sans maître, et illisible par un autre processus tant que le maître n'est pas saisi.
+    /// En mode portable (MITHRIL3), la couche DPAPI disparaît : le fichier, chiffré par le
+    /// maître seul (obligatoire), voyage entre machines et se synchronise.
     /// </summary>
     class Coffre
     {
@@ -112,10 +114,18 @@ namespace Mithril
         //                  [45..76] HMAC-SHA256(magie|drapeaux|sel|itérations|IV|chiffré)
         //                  [77..]  données chiffrées AES-256-CBC
         // sans maître :    [9..]   données en clair (mais toujours sous DPAPI)
+        //
+        // --- Format portable : "MITHRIL3" ---
+        // Même bloc que MITHRIL2 avec maître (mêmes décalages 8/9/25/29/45/77), mais écrit
+        // NU sur le disque, sans couche DPAPI : le fichier voyage entre machines et n'est
+        // protégé que par le maître, obligatoire (bit 0 toujours à 1). Le HMAC couvrant la
+        // magie, un MITHRIL3 ne peut pas être maquillé en MITHRIL2 sans invalider le MAC.
         static readonly byte[] Magie = Encoding.ASCII.GetBytes("MITHRIL1");  // ancien, encore lu
-        static readonly byte[] Magie2 = Encoding.ASCII.GetBytes("MITHRIL2"); // écrit désormais
+        static readonly byte[] Magie2 = Encoding.ASCII.GetBytes("MITHRIL2"); // écrit désormais (sous DPAPI)
+        static readonly byte[] Magie3 = Encoding.ASCII.GetBytes("MITHRIL3"); // coffre portable, sans DPAPI
         static readonly byte[] EntropieDpapi = Encoding.ASCII.GetBytes("Mithril.Coffre.v1");
         public const int IterationsDefaut = 600000;
+        public const int IterationsPortableDefaut = 1300000; // OWASP pour PBKDF2-HMAC-SHA1 : seule barrière sans DPAPI
 
         readonly string chemin;
         readonly string cheminSecours;
@@ -128,11 +138,29 @@ namespace Mithril
         SecretMemoire cle;       // 64 octets dérivés : 32 AES + 32 HMAC
         byte[] blocEnAttente;    // bloc interne lu, en attente du maître (ciphertext, sans danger)
         bool deverrouille;
+        bool portable;               // fichier MITHRIL3 : chiffré par maître seul, sans DPAPI
+        DateTime horodatageDisque;   // LastWriteTimeUtc constaté à l'ouverture / au dernier Sauver
+
+        /// <summary>Signalé quand Sauver() écrase une version modifiée ailleurs (synchro concurrente).</summary>
+        public event Action<string> AvertissementSynchro;
 
         public Coffre(string dossier)
         {
             chemin = Path.Combine(dossier, "coffre.mithril");
             cheminSecours = Path.Combine(dossier, "coffre.bak");
+        }
+
+        Coffre(string cheminFichier, bool portable)
+        {
+            chemin = cheminFichier;
+            cheminSecours = cheminFichier + ".bak";
+            this.portable = portable;
+        }
+
+        /// <summary>Coffre portable : fichier chiffré par maître seul (sans DPAPI), qui voyage entre machines.</summary>
+        public static Coffre PortableSur(string cheminFichier)
+        {
+            return new Coffre(cheminFichier, true);
         }
 
         public static Coffre ParDefaut()
@@ -144,6 +172,8 @@ namespace Mithril
         public bool Existe { get { return File.Exists(chemin); } }
         public bool MaitreActif { get { return maitreActif; } }
         public bool Deverrouille { get { return deverrouille; } }
+        public bool Portable { get { return portable; } }
+        public string Chemin { get { return chemin; } }
         public IList<EntreeCoffre> Entrees { get { return entrees.AsReadOnly(); } }
 
         /// <summary>
@@ -183,18 +213,33 @@ namespace Mithril
                 return;
             }
 
+            byte[] brut = File.ReadAllBytes(chemin);
             byte[] bloc;
-            try { bloc = ProtectedData.Unprotect(File.ReadAllBytes(chemin), EntropieDpapi, DataProtectionScope.CurrentUser); }
-            catch (CryptographicException)
+            if (brut.Length >= 9 && Compare(brut, 0, Magie3))
             {
-                throw new CoffreException(
-                    "Le coffre est illisible sur cette session Windows (autre compte, profil réinstallé, ou fichier altéré).");
+                // Coffre portable : le bloc est écrit nu, jamais de DPAPI — c'est ce qui le
+                // rend lisible sur n'importe quelle machine, avec le maître pour seule clé.
+                portable = true;
+                avecIcones = true;
+                bloc = brut;
+                if ((bloc[8] & 1) == 0)
+                    throw new CoffreException("Coffre portable sans mot de passe maître : fichier invalide.");
             }
-
-            bool magie1 = bloc.Length >= 9 && Compare(bloc, 0, Magie);
-            avecIcones = bloc.Length >= 9 && Compare(bloc, 0, Magie2);
-            if (!magie1 && !avecIcones)
-                throw new CoffreException("Ce fichier n'est pas un coffre Mithril valide.");
+            else
+            {
+                portable = false;
+                try { bloc = ProtectedData.Unprotect(brut, EntropieDpapi, DataProtectionScope.CurrentUser); }
+                catch (CryptographicException)
+                {
+                    throw new CoffreException(
+                        "Le coffre est illisible sur cette session Windows (autre compte, profil réinstallé, ou fichier altéré).");
+                }
+                bool magie1 = bloc.Length >= 9 && Compare(bloc, 0, Magie);
+                avecIcones = bloc.Length >= 9 && Compare(bloc, 0, Magie2);
+                if (!magie1 && !avecIcones)
+                    throw new CoffreException("Ce fichier n'est pas un coffre Mithril valide.");
+            }
+            horodatageDisque = File.GetLastWriteTimeUtc(chemin);
 
             maitreActif = (bloc[8] & 1) != 0;
             if (maitreActif)
@@ -284,7 +329,11 @@ namespace Mithril
             ExigerDeverrouille();
             sel = new byte[16];
             using (var rng = new RNGCryptoServiceProvider()) rng.GetBytes(sel);
-            iterations = Reglages.Actuels.IterationsMaitre > 0 ? Reglages.Actuels.IterationsMaitre : IterationsDefaut;
+            // En portable, PBKDF2 est la seule barrière contre une attaque hors-ligne : le
+            // plancher renforcé s'impose même si le réglage utilisateur est plus bas.
+            int plancher = portable ? IterationsPortableDefaut : IterationsDefaut;
+            int demande = Reglages.Actuels.IterationsMaitre;
+            iterations = demande > plancher ? demande : plancher;
             byte[] derive = Deriver(nouveau, sel, iterations);
             if (cle != null) cle.Dispose();
             cle = new SecretMemoire(derive);
@@ -295,9 +344,38 @@ namespace Mithril
         public void RetirerMaitre()
         {
             ExigerDeverrouille();
+            if (portable)
+                throw new CoffreException("Impossible de retirer le maître d'un coffre portable : c'est sa seule protection.");
             if (cle != null) { cle.Dispose(); cle = null; }
             maitreActif = false;
             Sauver();
+        }
+
+        /// <summary>
+        /// Copie les entrées vers un NOUVEAU coffre portable (MITHRIL3) à l'emplacement donné.
+        /// Le coffre d'origine n'est ni modifié ni converti ; le maître est obligatoire.
+        /// </summary>
+        public Coffre CopierVersPortable(string cheminFichier, string maitre)
+        {
+            ExigerDeverrouille();
+            if (string.IsNullOrEmpty(maitre))
+                throw new CoffreException("Un coffre portable exige un mot de passe maître.");
+            var cible = PortableSur(cheminFichier);
+            cible.deverrouille = true; // coffre neuf, encore vide
+            foreach (var e in entrees)
+            {
+                var copie = new EntreeCoffre
+                {
+                    Libelle = e.Libelle,
+                    Identifiant = e.Identifiant,
+                    Creation = e.Creation,
+                    Icone = e.Icone
+                };
+                copie.DefinirMdp(e.RevelerMdpUtf8()); // DefinirMdp prend possession et efface
+                cible.entrees.Add(copie);
+            }
+            cible.DefinirMaitre(maitre); // dérive la clé puis Sauver() écrit le fichier MITHRIL3
+            return cible;
         }
 
         /// <summary>Exportation EN CLAIR, sur action explicite : c'est la sauvegarde de secours.</summary>
@@ -320,6 +398,8 @@ namespace Mithril
         public void Sauver()
         {
             ExigerDeverrouille();
+            if (portable && !maitreActif)
+                throw new CoffreException("Un coffre portable exige un mot de passe maître : définis-le d'abord.");
             byte[] charge = SerialiserEntrees();
             byte[] bloc;
 
@@ -331,7 +411,7 @@ namespace Mithril
                 byte[] chiffre = Aes(derive, iv, charge, 0, charge.Length, true);
 
                 bloc = new byte[77 + chiffre.Length];
-                Array.Copy(Magie2, bloc, 8);
+                Array.Copy(portable ? Magie3 : Magie2, bloc, 8);
                 bloc[8] = 1;
                 Array.Copy(sel, 0, bloc, 9, 16);
                 Array.Copy(BitConverter.GetBytes(iterations), 0, bloc, 25, 4);
@@ -350,14 +430,38 @@ namespace Mithril
             }
             Array.Clear(charge, 0, charge.Length);
 
-            byte[] fichier = ProtectedData.Protect(bloc, EntropieDpapi, DataProtectionScope.CurrentUser);
-            Array.Clear(bloc, 0, bloc.Length);
+            byte[] fichier;
+            if (portable)
+            {
+                fichier = bloc; // écrit nu : la seule protection est le maître (PBKDF2 + AES + HMAC)
+            }
+            else
+            {
+                fichier = ProtectedData.Protect(bloc, EntropieDpapi, DataProtectionScope.CurrentUser);
+                Array.Clear(bloc, 0, bloc.Length);
+            }
+
+            // Synchro concurrente (portable) : si le fichier a changé depuis notre ouverture, on
+            // écrase quand même — dernier écrit gagne, l'autre version bascule en .bak — mais on
+            // le signale. Pas de fusion : la limite est assumée et documentée dans le README.
+            bool ecraseAutreVersion = portable && horodatageDisque != DateTime.MinValue
+                && File.Exists(chemin) && File.GetLastWriteTimeUtc(chemin) != horodatageDisque;
 
             Directory.CreateDirectory(Path.GetDirectoryName(chemin));
             string temporaire = chemin + ".tmp";
             File.WriteAllBytes(temporaire, fichier);
             if (File.Exists(chemin)) File.Replace(temporaire, chemin, cheminSecours);
             else File.Move(temporaire, chemin);
+            if (portable) Array.Clear(bloc, 0, bloc.Length);
+            horodatageDisque = File.GetLastWriteTimeUtc(chemin);
+
+            if (ecraseAutreVersion)
+            {
+                var gestionnaire = AvertissementSynchro;
+                if (gestionnaire != null) gestionnaire(
+                    "Le coffre portable avait été modifié ailleurs : cette version l'écrase (la précédente est dans " +
+                    Path.GetFileName(cheminSecours) + ").");
+            }
         }
 
         // charge : int32 nombre, puis par entrée libellé, identifiant, ticks, mdp (UTF-8 préfixé longueur)

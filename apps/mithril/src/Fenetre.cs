@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
@@ -31,7 +32,8 @@ namespace Mithril
         bool pret;
 
         // --- Session : coffre partagé, barre d'état, raccourci global, verrouillage auto ---
-        readonly Coffre coffre = Coffre.ParDefaut();
+        Coffre coffre; // remplacé lors d'une bascule locale <-> portable (voir OuvrirCoffre)
+        string avertissementDemarrage; // à montrer une fois la barre d'état créée
         NotifyIcon tray;
         readonly Timer verrouAuto = new Timer();
         bool vraimentQuitter;
@@ -52,6 +54,8 @@ namespace Mithril
 
         public Fenetre()
         {
+            coffre = CoffreInitial();
+            coffre.AvertissementSynchro += Notifier;
             Text = "Mithril";
             Icon = Embleme.Icone();
             ClientSize = new Size(640, 548);
@@ -208,6 +212,19 @@ namespace Mithril
             pret = true;
             Generer();
             InitialiserSession(); // barre d'état, raccourci global, verrouillage auto
+            if (avertissementDemarrage != null) Notifier(avertissementDemarrage);
+        }
+
+        /// <summary>Coffre portable choisi dans les réglages s'il est joignable, sinon le coffre
+        /// local DPAPI — repli signalé, sans toucher au réglage (lecteur non monté, synchro en retard).</summary>
+        Coffre CoffreInitial()
+        {
+            string cheminPortable = Reglages.Actuels.CheminCoffrePortable;
+            if (string.IsNullOrEmpty(cheminPortable)) return Coffre.ParDefaut();
+            if (File.Exists(cheminPortable)) return Coffre.PortableSur(cheminPortable);
+            avertissementDemarrage = "Coffre portable introuvable (" + cheminPortable +
+                ") : repli sur le coffre local. Le réglage est conservé.";
+            return Coffre.ParDefaut();
         }
 
         /// <summary>Barre de titre sombre (Windows 10 1809+) ; sans effet ailleurs.</summary>
@@ -446,8 +463,23 @@ namespace Mithril
         void OuvrirCoffre()
         {
             if (!AssurerCoffrePret(this)) return;
-            using (var fenetre = new FenetreCoffre(coffre))
-                fenetre.ShowDialog(this);
+            while (true)
+            {
+                Coffre remplacant;
+                using (var fenetre = new FenetreCoffre(coffre))
+                {
+                    fenetre.ShowDialog(this);
+                    remplacant = fenetre.CoffreRemplacant;
+                }
+                if (remplacant == null) return;
+                // Bascule locale <-> portable : l'ancien coffre est verrouillé (secrets effacés)
+                // et la fenêtre rouvre sur le nouveau, en le déverrouillant si besoin.
+                coffre.Verrouiller();
+                coffre.AvertissementSynchro -= Notifier;
+                coffre = remplacant;
+                coffre.AvertissementSynchro += Notifier;
+                if (!AssurerCoffrePret(this)) return;
+            }
         }
 
         // --- Barre d'état système + raccourci global + verrouillage auto ---
@@ -531,6 +563,7 @@ namespace Mithril
             Show();
             WindowState = FormWindowState.Normal;
             Activate();
+            AutoType.RamenerAuPremierPlan(Handle); // Activate() seul ne suffit pas depuis l'arrière-plan
         }
 
         void QuitterReellement()

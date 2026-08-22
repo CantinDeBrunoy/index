@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using Mithril;
 
@@ -115,6 +116,9 @@ namespace Banc
 
             // 7. Le coffre : chiffrement, maître, altération, protection mémoire.
             TesterCoffre();
+
+            // 7bis. Le coffre portable (MITHRIL3, sans DPAPI).
+            TesterCoffrePortable();
 
             // 8. Auto-type : primitives sûres (sans envoyer de vraies frappes).
             TesterAutoType();
@@ -251,6 +255,183 @@ namespace Banc
                 string export = Path.Combine(dossier, "export.txt");
                 apresSuppr.Exporter(export);
                 Verifier(File.ReadAllText(export).Contains("autre$mdp2"), "coffre : export en clair complet");
+            }
+            finally
+            {
+                try { Directory.Delete(dossier, true); } catch { }
+            }
+        }
+
+        // --- Forge de fichiers coffre au format documenté, SANS passer par Coffre.cs :
+        // c'est ce qui permet de prouver la lecture d'un fichier venu d'ailleurs. ---
+
+        static byte[] SerialiserUneEntree(string libelle, string identifiant, string mdp)
+        {
+            using (var flux = new MemoryStream())
+            using (var ecrivain = new BinaryWriter(flux, Encoding.UTF8))
+            {
+                ecrivain.Write(1);
+                ecrivain.Write(libelle);
+                ecrivain.Write(identifiant);
+                ecrivain.Write(DateTime.Now.Ticks);
+                byte[] octets = Encoding.UTF8.GetBytes(mdp);
+                ecrivain.Write(octets.Length);
+                ecrivain.Write(octets);
+                ecrivain.Write(0); // pas d'icone (format v2)
+                ecrivain.Flush();
+                return flux.ToArray();
+            }
+        }
+
+        static byte[] ConstruireBlocMaitre(string magie, string maitre, int iterations, byte[] charge)
+        {
+            var sel = new byte[16];
+            var iv = new byte[16];
+            using (var rng = new RNGCryptoServiceProvider()) { rng.GetBytes(sel); rng.GetBytes(iv); }
+            byte[] derive;
+            using (var pbkdf2 = new Rfc2898DeriveBytes(maitre, sel, iterations))
+                derive = pbkdf2.GetBytes(64);
+            var cleAes = new byte[32];
+            Array.Copy(derive, cleAes, 32);
+            byte[] chiffre;
+            using (var aes = new AesCryptoServiceProvider())
+            {
+                aes.Key = cleAes;
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+                using (var transformation = aes.CreateEncryptor())
+                    chiffre = transformation.TransformFinalBlock(charge, 0, charge.Length);
+            }
+            var bloc = new byte[77 + chiffre.Length];
+            Array.Copy(Encoding.ASCII.GetBytes(magie), bloc, 8);
+            bloc[8] = 1;
+            Array.Copy(sel, 0, bloc, 9, 16);
+            Array.Copy(BitConverter.GetBytes(iterations), 0, bloc, 25, 4);
+            Array.Copy(iv, 0, bloc, 29, 16);
+            Array.Copy(chiffre, 0, bloc, 77, chiffre.Length);
+            var cleHmac = new byte[32];
+            Array.Copy(derive, 32, cleHmac, 0, 32);
+            using (var hmac = new HMACSHA256(cleHmac))
+            {
+                hmac.TransformBlock(bloc, 0, 45, null, 0);
+                hmac.TransformFinalBlock(bloc, 77, chiffre.Length);
+                Array.Copy(hmac.Hash, 0, bloc, 45, 32);
+            }
+            return bloc;
+        }
+
+        static void TesterCoffrePortable()
+        {
+            string dossier = Path.Combine(Path.GetTempPath(), "MithrilBancP_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dossier);
+            try
+            {
+                string fichier = Path.Combine(dossier, "portable.mithril");
+
+                // 7p-a. Sans maitre, rien ne s'ecrit : c'est la seule protection du fichier.
+                var sansMaitre = Coffre.PortableSur(fichier);
+                sansMaitre.Ouvrir(); // inexistant : vide, deverrouille, portable
+                bool refuse = false;
+                try { sansMaitre.Ajouter("X", "", "mdp"); } // Ajouter -> Sauver -> refus
+                catch (CoffreException) { refuse = true; }
+                Verifier(refuse && !File.Exists(fichier), "portable : refus d'ecrire sans maitre");
+
+                // 7p-b. Aller-retour complet ; le fichier brut commence par la magie MITHRIL3.
+                sansMaitre.DefinirMaitre("phrase de passe portable");
+                byte[] brut = File.ReadAllBytes(fichier);
+                Verifier(brut.Length > 77 && Encoding.ASCII.GetString(brut, 0, 8) == "MITHRIL3",
+                    "portable : fichier ecrit nu avec magie MITHRIL3");
+                var relecture = Coffre.PortableSur(fichier);
+                relecture.Ouvrir();
+                Verifier(relecture.Portable && relecture.MaitreActif && !relecture.Deverrouille,
+                    "portable : verrouille a l'ouverture");
+                relecture.Deverrouiller("phrase de passe portable");
+                Verifier(relecture.Deverrouille && relecture.Entrees.Count == 1
+                      && relecture.Entrees[0].RevelerMdp() == "mdp",
+                    "portable : aller-retour avec le bon maitre");
+
+                // 7p-c. Plancher d'iterations renforce (PBKDF2 est la seule barriere hors ligne).
+                Verifier(BitConverter.ToInt32(brut, 25) >= Coffre.IterationsPortableDefaut,
+                    "portable : au moins 1 300 000 iterations PBKDF2");
+
+                // 7p-d. Mauvais maitre rejete par le HMAC, avant tout dechiffrement.
+                var mauvais = Coffre.PortableSur(fichier);
+                mauvais.Ouvrir();
+                bool rejete = false;
+                try { mauvais.Deverrouiller("pas le bon"); } catch (CoffreException) { rejete = true; }
+                Verifier(rejete && !mauvais.Deverrouille, "portable : mauvais maitre rejete (HMAC)");
+
+                // 7p-e. Le maitre d'un portable est irrevocable.
+                bool retraitRefuse = false;
+                try { relecture.RetirerMaitre(); } catch (CoffreException) { retraitRefuse = true; }
+                Verifier(retraitRefuse && relecture.MaitreActif, "portable : retrait du maitre refuse");
+
+                // 7p-f. LE COEUR : un fichier forge ici meme, sans jamais toucher DPAPI, s'ouvre
+                // et se dechiffre avec le maitre seul — c'est ce qui simule une autre machine
+                // (aucune cle liee a la session Windows n'intervient dans la lecture).
+                string fichierForge = Path.Combine(dossier, "autre-machine.mithril");
+                byte[] charge = SerialiserUneEntree("Ailleurs", "didier", "secret-d-ailleurs");
+                File.WriteAllBytes(fichierForge, ConstruireBlocMaitre("MITHRIL3", "maitre nomade", 12000, charge));
+                var nomade = Coffre.PortableSur(fichierForge);
+                nomade.Ouvrir();
+                nomade.Deverrouiller("maitre nomade");
+                Verifier(nomade.Deverrouille && nomade.Entrees.Count == 1
+                      && nomade.Entrees[0].RevelerMdp() == "secret-d-ailleurs",
+                    "portable : fichier forge hors DPAPI lisible (simule une autre machine)");
+
+                // 7p-g. Alteration detectee, dans le chiffre comme dans l'en-tete.
+                byte[] casse = File.ReadAllBytes(fichierForge);
+                casse[casse.Length - 1] ^= 0xFF; // dernier octet du chiffre
+                File.WriteAllBytes(fichierForge, casse);
+                var altere1 = Coffre.PortableSur(fichierForge);
+                altere1.Ouvrir();
+                bool detecte1 = false;
+                try { altere1.Deverrouiller("maitre nomade"); } catch (CoffreException) { detecte1 = true; }
+                casse[casse.Length - 1] ^= 0xFF; // restaure le chiffre
+                casse[9] ^= 0xFF;                // premier octet du sel : l'en-tete est couvert aussi
+                File.WriteAllBytes(fichierForge, casse);
+                var altere2 = Coffre.PortableSur(fichierForge);
+                altere2.Ouvrir();
+                bool detecte2 = false;
+                try { altere2.Deverrouiller("maitre nomade"); } catch (CoffreException) { detecte2 = true; }
+                Verifier(detecte1 && detecte2, "portable : alteration du chiffre ou de l'en-tete detectee");
+
+                // 7p-h. Retrocompatibilite : un DPAPI(MITHRIL2) forge par le test reste lisible
+                // exactement comme avant l'arrivee du format portable.
+                byte[] chargeAncien = SerialiserUneEntree("Ancien", "", "mdp-ancien");
+                byte[] blocAncien = ConstruireBlocMaitre("MITHRIL2", "maitre ancien", 12000, chargeAncien);
+                File.WriteAllBytes(Path.Combine(dossier, "coffre.mithril"), ProtectedData.Protect(
+                    blocAncien, Encoding.ASCII.GetBytes("Mithril.Coffre.v1"), DataProtectionScope.CurrentUser));
+                var ancien = new Coffre(dossier);
+                ancien.Ouvrir();
+                ancien.Deverrouiller("maitre ancien");
+                Verifier(!ancien.Portable && ancien.Deverrouille
+                      && ancien.Entrees[0].RevelerMdp() == "mdp-ancien",
+                    "portable : un coffre DPAPI existant reste lisible a l'identique");
+
+                // 7p-i. La copie vers un portable exige un maitre et laisse l'origine intacte.
+                var origine = new Coffre(Path.Combine(dossier, "origine"));
+                origine.Ouvrir();
+                origine.Ajouter("Site C", "didi", "mdp-c");
+                string fichierOrigine = Path.Combine(dossier, "origine", "coffre.mithril");
+                byte[] avantCopie = File.ReadAllBytes(fichierOrigine);
+                string fichierCopie = Path.Combine(dossier, "copie.mithril");
+                bool copieRefusee = false;
+                try { origine.CopierVersPortable(fichierCopie, ""); }
+                catch (CoffreException) { copieRefusee = true; }
+                Verifier(copieRefusee && !File.Exists(fichierCopie), "portable : creation refusee sans maitre");
+                var copiePortable = origine.CopierVersPortable(fichierCopie, "maitre de la copie");
+                byte[] apresCopie = File.ReadAllBytes(fichierOrigine);
+                bool intact = avantCopie.Length == apresCopie.Length;
+                for (int i = 0; intact && i < avantCopie.Length; i++)
+                    if (avantCopie[i] != apresCopie[i]) intact = false;
+                var relectureCopie = Coffre.PortableSur(fichierCopie);
+                relectureCopie.Ouvrir();
+                relectureCopie.Deverrouiller("maitre de la copie");
+                Verifier(intact && copiePortable.Portable && relectureCopie.Entrees.Count == 1
+                      && relectureCopie.Entrees[0].RevelerMdp() == "mdp-c",
+                    "portable : copie complete, coffre d'origine intact octet pour octet");
             }
             finally
             {
