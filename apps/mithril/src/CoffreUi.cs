@@ -209,20 +209,41 @@ namespace Mithril
     }
 
     /// <summary>
-    /// Libellé + identifiant pour enregistrer un mot de passe. Avec <c>avecMdp</c>, ajoute
-    /// un champ pour saisir un mot de passe qui n'a pas été généré par l'appli.
+    /// Libellé, identifiant et catégorie d'une entrée. Avec <c>avecMdp</c>, ajoute un champ
+    /// pour saisir un mot de passe qui n'a pas été généré par l'appli. Le constructeur qui
+    /// prend une entrée sert à la modifier : les champs arrivent pré-remplis, sauf le mot de
+    /// passe — corriger un libellé ou ranger une entrée n'a alors jamais besoin de déchiffrer
+    /// le secret, ni de le déposer dans un contrôle de saisie.
     /// </summary>
     class DialogueAjout : FormeSombre
     {
         public string Libelle;
         public string Identifiant;
         public string Categorie;
-        public string Mdp; // renseigné seulement en mode saisie manuelle
+        public string Mdp; // saisie manuelle, ou nouveau mot de passe ; vide = inchangé
+
         readonly ToolTip infobulle = new ToolTip();
+        readonly TextBox champLibelle;
+        readonly TextBox champId;
+        readonly TextBox champCategorie;
+        readonly TextBox champMdp;
 
         public DialogueAjout(bool avecMdp, IList<string> categoriesConnues)
+            : this(avecMdp, categoriesConnues, false) { }
+
+        /// <summary>Modifier une entrée déjà enregistrée.</summary>
+        public DialogueAjout(EntreeCoffre entree, IList<string> categoriesConnues)
+            : this(true, categoriesConnues, true)
         {
-            Text = avecMdp ? "Ajouter au coffre" : "Enregistrer dans le coffre";
+            champLibelle.Text = entree.Libelle;
+            champId.Text = entree.Identifiant;
+            champCategorie.Text = entree.CategorieOuVide;
+        }
+
+        DialogueAjout(bool avecMdp, IList<string> categoriesConnues, bool modification)
+        {
+            Text = modification ? "Modifier l'entrée"
+                 : avecMdp ? "Ajouter au coffre" : "Enregistrer dans le coffre";
             ClientSize = new Size(440, avecMdp ? 396 : 328);
 
             var titre = Ui.Etiquette(this, 24, 20, 392, Text, false);
@@ -230,23 +251,23 @@ namespace Mithril
             titre.Height = 24;
 
             Ui.Etiquette(this, 24, 56, 392, "Libellé (site, service...)", false);
-            var champLibelle = Ui.Champ(this, 24, 76, 392, false);
+            champLibelle = Ui.Champ(this, 24, 76, 392, false);
             Ui.Etiquette(this, 24, 122, 392, "Identifiant (optionnel)", false);
-            var champId = Ui.Champ(this, 24, 142, 392, false);
+            champId = Ui.Champ(this, 24, 142, 392, false);
             Ui.Etiquette(this, 24, 188, 392, "Catégorie (optionnel)", false);
-            var champCategorie = Ui.Champ(this, 24, 208, 392, false);
+            champCategorie = Ui.Champ(this, 24, 208, 392, false);
             Ui.Suggerer(champCategorie, categoriesConnues);
             infobulle.SetToolTip(champCategorie,
                 "Section de rangement, par exemple « Jeux vidéo ». Vide = entrée non rangée.");
 
-            TextBox champMdp = null;
             int yBoutons = 264;
             if (avecMdp)
             {
-                Ui.Etiquette(this, 24, 254, 392, "Mot de passe", false);
+                Ui.Etiquette(this, 24, 254, 392,
+                    modification ? "Nouveau mot de passe (vide = inchangé)" : "Mot de passe", false);
                 champMdp = Ui.Champ(this, 24, 274, 392, true);
                 champMdp.Width -= 40; // place pour l'œil
-                var oeil = new BoutonIcone("", "Afficher / masquer", infobulle);
+                var oeil = new BoutonIcone("\uE7B3", "Afficher / masquer", infobulle);
                 oeil.SetBounds(378, 279, 28, 24);
                 oeil.Click += delegate
                 {
@@ -263,7 +284,8 @@ namespace Mithril
 
             var btnAnnuler = Ui.Fabriquer(this, 200, yBoutons, 94, 42, "Annuler", false);
             btnAnnuler.DialogResult = DialogResult.Cancel;
-            var btnOk = Ui.Fabriquer(this, 306, yBoutons, 110, 42, "Enregistrer", true);
+            var btnOk = Ui.Fabriquer(this, 306, yBoutons, 110, 42,
+                modification ? "Modifier" : "Enregistrer", true);
             btnOk.Click += delegate
             {
                 if (champLibelle.Text.Trim().Length == 0)
@@ -271,7 +293,8 @@ namespace Mithril
                     lblErreur.Text = "Donne un libellé pour retrouver l'entrée.";
                     return;
                 }
-                if (avecMdp && champMdp.Text.Length == 0)
+                // À la modification, un champ vide veut dire « garde celui d'avant ».
+                if (avecMdp && !modification && champMdp.Text.Length == 0)
                 {
                     lblErreur.Text = "Saisis le mot de passe à enregistrer.";
                     return;
@@ -285,41 +308,13 @@ namespace Mithril
             AcceptButton = btnOk;
             CancelButton = btnAnnuler;
         }
-    }
 
-    /// <summary>Ranger une entrée déjà présente dans une section (ou l'en sortir).</summary>
-    class DialogueCategorie : FormeSombre
-    {
-        public string Categorie;
-
-        public DialogueCategorie(EntreeCoffre entree, IList<string> categoriesConnues)
+        protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            Text = "Ranger dans une catégorie";
-            ClientSize = new Size(440, 250);
-
-            var titre = Ui.Etiquette(this, 24, 20, 392, Text, false);
-            titre.Font = new Font("Segoe UI Semibold", 11F);
-            titre.Height = 24;
-
-            Ui.Etiquette(this, 24, 52, 392,
-                "« " + entree.Libelle + " » ira dans cette section de la liste. Laisse le champ " +
-                "vide pour la sortir de toute section.", true).Height = 44;
-
-            Ui.Etiquette(this, 24, 110, 392, "Catégorie", false);
-            var champ = Ui.Champ(this, 24, 130, 392, false);
-            champ.Text = entree.CategorieOuVide;
-            Ui.Suggerer(champ, categoriesConnues);
-
-            var btnAnnuler = Ui.Fabriquer(this, 200, 186, 94, 42, "Annuler", false);
-            btnAnnuler.DialogResult = DialogResult.Cancel;
-            var btnOk = Ui.Fabriquer(this, 306, 186, 110, 42, "Ranger", true);
-            btnOk.Click += delegate
-            {
-                Categorie = champ.Text.Trim();
-                DialogResult = DialogResult.OK;
-            };
-            AcceptButton = btnOk;
-            CancelButton = btnAnnuler;
+            // Le mot de passe saisi ne traîne pas dans le contrôle après coup ; l'appelant
+            // en a pris copie et le coffre le remet sous SecretMemoire.
+            if (champMdp != null) champMdp.Text = "";
+            base.OnFormClosed(e);
         }
     }
 
@@ -650,9 +645,10 @@ namespace Mithril
             icoSuppr.Click += delegate { Supprimer(); };
             Controls.Add(icoSuppr);
 
-            var icoRanger = new BoutonIcone("", "Ranger dans une catégorie", infobulle);
-            icoRanger.Click += delegate { parent.RangerEntree(entree); };
-            Controls.Add(icoRanger);
+            var icoModifier = new BoutonIcone("",
+                "Modifier : libellé, identifiant, catégorie, mot de passe", infobulle);
+            icoModifier.Click += delegate { parent.ModifierEntree(entree); };
+            Controls.Add(icoModifier);
 
             remasque.Interval = 8000;
             remasque.Tick += delegate { Masquer(); };
@@ -661,7 +657,7 @@ namespace Mithril
 
             Resize += delegate
             {
-                icoRanger.SetBounds(Width - 174, 12, 28, 28);
+                icoModifier.SetBounds(Width - 174, 12, 28, 28);
                 icoOeil.SetBounds(Width - 140, 12, 28, 28);
                 icoTaper.SetBounds(Width - 106, 12, 28, 28);
                 icoCopie.SetBounds(Width - 72, 12, 28, 28);
@@ -1097,19 +1093,20 @@ namespace Mithril
             Rafraichir();
         }
 
-        /// <summary>Ranger une entrée existante dans une section, depuis sa ligne.</summary>
-        public void RangerEntree(EntreeCoffre entree)
+        /// <summary>Modifier une entrée existante : libellé, identifiant, catégorie, mot de passe.</summary>
+        public void ModifierEntree(EntreeCoffre entree)
         {
             if (!coffre.Deverrouille) return;
-            using (var dialogue = new DialogueCategorie(entree, coffre.Categories()))
+            using (var dialogue = new DialogueAjout(entree, coffre.Categories()))
             {
                 if (dialogue.ShowDialog(this) != DialogResult.OK) return;
                 try
                 {
-                    coffre.DefinirCategorie(entree, dialogue.Categorie);
-                    MontrerStatut(dialogue.Categorie.Length == 0
-                        ? "Entrée sortie de sa section."
-                        : "Rangée dans « " + dialogue.Categorie + " ».", false);
+                    coffre.Modifier(entree, dialogue.Libelle, dialogue.Identifiant,
+                                    dialogue.Categorie, dialogue.Mdp);
+                    MontrerStatut(string.IsNullOrEmpty(dialogue.Mdp)
+                        ? "Entrée modifiée."
+                        : "Entrée modifiée, nouveau mot de passe enregistré.", false);
                 }
                 catch (CoffreException ex) { MontrerStatut(ex.Message, true); }
             }

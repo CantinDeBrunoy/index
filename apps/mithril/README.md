@@ -80,11 +80,15 @@ un identifiant. Le bouton **« ＋ Ajouter »** de la fenêtre du coffre permet 
 un mot de passe **existant** (qui n'a pas été généré ici). Tant que tu n'enregistres rien,
 l'application n'écrit rien sur disque.
 
+L'icône ✎ d'une ligne **modifie** l'entrée : libellé, identifiant, catégorie et mot de
+passe. Le champ du mot de passe part vide et le laisser ainsi conserve l'ancien — corriger
+un libellé n'oblige donc jamais à faire ressortir le secret de la mémoire chiffrée.
+
 ### Sections
 
 Chaque entrée peut être rangée dans une **catégorie** — « Jeux vidéo », « Travail »… — au
-moment de l'enregistrement, ou plus tard via l'icône 🗀 de sa ligne. Le champ complète les
-catégories déjà utilisées, pour qu'une faute de frappe n'en crée pas une deuxième.
+moment de l'enregistrement, ou plus tard par ✎. Le champ complète les catégories déjà
+utilisées, pour qu'une faute de frappe n'en crée pas une deuxième.
 
 La liste s'organise alors sur deux niveaux : les sections se replient d'un clic sur leur
 en-tête, et **les comptes qui partagent un même libellé se regroupent** — trois comptes
@@ -227,6 +231,7 @@ Le script compile l'application, compile le banc de test et l'exécute.
 | Coffre : aller-retour DPAPI et maître, mauvais maître rejeté, altération détectée, protection mémoire, export | 13 assertions |
 | Coffre portable : aller-retour sans DPAPI, fichier forgé « autre machine », maître obligatoire, rétrocompatibilité DPAPI | 12 assertions |
 | Catégories : aller-retour, rangement sur deux niveaux, lecture des formats 1 à 3 et migration | 10 assertions |
+| Édition d'une entrée : champs modifiés, mot de passe remplacé ou laissé en place | 2 assertions |
 | Auto-type : introspection des fenêtres, détection de cible élevée | 2 assertions |
 
 ### Couverture

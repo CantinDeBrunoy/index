@@ -527,11 +527,25 @@ namespace Banc
                     "categories : deux niveaux, section sans nom en dernier");
 
                 // 7c-c. Ranger une entree existante la deplace ; les sections restent triees.
-                relu.DefinirCategorie(relu.Entrees[2], "Argent");
+                relu.Modifier(relu.Entrees[2], "Banque", "didier", "Argent", null);
                 var apres = relu.Ranger();
                 Verifier(apres.Count == 2 && apres[0].Nom == "Argent" && apres[1].Nom == "Jeux video"
                       && relu.Categories().Count == 2,
                     "categories : rangement d'une entree existante, sections triees");
+
+                // 7c-c-bis. Edition : un mot de passe vide garde l'ancien, un mot de passe
+                // renseigne le remplace ; le tout persiste apres relecture du fichier.
+                relu.Modifier(relu.Entrees[2], "Banque en ligne", "didier2", "Argent", null);
+                relu.Modifier(relu.Entrees[0], "LoL", "smurf", "Jeux video", "mdp-1-change");
+                var reluApresEdition = new Coffre(dossier);
+                reluApresEdition.Ouvrir();
+                Verifier(reluApresEdition.Entrees[2].Libelle == "Banque en ligne"
+                      && reluApresEdition.Entrees[2].Identifiant == "didier2"
+                      && reluApresEdition.Entrees[2].RevelerMdp() == "mdp-3",
+                    "edition : libelle et identifiant changes, mot de passe vide => inchange");
+                Verifier(reluApresEdition.Entrees[0].RevelerMdp() == "mdp-1-change"
+                      && reluApresEdition.Entrees[1].RevelerMdp() == "mdp-2",
+                    "edition : nouveau mot de passe enregistre, les voisines intactes");
 
                 // 7c-d. Retrocompatibilite : un MITHRIL1 (ni icone ni categorie) reste lisible.
                 string dossierV1 = Path.Combine(dossier, "v1");
@@ -564,7 +578,7 @@ namespace Banc
                       && v2.Entrees[0].CategorieOuVide == "",
                     "categories : un coffre MITHRIL2 s'ouvre encore, mauvais maitre rejete");
 
-                v2.DefinirCategorie(v2.Entrees[0], "Range apres coup");
+                v2.Modifier(v2.Entrees[0], "Ancien", "didier", "Range apres coup", null);
                 byte[] migre = ProtectedData.Unprotect(
                     File.ReadAllBytes(Path.Combine(dossierV2, "coffre.mithril")), entropie,
                     DataProtectionScope.CurrentUser);
@@ -596,7 +610,7 @@ namespace Banc
                 var p3 = Coffre.PortableSur(fichier3);
                 p3.Ouvrir();
                 p3.Deverrouiller("maitre nomade");
-                p3.DefinirCategorie(p3.Entrees[0], "Nomade");
+                p3.Modifier(p3.Entrees[0], "Ailleurs", "didi", "Nomade", null);
                 var p3Relu = Coffre.PortableSur(fichier3);
                 p3Relu.Ouvrir();
                 p3Relu.Deverrouiller("maitre nomade");

@@ -441,11 +441,21 @@ namespace Mithril
             Sauver();
         }
 
-        /// <summary>Range l'entrée dans une catégorie (chaîne vide = la sortir de toute section).</summary>
-        public void DefinirCategorie(EntreeCoffre entree, string categorie)
+        /// <summary>
+        /// Modifie une entrée existante : libellé, identifiant, catégorie (vide = la sortir de
+        /// toute section) et, si <paramref name="nouveauMdp"/> est renseigné, le mot de passe.
+        /// Un mot de passe vide laisse l'ancien en place — corriger un libellé n'oblige alors
+        /// jamais à faire ressortir le secret de <see cref="SecretMemoire"/>.
+        /// </summary>
+        public void Modifier(EntreeCoffre entree, string libelle, string identifiant,
+                             string categorie, string nouveauMdp)
         {
             ExigerDeverrouille();
+            entree.Libelle = libelle;
+            entree.Identifiant = identifiant;
             entree.Categorie = categorie == null ? "" : categorie.Trim();
+            if (!string.IsNullOrEmpty(nouveauMdp))
+                entree.DefinirMdp(Encoding.UTF8.GetBytes(nouveauMdp)); // libère l'ancien secret
             Sauver();
         }
 
