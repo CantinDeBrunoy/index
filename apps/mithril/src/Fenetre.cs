@@ -244,7 +244,14 @@ namespace Mithril
                 string dossier = Reglages.Dossier;
                 synchro = new Synchroniseur(dossier, Environment.MachineName,
                     delegate { return string.IsNullOrEmpty(Reglages.Actuels.CheminCoffrePortable) ? null : Reglages.Actuels.CheminCoffrePortable; });
-                synchro.Journal += delegate(string message, bool alerte) { BeginInvoke((Action)delegate { Notifier(message); }); };
+                synchro.Journal += delegate(string message, bool alerte)
+                {
+                    JournalSynchro(message);
+                    // Bulle seulement pour ce qui concerne l'utilisateur ; le reste (connexions,
+                    // poignées de main) ne vit que dans le journal.
+                    bool montrer = alerte || message.StartsWith("Coffre ") || message.StartsWith("Appareil appairé");
+                    if (montrer) BeginInvoke((Action)delegate { Notifier(message); });
+                };
                 synchro.CoffreRecu += delegate(AppareilAppaire appareil) { BeginInvoke((Action)delegate { SurCoffreRecu(appareil); }); };
                 synchro.Demarrer(false);
             }
@@ -253,6 +260,21 @@ namespace Mithril
                 Notifier("Synchronisation indisponible : " + ex.Message);
                 synchro = null;
             }
+        }
+
+        /// <summary>Trace des événements de synchronisation dans %APPDATA%Mithrilsynchro.log (jamais de
+        /// secret : noms d'appareils, adresses, causes d'échec), tronquée au-delà de 200 Ko.</summary>
+        static void JournalSynchro(string message)
+        {
+            try
+            {
+                string chemin = Path.Combine(Reglages.Dossier, "synchro.log");
+                Directory.CreateDirectory(Reglages.Dossier);
+                if (File.Exists(chemin) && new FileInfo(chemin).Length > 200 * 1024) File.Delete(chemin);
+                File.AppendAllText(chemin, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  " + message + Environment.NewLine, Encoding.UTF8);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
         }
 
         /// <summary>Le fichier du coffre vient d'être remplacé par la version d'un appareil : ce

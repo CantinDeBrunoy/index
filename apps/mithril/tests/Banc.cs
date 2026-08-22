@@ -852,6 +852,25 @@ namespace Banc
                     lock (journal) foreach (string l in journal) if (l.StartsWith("! Conflit")) alerteConflit = true;
                     Verifier(alerteConflit, "synchro : le conflit est signale a l'utilisateur");
 
+                    // 13g2. Plafond de connexions : au-dela de 8 connexions simultanees, la suivante
+                    // est fermee sans poignee de main (un voisin en rafale n'epuise pas le PC).
+                    var rafale = new List<TcpClient>();
+                    try
+                    {
+                        for (int i = 0; i < 8; i++) { var c = new TcpClient("127.0.0.1", port); rafale.Add(c); }
+                        Thread.Sleep(300);
+                        bool neuviemeFermee = false;
+                        using (var neuvieme = new TcpClient("127.0.0.1", port))
+                        {
+                            neuvieme.ReceiveTimeout = 3000;
+                            try { neuviemeFermee = neuvieme.GetStream().Read(new byte[1], 0, 1) == 0; }
+                            catch (IOException) { neuviemeFermee = true; }
+                        }
+                        Verifier(neuviemeFermee, "synchro : neuvieme connexion simultanee fermee aussitot (plafond)");
+                    }
+                    finally { foreach (var c in rafale) c.Close(); }
+                    Thread.Sleep(300);
+
                     // 13h. Un autre appareil, jamais appaire, meme avec le bon protocole : refuse.
                     using (var autre = new TelephoneBanc(dossierAutre, cleAutre, null))
                     {
