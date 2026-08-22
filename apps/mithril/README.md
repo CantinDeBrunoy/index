@@ -1,9 +1,11 @@
 # Mithril
 
-Générateur de mots de passe et coffre local pour Windows : tirage cryptographique, coffre
-chiffré optionnel, frappe automatique dans n'importe quelle fenêtre. Application de bureau
-autonome (WinForms), sans installation, sans réseau. N'écrit rien sur disque tant que tu
-n'utilises pas le coffre.
+Générateur de mots de passe et coffre pour Windows, avec un compagnon
+[Android](https://github.com/Dj394/Mithril-Android) : tirage cryptographique, coffre
+chiffré optionnel, frappe automatique dans n'importe quelle fenêtre, **synchronisation
+directe PC ↔ téléphone** sur ton réseau, sans cloud ni relais. Application de bureau
+autonome (WinForms), sans installation. Ne parle qu'aux appareils que tu as appairés.
+N'écrit rien sur disque tant que tu n'utilises pas le coffre.
 
 ![aucune dépendance](https://img.shields.io/badge/d%C3%A9pendances-aucune-brightgreen)
 ![.NET Framework 4](https://img.shields.io/badge/.NET%20Framework-4.0-blue)
@@ -26,8 +28,9 @@ générer des mots de passe. Trois façons de vérifier plutôt que de me croire
 1. **Lis le code.** Trois fichiers suffisent pour l'essentiel :
    [`src/Generateur.cs`](src/Generateur.cs) (tirage aléatoire et génération),
    [`src/Coffre.cs`](src/Coffre.cs) (chiffrement du coffre) et
-   [`src/CoffreUi.cs`](src/CoffreUi.cs) (fenêtres du coffre). Aucun accès réseau : cherche
-   `System.Net`, il n'est importé nulle part. Le disque n'est touché que par le coffre.
+   [`src/CoffreUi.cs`](src/CoffreUi.cs) (fenêtres du coffre). Le réseau n'existe que dans
+   [`src/Synchro.cs`](src/Synchro.cs) : cherche `System.Net`, il n'est importé nulle part
+   ailleurs, et l'audit l'interdit. Le disque n'est touché que par le coffre.
 2. **Vérifie l'empreinte** du fichier téléchargé, indiquée sur la page de la release :
    ```powershell
    Get-FileHash .\Mithril.exe -Algorithm SHA256
@@ -163,7 +166,8 @@ Le bouton **Portable…** de la fenêtre du coffre crée (ou ouvre) un **coffre 
 un fichier `MITHRIL3` chiffré **par le mot de passe maître seul** — AES-256-CBC +
 HMAC-SHA256 (encrypt-then-MAC), PBKDF2 à **1 300 000 itérations** minimum — sans couche
 DPAPI. Ce fichier s'ouvre sur n'importe quel PC avec Mithril et le bon maître : il peut
-donc voyager par un partage privé (Syncthing, lecteur commun via Tailscale…).
+donc se synchroniser directement avec un téléphone (ci-dessous), ou voyager par un
+partage privé.
 
 Ce que ça change, en toute franchise :
 
@@ -187,15 +191,40 @@ Ce que ça change, en toute franchise :
   verrou — identique sur Windows et Android. Un motif ignoré d'un seul côté bloque la
   synchronisation pour toujours. Un `.stignore` écrit par toi n'est jamais touché.
 
-### Appairer un téléphone
+### Synchroniser avec un téléphone
 
-**Portable… → Appairer un téléphone (QR)…** affiche l'identifiant Syncthing de ce PC en
-QR code, pour que Syncthing-Fork le scanne (Appareils → +) au lieu de le recopier à la
-main, et rappelle les étapes restantes. Mithril dérive cet identifiant lui-même, à partir
-du `cert.pem` que Syncthing garde dans `%LOCALAPPDATA%\Syncthing` (SHA-256 du certificat,
-base32, caractères de contrôle Luhn) — il ne parle jamais à Syncthing, même sur
-`localhost`, c'est une promesse du projet. Conséquence assumée : accepter le téléphone et
-lui partager le dossier reste un clic dans l'interface Syncthing du PC.
+Rien à installer d'autre que Mithril, sur le PC comme sur le téléphone
+([Mithril Android](https://github.com/Dj394/Mithril-Android)).
+
+1. PC : Coffre → **Portable… → Synchroniser avec un téléphone… → Appairer un téléphone**.
+   La première fois, Windows demande d'autoriser Mithril dans le pare-feu (réseaux privés).
+2. Téléphone, même Wi-Fi : Mithril → **Appairer un PC** → choisir le PC → taper le **code à
+   6 chiffres** que le PC affiche. C'est tout, et c'est pour toujours.
+
+Ensuite le téléphone se synchronise à chaque retour sur l'écran de Mithril, dès que le PC
+est joignable : même réseau, ou adresse Tailscale apprise du PC. Le PC ne peut pas joindre le
+téléphone : une modification faite sur le PC arrive à la prochaine ouverture de Mithril Android.
+
+Comment c'est protégé (détail dans [`docs/SYNCHRO.md`](docs/SYNCHRO.md)) :
+
+- Chaque appareil a une clé ECDSA P-256 **qui ne quitte jamais** son magasin (CNG sous
+  Windows, AndroidKeyStore) et un certificat auto-signé ; chacun **épingle l'empreinte** de
+  l'autre à l'appairage. Toute session est une connexion **TLS 1.2 mutuelle** validée par
+  cette empreinte, jamais par le magasin système.
+- Le code à 6 chiffres n'est pas un mot de passe : il est **calculé à partir de l'échange**
+  (engagement puis ECDH, lié aux empreintes des deux certificats), affiché par le PC et
+  comparé par le téléphone. Un intrus actif a une chance sur un million, et aucune attaque
+  hors ligne n'est possible. Le PC n'accepte un appairage que pendant les deux minutes qui
+  suivent ton clic, et se ferme après trois échecs.
+- Mithril ne parle qu'à des **adresses privées** (réseau local, Tailscale) ; jamais de HTTP,
+  de DNS, de relais ni de cloud — l'audit (R01, R36, R37) l'interdit mécaniquement.
+- **Rien ne se perd** : la version remplacée passe en `.bak` ; si les deux appareils ont
+  modifié le coffre depuis le dernier échange, le plus récent gagne et l'autre est conservé
+  en `coffre-portable.conflit-<date>.mithril`, et les deux applis te le disent.
+
+*Variante Syncthing* : le coffre portable reste un simple fichier, que Syncthing peut faire
+voyager (Portable… → Syncthing (QR de l'identifiant)… aide à l'appairage). Utile pour un
+relais permanent ; plus nécessaire.
 
 ## Réglages
 
@@ -289,6 +318,10 @@ outils/   compilation et audit de sécurité
 | `src/Reglages.cs` | Réglages et persistance dans `reglages.mithril` |
 | `src/ReglagesUi.cs` | Fenêtre de réglages (sélecteurs, capture de raccourci) |
 | `src/Embleme.cs` | Emblème dessiné par le code, et fabrication des `.ico` |
+| `src/Synchro.cs` | Synchronisation directe avec un téléphone : identité, TLS mutuel, appairage, échange du coffre (seul fichier réseau) |
+| `src/Syncthing.cs` | Lecture de l'identifiant Syncthing local (variante Syncthing) |
+| `src/Qr.cs` | Encodeur QR autonome |
+| `docs/SYNCHRO.md` | Protocole MSYN1, commun à Mithril Android |
 | `tests/Banc.cs` | Banc de test |
 | `outils/build.ps1` | Compilation + tests |
 | `outils/audit-securite.ps1` | 37 contrôles de sécurité sur le code (voir plus haut) |

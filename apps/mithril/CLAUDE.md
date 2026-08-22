@@ -4,7 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Le projet
 
-Mithril : générateur de mots de passe et coffre local pour Windows. Application WinForms
+Mithril : générateur de mots de passe et coffre pour Windows, synchronisé directement avec
+un compagnon Android (dépôt `Mithril-Android`, même protocole). Application WinForms
 autonome, .NET Framework 4, **aucune dépendance externe**, **réseau limité au module de
 synchronisation** (`src/Synchro.cs`, réseau privé, appareils appairés seulement). Tout le
 code est en français — noms de classes, de variables, commentaires, messages de commit.
@@ -65,10 +66,17 @@ Chaque mot de passe n'est déchiffré qu'à l'instant précis où il est copié,
   image n'est versionnée. Il sert l'icône des fenêtres et de la barre d'état ; recompilé
   avec `-define:OUTIL_ICONE`, le même fichier devient le générateur qui produit le `.ico`
   embarqué dans `Mithril.exe` (deux passes de `csc`, voir `outils/build.ps1`).
-- `src/Syncthing.cs` — lit `cert.pem` et `config.xml` du Syncthing local pour en dériver
-  l'identifiant d'appareil (SHA-256 → base32 → Luhn mod 32), sans jamais appeler Syncthing.
-- `src/Qr.cs` — encodeur QR autonome (mode octets, versions 1-10, niveau M) ; affiche
-  l'identifiant du PC pour que Syncthing-Fork le scanne.
+- `src/Synchro.cs` — **seul fichier réseau** : synchronisation directe avec Mithril Android
+  (protocole MSYN1, `docs/SYNCHRO.md`). Identité ECDSA P-256 dans CNG + certificat auto-signé
+  (`identite.cer`), écoute TCP en TLS 1.2 mutuel validé par empreinte, découverte UDP,
+  appairage par code à 6 chiffres calculé (engagement + ECDH, lié aux empreintes TLS),
+  session selon l'empreinte du dernier échange, conflits conservés en `.conflit-…`. Le banc
+  joue le téléphone en boucle locale (`TesterSynchroBoucleLocale`). Démarré par `Fenetre`
+  seulement si un coffre synchronisé est réglé. Toute modification du protocole se fait
+  d'abord dans `docs/SYNCHRO.md`, puis dans les deux dépôts (Android :
+  `C:\Users\Didie\Mithril-Android`, paquet `synchro/`).
+- `src/Syncthing.cs` et `src/Qr.cs` — variante Syncthing : identifiant d'appareil dérivé de
+  `cert.pem` et affiché en QR. Plus le chemin normal, conservé.
 - `src/Reglages.cs` — persistance **en clair** dans `%APPDATA%\Mithril\reglages.mithril`.
   Aucun secret n'y transite, et ça doit le rester.
 
