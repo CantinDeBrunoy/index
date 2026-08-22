@@ -454,6 +454,7 @@ namespace Mithril
             else File.Move(temporaire, chemin);
             if (portable) Array.Clear(bloc, 0, bloc.Length);
             horodatageDisque = File.GetLastWriteTimeUtc(chemin);
+            if (portable) PoserReglesSynchro(Path.GetDirectoryName(chemin));
 
             if (ecraseAutreVersion)
             {
@@ -462,6 +463,37 @@ namespace Mithril
                     "Le coffre portable avait été modifié ailleurs : cette version l'écrase (la précédente est dans " +
                     Path.GetFileName(cheminSecours) + ").");
             }
+        }
+
+        // --- Règles de synchronisation ---
+
+        /// <summary>Première ligne du .stignore : c'est elle qui dit que le fichier est à Mithril.</summary>
+        public const string EnteteReglesSynchro = "// Pose par Mithril : fichiers de travail locaux, jamais synchronises";
+
+        /// <summary>Contenu canonique du .stignore : .tmp (écriture atomique), .bak (secours
+        /// local) et fichiers de verrou. Identique sur chaque appareil, Windows comme Android —
+        /// un motif ignoré d'un seul côté bloque la synchronisation pour toujours, puisqu'un
+        /// relais qui ignore un fichier ne le transmet jamais.</summary>
+        public static readonly string ReglesSynchro =
+            EnteteReglesSynchro + "\n*.tmp\n*.bak\n~*\n.~*\n";
+
+        /// <summary>Pose le .stignore dans le dossier du coffre portable. Créé s'il manque,
+        /// réaligné s'il porte l'en-tête de Mithril, jamais touché s'il est à l'utilisateur.</summary>
+        public static void PoserReglesSynchro(string dossier)
+        {
+            string fichier = Path.Combine(dossier, ".stignore");
+            try
+            {
+                if (File.Exists(fichier))
+                {
+                    string actuel = File.ReadAllText(fichier, Encoding.UTF8);
+                    if (actuel == ReglesSynchro) return;
+                    if (!actuel.StartsWith(EnteteReglesSynchro) && !actuel.Contains("Mithril")) return;
+                }
+                File.WriteAllText(fichier, ReglesSynchro, new UTF8Encoding(false));
+            }
+            catch (IOException) { }            // un .stignore manquant n'empêche pas le coffre de vivre
+            catch (UnauthorizedAccessException) { }
         }
 
         // charge : int32 nombre, puis par entrée libellé, identifiant, ticks, mdp (UTF-8 préfixé longueur)
