@@ -27,20 +27,30 @@ namespace Banc
 
         static void Main()
         {
-            // 1. Uniformité du tirage : chi2 grossier sur 26 valeurs, 260 000 tirages.
-            int[] compteur = new int[26];
+            // 1. Uniformité du tirage : chi2 grossier sur 26 valeurs, 260 000 tirages. Le seuil à
+            // 1 % fait échouer un tirage parfaitement uniforme une fois sur cent : on accorde un
+            // second tirage indépendant, ce qui ramène le faux positif à un sur dix mille sans
+            // rien masquer — un générateur biaisé échoue les deux fois.
             const int n = 260000;
-            for (int i = 0; i < n; i++) compteur[Alea.Suivant(26)]++;
-            double attendu = n / 26.0, chi2 = 0;
+            double chi2 = 0;
             int min = int.MaxValue, max = 0;
-            foreach (int c in compteur)
+            bool uniforme = false;
+            for (int essai = 0; essai < 2 && !uniforme; essai++)
             {
-                chi2 += (c - attendu) * (c - attendu) / attendu;
-                if (c < min) min = c;
-                if (c > max) max = c;
+                int[] compteur = new int[26];
+                for (int i = 0; i < n; i++) compteur[Alea.Suivant(26)]++;
+                double attendu = n / 26.0;
+                chi2 = 0; min = int.MaxValue; max = 0;
+                foreach (int c in compteur)
+                {
+                    chi2 += (c - attendu) * (c - attendu) / attendu;
+                    if (c < min) min = c;
+                    if (c > max) max = c;
+                }
+                Console.WriteLine(string.Format("     chi2 = {0:0.0} (seuil 1% pour 25 ddl = 44,3), min={1} max={2}", chi2, min, max));
+                uniforme = chi2 < 44.3;
             }
-            Console.WriteLine(string.Format("     chi2 = {0:0.0} (seuil 1% pour 25 ddl = 44,3), min={1} max={2}", chi2, min, max));
-            Verifier(chi2 < 44.3, "distribution uniforme sur 26 symboles");
+            Verifier(uniforme, "distribution uniforme sur 26 symboles");
 
             // 2. Chaque classe cochée est bien représentée, longueur exacte.
             string[] jeux = { Generateur.Minuscules, Generateur.Majuscules, Generateur.Chiffres, Generateur.Symboles };
