@@ -187,6 +187,16 @@ Ce que ça change, en toute franchise :
   verrou — identique sur Windows et Android. Un motif ignoré d'un seul côté bloque la
   synchronisation pour toujours. Un `.stignore` écrit par toi n'est jamais touché.
 
+### Appairer un téléphone
+
+**Portable… → Appairer un téléphone (QR)…** affiche l'identifiant Syncthing de ce PC en
+QR code, pour que Syncthing-Fork le scanne (Appareils → +) au lieu de le recopier à la
+main, et rappelle les étapes restantes. Mithril dérive cet identifiant lui-même, à partir
+du `cert.pem` que Syncthing garde dans `%LOCALAPPDATA%\Syncthing` (SHA-256 du certificat,
+base32, caractères de contrôle Luhn) — il ne parle jamais à Syncthing, même sur
+`localhost`, c'est une promesse du projet. Conséquence assumée : accepter le téléphone et
+lui partager le dossier reste un clic dans l'interface Syncthing du PC.
+
 ## Réglages
 
 L'icône ⚙ (ou « Réglages… » dans le menu de la barre d'état) ouvre une fenêtre de
