@@ -120,12 +120,20 @@ namespace Mithril
         // NU sur le disque, sans couche DPAPI : le fichier voyage entre machines et n'est
         // protégé que par le maître, obligatoire (bit 0 toujours à 1). Le HMAC couvrant la
         // magie, un MITHRIL3 ne peut pas être maquillé en MITHRIL2 sans invalider le MAC.
+        //
+        // --- PRF SHA-256 : "MITHRIL4" (sous DPAPI) et "MITHRIL5" (portable, nu) ---
+        // Mêmes blocs que MITHRIL2 et MITHRIL3, mêmes décalages, mais la clé est dérivée par
+        // PBKDF2-HMAC-SHA256 (600 000 itérations, OWASP) au lieu de HMAC-SHA1. Le PRF n'est pas
+        // stocké : c'est la magie qui le dit. Les anciennes magies restent lues avec SHA-1 et
+        // migrent au premier déverrouillage par la phrase (seul moment où on la connaît).
         static readonly byte[] Magie = Encoding.ASCII.GetBytes("MITHRIL1");  // ancien, encore lu
         static readonly byte[] Magie2 = Encoding.ASCII.GetBytes("MITHRIL2"); // écrit désormais (sous DPAPI)
-        static readonly byte[] Magie3 = Encoding.ASCII.GetBytes("MITHRIL3"); // coffre portable, sans DPAPI
+        static readonly byte[] Magie3 = Encoding.ASCII.GetBytes("MITHRIL3"); // coffre portable, sans DPAPI (SHA-1)
+        static readonly byte[] Magie4 = Encoding.ASCII.GetBytes("MITHRIL4"); // sous DPAPI, PRF SHA-256 — écrit désormais
+        static readonly byte[] Magie5 = Encoding.ASCII.GetBytes("MITHRIL5"); // portable, PRF SHA-256 — écrit désormais
         static readonly byte[] EntropieDpapi = Encoding.ASCII.GetBytes("Mithril.Coffre.v1");
-        public const int IterationsDefaut = 600000;
-        public const int IterationsPortableDefaut = 1300000; // OWASP pour PBKDF2-HMAC-SHA1 : seule barrière sans DPAPI
+        public const int IterationsDefaut = 600000;          // OWASP pour PBKDF2-HMAC-SHA256
+        public const int IterationsPortableDefaut = 600000;  // idem : en portable c'est la seule barrière, mais SHA-256 coûte déjà le double de SHA-1
 
         readonly string chemin;
         readonly string cheminSecours;
@@ -133,6 +141,7 @@ namespace Mithril
 
         bool maitreActif;
         bool avecIcones; // format de la charge en cours (déterminé par la magie lue)
+        bool prfSha256;  // la clé en mémoire (et le fichier lu) viennent de PBKDF2-HMAC-SHA256 ; sinon SHA-1 (anciens formats)
         byte[] sel;
         int iterations;
         SecretMemoire cle;       // 64 octets dérivés : 32 AES + 32 HMAC
@@ -215,12 +224,13 @@ namespace Mithril
 
             byte[] brut = File.ReadAllBytes(chemin);
             byte[] bloc;
-            if (brut.Length >= 9 && Compare(brut, 0, Magie3))
+            if (brut.Length >= 9 && (Compare(brut, 0, Magie3) || Compare(brut, 0, Magie5)))
             {
                 // Coffre portable : le bloc est écrit nu, jamais de DPAPI — c'est ce qui le
                 // rend lisible sur n'importe quelle machine, avec le maître pour seule clé.
                 portable = true;
                 avecIcones = true;
+                prfSha256 = Compare(brut, 0, Magie5);
                 bloc = brut;
                 if ((bloc[8] & 1) == 0)
                     throw new CoffreException("Coffre portable sans mot de passe maître : fichier invalide.");
@@ -235,8 +245,11 @@ namespace Mithril
                         "Le coffre est illisible sur cette session Windows (autre compte, profil réinstallé, ou fichier altéré).");
                 }
                 bool magie1 = bloc.Length >= 9 && Compare(bloc, 0, Magie);
-                avecIcones = bloc.Length >= 9 && Compare(bloc, 0, Magie2);
-                if (!magie1 && !avecIcones)
+                bool magie2 = bloc.Length >= 9 && Compare(bloc, 0, Magie2);
+                bool magie4 = bloc.Length >= 9 && Compare(bloc, 0, Magie4);
+                avecIcones = magie2 || magie4;
+                prfSha256 = magie4;
+                if (!magie1 && !magie2 && !magie4)
                     throw new CoffreException("Ce fichier n'est pas un coffre Mithril valide.");
             }
             horodatageDisque = File.GetLastWriteTimeUtc(chemin);
@@ -264,7 +277,7 @@ namespace Mithril
         public void Deverrouiller(string maitre)
         {
             if (!maitreActif || blocEnAttente == null) throw new InvalidOperationException("Rien à déverrouiller.");
-            byte[] derive = Deriver(maitre, sel, iterations);
+            byte[] derive = Deriver(maitre, sel, iterations, prfSha256);
             var bloc = blocEnAttente;
 
             byte[] hmacAttendu = Extraire(bloc, 45, 32);
@@ -283,7 +296,20 @@ namespace Mithril
             cle = new SecretMemoire(derive); // prend possession et efface derive
             blocEnAttente = null;
             deverrouille = true;
+
+            // Migration de la dérivation : un coffre SHA-1 (MITHRIL1/2/3) est réécrit en
+            // SHA-256 (MITHRIL4/5) ici même, parce que c'est le seul moment où l'on connaît
+            // la phrase. Une seule fois par coffre ; l'échec d'écriture n'empêche pas l'usage.
+            if (!prfSha256)
+            {
+                try { DefinirMaitre(maitre); }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+            }
         }
+
+        /// <summary>Vrai si le fichier lu dérive sa clé par SHA-256 (formats MITHRIL4/5).</summary>
+        public bool DerivationSha256 { get { return prfSha256; } }
 
         /// <summary>Efface de la mémoire les secrets et la clé ; l'état revient « au seuil ».</summary>
         public void Verrouiller()
@@ -334,9 +360,10 @@ namespace Mithril
             int plancher = portable ? IterationsPortableDefaut : IterationsDefaut;
             int demande = Reglages.Actuels.IterationsMaitre;
             iterations = demande > plancher ? demande : plancher;
-            byte[] derive = Deriver(nouveau, sel, iterations);
+            byte[] derive = Deriver(nouveau, sel, iterations, true); // toujours SHA-256 pour une clé neuve
             if (cle != null) cle.Dispose();
             cle = new SecretMemoire(derive);
+            prfSha256 = true;
             maitreActif = true;
             Sauver();
         }
@@ -411,7 +438,9 @@ namespace Mithril
                 byte[] chiffre = Aes(derive, iv, charge, 0, charge.Length, true);
 
                 bloc = new byte[77 + chiffre.Length];
-                Array.Copy(portable ? Magie3 : Magie2, bloc, 8);
+                // La magie dit le PRF de la clé en mémoire : SHA-256 (4/5) ou, tant qu'un coffre ancien
+                // n'a pas été migré au déverrouillage, SHA-1 (2/3).
+                Array.Copy(prfSha256 ? (portable ? Magie5 : Magie4) : (portable ? Magie3 : Magie2), bloc, 8);
                 bloc[8] = 1;
                 Array.Copy(sel, 0, bloc, 9, 16);
                 Array.Copy(BitConverter.GetBytes(iterations), 0, bloc, 25, 4);
@@ -424,7 +453,7 @@ namespace Mithril
             else
             {
                 bloc = new byte[9 + charge.Length];
-                Array.Copy(Magie2, bloc, 8);
+                Array.Copy(Magie4, bloc, 8); // sans maître, le PRF est sans objet : format le plus récent
                 bloc[8] = 0;
                 Array.Copy(charge, 0, bloc, 9, charge.Length);
             }
@@ -563,9 +592,11 @@ namespace Mithril
 
         // --- Primitives ---
 
-        static byte[] Deriver(string maitre, byte[] sel, int iterations)
+        /// <summary>PBKDF2 : HMAC-SHA256 pour tout ce qui s'écrit (MITHRIL4/5) ; HMAC-SHA1 uniquement pour
+        /// relire les coffres antérieurs, qui migrent au premier déverrouillage.</summary>
+        static byte[] Deriver(string maitre, byte[] sel, int iterations, bool sha256)
         {
-            using (var pbkdf2 = new Rfc2898DeriveBytes(maitre, sel, iterations))
+            using (var pbkdf2 = new Rfc2898DeriveBytes(maitre, sel, iterations, sha256 ? HashAlgorithmName.SHA256 : HashAlgorithmName.SHA1))
                 return pbkdf2.GetBytes(64); // 32 octets AES + 32 octets HMAC
         }
 

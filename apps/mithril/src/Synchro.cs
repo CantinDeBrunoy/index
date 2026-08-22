@@ -927,7 +927,8 @@ namespace Mithril
             long mtime = 0;
             for (int i = 0; i < 8; i++) mtime = (mtime << 8) | charge[i];
             byte[] contenu = Trame.Tranche(charge, 8, charge.Length - 8);
-            if (Encoding.ASCII.GetString(contenu, 0, 8) != "MITHRIL3" || contenu[8] != 1)
+            string magie = Encoding.ASCII.GetString(contenu, 0, 8);
+            if ((magie != "MITHRIL3" && magie != "MITHRIL5") || contenu[8] != 1)
                 throw new SynchroException("le fichier reçu n'est pas un coffre portable.");
             if (chemin == null) throw new SynchroException("aucun coffre synchronisé configuré sur ce PC.");
 

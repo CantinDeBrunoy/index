@@ -8,7 +8,7 @@ autonome (WinForms), sans installation. Ne parle qu'aux appareils que tu as appa
 N'écrit rien sur disque tant que tu n'utilises pas le coffre.
 
 ![aucune dépendance](https://img.shields.io/badge/d%C3%A9pendances-aucune-brightgreen)
-![.NET Framework 4](https://img.shields.io/badge/.NET%20Framework-4.0-blue)
+![.NET Framework 4.7.2](https://img.shields.io/badge/.NET%20Framework-4.7.2-blue)
 
 ## Installation
 
@@ -89,7 +89,9 @@ Le fichier (`%APPDATA%\Mithril\coffre.mithril`) est chiffré en deux couches :
    illisible depuis un autre compte, une autre machine, ou une copie du disque. C'est le
    même mécanisme que Chrome utilise pour ses mots de passe enregistrés.
 2. **Mot de passe maître, en option** : une couche AES-256 + HMAC-SHA256 par-dessus, clé
-   dérivée par PBKDF2 (600 000 itérations). Elle protège aussi contre un programme
+   dérivée par PBKDF2-HMAC-SHA256 (600 000 itérations, recommandation OWASP). Les coffres
+   écrits par les versions antérieures (PBKDF2-HMAC-SHA1) restent lus tels quels et sont
+   réécrits au nouveau format au premier déverrouillage par la phrase. Elle protège aussi contre un programme
    malveillant qui tournerait sous ton compte — tant que le coffre est verrouillé.
    **Il est irrécupérable : oublié = coffre perdu.**
 
@@ -164,7 +166,7 @@ local à ce PC » garde le comportement historique. Le choix se change plus tard
 
 Le bouton **Portable…** de la fenêtre du coffre crée (ou ouvre) un **coffre portable** :
 un fichier `MITHRIL3` chiffré **par le mot de passe maître seul** — AES-256-CBC +
-HMAC-SHA256 (encrypt-then-MAC), PBKDF2 à **1 300 000 itérations** minimum — sans couche
+HMAC-SHA256 (encrypt-then-MAC), PBKDF2-HMAC-SHA256 à **600 000 itérations** minimum — sans couche
 DPAPI. Ce fichier s'ouvre sur n'importe quel PC avec Mithril et le bon maître : il peut
 donc se synchroniser directement avec un téléphone (ci-dessous), ou voyager par un
 partage privé.
