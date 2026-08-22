@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Mithril : générateur de mots de passe et coffre pour Windows, synchronisé directement avec
 un compagnon Android (dépôt `Mithril-Android`, même protocole). Application WinForms
-autonome, .NET Framework 4, **aucune dépendance externe**, **réseau limité au module de
+autonome, .NET Framework 4.7.2 minimum (runtime de Windows 10+), **aucune dépendance externe**, **réseau limité au module de
 synchronisation** (`src/Synchro.cs`, réseau privé, appareils appairés seulement). Tout le
 code est en français — noms de classes, de variables, commentaires, messages de commit.
 
@@ -22,7 +22,7 @@ powershell -ExecutionPolicy Bypass -File outils/couverture.ps1      # couverture
 par glob : ajouter un fichier dans `src/` ne demande aucune modification du build ni de la CI.
 
 **Il n'existe aucun moyen de lancer un test isolé.** Le banc est un `Main` unique
-(`tests/Banc.cs`) qui enchaîne 80 appels à `Verifier(condition, libellé)`, affiche une ligne
+(`tests/Banc.cs`) qui enchaîne 84 appels à `Verifier(condition, libellé)`, affiche une ligne
 `OK`/`ECHEC` par vérification et renvoie un code de sortie non nul si l'une échoue. Pour
 cibler une vérification pendant une mise au point, il faut commenter les autres : il n'y a
 ni framework de test, ni filtre.
@@ -35,8 +35,11 @@ Ces trois commandes doivent rester vertes ; la CI les rejoue.
 
 `src/Coffre.cs` — chiffrement emboîté `DPAPI( AES-256-CBC( données ) )`. Le format du bloc
 interne est documenté en tête de fichier : magie (`MITHRIL1` sans icônes, `MITHRIL2` avec,
-`MITHRIL3` pour le coffre portable écrit nu, sans DPAPI, maître obligatoire), drapeaux,
-sel, itérations, IV, HMAC-SHA256, puis les données chiffrées.
+`MITHRIL3` pour le coffre portable écrit nu, sans DPAPI, maître obligatoire ; `MITHRIL4` et
+`MITHRIL5` = mêmes blocs avec PBKDF2-HMAC-SHA256 au lieu de SHA-1, seuls formats écrits
+désormais, les anciens migrant au premier déverrouillage par la phrase), drapeaux, sel,
+itérations, IV, HMAC-SHA256, puis les données chiffrées. Le PRF n'est pas stocké : c'est la
+magie qui le dit. Mithril Android lit et écrit les mêmes formats (`FormatCoffre.kt`).
 
 Invariants à ne jamais casser — l'audit les vérifie explicitement (règles R20 à R26) :
 
@@ -96,7 +99,8 @@ Mécaniquement vérifiées par `outils/audit-securite.ps1` : un constat CRITIQUE
   ECB/OFB/CFB, aucun `PaddingMode.None`.
 - Aucune désérialisation (`BinaryFormatter` et apparentés), aucun `Process.Start`, aucun
   `unsafe`.
-- PBKDF2 à 600 000 itérations minimum.
+- PBKDF2-HMAC-SHA256 à 600 000 itérations minimum (R15, R16) ; SHA-1 uniquement pour relire
+  les formats antérieurs.
 
 Ajouter une dépendance externe, même limitée au build, se discute avant d'être fait.
 

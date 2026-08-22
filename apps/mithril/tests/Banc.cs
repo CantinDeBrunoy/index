@@ -310,11 +310,13 @@ namespace Banc
 
         static byte[] ConstruireBlocMaitre(string magie, string maitre, int iterations, byte[] charge)
         {
+            // Les magies 1/2/3 derivent en SHA-1 (formats anterieurs), 4/5 en SHA-256.
+            bool sha256 = magie == "MITHRIL4" || magie == "MITHRIL5";
             var sel = new byte[16];
             var iv = new byte[16];
             using (var rng = new RNGCryptoServiceProvider()) { rng.GetBytes(sel); rng.GetBytes(iv); }
             byte[] derive;
-            using (var pbkdf2 = new Rfc2898DeriveBytes(maitre, sel, iterations))
+            using (var pbkdf2 = new Rfc2898DeriveBytes(maitre, sel, iterations, sha256 ? HashAlgorithmName.SHA256 : HashAlgorithmName.SHA1))
                 derive = pbkdf2.GetBytes(64);
             var cleAes = new byte[32];
             Array.Copy(derive, cleAes, 32);
@@ -365,8 +367,8 @@ namespace Banc
                 // 7p-b. Aller-retour complet ; le fichier brut commence par la magie MITHRIL3.
                 sansMaitre.DefinirMaitre("phrase de passe portable");
                 byte[] brut = File.ReadAllBytes(fichier);
-                Verifier(brut.Length > 77 && Encoding.ASCII.GetString(brut, 0, 8) == "MITHRIL3",
-                    "portable : fichier ecrit nu avec magie MITHRIL3");
+                Verifier(brut.Length > 77 && Encoding.ASCII.GetString(brut, 0, 8) == "MITHRIL5",
+                    "portable : fichier ecrit nu avec magie MITHRIL5 (PBKDF2-SHA256)");
                 var relecture = Coffre.PortableSur(fichier);
                 relecture.Ouvrir();
                 Verifier(relecture.Portable && relecture.MaitreActif && !relecture.Deverrouille,
@@ -378,7 +380,7 @@ namespace Banc
 
                 // 7p-c. Plancher d'iterations renforce (PBKDF2 est la seule barriere hors ligne).
                 Verifier(BitConverter.ToInt32(brut, 25) >= Coffre.IterationsPortableDefaut,
-                    "portable : au moins 1 300 000 iterations PBKDF2");
+                    "portable : au moins 600 000 iterations PBKDF2-HMAC-SHA256");
 
                 // 7p-d. Mauvais maitre rejete par le HMAC, avant tout dechiffrement.
                 var mauvais = Coffre.PortableSur(fichier);
@@ -447,6 +449,56 @@ namespace Banc
                 Verifier(!ancien.Portable && ancien.Deverrouille
                       && ancien.Entrees[0].RevelerMdp() == "mdp-ancien",
                     "portable : un coffre DPAPI existant reste lisible a l'identique");
+
+                // 7q. Migration du PRF : le MITHRIL2 (SHA-1) vient d'etre reecrit en MITHRIL4
+                // (SHA-256) au deverrouillage ; il se rouvre avec la meme phrase, entrees intactes.
+                byte[] migre = ProtectedData.Unprotect(File.ReadAllBytes(Path.Combine(dossier, "coffre.mithril")),
+                    Encoding.ASCII.GetBytes("Mithril.Coffre.v1"), DataProtectionScope.CurrentUser);
+                var remigre = new Coffre(dossier);
+                remigre.Ouvrir();
+                remigre.Deverrouiller("maitre ancien");
+                Verifier(Encoding.ASCII.GetString(migre, 0, 8) == "MITHRIL4" && remigre.DerivationSha256
+                      && BitConverter.ToInt32(migre, 25) >= 600000
+                      && remigre.Entrees.Count == 1 && remigre.Entrees[0].RevelerMdp() == "mdp-ancien",
+                    "format : coffre SHA-1 migre en MITHRIL4 (SHA-256, >= 600 000 it.) au deverrouillage, entrees intactes");
+
+                // 7q-b. Meme chose pour un portable MITHRIL3 forge (SHA-1) : lu, migre en MITHRIL5,
+                // puis mauvais maitre et alteration rejetes sur le nouveau format.
+                string fichierV3 = Path.Combine(dossier, "ancien-portable.mithril");
+                File.WriteAllBytes(fichierV3, ConstruireBlocMaitre("MITHRIL3", "phrase v3", 12000,
+                    SerialiserUneEntree("V3", "moi", "mdp-v3")));
+                var v3 = Coffre.PortableSur(fichierV3);
+                v3.Ouvrir();
+                bool lisaitSha1 = !v3.DerivationSha256;
+                v3.Deverrouiller("phrase v3");
+                byte[] brutV5 = File.ReadAllBytes(fichierV3);
+                var v5 = Coffre.PortableSur(fichierV3);
+                v5.Ouvrir();
+                v5.Deverrouiller("phrase v3");
+                Verifier(lisaitSha1 && Encoding.ASCII.GetString(brutV5, 0, 8) == "MITHRIL5" && v5.DerivationSha256
+                      && v5.Entrees[0].RevelerMdp() == "mdp-v3",
+                    "format : portable SHA-1 migre en MITHRIL5, rouvert avec la meme phrase");
+                var v5Mauvais = Coffre.PortableSur(fichierV3);
+                v5Mauvais.Ouvrir();
+                bool rejetV5 = false;
+                try { v5Mauvais.Deverrouiller("pas la phrase"); } catch (CoffreException) { rejetV5 = true; }
+                brutV5[brutV5.Length - 1] ^= 0x01;
+                File.WriteAllBytes(fichierV3, brutV5);
+                var v5Altere = Coffre.PortableSur(fichierV3);
+                v5Altere.Ouvrir();
+                bool altereV5 = false;
+                try { v5Altere.Deverrouiller("phrase v3"); } catch (CoffreException) { altereV5 = true; }
+                Verifier(rejetV5 && altereV5, "format : MITHRIL5 rejette mauvais maitre et alteration");
+
+                // 7q-c. Un MITHRIL5 forge directement en SHA-256 (comme l'ecrirait Android) est lisible.
+                string fichierV5 = Path.Combine(dossier, "forge-v5.mithril");
+                File.WriteAllBytes(fichierV5, ConstruireBlocMaitre("MITHRIL5", "phrase v5", 600000,
+                    SerialiserUneEntree("V5", "", "mdp-v5")));
+                var forgeV5 = Coffre.PortableSur(fichierV5);
+                forgeV5.Ouvrir();
+                forgeV5.Deverrouiller("phrase v5");
+                Verifier(forgeV5.DerivationSha256 && forgeV5.Entrees[0].RevelerMdp() == "mdp-v5",
+                    "format : MITHRIL5 forge hors de Mithril (SHA-256) lisible");
 
                 // 7p-i. La copie vers un portable exige un maitre et laisse l'origine intacte.
                 var origine = new Coffre(Path.Combine(dossier, "origine"));
