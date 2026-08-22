@@ -217,7 +217,10 @@ Comment c'est protégé (détail dans [`docs/SYNCHRO.md`](docs/SYNCHRO.md)) :
   (engagement puis ECDH, lié aux empreintes des deux certificats), affiché par le PC et
   comparé par le téléphone. Un intrus actif a une chance sur un million, et aucune attaque
   hors ligne n'est possible. Le PC n'accepte un appairage que pendant les deux minutes qui
-  suivent ton clic, et se ferme après trois échecs.
+  suivent ton clic, n'affiche le code qu'après un second clic quand le téléphone s'est
+  présenté, et se ferme après trois échecs. Hors appairage, le PC ne répond à la découverte
+  qu'à un téléphone qui le cherche déjà par son empreinte : un inconnu qui balaie le réseau
+  ne le voit pas.
 - Mithril ne parle qu'à des **adresses privées** (réseau local, Tailscale) ; jamais de HTTP,
   de DNS, de relais ni de cloud — l'audit (R01, R36, R37) l'interdit mécaniquement.
 - **Rien ne se perd** : la version remplacée passe en `.bak` ; si les deux appareils ont

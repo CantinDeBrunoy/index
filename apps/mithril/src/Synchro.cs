@@ -633,6 +633,7 @@ namespace Mithril
         public byte[] Empreinte { get { return monEmpreinte; } }
         public string Nom { get { return nom; } }
         public int PortEcoute { get { return ecoute == null ? port : ((IPEndPoint)ecoute.LocalEndpoint).Port; } }
+        public int PortDecouverte { get { return decouverte == null ? -1 : ((IPEndPoint)decouverte.Client.LocalEndPoint).Port; } }
         public bool AppairageOuvert { get { return DateTime.UtcNow < finAppairage; } }
 
         /// <summary>Ouvre l'écoute TCP et la réponse à la découverte. Le pare-feu Windows demande
@@ -649,11 +650,10 @@ namespace Mithril
             filEcoute.IsBackground = true;
             filEcoute.Name = "Mithril.Synchro.Ecoute";
             filEcoute.Start();
-            if (!boucleLocaleSeulement)
             {
                 try
                 {
-                    decouverte = new UdpClient(new IPEndPoint(IPAddress.Any, port));
+                    decouverte = new UdpClient(new IPEndPoint(liaison, port));
                     var filDecouverte = new Thread(BoucleDecouverte);
                     filDecouverte.IsBackground = true;
                     filDecouverte.Name = "Mithril.Synchro.Decouverte";
@@ -699,7 +699,11 @@ namespace Mithril
                 catch (SocketException) { continue; }
                 catch (ObjectDisposedException) { return; }
                 if (!Reseau.EstAdressePrivee(de.Address)) continue;
-                if (paquet.Length != 20 || paquet[0] != 'D' || paquet[1] != 'E' || paquet[2] != 'C' || paquet[3] != 'O') continue;
+                if ((paquet.Length != 20 && paquet.Length != 52) || paquet[0] != 'D' || paquet[1] != 'E' || paquet[2] != 'C' || paquet[3] != 'O') continue;
+                // Hors appairage, on ne répond qu'à qui nous cherche déjà par notre empreinte : un
+                // inconnu qui balaie le réseau n'apprend ni le nom du PC ni la présence de Mithril.
+                bool cible = paquet.Length == 52 && Coffre.ComparerConstant(Trame.Tranche(paquet, 20, 32), monEmpreinte);
+                if (!cible && !AppairageOuvert) continue;
                 int p = PortEcoute;
                 byte[] reponse = Reseau.Concat(
                     Encoding.ASCII.GetBytes("DECO"), Trame.Tranche(paquet, 4, 16), Trame.Chaine(nom), monEmpreinte,
@@ -938,6 +942,7 @@ namespace Mithril
                 string garde = Path.Combine(Path.GetDirectoryName(chemin),
                     Path.GetFileNameWithoutExtension(chemin) + ".conflit-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".mithril");
                 File.Copy(chemin, garde, true);
+                PurgerConflits(Path.GetDirectoryName(chemin));
                 Dire("Conflit avec " + appareil.Nom + " : ta version est conservée dans " + Path.GetFileName(garde) + ".", true);
             }
             string temporaire = chemin + ".tmp";
@@ -953,6 +958,18 @@ namespace Mithril
             var recu = CoffreRecu;
             if (recu != null) recu(appareil);
             Dire("Coffre reçu de " + appareil.Nom + ".", false);
+        }
+
+        /// <summary>Les fichiers de conflit sont une sécurité, pas une archive : ceux de plus de 30 jours partent.</summary>
+        static void PurgerConflits(string dossier)
+        {
+            try
+            {
+                foreach (string f in Directory.GetFiles(dossier, "*.conflit-*.mithril"))
+                    if (File.GetLastWriteTimeUtc(f) < DateTime.UtcNow.AddDays(-30)) File.Delete(f);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
         }
 
         static void MemoriserEchange(AppareilAppaire appareil, byte[] empreinte)
