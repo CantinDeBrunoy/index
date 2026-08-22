@@ -79,7 +79,7 @@ Mécaniquement vérifiées par `outils/audit-securite.ps1` : un constat CRITIQUE
 
 - Aucun accès réseau **hors de `src/Synchro.cs`** (règle R01), y compris via une DLL
   native : seules `user32`, `kernel32`, `crypt32` et `dwmapi` sont en liste blanche. Et
-  même dans `Synchro.cs` : sockets bruts uniquement, jamais HTTP, DNS ni proxy (R36), filtre
+  même dans `Synchro.cs` : sockets et TLS mutuel (SslStream) uniquement, jamais HTTP, DNS ni proxy (R36), filtre
   d'adresses privées et comparaison en temps constant obligatoires (R37). Le protocole
   est fixé par `docs/SYNCHRO.md` (MSYN1), commun à Mithril Android : le modifier, c'est
   modifier les deux implémentations.
