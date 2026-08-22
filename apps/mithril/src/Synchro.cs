@@ -774,12 +774,12 @@ namespace Mithril
                     {
                         Appairer(tls, empreinteDistante, distant.Address.ToString());
                     }
-                    // sinon : inconnu hors appairage, fermé sans un mot
+                    else Dire("Un appareil inconnu (" + distant.Address + ") a tenté de se connecter. Pour l'appairer : Portable… → Synchroniser avec un téléphone → Appairer.", true);
                 }
             }
             catch (SynchroException ex) { Dire("Synchronisation : " + ex.Message, true); }
             catch (IOException) { }             // connexion coupée : le téléphone réessaiera
-            catch (AuthenticationException) { } // poignée de main TLS refusée : rien à dire à personne
+            catch (AuthenticationException ex) { Dire("Poignée de main TLS refusée : " + (ex.InnerException != null ? ex.InnerException.Message : ex.Message), true); }
             catch (SocketException) { }
             catch (ObjectDisposedException) { }
             finally
