@@ -97,7 +97,7 @@ Interdire "R01" "Isolement" "aucun acces reseau hors du module de synchronisatio
 # aucune résolution de nom — une adresse publique ne peut pas s'écrire sans DNS ni HTTP.
 Interdire "R36" "Isolement" "aucun protocole applicatif ni resolution de nom" "CRITIQUE" `
     'WebClient|HttpClient|HttpWebRequest|WebRequest|SmtpClient|WebSocket|FtpWebRequest|Dns\.|ServicePointManager|WebProxy' `
-    "le module de synchronisation ne parle qu'en trames MSYN1 sur IP privee" $sourcesToutes
+    "le module de synchronisation ne parle qu'en trames MSYN1 sous TLS, sur IP privee" $sourcesToutes
 
 # Invariants du module de synchronisation, s'il existe : filtre d'adresses privées et
 # comparaison en temps constant pour les MAC et les codes d'appairage.
