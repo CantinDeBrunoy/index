@@ -111,6 +111,9 @@ de passe. **Échap** annule à tout moment.
   interrupteur du coffre permet d'ajouter Entrée pour soumettre le formulaire, à activer
   seulement si tu es sûr de la cible.
 - Frappe en Unicode : indépendante de la disposition clavier (AZERTY, accents, symboles).
+- Réglages → **Vitesse de frappe** : « En un lot » envoie tout le texte d'un coup. À choisir quand
+  un site web perd des caractères (formulaire qui revalide le champ à retardement, comme
+  certains écrans de connexion) ; les autres vitesses espacent les caractères.
 - Une fenêtre lancée en administrateur refuse la frappe (protection Windows) : Mithril le
   détecte et te renvoie vers la copie au lieu d'échouer en silence.
 - Limite honnête : une frappe injectée est visible d'un keylogger, comme si tu tapais

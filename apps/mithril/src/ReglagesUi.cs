@@ -216,9 +216,9 @@ namespace Mithril
                 "Soumet le formulaire. À réserver aux cibles sûres.", travail.ValiderEntree);
             segVitesse = LigneSegment(defilement, ref y,
                 "Vitesse de frappe",
-                "Délai entre caractères. Ralentis si une application perd des caractères.",
-                new[] { "Rapide", "Normale", "Lente" },
-                new[] { 3, 6, 12 }, travail.VitesseFrappeMs);
+                "« En un lot » envoie tout d'un coup : pour les sites web qui perdent des caractères (validation à retardement). Sinon, ralentis si une application en perd.",
+                new[] { "En un lot", "Rapide", "Normale", "Lente" },
+                new[] { 0, 3, 6, 12 }, travail.VitesseFrappeMs);
             intIcones = LigneToggle(defilement, ref y,
                 "Apprendre l'icône des applications",
                 "Capture l'icône de l'appli cible au premier auto-type (navigateurs exclus).", travail.ApprendreIcones);

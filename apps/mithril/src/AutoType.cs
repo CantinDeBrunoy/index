@@ -212,8 +212,25 @@ namespace Mithril
             return total;
         }
 
+        /// <summary>
+        /// Deux stratégies, parce qu'aucune ne convient à toutes les pages. Espacée (délai > 0) :
+        /// un caractère à la fois, ce qui laisse à la cible le temps de traiter chaque frappe.
+        /// En un lot (délai 0) : tout le texte dans un seul SendInput, en quelques millisecondes —
+        /// indispensable sur les formulaires web qui réimposent la valeur du champ à retardement
+        /// (validation « debounce ») et écrasent ce qui a été tapé entre-temps ; vérifié dans Chrome.
+        /// </summary>
         static uint TaperTexte(string texte)
         {
+            if (DelaiCarMs <= 0)
+            {
+                var lot = new INPUT[texte.Length * 2];
+                for (int i = 0; i < texte.Length; i++)
+                {
+                    lot[2 * i] = EvenementUnicode(texte[i], false);
+                    lot[2 * i + 1] = EvenementUnicode(texte[i], true);
+                }
+                return lot.Length == 0 ? 0 : SendInput((uint)lot.Length, lot, Marshal.SizeOf(typeof(INPUT)));
+            }
             uint envoyes = 0;
             foreach (char c in texte)
             {
