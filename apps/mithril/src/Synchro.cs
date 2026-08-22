@@ -544,7 +544,7 @@ namespace Mithril
 
         public static EtatCoffre Decoder(byte[] t)
         {
-            if (t.Length != 76) throw new SynchroException("Message ETAT invalide.");
+            if (t.Length != 76) throw new SynchroException("Message ETAT invalide (" + t.Length + " octets au lieu de 76).");
             var e = new EtatCoffre();
             e.Empreinte = Trame.Tranche(t, 0, 32);
             e.DernierEchange = Trame.Tranche(t, 32, 32);
@@ -866,8 +866,9 @@ namespace Mithril
         void Session(Stream flux, AppareilAppaire appareil)
         {
             string type;
-            var etatTel = EtatCoffre.Decoder(Trame.Lire(flux, out type));
-            if (type != "ETAT") throw new SynchroException("session : ETAT attendu.");
+            byte[] chargeEtat = Trame.Lire(flux, out type);
+            if (type != "ETAT") throw new SynchroException("session : ETAT attendu, reçu " + type + " (" + chargeEtat.Length + " octets).");
+            var etatTel = EtatCoffre.Decoder(chargeEtat);
             string chemin = cheminCoffre();
             var etatPc = EtatCoffre.Lire(chemin, appareil.DernierEchange);
             Trame.Ecrire(flux, "ETAT", etatPc.Encoder());
