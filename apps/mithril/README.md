@@ -267,6 +267,7 @@ outils/   compilation et audit de sécurité
 | `src/AutoType.cs` | Frappe automatique dans une autre fenêtre (SendInput Unicode) |
 | `src/Reglages.cs` | Réglages et persistance dans `reglages.mithril` |
 | `src/ReglagesUi.cs` | Fenêtre de réglages (sélecteurs, capture de raccourci) |
+| `src/Embleme.cs` | Emblème dessiné par le code, et fabrication des `.ico` |
 | `tests/Banc.cs` | Banc de test |
 | `outils/build.ps1` | Compilation + tests |
 | `outils/audit-securite.ps1` | 35 contrôles de sécurité sur le code (voir plus haut) |

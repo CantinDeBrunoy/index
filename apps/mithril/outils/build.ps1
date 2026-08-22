@@ -18,8 +18,23 @@ $sources = @(Get-ChildItem "src" -Filter *.cs -File | ForEach-Object { $_.FullNa
 $banc    = @(Get-ChildItem "tests" -Filter *.cs -File | ForEach-Object { $_.FullName })
 if ($sources.Count -eq 0) { throw "Aucune source trouvee dans src\." }
 
+# L'icone n'est pas versionnee : elle est dessinee par src\Embleme.cs. On compile
+# donc d'abord un petit generateur (le meme fichier, avec son Main active par
+# -define:OUTIL_ICONE), qui ecrit le .ico embarque juste apres dans Mithril.exe.
+$obj = Join-Path $racine "obj"
+New-Item -ItemType Directory -Force $obj | Out-Null
+$ico = Join-Path $obj "mithril.ico"
+
+Write-Host "Generation de l'icone..." -ForegroundColor Cyan
+& $csc -nologo -target:exe -codepage:65001 -define:OUTIL_ICONE -main:Mithril.Embleme `
+       -r:System.Security.dll -out:"$obj\gen-icone.exe" $sources
+if ($LASTEXITCODE -ne 0) { throw "Echec de la compilation du generateur d'icone." }
+& "$obj\gen-icone.exe" $ico
+if ($LASTEXITCODE -ne 0) { throw "Echec de la generation de l'icone." }
+
 Write-Host "Compilation de l'application ($($sources.Count) sources)..." -ForegroundColor Cyan
-& $csc -nologo -target:winexe -codepage:65001 -optimize+ -r:System.Security.dll -out:Mithril.exe $sources
+& $csc -nologo -target:winexe -codepage:65001 -optimize+ -win32icon:"$ico" `
+       -r:System.Security.dll -out:Mithril.exe $sources
 if ($LASTEXITCODE -ne 0) { throw "Echec de la compilation." }
 
 Write-Host "Compilation du banc de test..." -ForegroundColor Cyan

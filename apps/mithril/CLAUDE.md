@@ -20,7 +20,7 @@ powershell -ExecutionPolicy Bypass -File outils/couverture.ps1      # couverture
 par glob : ajouter un fichier dans `src/` ne demande aucune modification du build ni de la CI.
 
 **Il n'existe aucun moyen de lancer un test isolé.** Le banc est un `Main` unique
-(`tests/Banc.cs`) qui enchaîne 47 appels à `Verifier(condition, libellé)`, affiche une ligne
+(`tests/Banc.cs`) qui enchaîne 51 appels à `Verifier(condition, libellé)`, affiche une ligne
 `OK`/`ECHEC` par vérification et renvoie un code de sortie non nul si l'une échoue. Pour
 cibler une vérification pendant une mise au point, il faut commenter les autres : il n'y a
 ni framework de test, ni filtre.
@@ -60,6 +60,10 @@ Chaque mot de passe n'est déchiffré qu'à l'instant précis où il est copié,
 - `src/CoffreUi.cs` — fenêtres et dialogues du coffre.
 - `src/AutoType.cs` — frappe `SendInput` Unicode dans une fenêtre tierce ; détecte les
   fenêtres élevées, qui refusent l'injection.
+- `src/Embleme.cs` — l'emblème (la Porte de Durin) est **dessiné par le code**, aucune
+  image n'est versionnée. Il sert l'icône des fenêtres et de la barre d'état ; recompilé
+  avec `-define:OUTIL_ICONE`, le même fichier devient le générateur qui produit le `.ico`
+  embarqué dans `Mithril.exe` (deux passes de `csc`, voir `outils/build.ps1`).
 - `src/Reglages.cs` — persistance **en clair** dans `%APPDATA%\Mithril\reglages.mithril`.
   Aucun secret n'y transite, et ça doit le rester.
 
