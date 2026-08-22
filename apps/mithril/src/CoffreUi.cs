@@ -1466,7 +1466,7 @@ namespace Mithril
             bool capterIcone = entree.Icone == null && Reglages.Actuels.ApprendreIcones;
             var fil = new Thread(delegate()
             {
-                uint envoyes = AutoType.TaperSequence(id, mdp, validerEntree);
+                uint envoyes = AutoType.TaperSequence(cible, id, mdp, validerEntree);
                 byte[] png = null;
                 if (capterIcone && envoyes > 0)
                     png = AutoType.IconePng(AutoType.CheminExecutable(cible));

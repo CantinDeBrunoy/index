@@ -194,6 +194,27 @@ namespace Mithril
         /// </summary>
         public static uint TaperSequence(string identifiant, string motDePasse, bool validerEntree)
         {
+            return TaperSequence(IntPtr.Zero, identifiant, motDePasse, validerEntree);
+        }
+
+        /// <summary>
+        /// Même chose en s'assurant d'abord que <paramref name="cible"/> est bien au premier plan :
+        /// après un dialogue de Mithril (phrase de passe, choix de l'entrée), le navigateur met
+        /// quelques centaines de millisecondes à reprendre le focus et à remettre le curseur dans
+        /// le champ ; taper avant, c'est perdre le début du texte.
+        /// </summary>
+        public static uint TaperSequence(IntPtr cible, string identifiant, string motDePasse, bool validerEntree)
+        {
+            if (cible != IntPtr.Zero)
+            {
+                var limite = DateTime.UtcNow.AddMilliseconds(1500);
+                while (GetForegroundWindow() != cible && DateTime.UtcNow < limite)
+                {
+                    SetForegroundWindow(cible);
+                    Thread.Sleep(50);
+                }
+                Thread.Sleep(150); // le temps que la cible replace son curseur
+            }
             Thread.Sleep(60); // laisser le focus de la cible se stabiliser
             uint total = 0;
             if (!string.IsNullOrEmpty(identifiant))
