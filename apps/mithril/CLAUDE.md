@@ -5,7 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Le projet
 
 Mithril : générateur de mots de passe et coffre local pour Windows. Application WinForms
-autonome, .NET Framework 4, **aucune dépendance externe**, **aucun accès réseau**. Tout le
+autonome, .NET Framework 4, **aucune dépendance externe**, **réseau limité au module de
+synchronisation** (`src/Synchro.cs`, réseau privé, appareils appairés seulement). Tout le
 code est en français — noms de classes, de variables, commentaires, messages de commit.
 
 ## Commandes
