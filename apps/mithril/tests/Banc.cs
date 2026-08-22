@@ -362,6 +362,19 @@ namespace Banc
                 try { mauvais.Deverrouiller("pas le bon"); } catch (CoffreException) { rejete = true; }
                 Verifier(rejete && !mauvais.Deverrouille, "portable : mauvais maitre rejete (HMAC)");
 
+                // 7p-e0. Le .stignore est pose a cote, identique partout ; celui de l'utilisateur
+                // est respecte, celui de Mithril (meme ancien) est realigne.
+                string regles = Path.Combine(dossier, ".stignore");
+                Verifier(File.Exists(regles) && File.ReadAllText(regles) == Coffre.ReglesSynchro,
+                    "portable : .stignore canonique pose a la sauvegarde");
+                File.WriteAllText(regles, "// Fichiers de travail de Mithril\n*.tmp\n");
+                Coffre.PoserReglesSynchro(dossier);
+                bool realigne = File.ReadAllText(regles) == Coffre.ReglesSynchro;
+                File.WriteAllText(regles, "*.log\n");
+                Coffre.PoserReglesSynchro(dossier);
+                Verifier(realigne && File.ReadAllText(regles) == "*.log\n",
+                    "portable : .stignore de Mithril realigne, celui de l'utilisateur respecte");
+
                 // 7p-e. Le maitre d'un portable est irrevocable.
                 bool retraitRefuse = false;
                 try { relecture.RetirerMaitre(); } catch (CoffreException) { retraitRefuse = true; }

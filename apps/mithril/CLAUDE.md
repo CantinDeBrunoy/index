@@ -20,7 +20,7 @@ powershell -ExecutionPolicy Bypass -File outils/couverture.ps1      # couverture
 par glob : ajouter un fichier dans `src/` ne demande aucune modification du build ni de la CI.
 
 **Il n'existe aucun moyen de lancer un test isolé.** Le banc est un `Main` unique
-(`tests/Banc.cs`) qui enchaîne 51 appels à `Verifier(condition, libellé)`, affiche une ligne
+(`tests/Banc.cs`) qui enchaîne 53 appels à `Verifier(condition, libellé)`, affiche une ligne
 `OK`/`ECHEC` par vérification et renvoie un code de sortie non nul si l'une échoue. Pour
 cibler une vérification pendant une mise au point, il faut commenter les autres : il n'y a
 ni framework de test, ni filtre.
