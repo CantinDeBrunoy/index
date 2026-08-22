@@ -72,7 +72,14 @@ namespace Mithril
         public string Identifiant;
         public DateTime Creation;
         public byte[] Icone; // PNG de l'appli cible (facultatif) ; null = avatar monogramme
+        public string Categorie; // section de rangement (« Jeux vidéo »...) ; vide = non rangée
         SecretMemoire secret;
+
+        /// <summary>Catégorie normalisée : jamais null, sans espaces superflus.</summary>
+        public string CategorieOuVide
+        {
+            get { return string.IsNullOrEmpty(Categorie) ? "" : Categorie.Trim(); }
+        }
 
         public void DefinirMdp(byte[] mdpUtf8)
         {
@@ -97,32 +104,72 @@ namespace Mithril
         }
     }
 
+    /// <summary>Plusieurs comptes d'un même service, réunis sous un libellé unique.</summary>
+    class GroupeCoffre
+    {
+        public string Libelle;
+        public readonly List<EntreeCoffre> Entrees = new List<EntreeCoffre>();
+    }
+
+    /// <summary>Une section de la liste : une catégorie et les groupes qu'elle contient.</summary>
+    class SectionCoffre
+    {
+        public string Nom; // vide = les entrées qui ne sont rangées nulle part
+        public readonly List<GroupeCoffre> Groupes = new List<GroupeCoffre>();
+
+        public int Total
+        {
+            get
+            {
+                int n = 0;
+                foreach (var g in Groupes) n += g.Entrees.Count;
+                return n;
+            }
+        }
+    }
+
     /// <summary>
     /// Coffre local : fichier unique chiffré DPAPI (session Windows), avec en option une
     /// couche AES-256 + HMAC-SHA256 dérivée d'un mot de passe maître (PBKDF2).
     /// Emboîtement : DPAPI( AES_maître( données ) ) — illisible hors de la machine même
     /// sans maître, et illisible par un autre processus tant que le maître n'est pas saisi.
-    /// En mode portable (MITHRIL3), la couche DPAPI disparaît : le fichier, chiffré par le
+    /// En mode portable (MITHRIL5), la couche DPAPI disparaît : le fichier, chiffré par le
     /// maître seul (obligatoire), voyage entre machines et se synchronise.
     /// </summary>
     class Coffre
     {
-        // --- Format du bloc interne (sous DPAPI) ---
-        // [0..7]  magie : "MITHRIL1" (entrées sans icône) ou "MITHRIL2" (avec icône)
+        // --- Format du bloc interne ---
+        // [0..7]  magie : voir la table ci-dessous
         // [8]     drapeaux : bit 0 = maître actif
         // maître actif :   [9..24] sel  [25..28] itérations  [29..44] IV
         //                  [45..76] HMAC-SHA256(magie|drapeaux|sel|itérations|IV|chiffré)
         //                  [77..]  données chiffrées AES-256-CBC
         // sans maître :    [9..]   données en clair (mais toujours sous DPAPI)
         //
-        // --- Format portable : "MITHRIL3" ---
-        // Même bloc que MITHRIL2 avec maître (mêmes décalages 8/9/25/29/45/77), mais écrit
-        // NU sur le disque, sans couche DPAPI : le fichier voyage entre machines et n'est
-        // protégé que par le maître, obligatoire (bit 0 toujours à 1). Le HMAC couvrant la
-        // magie, un MITHRIL3 ne peut pas être maquillé en MITHRIL2 sans invalider le MAC.
+        // Les décalages de l'en-tête sont les mêmes pour toutes les magies : ce qui change
+        // d'une magie à l'autre, c'est la VERSION DE LA CHARGE (le contenu déchiffré) et la
+        // présence ou non de la couche DPAPI par-dessus.
+        //
+        //   magie      charge  DPAPI  contenu d'une entrée
+        //   MITHRIL1     v1     oui   libellé, identifiant, ticks, mdp
+        //   MITHRIL2     v2     oui   ... + icône
+        //   MITHRIL3     v2     NON   ... + icône                     (coffre portable)
+        //   MITHRIL4     v3     oui   ... + icône + catégorie         (écrit désormais)
+        //   MITHRIL5     v3     NON   ... + icône + catégorie         (portable, écrit désormais)
+        //
+        // Toutes ces magies sont LUES ; seules MITHRIL4 et MITHRIL5 sont écrites, si bien
+        // qu'un coffre plus ancien se migre tout seul au prochain enregistrement.
+        //
+        // --- Formats portables : "MITHRIL3" et "MITHRIL5" ---
+        // Même bloc qu'avec maître (mêmes décalages 8/9/25/29/45/77), mais écrit NU sur le
+        // disque, sans couche DPAPI : le fichier voyage entre machines et n'est protégé que
+        // par le maître, obligatoire (bit 0 toujours à 1). Le HMAC couvrant la magie, un
+        // coffre portable ne peut pas être maquillé en coffre DPAPI sans invalider le MAC.
         static readonly byte[] Magie = Encoding.ASCII.GetBytes("MITHRIL1");  // ancien, encore lu
-        static readonly byte[] Magie2 = Encoding.ASCII.GetBytes("MITHRIL2"); // écrit désormais (sous DPAPI)
-        static readonly byte[] Magie3 = Encoding.ASCII.GetBytes("MITHRIL3"); // coffre portable, sans DPAPI
+        static readonly byte[] Magie2 = Encoding.ASCII.GetBytes("MITHRIL2"); // ancien, encore lu
+        static readonly byte[] Magie3 = Encoding.ASCII.GetBytes("MITHRIL3"); // portable, ancien, encore lu
+        static readonly byte[] Magie4 = Encoding.ASCII.GetBytes("MITHRIL4"); // écrit désormais (sous DPAPI)
+        static readonly byte[] Magie5 = Encoding.ASCII.GetBytes("MITHRIL5"); // portable, écrit désormais
         static readonly byte[] EntropieDpapi = Encoding.ASCII.GetBytes("Mithril.Coffre.v1");
         public const int IterationsDefaut = 600000;
         public const int IterationsPortableDefaut = 1300000; // OWASP pour PBKDF2-HMAC-SHA1 : seule barrière sans DPAPI
@@ -132,7 +179,8 @@ namespace Mithril
         readonly List<EntreeCoffre> entrees = new List<EntreeCoffre>();
 
         bool maitreActif;
-        bool avecIcones; // format de la charge en cours (déterminé par la magie lue)
+        int versionCharge = VersionChargeCourante; // version de la charge lue (1, 2 ou 3)
+        const int VersionChargeCourante = 3;
         byte[] sel;
         int iterations;
         SecretMemoire cle;       // 64 octets dérivés : 32 AES + 32 HMAC
@@ -200,6 +248,63 @@ namespace Mithril
         }
 
         /// <summary>
+        /// Range les entrées sur deux niveaux — catégorie, puis service — pour l'affichage :
+        /// « Jeux vidéo » › « LoL » › les trois comptes. Les entrées d'un même libellé se
+        /// retrouvent sous un seul groupe (casse ignorée) ; celles qui ne sont rangées nulle
+        /// part forment une section sans nom, placée en dernier. Tri alphabétique partout.
+        /// </summary>
+        public List<SectionCoffre> Ranger()
+        {
+            var sections = new List<SectionCoffre>();
+            foreach (var e in entrees)
+            {
+                var section = TrouverOuAjouter(sections, e.CategorieOuVide);
+                string libelle = e.Libelle == null ? "" : e.Libelle;
+                GroupeCoffre groupe = null;
+                foreach (var g in section.Groupes)
+                    if (string.Compare(g.Libelle, libelle, StringComparison.CurrentCultureIgnoreCase) == 0)
+                    { groupe = g; break; }
+                if (groupe == null)
+                {
+                    groupe = new GroupeCoffre { Libelle = libelle };
+                    section.Groupes.Add(groupe);
+                }
+                groupe.Entrees.Add(e);
+            }
+
+            sections.Sort(delegate(SectionCoffre a, SectionCoffre b)
+            {
+                // La section sans nom ferme la marche, quelle que soit la lettre des autres.
+                if (a.Nom.Length == 0 != (b.Nom.Length == 0)) return a.Nom.Length == 0 ? 1 : -1;
+                return string.Compare(a.Nom, b.Nom, StringComparison.CurrentCultureIgnoreCase);
+            });
+            foreach (var s in sections)
+            {
+                s.Groupes.Sort(delegate(GroupeCoffre a, GroupeCoffre b)
+                {
+                    return string.Compare(a.Libelle, b.Libelle, StringComparison.CurrentCultureIgnoreCase);
+                });
+                foreach (var g in s.Groupes)
+                    g.Entrees.Sort(delegate(EntreeCoffre a, EntreeCoffre b)
+                    {
+                        int ordre = string.Compare(a.Identifiant ?? "", b.Identifiant ?? "",
+                                                   StringComparison.CurrentCultureIgnoreCase);
+                        return ordre != 0 ? ordre : a.Creation.CompareTo(b.Creation);
+                    });
+            }
+            return sections;
+        }
+
+        static SectionCoffre TrouverOuAjouter(List<SectionCoffre> sections, string nom)
+        {
+            foreach (var s in sections)
+                if (string.Compare(s.Nom, nom, StringComparison.CurrentCultureIgnoreCase) == 0) return s;
+            var neuve = new SectionCoffre { Nom = nom };
+            sections.Add(neuve);
+            return neuve;
+        }
+
+        /// <summary>
         /// Ouvre le fichier : sans maître, charge les entrées ; avec maître, s'arrête au
         /// seuil et attend Deverrouiller(). Un coffre inexistant s'ouvre vide, déverrouillé.
         /// </summary>
@@ -215,12 +320,14 @@ namespace Mithril
 
             byte[] brut = File.ReadAllBytes(chemin);
             byte[] bloc;
-            if (brut.Length >= 9 && Compare(brut, 0, Magie3))
+            bool portable3 = brut.Length >= 9 && Compare(brut, 0, Magie3);
+            bool portable5 = brut.Length >= 9 && Compare(brut, 0, Magie5);
+            if (portable3 || portable5)
             {
                 // Coffre portable : le bloc est écrit nu, jamais de DPAPI — c'est ce qui le
                 // rend lisible sur n'importe quelle machine, avec le maître pour seule clé.
                 portable = true;
-                avecIcones = true;
+                versionCharge = portable5 ? 3 : 2;
                 bloc = brut;
                 if ((bloc[8] & 1) == 0)
                     throw new CoffreException("Coffre portable sans mot de passe maître : fichier invalide.");
@@ -234,10 +341,10 @@ namespace Mithril
                     throw new CoffreException(
                         "Le coffre est illisible sur cette session Windows (autre compte, profil réinstallé, ou fichier altéré).");
                 }
-                bool magie1 = bloc.Length >= 9 && Compare(bloc, 0, Magie);
-                avecIcones = bloc.Length >= 9 && Compare(bloc, 0, Magie2);
-                if (!magie1 && !avecIcones)
-                    throw new CoffreException("Ce fichier n'est pas un coffre Mithril valide.");
+                if (bloc.Length >= 9 && Compare(bloc, 0, Magie)) versionCharge = 1;
+                else if (bloc.Length >= 9 && Compare(bloc, 0, Magie2)) versionCharge = 2;
+                else if (bloc.Length >= 9 && Compare(bloc, 0, Magie4)) versionCharge = 3;
+                else throw new CoffreException("Ce fichier n'est pas un coffre Mithril valide.");
             }
             horodatageDisque = File.GetLastWriteTimeUtc(chemin);
 
@@ -299,8 +406,19 @@ namespace Mithril
 
         public EntreeCoffre Ajouter(string libelle, string identifiant, string mdp)
         {
+            return Ajouter(libelle, identifiant, mdp, "");
+        }
+
+        public EntreeCoffre Ajouter(string libelle, string identifiant, string mdp, string categorie)
+        {
             ExigerDeverrouille();
-            var entree = new EntreeCoffre { Libelle = libelle, Identifiant = identifiant, Creation = DateTime.Now };
+            var entree = new EntreeCoffre
+            {
+                Libelle = libelle,
+                Identifiant = identifiant,
+                Creation = DateTime.Now,
+                Categorie = categorie
+            };
             entree.DefinirMdp(Encoding.UTF8.GetBytes(mdp));
             entrees.Add(entree);
             Sauver();
@@ -321,6 +439,34 @@ namespace Mithril
             ExigerDeverrouille();
             entree.Icone = png;
             Sauver();
+        }
+
+        /// <summary>Range l'entrée dans une catégorie (chaîne vide = la sortir de toute section).</summary>
+        public void DefinirCategorie(EntreeCoffre entree, string categorie)
+        {
+            ExigerDeverrouille();
+            entree.Categorie = categorie == null ? "" : categorie.Trim();
+            Sauver();
+        }
+
+        /// <summary>Catégories déjà utilisées, sans doublon (casse ignorée), triées.</summary>
+        public List<string> Categories()
+        {
+            var vues = new List<string>();
+            foreach (var e in entrees)
+            {
+                string c = e.CategorieOuVide;
+                if (c.Length == 0) continue;
+                bool deja = false;
+                foreach (var v in vues)
+                    if (string.Compare(v, c, StringComparison.OrdinalIgnoreCase) == 0) { deja = true; break; }
+                if (!deja) vues.Add(c);
+            }
+            vues.Sort(delegate(string a, string b)
+            {
+                return string.Compare(a, b, StringComparison.CurrentCultureIgnoreCase);
+            });
+            return vues;
         }
 
         /// <summary>Active le maître ou le remplace (le coffre doit être déverrouillé).</summary>
@@ -369,7 +515,8 @@ namespace Mithril
                     Libelle = e.Libelle,
                     Identifiant = e.Identifiant,
                     Creation = e.Creation,
-                    Icone = e.Icone
+                    Icone = e.Icone,
+                    Categorie = e.Categorie
                 };
                 copie.DefinirMdp(e.RevelerMdpUtf8()); // DefinirMdp prend possession et efface
                 cible.entrees.Add(copie);
@@ -385,10 +532,10 @@ namespace Mithril
             var sb = new StringBuilder();
             sb.AppendLine("# Export Mithril du " + DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
             sb.AppendLine("# ATTENTION : ce fichier est en clair. À stocker en lieu sûr puis à détruire.");
-            sb.AppendLine("# libellé <TAB> identifiant <TAB> mot de passe <TAB> créé le");
+            sb.AppendLine("# catégorie <TAB> libellé <TAB> identifiant <TAB> mot de passe <TAB> créé le");
             foreach (var e in entrees)
-                sb.AppendLine(e.Libelle + "\t" + e.Identifiant + "\t" + e.RevelerMdp() + "\t" +
-                              e.Creation.ToString("yyyy-MM-dd"));
+                sb.AppendLine(e.CategorieOuVide + "\t" + e.Libelle + "\t" + e.Identifiant + "\t" +
+                              e.RevelerMdp() + "\t" + e.Creation.ToString("yyyy-MM-dd"));
             File.WriteAllText(cheminTexte, sb.ToString(), Encoding.UTF8);
         }
 
@@ -411,7 +558,7 @@ namespace Mithril
                 byte[] chiffre = Aes(derive, iv, charge, 0, charge.Length, true);
 
                 bloc = new byte[77 + chiffre.Length];
-                Array.Copy(portable ? Magie3 : Magie2, bloc, 8);
+                Array.Copy(portable ? Magie5 : Magie4, bloc, 8);
                 bloc[8] = 1;
                 Array.Copy(sel, 0, bloc, 9, 16);
                 Array.Copy(BitConverter.GetBytes(iterations), 0, bloc, 25, 4);
@@ -424,7 +571,7 @@ namespace Mithril
             else
             {
                 bloc = new byte[9 + charge.Length];
-                Array.Copy(Magie2, bloc, 8);
+                Array.Copy(Magie4, bloc, 8);
                 bloc[8] = 0;
                 Array.Copy(charge, 0, bloc, 9, charge.Length);
             }
@@ -454,6 +601,7 @@ namespace Mithril
             else File.Move(temporaire, chemin);
             if (portable) Array.Clear(bloc, 0, bloc.Length);
             horodatageDisque = File.GetLastWriteTimeUtc(chemin);
+            versionCharge = VersionChargeCourante; // migration faite : ce qui est sur disque est en v3
 
             if (ecraseAutreVersion)
             {
@@ -464,7 +612,8 @@ namespace Mithril
             }
         }
 
-        // charge : int32 nombre, puis par entrée libellé, identifiant, ticks, mdp (UTF-8 préfixé longueur)
+        // charge v3 : int32 nombre, puis par entrée libellé, identifiant, ticks,
+        // mdp (UTF-8 préfixé longueur), icône (préfixée longueur, 0 = aucune), catégorie
         byte[] SerialiserEntrees()
         {
             using (var flux = new MemoryStream())
@@ -484,6 +633,8 @@ namespace Mithril
                     byte[] icone = e.Icone;
                     if (icone == null) ecrivain.Write(0);
                     else { ecrivain.Write(icone.Length); ecrivain.Write(icone); }
+                    // Catégorie (format v3, écrite toujours) ; chaîne vide = entrée non rangée.
+                    ecrivain.Write(e.CategorieOuVide);
                 }
                 ecrivain.Flush();
                 byte[] resultat = flux.ToArray();
@@ -513,12 +664,15 @@ namespace Mithril
                         int taille = lecteur.ReadInt32();
                         if (taille < 0 || taille > 4096) throw new CoffreException("Coffre altéré.");
                         e.DefinirMdp(lecteur.ReadBytes(taille));
-                        if (avecIcones)
+                        if (versionCharge >= 2)
                         {
                             int tIcone = lecteur.ReadInt32();
                             if (tIcone < 0 || tIcone > 1048576) throw new CoffreException("Coffre altéré.");
                             if (tIcone > 0) e.Icone = lecteur.ReadBytes(tIcone);
                         }
+                        // v1 et v2 n'ont pas de catégorie : l'entrée reste non rangée, et le
+                        // prochain enregistrement réécrira le fichier en v3.
+                        if (versionCharge >= 3) e.Categorie = lecteur.ReadString();
                         entrees.Add(e);
                     }
                 }

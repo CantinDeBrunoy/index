@@ -97,6 +97,18 @@ namespace Mithril
             return lbl;
         }
 
+        /// <summary>Complète le champ avec les valeurs déjà utilisées : on tape « Je » et
+        /// « Jeux vidéo » se propose, ce qui évite de créer une section par faute de frappe.</summary>
+        public static void Suggerer(TextBox champ, IList<string> valeurs)
+        {
+            if (valeurs == null || valeurs.Count == 0) return;
+            var source = new AutoCompleteStringCollection();
+            foreach (var v in valeurs) source.Add(v);
+            champ.AutoCompleteCustomSource = source;
+            champ.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            champ.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+        }
+
         public static Bouton Fabriquer(Control parent, int x, int y, int l, int h, string texte, bool primaire)
         {
             var btn = new Bouton();
@@ -204,15 +216,14 @@ namespace Mithril
     {
         public string Libelle;
         public string Identifiant;
+        public string Categorie;
         public string Mdp; // renseigné seulement en mode saisie manuelle
         readonly ToolTip infobulle = new ToolTip();
 
-        public DialogueAjout() : this(false) { }
-
-        public DialogueAjout(bool avecMdp)
+        public DialogueAjout(bool avecMdp, IList<string> categoriesConnues)
         {
             Text = avecMdp ? "Ajouter au coffre" : "Enregistrer dans le coffre";
-            ClientSize = new Size(440, avecMdp ? 330 : 262);
+            ClientSize = new Size(440, avecMdp ? 396 : 328);
 
             var titre = Ui.Etiquette(this, 24, 20, 392, Text, false);
             titre.Font = new Font("Segoe UI Semibold", 11F);
@@ -222,16 +233,21 @@ namespace Mithril
             var champLibelle = Ui.Champ(this, 24, 76, 392, false);
             Ui.Etiquette(this, 24, 122, 392, "Identifiant (optionnel)", false);
             var champId = Ui.Champ(this, 24, 142, 392, false);
+            Ui.Etiquette(this, 24, 188, 392, "Catégorie (optionnel)", false);
+            var champCategorie = Ui.Champ(this, 24, 208, 392, false);
+            Ui.Suggerer(champCategorie, categoriesConnues);
+            infobulle.SetToolTip(champCategorie,
+                "Section de rangement, par exemple « Jeux vidéo ». Vide = entrée non rangée.");
 
             TextBox champMdp = null;
-            int yBoutons = 198;
+            int yBoutons = 264;
             if (avecMdp)
             {
-                Ui.Etiquette(this, 24, 188, 392, "Mot de passe", false);
-                champMdp = Ui.Champ(this, 24, 208, 392, true);
+                Ui.Etiquette(this, 24, 254, 392, "Mot de passe", false);
+                champMdp = Ui.Champ(this, 24, 274, 392, true);
                 champMdp.Width -= 40; // place pour l'œil
                 var oeil = new BoutonIcone("", "Afficher / masquer", infobulle);
-                oeil.SetBounds(378, 213, 28, 24);
+                oeil.SetBounds(378, 279, 28, 24);
                 oeil.Click += delegate
                 {
                     champMdp.UseSystemPasswordChar = !champMdp.UseSystemPasswordChar;
@@ -239,7 +255,7 @@ namespace Mithril
                 };
                 Controls.Add(oeil);
                 oeil.BringToFront();
-                yBoutons = 266;
+                yBoutons = 332;
             }
 
             var lblErreur = Ui.Etiquette(this, 24, yBoutons - 14, 392, "", false);
@@ -262,7 +278,44 @@ namespace Mithril
                 }
                 Libelle = champLibelle.Text.Trim();
                 Identifiant = champId.Text.Trim();
+                Categorie = champCategorie.Text.Trim();
                 if (avecMdp) Mdp = champMdp.Text;
+                DialogResult = DialogResult.OK;
+            };
+            AcceptButton = btnOk;
+            CancelButton = btnAnnuler;
+        }
+    }
+
+    /// <summary>Ranger une entrée déjà présente dans une section (ou l'en sortir).</summary>
+    class DialogueCategorie : FormeSombre
+    {
+        public string Categorie;
+
+        public DialogueCategorie(EntreeCoffre entree, IList<string> categoriesConnues)
+        {
+            Text = "Ranger dans une catégorie";
+            ClientSize = new Size(440, 250);
+
+            var titre = Ui.Etiquette(this, 24, 20, 392, Text, false);
+            titre.Font = new Font("Segoe UI Semibold", 11F);
+            titre.Height = 24;
+
+            Ui.Etiquette(this, 24, 52, 392,
+                "« " + entree.Libelle + " » ira dans cette section de la liste. Laisse le champ " +
+                "vide pour la sortir de toute section.", true).Height = 44;
+
+            Ui.Etiquette(this, 24, 110, 392, "Catégorie", false);
+            var champ = Ui.Champ(this, 24, 130, 392, false);
+            champ.Text = entree.CategorieOuVide;
+            Ui.Suggerer(champ, categoriesConnues);
+
+            var btnAnnuler = Ui.Fabriquer(this, 200, 186, 94, 42, "Annuler", false);
+            btnAnnuler.DialogResult = DialogResult.Cancel;
+            var btnOk = Ui.Fabriquer(this, 306, 186, 110, 42, "Ranger", true);
+            btnOk.Click += delegate
+            {
+                Categorie = champ.Text.Trim();
                 DialogResult = DialogResult.OK;
             };
             AcceptButton = btnOk;
@@ -446,6 +499,110 @@ namespace Mithril
         }
     }
 
+    /// <summary>
+    /// En-tête d'une section : le nom de la catégorie, son effectif, et le triangle qui
+    /// replie d'un clic tout ce qu'elle contient. Cliquer n'importe où sur la barre bascule.
+    /// </summary>
+    class EnteteSection : ControleDoux
+    {
+        readonly string nom;
+        readonly int total;
+        readonly bool ouvert;
+        static readonly Font PoliceNom = new Font("Segoe UI", 8F, FontStyle.Bold);
+
+        public EnteteSection(string nom, int total, bool ouvert)
+        {
+            this.nom = nom.Length == 0 ? "SANS CATÉGORIE" : nom.ToUpperInvariant();
+            this.total = total;
+            this.ouvert = ouvert;
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            var r = new Rectangle(0, 0, Width - 1, Height - 1);
+            if (Survol || Focused)
+                using (var chemin = Dessin.Arrondi(r, 8))
+                using (var pinceau = new SolidBrush(Palette.Creux))
+                    g.FillPath(pinceau, chemin);
+
+            Color teinte = Survol || Focused ? Palette.Texte : Palette.TexteSecondaire;
+            Dessin.Chevron(g, 8, Height / 2 - 3, ouvert, teinte);
+            TextRenderer.DrawText(g, nom, PoliceNom, new Rectangle(26, 0, Width - 90, Height), teinte,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
+                TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+            TextRenderer.DrawText(g, total.ToString(), PoliceNom,
+                new Rectangle(Width - 60, 0, 52, Height), Palette.TexteEteint,
+                TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+        }
+    }
+
+    /// <summary>
+    /// Plusieurs comptes d'un même service repliés sur une ligne : « LoL — 3 comptes ».
+    /// Cliquer déplie les entrées, que la fenêtre insère décalées juste en dessous.
+    /// </summary>
+    class LigneGroupe : ControleDoux
+    {
+        readonly GroupeCoffre groupe;
+        readonly bool ouvert;
+        readonly Image imgIcone; // icône du premier compte, ou null (monogramme)
+        readonly Font policeLibelle;
+        readonly Font policeSous;
+
+        public LigneGroupe(GroupeCoffre groupe, bool ouvert, Font policeLibelle, Font policeSous)
+        {
+            this.groupe = groupe;
+            this.ouvert = ouvert;
+            this.policeLibelle = policeLibelle;
+            this.policeSous = policeSous;
+            Height = 52;
+            foreach (var e in groupe.Entrees)
+                if (e.Icone != null)
+                {
+                    try { imgIcone = Image.FromStream(new MemoryStream(e.Icone)); }
+                    catch { imgIcone = null; }
+                    break;
+                }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var chemin = Dessin.Arrondi(new Rectangle(0, 0, Width - 1, Height - 1), 10))
+            {
+                using (var pinceau = new SolidBrush(Survol || Focused ? Palette.Creux : Palette.Carte))
+                    g.FillPath(pinceau, chemin);
+                using (var stylo = new Pen(Palette.Bordure)) g.DrawPath(stylo, chemin);
+            }
+
+            Avatar.Dessiner(g, new Rectangle(12, 10, 32, 32), groupe.Entrees[0], imgIcone);
+
+            TextRenderer.DrawText(g, groupe.Libelle, policeLibelle,
+                new Rectangle(54, 7, Width - 100, 20), Palette.Texte,
+                TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+
+            var noms = new List<string>();
+            foreach (var entree in groupe.Entrees)
+                if (!string.IsNullOrEmpty(entree.Identifiant)) noms.Add(entree.Identifiant);
+            string sousTexte = groupe.Entrees.Count + " comptes";
+            if (noms.Count > 0) sousTexte += "  ·  " + string.Join(", ", noms.ToArray());
+            TextRenderer.DrawText(g, sousTexte, policeSous,
+                new Rectangle(54, 28, Width - 100, 18), Palette.TexteSecondaire,
+                TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+
+            Dessin.Chevron(g, Width - 30, Height / 2 - 3, ouvert,
+                Survol || Focused ? Palette.Texte : Palette.TexteSecondaire);
+        }
+
+        protected override void Dispose(bool liberation)
+        {
+            if (liberation && imgIcone != null) imgIcone.Dispose();
+            base.Dispose(liberation);
+        }
+    }
+
     /// <summary>Une ligne du coffre : libellé, identifiant, mot de passe masqué, actions.</summary>
     class LigneEntree : Control
     {
@@ -493,6 +650,10 @@ namespace Mithril
             icoSuppr.Click += delegate { Supprimer(); };
             Controls.Add(icoSuppr);
 
+            var icoRanger = new BoutonIcone("", "Ranger dans une catégorie", infobulle);
+            icoRanger.Click += delegate { parent.RangerEntree(entree); };
+            Controls.Add(icoRanger);
+
             remasque.Interval = 8000;
             remasque.Tick += delegate { Masquer(); };
             confirmation.Interval = 3000;
@@ -500,6 +661,7 @@ namespace Mithril
 
             Resize += delegate
             {
+                icoRanger.SetBounds(Width - 174, 12, 28, 28);
                 icoOeil.SetBounds(Width - 140, 12, 28, 28);
                 icoTaper.SetBounds(Width - 106, 12, 28, 28);
                 icoCopie.SetBounds(Width - 72, 12, 28, 28);
@@ -572,7 +734,7 @@ namespace Mithril
 
             string affiche = mdpVisible != null ? mdpVisible : "●●●●●●●●";
             TextRenderer.DrawText(g, affiche, parent.PoliceMdp,
-                new Rectangle(230, 0, Width - 230 - 148, Height),
+                new Rectangle(230, 0, Width - 230 - 182, Height),
                 mdpVisible != null ? Palette.Texte : Palette.TexteSecondaire,
                 TextFormatFlags.Right | TextFormatFlags.VerticalCenter |
                 TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
@@ -625,6 +787,13 @@ namespace Mithril
         public readonly Font PoliceLibelle = new Font("Segoe UI Semibold", 9.75F);
         public readonly Font PoliceSous = new Font("Segoe UI", 8.5F);
         public readonly Font PoliceMdp = new Font("Consolas", 9.75F);
+
+        // Ce qui est replié dans la liste. Les sections sont ouvertes par défaut, les groupes
+        // fermés — leur intérêt est justement de ramener trois comptes à une ligne. Cet état
+        // ne survit pas à la fenêtre : les réglages sont en clair, et les noms de sections
+        // en disent déjà trop sur ce que contient le coffre.
+        readonly List<string> sectionsRepliees = new List<string>();
+        readonly List<string> groupesDeplies = new List<string>();
 
         public FenetreCoffre(Coffre coffre)
         {
@@ -817,20 +986,53 @@ namespace Mithril
             Rafraichir();
         }
 
-        /// <summary>Reconstruit la liste et adapte les boutons du bas.</summary>
+        /// <summary>
+        /// Reconstruit la liste — sections, groupes, entrées — et adapte les boutons du bas.
+        /// </summary>
         public void Rafraichir()
         {
             foreach (Control ancien in new System.Collections.ArrayList(pnlListe.Controls))
                 ancien.Dispose();
             pnlListe.Controls.Clear();
 
+            var sections = coffre.Ranger();
+            // Tant que rien n'est rangé, la liste reste une simple pile de lignes : un en-tête
+            // « SANS CATÉGORIE » posé au-dessus de tout n'apprendrait rien à personne.
+            bool avecEntetes = sections.Count > 1
+                || (sections.Count == 1 && sections[0].Nom.Length > 0);
+
             int y = 0;
-            foreach (var entree in coffre.Entrees)
+            foreach (var section in sections)
             {
-                var ligne = new LigneEntree(this, coffre, entree, infobulle);
-                ligne.SetBounds(0, y, 522, 52);
-                pnlListe.Controls.Add(ligne);
-                y += 60;
+                string cleSection = "s:" + section.Nom.ToLowerInvariant();
+                bool ouverte = !sectionsRepliees.Contains(cleSection);
+                if (avecEntetes)
+                {
+                    var entete = new EnteteSection(section.Nom, section.Total, ouverte);
+                    entete.SetBounds(0, y, 522, 26);
+                    entete.Click += delegate { Basculer(sectionsRepliees, cleSection); };
+                    pnlListe.Controls.Add(entete);
+                    y += 32;
+                    if (!ouverte) { y += 4; continue; }
+                }
+
+                foreach (var groupe in section.Groupes)
+                {
+                    // Un seul compte : la ligne parle d'elle-même, pas de niveau intermédiaire.
+                    if (groupe.Entrees.Count == 1) { y = PoserLigne(groupe.Entrees[0], 0, y); continue; }
+
+                    string cleGroupe = "g:" + section.Nom.ToLowerInvariant()
+                                     + "|" + groupe.Libelle.ToLowerInvariant();
+                    bool deplie = groupesDeplies.Contains(cleGroupe);
+                    var ligneGroupe = new LigneGroupe(groupe, deplie, PoliceLibelle, PoliceSous);
+                    ligneGroupe.SetBounds(0, y, 522, 52);
+                    ligneGroupe.Click += delegate { Basculer(groupesDeplies, cleGroupe); };
+                    pnlListe.Controls.Add(ligneGroupe);
+                    y += 60;
+                    if (!deplie) continue;
+                    foreach (var entree in groupe.Entrees) y = PoserLigne(entree, 22, y);
+                }
+                if (avecEntetes) y += 8;
             }
 
             int nombre = coffre.Entrees.Count;
@@ -860,19 +1062,54 @@ namespace Mithril
             }
         }
 
+        /// <summary>Pose une ligne d'entrée, éventuellement décalée sous son groupe.</summary>
+        int PoserLigne(EntreeCoffre entree, int decalage, int y)
+        {
+            var ligne = new LigneEntree(this, coffre, entree, infobulle);
+            ligne.SetBounds(decalage, y, 522 - decalage, 52);
+            pnlListe.Controls.Add(ligne);
+            return y + 60;
+        }
+
+        /// <summary>Ouvre ce qui était fermé (et l'inverse), puis reconstruit la liste.</summary>
+        void Basculer(List<string> replies, string cle)
+        {
+            if (!replies.Remove(cle)) replies.Add(cle);
+            Rafraichir();
+        }
+
         // --- Actions ---
 
         /// <summary>Saisir et enregistrer un mot de passe qui n'a pas été généré par l'appli.</summary>
         void AjouterManuel()
         {
             if (!coffre.Deverrouille) return;
-            using (var dialogue = new DialogueAjout(true))
+            using (var dialogue = new DialogueAjout(true, coffre.Categories()))
             {
                 if (dialogue.ShowDialog(this) != DialogResult.OK) return;
                 try
                 {
-                    coffre.Ajouter(dialogue.Libelle, dialogue.Identifiant, dialogue.Mdp);
+                    coffre.Ajouter(dialogue.Libelle, dialogue.Identifiant, dialogue.Mdp, dialogue.Categorie);
                     MontrerStatut("Mot de passe ajouté au coffre.", false);
+                }
+                catch (CoffreException ex) { MontrerStatut(ex.Message, true); }
+            }
+            Rafraichir();
+        }
+
+        /// <summary>Ranger une entrée existante dans une section, depuis sa ligne.</summary>
+        public void RangerEntree(EntreeCoffre entree)
+        {
+            if (!coffre.Deverrouille) return;
+            using (var dialogue = new DialogueCategorie(entree, coffre.Categories()))
+            {
+                if (dialogue.ShowDialog(this) != DialogResult.OK) return;
+                try
+                {
+                    coffre.DefinirCategorie(entree, dialogue.Categorie);
+                    MontrerStatut(dialogue.Categorie.Length == 0
+                        ? "Entrée sortie de sa section."
+                        : "Rangée dans « " + dialogue.Categorie + " ».", false);
                 }
                 catch (CoffreException ex) { MontrerStatut(ex.Message, true); }
             }

@@ -29,6 +29,17 @@ namespace Mithril
 
     static class Dessin
     {
+        /// <summary>Triangle de repli d'une section : pointe vers le bas si elle est ouverte,
+        /// vers la droite si elle est fermée. Dessiné plutôt que pris dans une police d'icônes,
+        /// pour qu'il reste net à toutes les tailles.</summary>
+        public static void Chevron(Graphics g, int x, int y, bool ouvert, Color couleur)
+        {
+            var pointes = ouvert
+                ? new[] { new Point(x, y), new Point(x + 9, y), new Point(x + 4, y + 6) }
+                : new[] { new Point(x + 1, y - 2), new Point(x + 7, y + 3), new Point(x + 1, y + 8) };
+            using (var pinceau = new SolidBrush(couleur)) g.FillPolygon(pinceau, pointes);
+        }
+
         /// <summary>Rectangle à coins arrondis, à libérer par l'appelant.</summary>
         public static GraphicsPath Arrondi(Rectangle r, int rayon)
         {

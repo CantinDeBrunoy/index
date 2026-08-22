@@ -117,8 +117,11 @@ namespace Banc
             // 7. Le coffre : chiffrement, maître, altération, protection mémoire.
             TesterCoffre();
 
-            // 7bis. Le coffre portable (MITHRIL3, sans DPAPI).
+            // 7bis. Le coffre portable (MITHRIL3/MITHRIL5, sans DPAPI).
             TesterCoffrePortable();
+
+            // 7ter. Les categories (charge v3) et la lecture de tout ce qui a ete ecrit avant.
+            TesterCategories();
 
             // 8. Auto-type : primitives sûres (sans envoyer de vraies frappes).
             TesterAutoType();
@@ -283,6 +286,54 @@ namespace Banc
             }
         }
 
+        /// Charge v1 : ni icone ni categorie — ce qu'ecrivait la toute premiere version.
+        static byte[] SerialiserUneEntreeV1(string libelle, string identifiant, string mdp)
+        {
+            using (var flux = new MemoryStream())
+            using (var ecrivain = new BinaryWriter(flux, Encoding.UTF8))
+            {
+                ecrivain.Write(1);
+                ecrivain.Write(libelle);
+                ecrivain.Write(identifiant);
+                ecrivain.Write(DateTime.Now.Ticks);
+                byte[] octets = Encoding.UTF8.GetBytes(mdp);
+                ecrivain.Write(octets.Length);
+                ecrivain.Write(octets);
+                ecrivain.Flush();
+                return flux.ToArray();
+            }
+        }
+
+        /// Charge v3 : icone puis categorie.
+        static byte[] SerialiserUneEntreeV3(string libelle, string identifiant, string mdp, string categorie)
+        {
+            using (var flux = new MemoryStream())
+            using (var ecrivain = new BinaryWriter(flux, Encoding.UTF8))
+            {
+                ecrivain.Write(1);
+                ecrivain.Write(libelle);
+                ecrivain.Write(identifiant);
+                ecrivain.Write(DateTime.Now.Ticks);
+                byte[] octets = Encoding.UTF8.GetBytes(mdp);
+                ecrivain.Write(octets.Length);
+                ecrivain.Write(octets);
+                ecrivain.Write(0); // pas d'icone
+                ecrivain.Write(categorie);
+                ecrivain.Flush();
+                return flux.ToArray();
+            }
+        }
+
+        /// Bloc sans maitre : magie, drapeau a 0, puis la charge en clair (sous DPAPI seul).
+        static byte[] ConstruireBlocSansMaitre(string magie, byte[] charge)
+        {
+            var bloc = new byte[9 + charge.Length];
+            Array.Copy(Encoding.ASCII.GetBytes(magie), bloc, 8);
+            bloc[8] = 0;
+            Array.Copy(charge, 0, bloc, 9, charge.Length);
+            return bloc;
+        }
+
         static byte[] ConstruireBlocMaitre(string magie, string maitre, int iterations, byte[] charge)
         {
             var sel = new byte[16];
@@ -340,8 +391,8 @@ namespace Banc
                 // 7p-b. Aller-retour complet ; le fichier brut commence par la magie MITHRIL3.
                 sansMaitre.DefinirMaitre("phrase de passe portable");
                 byte[] brut = File.ReadAllBytes(fichier);
-                Verifier(brut.Length > 77 && Encoding.ASCII.GetString(brut, 0, 8) == "MITHRIL3",
-                    "portable : fichier ecrit nu avec magie MITHRIL3");
+                Verifier(brut.Length > 77 && Encoding.ASCII.GetString(brut, 0, 8) == "MITHRIL5",
+                    "portable : fichier ecrit nu avec magie MITHRIL5");
                 var relecture = Coffre.PortableSur(fichier);
                 relecture.Ouvrir();
                 Verifier(relecture.Portable && relecture.MaitreActif && !relecture.Deverrouille,
@@ -432,6 +483,138 @@ namespace Banc
                 Verifier(intact && copiePortable.Portable && relectureCopie.Entrees.Count == 1
                       && relectureCopie.Entrees[0].RevelerMdp() == "mdp-c",
                     "portable : copie complete, coffre d'origine intact octet pour octet");
+            }
+            finally
+            {
+                try { Directory.Delete(dossier, true); } catch { }
+            }
+        }
+
+        static void TesterCategories()
+        {
+            string dossier = Path.Combine(Path.GetTempPath(), "MithrilBancC_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dossier);
+            byte[] entropie = Encoding.ASCII.GetBytes("Mithril.Coffre.v1");
+            try
+            {
+                // 7c-a. Aller-retour d'une categorie ; le coffre s'ecrit desormais en MITHRIL4.
+                var coffre = new Coffre(dossier);
+                coffre.Ouvrir();
+                coffre.Ajouter("LoL", "smurf", "mdp-1", "Jeux video");
+                coffre.Ajouter("LoL", "main", "mdp-2", "Jeux video");
+                coffre.Ajouter("Banque", "didier", "mdp-3", "");
+                byte[] bloc = ProtectedData.Unprotect(
+                    File.ReadAllBytes(Path.Combine(dossier, "coffre.mithril")), entropie,
+                    DataProtectionScope.CurrentUser);
+                Verifier(Encoding.ASCII.GetString(bloc, 0, 8) == "MITHRIL4",
+                    "categories : le coffre local s'ecrit desormais en MITHRIL4");
+
+                var relu = new Coffre(dossier);
+                relu.Ouvrir();
+                Verifier(relu.Entrees.Count == 3
+                      && relu.Entrees[0].Categorie == "Jeux video"
+                      && relu.Entrees[0].RevelerMdp() == "mdp-1"
+                      && relu.Entrees[2].CategorieOuVide == "",
+                    "categories : aller-retour de la categorie (charge v3)");
+
+                // 7c-b. Rangement sur deux niveaux : section, groupe de comptes, entrees.
+                var sections = relu.Ranger();
+                Verifier(sections.Count == 2
+                      && sections[0].Nom == "Jeux video" && sections[0].Groupes.Count == 1
+                      && sections[0].Groupes[0].Libelle == "LoL"
+                      && sections[0].Groupes[0].Entrees.Count == 2
+                      && sections[1].Nom == "" && sections[1].Total == 1,
+                    "categories : deux niveaux, section sans nom en dernier");
+
+                // 7c-c. Ranger une entree existante la deplace ; les sections restent triees.
+                relu.DefinirCategorie(relu.Entrees[2], "Argent");
+                var apres = relu.Ranger();
+                Verifier(apres.Count == 2 && apres[0].Nom == "Argent" && apres[1].Nom == "Jeux video"
+                      && relu.Categories().Count == 2,
+                    "categories : rangement d'une entree existante, sections triees");
+
+                // 7c-d. Retrocompatibilite : un MITHRIL1 (ni icone ni categorie) reste lisible.
+                string dossierV1 = Path.Combine(dossier, "v1");
+                Directory.CreateDirectory(dossierV1);
+                File.WriteAllBytes(Path.Combine(dossierV1, "coffre.mithril"), ProtectedData.Protect(
+                    ConstruireBlocSansMaitre("MITHRIL1",
+                        SerialiserUneEntreeV1("Tres ancien", "vieux", "mdp-v1")),
+                    entropie, DataProtectionScope.CurrentUser));
+                var v1 = new Coffre(dossierV1);
+                v1.Ouvrir();
+                Verifier(v1.Entrees.Count == 1 && v1.Entrees[0].RevelerMdp() == "mdp-v1"
+                      && v1.Entrees[0].Icone == null && v1.Entrees[0].CategorieOuVide == "",
+                    "categories : un coffre MITHRIL1 reste lisible, sans categorie");
+
+                // 7c-e. Migration : un MITHRIL2 avec maitre s'ouvre avec le meme maitre, et le
+                // prochain enregistrement le reecrit en MITHRIL4 sans perdre une entree.
+                string dossierV2 = Path.Combine(dossier, "v2");
+                Directory.CreateDirectory(dossierV2);
+                File.WriteAllBytes(Path.Combine(dossierV2, "coffre.mithril"), ProtectedData.Protect(
+                    ConstruireBlocMaitre("MITHRIL2", "maitre v2", 12000,
+                        SerialiserUneEntree("Ancien", "didier", "mdp-v2")),
+                    entropie, DataProtectionScope.CurrentUser));
+                var v2 = new Coffre(dossierV2);
+                v2.Ouvrir();
+                bool mauvaisRejete = false;
+                try { v2.Deverrouiller("pas le bon"); } catch (CoffreException) { mauvaisRejete = true; }
+                v2.Deverrouiller("maitre v2");
+                Verifier(mauvaisRejete && v2.Entrees.Count == 1
+                      && v2.Entrees[0].RevelerMdp() == "mdp-v2"
+                      && v2.Entrees[0].CategorieOuVide == "",
+                    "categories : un coffre MITHRIL2 s'ouvre encore, mauvais maitre rejete");
+
+                v2.DefinirCategorie(v2.Entrees[0], "Range apres coup");
+                byte[] migre = ProtectedData.Unprotect(
+                    File.ReadAllBytes(Path.Combine(dossierV2, "coffre.mithril")), entropie,
+                    DataProtectionScope.CurrentUser);
+                var apresMigration = new Coffre(dossierV2);
+                apresMigration.Ouvrir();
+                apresMigration.Deverrouiller("maitre v2");
+                Verifier(Encoding.ASCII.GetString(migre, 0, 8) == "MITHRIL4"
+                      && apresMigration.Entrees.Count == 1
+                      && apresMigration.Entrees[0].RevelerMdp() == "mdp-v2"
+                      && apresMigration.Entrees[0].Categorie == "Range apres coup",
+                    "categories : migration MITHRIL2 -> MITHRIL4, maitre inchange");
+
+                // 7c-f. Portable : un MITHRIL5 forge ailleurs se lit avec ses categories.
+                string fichier5 = Path.Combine(dossier, "nomade5.mithril");
+                File.WriteAllBytes(fichier5, ConstruireBlocMaitre("MITHRIL5", "maitre nomade", 12000,
+                    SerialiserUneEntreeV3("Steam", "didi", "mdp-steam", "Jeux video")));
+                var p5 = Coffre.PortableSur(fichier5);
+                p5.Ouvrir();
+                p5.Deverrouiller("maitre nomade");
+                Verifier(p5.Portable && p5.Entrees.Count == 1
+                      && p5.Entrees[0].RevelerMdp() == "mdp-steam"
+                      && p5.Entrees[0].Categorie == "Jeux video",
+                    "categories : MITHRIL5 portable lu avec ses categories");
+
+                // 7c-g. Un MITHRIL3 (portable sans categorie) se migre en MITHRIL5 a l'ecriture.
+                string fichier3 = Path.Combine(dossier, "nomade3.mithril");
+                File.WriteAllBytes(fichier3, ConstruireBlocMaitre("MITHRIL3", "maitre nomade", 12000,
+                    SerialiserUneEntree("Ailleurs", "didi", "mdp-ailleurs")));
+                var p3 = Coffre.PortableSur(fichier3);
+                p3.Ouvrir();
+                p3.Deverrouiller("maitre nomade");
+                p3.DefinirCategorie(p3.Entrees[0], "Nomade");
+                var p3Relu = Coffre.PortableSur(fichier3);
+                p3Relu.Ouvrir();
+                p3Relu.Deverrouiller("maitre nomade");
+                Verifier(Encoding.ASCII.GetString(File.ReadAllBytes(fichier3), 0, 8) == "MITHRIL5"
+                      && p3Relu.Entrees[0].RevelerMdp() == "mdp-ailleurs"
+                      && p3Relu.Entrees[0].Categorie == "Nomade",
+                    "categories : migration MITHRIL3 -> MITHRIL5, entree intacte");
+
+                // 7c-h. Un MITHRIL4 altere est refuse comme les autres (HMAC avant dechiffrement).
+                byte[] casse = File.ReadAllBytes(fichier5);
+                casse[casse.Length - 1] ^= 0xFF;
+                File.WriteAllBytes(fichier5, casse);
+                var altere = Coffre.PortableSur(fichier5);
+                altere.Ouvrir();
+                bool detecte = false;
+                try { altere.Deverrouiller("maitre nomade"); } catch (CoffreException) { detecte = true; }
+                Verifier(detecte && !altere.Deverrouille,
+                    "categories : alteration d'un MITHRIL5 detectee avant dechiffrement");
             }
             finally
             {

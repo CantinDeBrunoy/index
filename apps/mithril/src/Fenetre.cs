@@ -443,11 +443,11 @@ namespace Mithril
             if (!AssurerCoffrePret(this)) return;
             try
             {
-                using (var dialogue = new DialogueAjout())
+                using (var dialogue = new DialogueAjout(false, coffre.Categories()))
                 {
                     if (dialogue.ShowDialog(this) == DialogResult.OK)
                     {
-                        coffre.Ajouter(dialogue.Libelle, dialogue.Identifiant, txtMdp.Text);
+                        coffre.Ajouter(dialogue.Libelle, dialogue.Identifiant, txtMdp.Text, dialogue.Categorie);
                         lblEtat.ForeColor = Palette.Accent;
                         lblEtat.Text = "Enregistré dans le coffre.";
                     }

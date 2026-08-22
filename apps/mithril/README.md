@@ -80,6 +80,20 @@ un identifiant. Le bouton **« ＋ Ajouter »** de la fenêtre du coffre permet 
 un mot de passe **existant** (qui n'a pas été généré ici). Tant que tu n'enregistres rien,
 l'application n'écrit rien sur disque.
 
+### Sections
+
+Chaque entrée peut être rangée dans une **catégorie** — « Jeux vidéo », « Travail »… — au
+moment de l'enregistrement, ou plus tard via l'icône 🗀 de sa ligne. Le champ complète les
+catégories déjà utilisées, pour qu'une faute de frappe n'en crée pas une deuxième.
+
+La liste s'organise alors sur deux niveaux : les sections se replient d'un clic sur leur
+en-tête, et **les comptes qui partagent un même libellé se regroupent** — trois comptes
+« LoL » tiennent sur une ligne « LoL — 3 comptes », qui se déplie sur les trois. Tant
+qu'aucune entrée n'est rangée, la liste reste la simple pile de lignes d'avant.
+
+Le rangement fait partie du contenu chiffré du coffre : les noms de sections ne sont écrits
+nulle part en clair, pas même dans les réglages.
+
 Le fichier (`%APPDATA%\Mithril\coffre.mithril`) est chiffré en deux couches :
 
 1. **DPAPI, toujours** : le chiffrement natif de Windows, lié à ta session. Le fichier est
@@ -153,7 +167,7 @@ Par défaut le coffre est **local** : la couche DPAPI le rend illisible hors de 
 Windows — une vraie protection, mais qui interdit toute synchronisation.
 
 Le bouton **Portable…** de la fenêtre du coffre crée (ou ouvre) un **coffre portable** :
-un fichier `MITHRIL3` chiffré **par le mot de passe maître seul** — AES-256-CBC +
+un fichier `MITHRIL5` chiffré **par le mot de passe maître seul** — AES-256-CBC +
 HMAC-SHA256 (encrypt-then-MAC), PBKDF2 à **1 300 000 itérations** minimum — sans couche
 DPAPI. Ce fichier s'ouvre sur n'importe quel PC avec Mithril et le bon maître : il peut
 donc voyager par un partage privé (Syncthing, lecteur commun via Tailscale…).
@@ -212,6 +226,7 @@ Le script compile l'application, compile le banc de test et l'exécute.
 | Filtrage des ambigus, jeu mobile, calcul d'entropie | assertions directes |
 | Coffre : aller-retour DPAPI et maître, mauvais maître rejeté, altération détectée, protection mémoire, export | 13 assertions |
 | Coffre portable : aller-retour sans DPAPI, fichier forgé « autre machine », maître obligatoire, rétrocompatibilité DPAPI | 12 assertions |
+| Catégories : aller-retour, rangement sur deux niveaux, lecture des formats 1 à 3 et migration | 10 assertions |
 | Auto-type : introspection des fenêtres, détection de cible élevée | 2 assertions |
 
 ### Couverture
