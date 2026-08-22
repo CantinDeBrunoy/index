@@ -152,6 +152,13 @@ ne protège une machine déjà compromise par un malware actif.
 Par défaut le coffre est **local** : la couche DPAPI le rend illisible hors de ta session
 Windows — une vraie protection, mais qui interdit toute synchronisation.
 
+**Au premier usage du coffre**, Mithril demande d'emblée où garder les mots de passe :
+« Coffre synchronisé — PC + téléphone » choisit un dossier (par défaut
+`%USERPROFILE%\MithrilSync`), ouvre le `coffre-portable.mithril` qui s'y trouve déjà (un
+nouveau PC qui rejoint une synchronisation) ou le crée avec sa phrase de passe ; « Coffre
+local à ce PC » garde le comportement historique. Le choix se change plus tard par
+**Portable…**.
+
 Le bouton **Portable…** de la fenêtre du coffre crée (ou ouvre) un **coffre portable** :
 un fichier `MITHRIL3` chiffré **par le mot de passe maître seul** — AES-256-CBC +
 HMAC-SHA256 (encrypt-then-MAC), PBKDF2 à **1 300 000 itérations** minimum — sans couche

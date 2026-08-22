@@ -425,6 +425,7 @@ namespace Mithril
         bool AssurerCoffrePret(IWin32Window parent)
         {
             if (coffre.Deverrouille) return true;
+            if (!ProposerPremierCoffre(parent)) return false;
             try { coffre.Ouvrir(); }
             catch (CoffreException ex)
             {
@@ -435,6 +436,38 @@ namespace Mithril
                 using (var verrou = new DialogueDeverrouiller(coffre))
                     if (verrou.ShowDialog(parent) != DialogResult.OK) return false;
             return coffre.Deverrouille;
+        }
+
+        /// <summary>
+        /// Premier usage du coffre, rien n'existe encore (ni coffre local, ni portable réglé) :
+        /// propose d'emblée le coffre synchronisé. Renvoie faux si l'utilisateur renonce ;
+        /// « Coffre local » laisse simplement le coffre DPAPI se créer comme avant.
+        /// </summary>
+        bool choixPremierCoffreFait; // « local » choisi : ne pas redemander tant que rien n'est écrit
+
+        bool ProposerPremierCoffre(IWin32Window parent)
+        {
+            if (choixPremierCoffreFait || coffre.Portable || coffre.Existe) return true;
+            if (!string.IsNullOrEmpty(Reglages.Actuels.CheminCoffrePortable)) return true; // repli signalé au démarrage
+            using (var choix = new DialogueChoixCoffre())
+            {
+                if (choix.ShowDialog(parent) != DialogResult.OK) return false;
+                if (!choix.Synchronise) { choixPremierCoffreFait = true; return true; }
+            }
+            Coffre synchronise;
+            try { synchronise = DialogueChoixCoffre.CreerOuRejoindre(parent); }
+            catch (CoffreException ex)
+            {
+                MessageBox.Show((Form)parent, ex.Message, "Mithril", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+            if (synchronise == null) return false;
+            Reglages.Actuels.CheminCoffrePortable = synchronise.Chemin;
+            Reglages.Actuels.Sauver();
+            coffre.AvertissementSynchro -= Notifier;
+            coffre = synchronise;
+            coffre.AvertissementSynchro += Notifier;
+            return true;
         }
 
         void EnregistrerAuCoffre()
