@@ -87,8 +87,10 @@ Write-Host ""
 Write-Host "1. Isolement et surface d'attaque" -ForegroundColor Cyan
 
 # Le réseau n'existe que dans src/Synchro.cs (protocole MSYN1, docs/SYNCHRO.md) : partout
-# ailleurs, la promesse « aucun réseau » reste entière.
-$sourcesSansSynchro = @($sourcesToutes | Where-Object { $_.Name -ne "Synchro.cs" })
+# ailleurs dans l'application, la promesse « aucun réseau » reste entière. Le banc de test,
+# non livré, a besoin de sockets en boucle locale pour éprouver le module ; il reste soumis
+# à R36 (jamais HTTP ni DNS, même dans un test).
+$sourcesSansSynchro = @($sourcesProduction | Where-Object { $_.Name -ne "Synchro.cs" })
 Interdire "R01" "Isolement" "aucun acces reseau hors du module de synchronisation" "CRITIQUE" `
     'System\.Net|WebClient|HttpClient|HttpWebRequest|WebRequest|TcpClient|UdpClient|SmtpClient|NetworkStream|new\s+Socket|Dns\.Get' `
     "seul src/Synchro.cs a le droit de toucher au reseau" $sourcesSansSynchro

@@ -614,7 +614,7 @@ namespace Mithril
         }
 
         /// <summary>Comparaison en temps constant : ne fuit pas la position du premier octet faux.</summary>
-        static bool ComparerConstant(byte[] a, byte[] b)
+        internal static bool ComparerConstant(byte[] a, byte[] b)
         {
             if (a.Length != b.Length) return false;
             int difference = 0;

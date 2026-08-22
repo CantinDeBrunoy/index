@@ -31,7 +31,8 @@ première fois — et elle tient en quatre messages.
 Chaque appareil possède une clé **ECDSA P-256** de longue durée et un **certificat
 auto-signé** qui la porte, générés dans le magasin de clés de la plate-forme et **jamais
 exportés** : CNG (Microsoft Software Key Storage Provider, portée utilisateur, nom
-`Mithril.Identite`, certificat fabriqué par `CertCreateSelfSignCertificate` de `crypt32`)
+`Mithril.Identite`, certificat fabriqué par `CertificateRequest`, conservé dans
+`%APPDATA%Mithrilidentite.cer` — il est public)
 sous Windows ; AndroidKeyStore (alias `mithril.identite`, certificat auto-signé produit à
 la génération) sur Android. Validité : 20 ans ; le sujet est `CN=Mithril`. Le contenu du
 certificat n'a aucune importance : seule compte son **empreinte**,
