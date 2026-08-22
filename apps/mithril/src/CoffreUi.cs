@@ -157,6 +157,104 @@ namespace Mithril
         }
     }
 
+    /// <summary>
+    /// Premier lancement, aucun coffre nulle part : on choisit d'emblée entre un coffre
+    /// synchronisé (un dossier que Syncthing fait voyager, lisible sur le téléphone) et un
+    /// coffre local lié à ce PC. Évite le détour « coffre local, puis Portable, puis copie ».
+    /// </summary>
+    class DialogueChoixCoffre : FormeSombre
+    {
+        /// <summary>Vrai si l'utilisateur veut un coffre synchronisé.</summary>
+        public bool Synchronise;
+
+        public DialogueChoixCoffre()
+        {
+            Text = "Bienvenue dans Mithril";
+            ClientSize = new Size(480, 380);
+
+            var titre = Ui.Etiquette(this, 24, 20, 432, "Où garder tes mots de passe ?", false);
+            titre.Font = new Font("Segoe UI Semibold", 11F);
+            titre.Height = 24;
+
+            Ui.Etiquette(this, 24, 52, 432,
+                "Ce choix n'est pas définitif : le menu « Portable… » du coffre permet de basculer plus tard.",
+                true).Height = 40;
+
+            var btnSync = Ui.Fabriquer(this, 24, 104, 432, 44, "Coffre synchronisé — PC + téléphone", true);
+            Ui.Etiquette(this, 24, 152, 432,
+                "Un fichier chiffré par ta phrase de passe seule, posé dans un dossier que Syncthing " +
+                "recopie sur tes autres appareils. Mithril Android l'ouvre tel quel. Protection : " +
+                "uniquement la phrase de passe — choisis-la longue.", true).Height = 72;
+
+            var btnLocal = Ui.Fabriquer(this, 24, 232, 432, 44, "Coffre local à ce PC", false);
+            Ui.Etiquette(this, 24, 280, 432,
+                "Chiffré en plus par ta session Windows : illisible ailleurs, donc impossible à " +
+                "synchroniser. Le plus sûr si tu n'as qu'un PC.", true).Height = 46;
+
+            var btnAnnuler = Ui.Fabriquer(this, 362, 330, 94, 36, "Plus tard", false);
+            btnAnnuler.DialogResult = DialogResult.Cancel;
+
+            btnSync.Click += delegate { Synchronise = true; DialogResult = DialogResult.OK; };
+            btnLocal.Click += delegate { Synchronise = false; DialogResult = DialogResult.OK; };
+            CancelButton = btnAnnuler;
+        }
+
+        /// <summary>Nom du fichier de coffre créé dans le dossier synchronisé — le même que celui
+        /// que cherche Mithril Android en premier.</summary>
+        public const string NomFichierSynchronise = "coffre-portable.mithril";
+
+        /// <summary>Dossier proposé par défaut : un sous-dossier du profil, facile à désigner
+        /// dans Syncthing.</summary>
+        public static string DossierParDefaut()
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "MithrilSync");
+        }
+
+        /// <summary>
+        /// Déroule le choix « synchronisé » : dossier, puis ouverture du coffre qui s'y trouve
+        /// déjà (nouveau PC qui rejoint une synchro existante) ou création avec une phrase de
+        /// passe. Renvoie le coffre prêt (déverrouillé), ou null si l'utilisateur renonce.
+        /// </summary>
+        public static Coffre CreerOuRejoindre(IWin32Window parent)
+        {
+            string dossier;
+            using (var choix = new FolderBrowserDialog())
+            {
+                choix.Description = "Dossier du coffre synchronisé — celui que Syncthing partagera avec tes autres appareils.";
+                choix.SelectedPath = DossierParDefaut();
+                choix.ShowNewFolderButton = true;
+                if (choix.ShowDialog(parent) != DialogResult.OK) return null;
+                dossier = choix.SelectedPath;
+            }
+            string fichier = Path.Combine(dossier, NomFichierSynchronise);
+
+            if (File.Exists(fichier))
+            {
+                // Le coffre existe déjà (synchro arrivée d'un autre appareil) : on le rejoint.
+                var existant = Coffre.PortableSur(fichier);
+                existant.Ouvrir();
+                if (!existant.Portable)
+                    throw new CoffreException("Ce fichier est un coffre local lié à une session Windows, pas un coffre synchronisé.");
+                using (var verrou = new DialogueDeverrouiller(existant))
+                    if (verrou.ShowDialog(parent) != DialogResult.OK) return null;
+                return existant;
+            }
+
+            using (var dialogue = new DialogueMaitre(true,
+                "Elle est la SEULE protection du coffre synchronisé, sur tous tes appareils. " +
+                "Il n'existe aucun moyen de la récupérer : oubliée = coffre perdu. " +
+                "Vise une phrase de passe (12 caractères ou plus)."))
+            {
+                if (dialogue.ShowDialog(parent) != DialogResult.OK) return null;
+                Directory.CreateDirectory(dossier);
+                var nouveau = Coffre.PortableSur(fichier);
+                nouveau.Ouvrir();                       // inexistant : vide, déverrouillé
+                nouveau.DefinirMaitre(dialogue.Maitre); // écrit le fichier MITHRIL3
+                return nouveau;
+            }
+        }
+    }
+
     /// <summary>Saisie du maître pour ouvrir un coffre verrouillé ; valide sur place.</summary>
     class DialogueDeverrouiller : FormeSombre
     {
