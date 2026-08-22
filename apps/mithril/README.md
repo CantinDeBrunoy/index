@@ -175,6 +175,10 @@ Ce que ça change, en toute franchise :
   fichier en même temps, le dernier enregistrement gagne, la version écrasée bascule
   dans le `.bak` à côté du fichier, et Mithril le signale. Modifie le coffre depuis un
   seul PC à la fois.
+- **Fichiers de travail** : à chaque sauvegarde, Mithril pose à côté du coffre un
+  `.stignore` (règles d'exclusion Syncthing) qui écarte `.tmp`, `.bak` et fichiers de
+  verrou — identique sur Windows et Android. Un motif ignoré d'un seul côté bloque la
+  synchronisation pour toujours. Un `.stignore` écrit par toi n'est jamais touché.
 
 ## Réglages
 
