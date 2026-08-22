@@ -841,6 +841,33 @@ namespace Banc
                     int port = pc.PortEcoute;
                     Func<int> attendreCode = delegate { codePret.WaitOne(10000); codePret.Reset(); return codeAffiche; };
 
+                    // 13-0. Decouverte ciblee : muette pour un inconnu hors appairage, bavarde si
+                    // l'empreinte cible est la notre ou si l'appairage est ouvert.
+                    Func<byte[], byte[]> sonder = delegate(byte[] cibleEmpreinte)
+                    {
+                        using (var udp = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0)))
+                        {
+                            udp.Client.ReceiveTimeout = 700;
+                            byte[] nonce = Reseau.Aleatoire(16);
+                            byte[] req = cibleEmpreinte == null
+                                ? Reseau.Concat(Encoding.ASCII.GetBytes("DECO"), nonce)
+                                : Reseau.Concat(Encoding.ASCII.GetBytes("DECO"), nonce, cibleEmpreinte);
+                            udp.Send(req, req.Length, new IPEndPoint(IPAddress.Loopback, pc.PortDecouverte));
+                            var de = new IPEndPoint(IPAddress.Any, 0);
+                            try { return udp.Receive(ref de); } catch (SocketException) { return null; }
+                        }
+                    };
+                    byte[] muet = sonder(null);
+                    byte[] parEmpreinte = sonder(pc.Empreinte);
+                    byte[] mauvaiseCible = sonder(Reseau.Aleatoire(32));
+                    pc.OuvrirAppairage();
+                    byte[] enAppairage = sonder(null);
+                    pc.FermerAppairage();
+                    bool reponseValide = parEmpreinte != null && parEmpreinte.Length > 52
+                        && Encoding.ASCII.GetString(parEmpreinte, 0, 4) == "DECO";
+                    Verifier(muet == null && mauvaiseCible == null && reponseValide && enAppairage != null,
+                        "synchro : decouverte muette pour un inconnu, repond a son empreinte ou en appairage");
+
                     // 13a. Inconnu hors appairage : la connexion est fermee sans un mot.
                     bool fermeSansMot = false;
                     try

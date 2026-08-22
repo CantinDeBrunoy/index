@@ -142,8 +142,8 @@ namespace Mithril
             var btnValider = Ui.Fabriquer(this, 322, 264, 94, 42, "Valider", true);
             btnValider.Click += delegate
             {
-                if (champ1.Text.Length < 8)
-                    lblErreur.Text = "8 caractères minimum (12 ou plus recommandés).";
+                if (champ1.Text.Length < 12)
+                    lblErreur.Text = "12 caractères minimum : une phrase, pas un mot.";
                 else if (champ1.Text != champ2.Text)
                     lblErreur.Text = "Les deux saisies ne correspondent pas.";
                 else
@@ -342,6 +342,7 @@ namespace Mithril
         readonly Label lblCode;
         readonly Panel pnlAppareils = new Panel();
         readonly Bouton btnAppairer;
+        readonly Bouton btnMontrerCode;
         readonly Timer horloge = new Timer();
 
         public DialogueSynchro(Synchroniseur synchro)
@@ -380,6 +381,10 @@ namespace Mithril
             lblCode.Height = 48;
             lblCode.TextAlign = ContentAlignment.MiddleCenter;
             lblCode.ForeColor = Palette.Accent;
+
+            btnMontrerCode = Ui.Fabriquer(this, 140, 152, 240, 44, "Afficher le code", true);
+            btnMontrerCode.Visible = false;
+            btnMontrerCode.Click += delegate { MontrerCode(); };
 
             Ui.Etiquette(this, 24, 212, 472, "APPAREILS APPAIRÉS", false).ForeColor = Palette.TexteSecondaire;
             pnlAppareils.SetBounds(24, 234, 472, 160);
@@ -422,10 +427,26 @@ namespace Mithril
             if (IsDisposed) return;
             BeginInvoke((Action)delegate
             {
-                if (code < 0) { lblCode.Text = ""; return; }
-                lblCode.Text = code.ToString("000000");
-                lblEtat.Text = "Tape ce code sur le téléphone. Il n'est valable que pour cet appairage.";
+                if (code < 0) { lblCode.Text = ""; btnMontrerCode.Visible = false; return; }
+                // Le code n'apparaît qu'après un clic : un appareil inconnu ne peut pas faire
+                // surgir un code à l'écran à l'insu de l'utilisateur, et celui-ci sait qu'il
+                // s'agit bien de son téléphone qui vient de se présenter.
+                codeEnAttente = code;
+                lblCode.Text = "";
+                lblEtat.Text = "Un téléphone vient de se présenter. Si c'est bien le tien, affiche le code et tape-le dessus.";
+                btnMontrerCode.Visible = true;
+                btnMontrerCode.BringToFront();
             });
+        }
+
+        int codeEnAttente = -1;
+
+        void MontrerCode()
+        {
+            if (codeEnAttente < 0) return;
+            lblCode.Text = codeEnAttente.ToString("000000");
+            lblEtat.Text = "Tape ce code sur le téléphone. Il n'est valable que pour cet appairage.";
+            btnMontrerCode.Visible = false;
         }
 
         void SurAppaire(AppareilAppaire appareil)

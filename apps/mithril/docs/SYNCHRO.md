@@ -64,9 +64,13 @@ chaînes en UTF-8 préfixées d'un uint16, les clés ECDH éphémères en forme 
 
 ## Découverte (UDP, diffusion locale, hors TLS)
 
-- Le téléphone diffuse `DECO` ‖ nonce (16 octets) sur 255.255.255.255:27027.
-- Le PC répond en unicast, uniquement si l'expéditeur est une adresse privée :
-  `DECO` ‖ nonce ‖ nom ‖ empreinte (32) ‖ port TCP (uint16).
+- Le téléphone diffuse `DECO` ‖ nonce (16 octets) ‖ [empreinte cible (32), facultative] sur
+  255.255.255.255:27027. Sans cible : il cherche un PC à appairer. Avec cible : il cherche le
+  PC déjà appairé dont c'est l'empreinte (son adresse a pu changer).
+- Le PC répond en unicast, uniquement si l'expéditeur est une adresse privée **et** si son
+  mode appairage est ouvert ou si l'empreinte cible est la sienne :
+  `DECO` ‖ nonce ‖ nom ‖ empreinte (32) ‖ port TCP (uint16). Un appareil qui ne connaît pas
+  déjà le PC n'apprend donc rien de lui hors appairage.
 - Rien n'est authentifié ici ; la découverte ne sert qu'à proposer des candidats. Un
   faux « DJ » ne passera pas l'appairage ni la session.
 
