@@ -266,10 +266,10 @@ namespace Mithril
         public DialogueAppairage(string dossierCoffre)
         {
             Text = "Appairer un téléphone";
-            ClientSize = new Size(640, 420);
+            ClientSize = new Size(680, 420);
 
             string identifiant = Syncthing.IdentifiantLocal();
-            var titre = Ui.Etiquette(this, 24, 20, 592, "Appairer un téléphone", false);
+            var titre = Ui.Etiquette(this, 24, 20, 632, "Appairer un téléphone", false);
             titre.Font = new Font("Segoe UI Semibold", 11F);
             titre.Height = 24;
 
@@ -278,7 +278,7 @@ namespace Mithril
                 Ui.Etiquette(this, 24, 56, 592,
                     "Syncthing n'est pas installé pour cet utilisateur (aucun cert.pem dans %LOCALAPPDATA%\\Syncthing). " +
                     "Installe Syncthing depuis syncthing.net, lance-le une fois, puis reviens ici.", true).Height = 80;
-                var btnFermerSeul = Ui.Fabriquer(this, 522, 364, 94, 42, "Fermer", true);
+                var btnFermerSeul = Ui.Fabriquer(this, 562, 364, 94, 42, "Fermer", true);
                 btnFermerSeul.DialogResult = DialogResult.Cancel;
                 CancelButton = btnFermerSeul;
                 return;
@@ -305,21 +305,26 @@ namespace Mithril
 
             Ui.Etiquette(this, 24, 56 + cote + 8, cote, Syncthing.NomLocal(identifiant) + " — " + identifiant, true).Height = 52;
 
-            int x = 24 + cote + 24, largeur = 616 - x;
+            int x = 24 + cote + 24, largeur = 656 - x;
+            string adresse = "http://" + Syncthing.AdresseInterface();
             Ui.Etiquette(this, x, 56, largeur,
-                "1. Sur le téléphone, dans Syncthing-Fork : Appareils → + → scanner ce code, puis Enregistrer.", true).Height = 56;
+                "1. Sur ce PC, dans l'interface Syncthing (" + adresse + "), si le dossier du coffre n'y est pas " +
+                "encore : Ajouter un dossier → chemin ci-dessous.", true).Height = 56;
             Ui.Etiquette(this, x, 116, largeur,
-                "2. Sur ce PC, ouvre l'interface Syncthing (http://" + Syncthing.AdresseInterface() + ") : une bannière " +
-                "« Nouvel appareil » apparaît dans la minute → Ajouter l'appareil, et coche le dossier du coffre dans " +
-                "l'onglet Partage.", true).Height = 92;
-            Ui.Etiquette(this, x, 212, largeur,
-                "3. Sur le téléphone, accepte le dossier proposé, puis dans Mithril Android choisis ce dossier.", true).Height = 56;
-            Ui.Etiquette(this, x, 272, largeur,
+                "2. Sur le téléphone, dans Syncthing-Fork : Appareils → + → scanner ce code → Enregistrer.", true).Height = 40;
+            Ui.Etiquette(this, x, 160, largeur,
+                "3. Sur ce PC, dans Syncthing : la bannière « Nouvel appareil » apparaît dans la minute → " +
+                "Ajouter l'appareil, et coche le dossier du coffre dans l'onglet Partage.", true).Height = 72;
+            Ui.Etiquette(this, x, 236, largeur,
+                "4. Sur le téléphone, accepte le dossier proposé, puis dans Mithril Android choisis ce dossier.", true).Height = 56;
+            Ui.Etiquette(this, x, 296, largeur,
                 "Dossier du coffre sur ce PC : " + dossierCoffre, true).Height = 56;
 
-            var btnCopier = Ui.Fabriquer(this, x, 364, 190, 42, "Copier l'identifiant", false);
+            var btnCopier = Ui.Fabriquer(this, x, 364, 150, 42, "Copier l'identifiant", false);
             btnCopier.Click += delegate { PressePapiers.Copier(identifiant); btnCopier.Text = "Copié"; };
-            var btnFermer = Ui.Fabriquer(this, 522, 364, 94, 42, "Fermer", true);
+            var btnCopierDossier = Ui.Fabriquer(this, x + 160, 364, 140, 42, "Copier le chemin", false);
+            btnCopierDossier.Click += delegate { PressePapiers.Copier(dossierCoffre); btnCopierDossier.Text = "Copié"; };
+            var btnFermer = Ui.Fabriquer(this, 562, 364, 94, 42, "Fermer", true);
             btnFermer.DialogResult = DialogResult.Cancel;
             CancelButton = btnFermer;
         }
