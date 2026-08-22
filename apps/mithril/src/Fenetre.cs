@@ -53,6 +53,7 @@ namespace Mithril
         public Fenetre()
         {
             Text = "Mithril";
+            Icon = Embleme.Icone();
             ClientSize = new Size(640, 548);
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
@@ -253,7 +254,12 @@ namespace Mithril
             UnregisterHotKey(Handle, IdRaccourci);
             verrouAuto.Stop();
             SystemEvents.SessionSwitch -= SurSessionWindows;
-            if (tray != null) { tray.Visible = false; tray.Dispose(); }
+            if (tray != null)
+            {
+                tray.Visible = false;
+                if (tray.Icon != null) tray.Icon.Dispose(); // icône construite pour elle seule
+                tray.Dispose();
+            }
             coffre.Verrouiller();
             base.OnFormClosing(e);
         }
@@ -449,7 +455,8 @@ namespace Mithril
         void InitialiserSession()
         {
             tray = new NotifyIcon();
-            tray.Icon = Icon ?? SystemIcons.Application;
+            // Taille exacte demandée : la barre d'état choisit mal parmi les vignettes.
+            tray.Icon = Embleme.Icone(SystemInformation.SmallIconSize);
             tray.Text = "Mithril — générateur et coffre";
             tray.Visible = true;
             tray.DoubleClick += delegate { AfficherFenetre(); };

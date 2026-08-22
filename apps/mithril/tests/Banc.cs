@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Text;
 using Mithril;
@@ -125,6 +126,9 @@ namespace Banc
             copie.VerrouInactiviteMin = 99;
             Verifier(copie.VerrouInactiviteMin == 99 && Reglages.Actuels.VerrouInactiviteMin != 99,
                 "reglages : la copie de travail est independante de l'original");
+
+            // 10. Emblème : dessin et fabrication du .ico (icône de la fenêtre et du .exe).
+            TesterEmbleme();
 
             Console.WriteLine(echecs == 0 ? "\nTOUS LES TESTS PASSENT" : "\n" + echecs + " ECHEC(S)");
             Environment.Exit(echecs == 0 ? 0 : 1);
@@ -252,6 +256,55 @@ namespace Banc
             {
                 try { Directory.Delete(dossier, true); } catch { }
             }
+        }
+
+        static void TesterEmbleme()
+        {
+            // L'emblème n'existe que sous forme de code : on vérifie qu'il produit un
+            // .ico structurellement valide (c'est lui que le build embarque dans le
+            // .exe, une erreur ici ne se verrait qu'a l'oeil nu dans l'explorateur).
+            int[] tailles = { 16, 32, 256 };
+            byte[] ico = Embleme.Ico(tailles);
+            Verifier(ico.Length > 6 && ico[0] == 0 && ico[1] == 0 &&    // reserve
+                     ico[2] == 1 && ico[3] == 0 &&                      // type : icone
+                     ico[4] == tailles.Length && ico[5] == 0,
+                "embleme : en-tete du .ico conforme");
+
+            bool entreesOk = true;
+            for (int i = 0; i < tailles.Length; i++)
+            {
+                int e = 6 + 16 * i;
+                int longueur = BitConverter.ToInt32(ico, e + 8);
+                int decalage = BitConverter.ToInt32(ico, e + 12);
+                if (ico[e] != (tailles[i] >= 256 ? 0 : tailles[i])) entreesOk = false;   // 0 = 256
+                if (longueur <= 0 || decalage < 6 || decalage + longueur > ico.Length) entreesOk = false;
+            }
+            Verifier(entreesOk, "embleme : entrees du .ico coherentes avec le contenu");
+
+            bool relectureOk;
+            try
+            {
+                using (var icone = new Icon(Embleme.Icone(), new Size(16, 16)))
+                    relectureOk = icone.Width == 16 && icone.Height == 16;
+            }
+            catch { relectureOk = false; }
+            Verifier(relectureOk, "embleme : icone d'ecran relue a 16 px");
+
+            // Le dessin s'allege quand la place manque ; il doit rester quelque chose.
+            bool traitOk = true;
+            foreach (int cote in new[] { 16, 32, 64 })
+                using (Bitmap image = Embleme.Rendre(cote))
+                {
+                    int pixels = 0;
+                    for (int y = 0; y < cote; y++)
+                        for (int x = 0; x < cote; x++)
+                        {
+                            Color p = image.GetPixel(x, y);
+                            if (p.A > 200 && p.B > 150) pixels++;
+                        }
+                    if (pixels < cote) traitOk = false;
+                }
+            Verifier(traitOk, "embleme : dessin visible a 16, 32 et 64 px");
         }
 
         static void TesterAutoType()

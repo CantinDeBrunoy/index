@@ -59,6 +59,10 @@ Chaque mot de passe n'est déchiffré qu'à l'instant précis où il est copié,
 - `src/CoffreUi.cs` — fenêtres et dialogues du coffre.
 - `src/AutoType.cs` — frappe `SendInput` Unicode dans une fenêtre tierce ; détecte les
   fenêtres élevées, qui refusent l'injection.
+- `src/Embleme.cs` — l'emblème (la Porte de Durin) est **dessiné par le code**, aucune
+  image n'est versionnée. Il sert l'icône des fenêtres et de la barre d'état ; recompilé
+  avec `-define:OUTIL_ICONE`, le même fichier devient le générateur qui produit le `.ico`
+  embarqué dans `Mithril.exe` (deux passes de `csc`, voir `outils/build.ps1`).
 - `src/Reglages.cs` — persistance **en clair** dans `%APPDATA%\Mithril\reglages.mithril`.
   Aucun secret n'y transite, et ça doit le rester.
 

@@ -38,6 +38,7 @@ namespace Mithril
             MinimizeBox = false;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
+            Icon = Embleme.Icone();
             BackColor = Palette.Fond;
             ForeColor = Palette.Texte;
             Font = new Font("Segoe UI", 9.75F);
