@@ -2,10 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 
 // Seul fichier du projet autorisé à toucher au réseau (règle d'audit R01). Le protocole
 // est fixé par docs/SYNCHRO.md (MSYN1), commun à Mithril Android : ne rien changer ici
@@ -187,7 +191,7 @@ namespace Mithril
             uint longueur = LireUint32(entete, 0);
             if (longueur < 4 || longueur > 4 + Reseau.TailleTrameMax) throw new SynchroException("Trame invalide.");
             type = Encoding.ASCII.GetString(entete, 4, 4);
-            foreach (char c in type) if (c < 'A' || c > 'Z') throw new SynchroException("Trame invalide.");
+            foreach (char c in type) if (!((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) throw new SynchroException("Trame invalide.");
             return LireExact(flux, (int)longueur - 4);
         }
 
@@ -508,6 +512,467 @@ namespace Mithril
                 if (File.Exists(chemin)) File.Replace(temporaire, chemin, null);
                 else File.Move(temporaire, chemin);
             }
+        }
+    }
+
+    /// <summary>État d'un coffre tel qu'échangé dans `ETAT`.</summary>
+    struct EtatCoffre
+    {
+        public byte[] Empreinte;       // zéros = pas de coffre
+        public byte[] DernierEchange;  // zéros = jamais échangé avec cet appareil
+        public uint Taille;
+        public long Mtime;             // ms UTC
+
+        public bool Absent { get { return EstNul(Empreinte); } }
+        public bool Modifie { get { return !Absent && !Coffre.ComparerConstant(Empreinte, DernierEchange); } }
+
+        public static bool EstNul(byte[] t)
+        {
+            foreach (byte b in t) if (b != 0) return false;
+            return true;
+        }
+
+        public byte[] Encoder()
+        {
+            var t = new byte[32 + 32 + 4 + 8];
+            Array.Copy(Empreinte, 0, t, 0, 32);
+            Array.Copy(DernierEchange, 0, t, 32, 32);
+            Trame.EcrireUint32(t, 64, Taille);
+            for (int i = 0; i < 8; i++) t[68 + i] = (byte)(Mtime >> (56 - 8 * i));
+            return t;
+        }
+
+        public static EtatCoffre Decoder(byte[] t)
+        {
+            if (t.Length != 76) throw new SynchroException("Message ETAT invalide.");
+            var e = new EtatCoffre();
+            e.Empreinte = Trame.Tranche(t, 0, 32);
+            e.DernierEchange = Trame.Tranche(t, 32, 32);
+            e.Taille = Trame.LireUint32(t, 64);
+            long m = 0;
+            for (int i = 0; i < 8; i++) m = (m << 8) | t[68 + i];
+            e.Mtime = m;
+            return e;
+        }
+
+        /// <summary>Lit l'état du fichier sur disque (absent → empreinte nulle).</summary>
+        public static EtatCoffre Lire(string chemin, byte[] dernierEchange)
+        {
+            var e = new EtatCoffre { Empreinte = new byte[32], DernierEchange = dernierEchange ?? new byte[32] };
+            if (chemin != null && File.Exists(chemin))
+            {
+                byte[] contenu = File.ReadAllBytes(chemin);
+                e.Empreinte = Reseau.Sha256(contenu);
+                e.Taille = (uint)contenu.Length;
+                e.Mtime = VersMs(File.GetLastWriteTimeUtc(chemin));
+            }
+            return e;
+        }
+
+        static readonly DateTime Epoque = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        public static long VersMs(DateTime utc) { return (long)(utc - Epoque).TotalMilliseconds; }
+        public static DateTime DepuisMs(long ms) { return Epoque.AddMilliseconds(ms); }
+    }
+
+    /// <summary>Ce que la synchronisation a décidé, identique des deux côtés.</summary>
+    enum Decision { Rien, JEnvoie, JeRecois, ConflitJEnvoie, ConflitJeRecois }
+
+    /// <summary>
+    /// Moteur de synchronisation du PC : écoute TCP (TLS mutuel), répond à la découverte UDP,
+    /// conduit l'appairage et l'échange du coffre. Une connexion = un fil, une session à la
+    /// fois par appareil. Tout ce qui est décidé ici l'est par les règles de docs/SYNCHRO.md.
+    /// </summary>
+    sealed class Synchroniseur : IDisposable
+    {
+        readonly string dossierMithril;
+        readonly X509Certificate2 identite;
+        readonly byte[] monEmpreinte;
+        readonly Annuaire annuaire;
+        readonly Func<string> cheminCoffre; // le coffre synchronisé courant (peut changer)
+        readonly string nom;
+        readonly int port;
+        readonly object verrou = new object();
+
+        TcpListener ecoute;
+        UdpClient decouverte;
+        volatile bool actif;
+        DateTime finAppairage = DateTime.MinValue;
+        int echecsAppairage;
+        readonly HashSet<string> sessionsEnCours = new HashSet<string>();
+
+        /// <summary>Message d'information (faux) ou d'alerte (vrai) pour l'utilisateur, depuis un fil d'arrière-plan.</summary>
+        public event Action<string, bool> Journal;
+        /// <summary>Code à afficher pendant un appairage, ou -1 quand il n'y a plus rien à afficher.</summary>
+        public event Action<int> CodeAppairage;
+        /// <summary>Un appareil vient d'être appairé.</summary>
+        public event Action<AppareilAppaire> Appaire;
+        /// <summary>Le coffre sur disque vient d'être remplacé par la version d'un appareil.</summary>
+        public event Action<AppareilAppaire> CoffreRecu;
+
+        public Synchroniseur(string dossierMithril, string nom, Func<string> cheminCoffre)
+            : this(dossierMithril, nom, cheminCoffre, Identite.NomCle, Reseau.Port) { }
+
+        /// <summary>Variante pour le banc : nom de clé et port choisis (0 = port libre).</summary>
+        public Synchroniseur(string dossierMithril, string nom, Func<string> cheminCoffre, string nomCle, int port)
+        {
+            this.dossierMithril = dossierMithril;
+            this.nom = nom;
+            this.cheminCoffre = cheminCoffre;
+            this.port = port;
+            try { identite = Identite.Charger(dossierMithril, nomCle); }
+            catch (CryptographicException ex) { throw new SynchroException("identité impossible à créer (" + ex.Message + ")."); }
+            catch (IOException ex) { throw new SynchroException("identité impossible à enregistrer (" + ex.Message + ")."); }
+            monEmpreinte = Identite.Empreinte(identite);
+            annuaire = new Annuaire(dossierMithril);
+        }
+
+        public Annuaire Annuaire { get { return annuaire; } }
+        public byte[] Empreinte { get { return monEmpreinte; } }
+        public string Nom { get { return nom; } }
+        public int PortEcoute { get { return ecoute == null ? port : ((IPEndPoint)ecoute.LocalEndpoint).Port; } }
+        public bool AppairageOuvert { get { return DateTime.UtcNow < finAppairage; } }
+
+        /// <summary>Ouvre l'écoute TCP et la réponse à la découverte. Le pare-feu Windows demande
+        /// l'autorisation ici, la première fois.</summary>
+        public void Demarrer(bool boucleLocaleSeulement)
+        {
+            if (actif) return;
+            actif = true;
+            IPAddress liaison = boucleLocaleSeulement ? IPAddress.Loopback : IPAddress.Any;
+            ecoute = new TcpListener(liaison, port);
+            try { ecoute.Start(); }
+            catch (SocketException) { actif = false; throw new SynchroException("le port " + port + " est déjà utilisé."); }
+            var filEcoute = new Thread(BoucleEcoute);
+            filEcoute.IsBackground = true;
+            filEcoute.Name = "Mithril.Synchro.Ecoute";
+            filEcoute.Start();
+            if (!boucleLocaleSeulement)
+            {
+                try
+                {
+                    decouverte = new UdpClient(new IPEndPoint(IPAddress.Any, port));
+                    var filDecouverte = new Thread(BoucleDecouverte);
+                    filDecouverte.IsBackground = true;
+                    filDecouverte.Name = "Mithril.Synchro.Decouverte";
+                    filDecouverte.Start();
+                }
+                catch (SocketException) { decouverte = null; } // port UDP pris : la découverte manquera, pas la synchro
+            }
+        }
+
+        public void Arreter()
+        {
+            actif = false;
+            try { if (ecoute != null) ecoute.Stop(); } catch (SocketException) { }
+            try { if (decouverte != null) decouverte.Close(); } catch (SocketException) { }
+        }
+
+        /// <summary>Accepte les appairages pendant deux minutes (ou jusqu'à trois échecs).</summary>
+        public void OuvrirAppairage()
+        {
+            lock (verrou) { finAppairage = DateTime.UtcNow.AddMinutes(2); echecsAppairage = 0; }
+        }
+
+        public void FermerAppairage()
+        {
+            lock (verrou) { finAppairage = DateTime.MinValue; }
+        }
+
+        void Dire(string message, bool alerte)
+        {
+            var j = Journal;
+            if (j != null) j(message, alerte);
+        }
+
+        // --- Découverte ---
+
+        void BoucleDecouverte()
+        {
+            while (actif)
+            {
+                IPEndPoint de = null;
+                byte[] paquet;
+                try { paquet = decouverte.Receive(ref de); }
+                catch (SocketException) { continue; }
+                catch (ObjectDisposedException) { return; }
+                if (!Reseau.EstAdressePrivee(de.Address)) continue;
+                if (paquet.Length != 20 || paquet[0] != 'D' || paquet[1] != 'E' || paquet[2] != 'C' || paquet[3] != 'O') continue;
+                int p = PortEcoute;
+                byte[] reponse = Reseau.Concat(
+                    Encoding.ASCII.GetBytes("DECO"), Trame.Tranche(paquet, 4, 16), Trame.Chaine(nom), monEmpreinte,
+                    new[] { (byte)(p >> 8), (byte)p });
+                try { decouverte.Send(reponse, reponse.Length, de); } catch (SocketException) { }
+            }
+        }
+
+        // --- Écoute ---
+
+        void BoucleEcoute()
+        {
+            while (actif)
+            {
+                TcpClient client;
+                try { client = ecoute.AcceptTcpClient(); }
+                catch (SocketException) { continue; }
+                catch (ObjectDisposedException) { return; }
+                catch (InvalidOperationException) { return; }
+                var fil = new Thread(delegate() { Servir(client); });
+                fil.IsBackground = true;
+                fil.Name = "Mithril.Synchro.Session";
+                fil.Start();
+            }
+        }
+
+        void Servir(TcpClient client)
+        {
+            string cle = null;
+            try
+            {
+                var distant = (IPEndPoint)client.Client.RemoteEndPoint;
+                if (!Reseau.EstAdressePrivee(distant.Address)) return; // fermé sans lire un octet
+                client.ReceiveTimeout = Reseau.DelaiPoigneeMs;
+                client.SendTimeout = Reseau.DelaiTrameMs;
+
+                X509Certificate2 certificatDistant = null;
+                using (var tls = new SslStream(client.GetStream(), false,
+                    delegate(object s, X509Certificate c, X509Chain ch, SslPolicyErrors e)
+                    {
+                        // Validation par empreinte, jamais par le magasin système : on accepte ici
+                        // pour décider juste après, d'après l'annuaire.
+                        certificatDistant = c == null ? null : new X509Certificate2(c);
+                        return c != null;
+                    }))
+                {
+                    tls.AuthenticateAsServer(identite, true, (SslProtocols)3072 /* Tls12 */, false);
+                    client.ReceiveTimeout = Reseau.DelaiTrameMs;
+                    if (certificatDistant == null || !tls.IsMutuallyAuthenticated) return;
+                    byte[] empreinteDistante = Identite.Empreinte(certificatDistant);
+                    cle = Convert.ToBase64String(empreinteDistante);
+
+                    lock (verrou)
+                    {
+                        // Une session à la fois par appareil : la précédente finit de se clore (annuaire
+                        // à écrire) pendant que le téléphone se reconnecte déjà ; on patiente un peu.
+                        DateTime limite = DateTime.UtcNow.AddMilliseconds(Reseau.DelaiPoigneeMs);
+                        while (sessionsEnCours.Contains(cle))
+                        {
+                            int reste = (int)(limite - DateTime.UtcNow).TotalMilliseconds;
+                            if (reste <= 0) return;
+                            Monitor.Wait(verrou, reste);
+                        }
+                        sessionsEnCours.Add(cle);
+                    }
+
+                    var appareil = annuaire.Trouver(empreinteDistante);
+                    if (appareil != null)
+                    {
+                        appareil.Adresses.Remove(distant.Address.ToString());
+                        appareil.Adresses.Insert(0, distant.Address.ToString());
+                        Session(tls, appareil);
+                    }
+                    else if (AppairageOuvert)
+                    {
+                        Appairer(tls, empreinteDistante, distant.Address.ToString());
+                    }
+                    // sinon : inconnu hors appairage, fermé sans un mot
+                }
+            }
+            catch (SynchroException ex) { Dire("Synchronisation : " + ex.Message, true); }
+            catch (IOException) { }             // connexion coupée : le téléphone réessaiera
+            catch (AuthenticationException) { } // poignée de main TLS refusée : rien à dire à personne
+            catch (SocketException) { }
+            catch (ObjectDisposedException) { }
+            finally
+            {
+                if (cle != null) lock (verrou) { sessionsEnCours.Remove(cle); Monitor.PulseAll(verrou); }
+                try { client.Close(); } catch (SocketException) { }
+            }
+        }
+
+        // --- Appairage (rôle PC) ---
+
+        void Appairer(SslStream flux, byte[] empreinteTel, string adresse)
+        {
+            using (var app = new Appairage(monEmpreinte, empreinteTel))
+            {
+                string type;
+                byte[] app1 = Trame.Lire(flux, out type);
+                if (type != "APP1") throw new SynchroException("appairage : APP1 attendu.");
+                Trame.Ecrire(flux, "APP2", app.PcRepondre(app1));
+                byte[] app3 = Trame.Lire(flux, out type);
+                if (type != "APP3") throw new SynchroException("appairage : APP3 attendu.");
+                app.PcRecevoir(app3);
+
+                int code = app.Code();
+                var montrer = CodeAppairage;
+                if (montrer != null) montrer(code);
+                try
+                {
+                    // L'utilisateur tape le code sur le téléphone : jusqu'à deux minutes.
+                    flux.ReadTimeout = 120000;
+                    byte[] app4 = Trame.Lire(flux, out type);
+                    flux.ReadTimeout = Reseau.DelaiTrameMs;
+                    bool ok = type == "APP4" && app.PcVerifierTel(app4);
+                    if (!ok)
+                    {
+                        lock (verrou) { if (++echecsAppairage >= 3) finAppairage = DateTime.MinValue; }
+                        Dire("Appairage refusé : le code ne correspond pas.", true);
+                        return;
+                    }
+                    Trame.Ecrire(flux, "APP5", app.PcPreuve(nom));
+                    byte[] nomTel = Trame.Lire(flux, out type);
+                    if (type != "NOMT") throw new SynchroException("appairage : NOMT attendu.");
+                    int i = 0;
+                    var appareil = new AppareilAppaire();
+                    appareil.Nom = Trame.LireChaine(nomTel, ref i);
+                    appareil.Empreinte = empreinteTel;
+                    appareil.Adresses.Add(adresse);
+                    annuaire.Ajouter(appareil);
+                    lock (verrou) finAppairage = DateTime.MinValue;
+                    var fait = Appaire;
+                    if (fait != null) fait(appareil);
+                    Dire("Appareil appairé : " + appareil.Nom + ".", false);
+                }
+                finally
+                {
+                    if (montrer != null) montrer(-1);
+                }
+            }
+        }
+
+        // --- Session (rôle PC, le téléphone parle en premier) ---
+
+        void Session(Stream flux, AppareilAppaire appareil)
+        {
+            string type;
+            var etatTel = EtatCoffre.Decoder(Trame.Lire(flux, out type));
+            if (type != "ETAT") throw new SynchroException("session : ETAT attendu.");
+            string chemin = cheminCoffre();
+            var etatPc = EtatCoffre.Lire(chemin, appareil.DernierEchange);
+            Trame.Ecrire(flux, "ETAT", etatPc.Encoder());
+
+            Decision decision = Decider(etatPc, etatTel);
+            switch (decision)
+            {
+                case Decision.Rien:
+                    if (!etatPc.Absent) MemoriserEchange(appareil, etatPc.Empreinte);
+                    break;
+                case Decision.JEnvoie:
+                case Decision.ConflitJEnvoie:
+                    Envoyer(flux, chemin, appareil, etatPc);
+                    break;
+                case Decision.JeRecois:
+                case Decision.ConflitJeRecois:
+                    Recevoir(flux, chemin, appareil, decision == Decision.ConflitJeRecois);
+                    break;
+            }
+            Trame.Ecrire(flux, "ADRS", AdressesLocales());
+            Trame.Ecrire(flux, "FINI", new byte[0]);
+            annuaire.Sauver();
+        }
+
+        /// <summary>La règle de docs/SYNCHRO.md, du point de vue de « moi » face à « l'autre ».</summary>
+        public static Decision Decider(EtatCoffre moi, EtatCoffre autre)
+        {
+            if (moi.Absent && autre.Absent) return Decision.Rien;
+            if (moi.Absent) return Decision.JeRecois;
+            if (autre.Absent) return Decision.JEnvoie;
+            if (Coffre.ComparerConstant(moi.Empreinte, autre.Empreinte)) return Decision.Rien;
+            bool moiModifie = moi.Modifie, autreModifie = autre.Modifie;
+            if (moiModifie && !autreModifie) return Decision.JEnvoie;
+            if (!moiModifie && autreModifie) return Decision.JeRecois;
+            // Les deux modifiés — ou aucun, ce qui arrive au premier échange (dernier-echange
+            // à zéro des deux côtés) ou si les annuaires se sont désaccordés : on tranche
+            // comme un conflit, le plus récent gagne et l'autre est conservé. Rien ne se perd.
+            return moi.Mtime >= autre.Mtime ? Decision.ConflitJEnvoie : Decision.ConflitJeRecois;
+        }
+
+        void Envoyer(Stream flux, string chemin, AppareilAppaire appareil, EtatCoffre etat)
+        {
+            byte[] contenu = File.ReadAllBytes(chemin);
+            var charge = new byte[8 + contenu.Length];
+            for (int i = 0; i < 8; i++) charge[i] = (byte)(etat.Mtime >> (56 - 8 * i));
+            Array.Copy(contenu, 0, charge, 8, contenu.Length);
+            Trame.Ecrire(flux, "FICH", charge);
+            string type;
+            byte[] accuse = Trame.Lire(flux, out type);
+            if (type != "RECU" || accuse.Length != 32 || !Coffre.ComparerConstant(accuse, Reseau.Sha256(contenu)))
+                throw new SynchroException("le téléphone n'a pas confirmé la réception.");
+            MemoriserEchange(appareil, Reseau.Sha256(contenu));
+            Dire("Coffre envoyé à " + appareil.Nom + ".", false);
+        }
+
+        void Recevoir(Stream flux, string chemin, AppareilAppaire appareil, bool conflit)
+        {
+            string type;
+            byte[] charge = Trame.Lire(flux, out type);
+            if (type != "FICH" || charge.Length < 8 + 77) throw new SynchroException("fichier attendu.");
+            long mtime = 0;
+            for (int i = 0; i < 8; i++) mtime = (mtime << 8) | charge[i];
+            byte[] contenu = Trame.Tranche(charge, 8, charge.Length - 8);
+            if (Encoding.ASCII.GetString(contenu, 0, 8) != "MITHRIL3" || contenu[8] != 1)
+                throw new SynchroException("le fichier reçu n'est pas un coffre portable.");
+            if (chemin == null) throw new SynchroException("aucun coffre synchronisé configuré sur ce PC.");
+
+            Directory.CreateDirectory(Path.GetDirectoryName(chemin));
+            if (conflit && File.Exists(chemin))
+            {
+                string garde = Path.Combine(Path.GetDirectoryName(chemin),
+                    Path.GetFileNameWithoutExtension(chemin) + ".conflit-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".mithril");
+                File.Copy(chemin, garde, true);
+                Dire("Conflit avec " + appareil.Nom + " : ta version est conservée dans " + Path.GetFileName(garde) + ".", true);
+            }
+            string temporaire = chemin + ".tmp";
+            File.WriteAllBytes(temporaire, contenu);
+            File.SetLastWriteTimeUtc(temporaire, EtatCoffre.DepuisMs(mtime));
+            if (File.Exists(chemin)) File.Replace(temporaire, chemin, chemin + ".bak");
+            else File.Move(temporaire, chemin);
+            Coffre.PoserReglesSynchro(Path.GetDirectoryName(chemin));
+
+            byte[] empreinte = Reseau.Sha256(contenu);
+            Trame.Ecrire(flux, "RECU", empreinte);
+            MemoriserEchange(appareil, empreinte);
+            var recu = CoffreRecu;
+            if (recu != null) recu(appareil);
+            Dire("Coffre reçu de " + appareil.Nom + ".", false);
+        }
+
+        static void MemoriserEchange(AppareilAppaire appareil, byte[] empreinte)
+        {
+            appareil.DernierEchange = (byte[])empreinte.Clone();
+        }
+
+        byte[] AdressesLocales()
+        {
+            var liste = new List<string>();
+            try
+            {
+                foreach (var iface in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (iface.OperationalStatus != OperationalStatus.Up) continue;
+                    foreach (var u in iface.GetIPProperties().UnicastAddresses)
+                        if (u.Address.AddressFamily == AddressFamily.InterNetwork && Reseau.EstAdressePrivee(u.Address)
+                            && !IPAddress.IsLoopback(u.Address))
+                            liste.Add(u.Address.ToString());
+                }
+            }
+            catch (NetworkInformationException) { }
+            using (var flux = new MemoryStream())
+            {
+                flux.WriteByte((byte)Math.Min(liste.Count, 255));
+                for (int i = 0; i < Math.Min(liste.Count, 255); i++)
+                {
+                    byte[] a = Trame.Chaine(liste[i]);
+                    flux.Write(a, 0, a.Length);
+                }
+                return flux.ToArray();
+            }
+        }
+
+        public void Dispose()
+        {
+            Arreter();
+            identite.Dispose();
         }
     }
 }

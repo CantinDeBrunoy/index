@@ -102,7 +102,7 @@ s'interpose, les empreintes vues de chaque côté diffèrent et les codes aussi.
    `HMAC-SHA256(K, "MSYN1 tel" ‖ N_t ‖ N_p ‖ F_p ‖ F_t)`. Sinon il s'arrête et le signale.
 6. Le PC vérifie `APP4` (temps constant) et répond `APP5` :
    `HMAC-SHA256(K, "MSYN1 pc" ‖ N_t ‖ N_p ‖ F_p ‖ F_t)` ‖ nom du PC. Le téléphone vérifie,
-   envoie `NOM` ‖ nom du téléphone, et chacun mémorise l'autre (nom, empreinte, adresse).
+   envoie `NOMT` ‖ nom du téléphone, et chacun mémorise l'autre (nom, empreinte, adresse).
 
 Le PC n'affiche le code qu'après l'étape 3 : un téléphone inconnu ne peut pas faire
 apparaître de code sans que l'utilisateur ait lui-même ouvert le mode appairage. Les
@@ -118,7 +118,8 @@ pas de message d'ouverture, la première trame est déjà `ETAT`.
 Chaque appareil garde, pour le coffre, l'empreinte SHA-256 du contenu **au dernier
 échange réussi** (`dernier-echange`). La décision ne dépend d'aucune horloge.
 
-1. Téléphone → PC `ETAT` : `empreinte_actuelle ‖ dernier-echange ‖ taille`.
+1. Téléphone → PC `ETAT` : `empreinte_actuelle (32) ‖ dernier-echange (32) ‖ taille (uint32) ‖ mtime (int64, ms UTC)`.
+   Une empreinte à zéro signifie « pas de coffre » et vaut « inchangé ».
    PC → téléphone `ETAT` : idem.
 2. Décision (identique des deux côtés) :
    - empreintes actuelles égales → rien à faire, mettre à jour `dernier-echange` ;
@@ -131,7 +132,7 @@ Chaque appareil garde, pour le coffre, l'empreinte SHA-256 du contenu **au derni
    `MITHRIL3` et la cohérence de l'en-tête, écrit `.tmp`, pose `.bak`, remplace
    atomiquement, puis les deux mettent à jour `dernier-echange` à l'empreinte commune.
 4. `ADRS` (PC → téléphone) : liste des adresses IP locales du PC, pour les prochaines
-   tentatives hors réseau local. `FIN` ferme proprement.
+   tentatives hors réseau local. `FINI` ferme proprement.
 
 Un transfert interrompu ne laisse qu'un `.tmp`, ignoré et nettoyé.
 
