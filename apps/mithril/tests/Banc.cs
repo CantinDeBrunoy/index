@@ -134,6 +134,9 @@ namespace Banc
             // 10. Emblème : dessin et fabrication du .ico (icône de la fenêtre et du .exe).
             TesterEmbleme();
 
+            // 11. Appairage : identifiant Syncthing derive du certificat, et encodeur QR.
+            TesterAppairage();
+
             Console.WriteLine(echecs == 0 ? "\nTOUS LES TESTS PASSENT" : "\n" + echecs + " ECHEC(S)");
             Environment.Exit(echecs == 0 ? 0 : 1);
         }
@@ -450,6 +453,50 @@ namespace Banc
             {
                 try { Directory.Delete(dossier, true); } catch { }
             }
+        }
+
+        static void TesterAppairage()
+        {
+            // 11a. Identifiant Syncthing : SHA-256("abc") = ba7816bf 8f01cfea 414140de ..., dont
+            // la base32 commence par XJ4BNP4PAHH6U ; 4 groupes de 13 + Luhn, 8 blocs de 7.
+            string id = Syncthing.IdentifiantDepuisCertificat(Encoding.ASCII.GetBytes("abc"));
+            Verifier(id.Length == 63 && id.StartsWith("XJ4BNP4-PAHH6U") && id.Split('-').Length == 8,
+                "appairage : identifiant derive comme Syncthing (base32 de SHA-256, 8 blocs de 7)");
+            string plat = id.Replace("-", "");
+            bool luhnOk = true;
+            for (int g = 0; g < 4; g++)
+                if (Syncthing.Luhn32(plat.Substring(g * 14, 13)) != plat[g * 14 + 13]) luhnOk = false;
+            Verifier(luhnOk, "appairage : caractere de controle Luhn mod 32 sur chaque groupe");
+
+            // 11b. Le certificat PEM est bien extrait (base64 sur plusieurs lignes).
+            string pem = "-----BEGIN CERTIFICATE-----\r\nYW\r\nJj\r\n-----END CERTIFICATE-----\r\n";
+            Verifier(Encoding.ASCII.GetString(Syncthing.LireCertificatDer(pem)) == "abc",
+                "appairage : lecture du certificat PEM");
+
+            // 11c. QR : 63 caracteres -> version 5 (37 modules) ; viseurs, synchronisation,
+            // module sombre, et information de format identique dans ses deux copies.
+            bool[,] qr = Qr.Encoder("GQYEPSG-HJIKN4Y-ZU23BOM-IQSXYNK-NYZOBWD-2ZGA4DG-IWYLFSY-G4NU2QA");
+            int n = qr.GetLength(0);
+            Verifier(n == 37, "qr : version 5 (37 modules) pour un identifiant de 63 caracteres");
+            bool viseurs = qr[0, 0] && qr[3, 3] && !qr[1, 1] && qr[0, n - 1] && qr[n - 1, 0] && !qr[7, 7]
+                        && qr[n - 4, 3] && qr[3, n - 4];
+            bool synchro = true;
+            for (int i = 8; i < n - 8; i++) if (qr[6, i] != (i % 2 == 0) || qr[i, 6] != (i % 2 == 0)) synchro = false;
+            Verifier(viseurs && synchro && qr[n - 8, 8], "qr : viseurs, synchronisation et module sombre en place");
+            int format1 = 0, format2 = 0;
+            for (int i = 0; i < 15; i++)
+            {
+                bool b1 = i < 6 ? qr[i, 8] : i == 6 ? qr[7, 8] : i == 7 ? qr[8, 8] : i == 8 ? qr[8, 7] : qr[8, 14 - i];
+                bool b2 = i < 8 ? qr[8, n - 1 - i] : qr[n - 15 + i, 8];
+                if (b1) format1 |= 1 << i;
+                if (b2) format2 |= 1 << i;
+            }
+            int demasque = format1 ^ 0x5412, reste = demasque;
+            for (int i = 14; i >= 10; i--) if (((reste >> i) & 1) != 0) reste ^= 0x537 << (i - 10);
+            Verifier(format1 == format2 && reste == 0 && ((demasque >> 13) & 3) == 0,
+                "qr : information de format coherente (niveau M, BCH valide, deux copies egales)");
+            bool[,] court = Qr.Encoder("A");
+            Verifier(court.GetLength(0) == 21, "qr : version 1 (21 modules) pour un texte court");
         }
 
         static void TesterEmbleme()

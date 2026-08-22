@@ -255,6 +255,76 @@ namespace Mithril
         }
     }
 
+    /// <summary>
+    /// Appairage d'un téléphone : affiche en QR l'identifiant Syncthing de ce PC (dérivé du
+    /// certificat local, sans aucun appel à Syncthing) pour que Syncthing-Fork le scanne,
+    /// et les trois étapes qui restent. Mithril ne peut pas accepter le téléphone à la
+    /// place de Syncthing : il n'a pas le réseau, même vers localhost, et c'est voulu.
+    /// </summary>
+    class DialogueAppairage : FormeSombre
+    {
+        public DialogueAppairage(string dossierCoffre)
+        {
+            Text = "Appairer un téléphone";
+            ClientSize = new Size(640, 420);
+
+            string identifiant = Syncthing.IdentifiantLocal();
+            var titre = Ui.Etiquette(this, 24, 20, 592, "Appairer un téléphone", false);
+            titre.Font = new Font("Segoe UI Semibold", 11F);
+            titre.Height = 24;
+
+            if (identifiant == null)
+            {
+                Ui.Etiquette(this, 24, 56, 592,
+                    "Syncthing n'est pas installé pour cet utilisateur (aucun cert.pem dans %LOCALAPPDATA%\\Syncthing). " +
+                    "Installe Syncthing depuis syncthing.net, lance-le une fois, puis reviens ici.", true).Height = 80;
+                var btnFermerSeul = Ui.Fabriquer(this, 522, 364, 94, 42, "Fermer", true);
+                btnFermerSeul.DialogResult = DialogResult.Cancel;
+                CancelButton = btnFermerSeul;
+                return;
+            }
+
+            // QR à gauche : 8 px par module, zone de silence de 4 modules.
+            bool[,] qr = Qr.Encoder(identifiant);
+            int n = qr.GetLength(0), module = 240 / (n + 8);
+            int cote = module * (n + 8);
+            var image = new Bitmap(cote, cote);
+            using (var g = Graphics.FromImage(image))
+            {
+                g.Clear(Color.White);
+                using (var noir = new SolidBrush(Color.Black))
+                    for (int l = 0; l < n; l++)
+                        for (int c = 0; c < n; c++)
+                            if (qr[l, c]) g.FillRectangle(noir, (c + 4) * module, (l + 4) * module, module, module);
+            }
+            var vue = new PictureBox();
+            vue.Image = image;
+            vue.SetBounds(24, 56, cote, cote);
+            vue.SizeMode = PictureBoxSizeMode.AutoSize;
+            Controls.Add(vue);
+
+            Ui.Etiquette(this, 24, 56 + cote + 8, cote, Syncthing.NomLocal(identifiant) + " — " + identifiant, true).Height = 52;
+
+            int x = 24 + cote + 24, largeur = 616 - x;
+            Ui.Etiquette(this, x, 56, largeur,
+                "1. Sur le téléphone, dans Syncthing-Fork : Appareils → + → scanner ce code, puis Enregistrer.", true).Height = 56;
+            Ui.Etiquette(this, x, 116, largeur,
+                "2. Sur ce PC, ouvre l'interface Syncthing (http://" + Syncthing.AdresseInterface() + ") : une bannière " +
+                "« Nouvel appareil » apparaît dans la minute → Ajouter l'appareil, et coche le dossier du coffre dans " +
+                "l'onglet Partage.", true).Height = 92;
+            Ui.Etiquette(this, x, 212, largeur,
+                "3. Sur le téléphone, accepte le dossier proposé, puis dans Mithril Android choisis ce dossier.", true).Height = 56;
+            Ui.Etiquette(this, x, 272, largeur,
+                "Dossier du coffre sur ce PC : " + dossierCoffre, true).Height = 56;
+
+            var btnCopier = Ui.Fabriquer(this, x, 364, 190, 42, "Copier l'identifiant", false);
+            btnCopier.Click += delegate { PressePapiers.Copier(identifiant); btnCopier.Text = "Copié"; };
+            var btnFermer = Ui.Fabriquer(this, 522, 364, 94, 42, "Fermer", true);
+            btnFermer.DialogResult = DialogResult.Cancel;
+            CancelButton = btnFermer;
+        }
+    }
+
     /// <summary>Saisie du maître pour ouvrir un coffre verrouillé ; valide sur place.</summary>
     class DialogueDeverrouiller : FormeSombre
     {
@@ -751,8 +821,15 @@ namespace Mithril
             itemOuvrir.Click += delegate { OuvrirPortable(); };
             itemRevenir = new ToolStripMenuItem("Revenir au coffre local");
             itemRevenir.Click += delegate { RevenirAuCoffreLocal(); };
+            var itemAppairer = new ToolStripMenuItem("Appairer un téléphone (QR)…");
+            itemAppairer.Click += delegate
+            {
+                string dossier = coffre.Portable ? Path.GetDirectoryName(coffre.Chemin) : "(aucun coffre synchronisé pour l'instant)";
+                using (var dialogue = new DialogueAppairage(dossier)) dialogue.ShowDialog(this);
+            };
             menuPortable.Items.Add(itemCreer);
             menuPortable.Items.Add(itemOuvrir);
+            menuPortable.Items.Add(itemAppairer);
             menuPortable.Items.Add(new ToolStripSeparator());
             menuPortable.Items.Add(itemRevenir);
             btnPortable.Click += delegate { menuPortable.Show(btnPortable, new Point(0, btnPortable.Height)); };
