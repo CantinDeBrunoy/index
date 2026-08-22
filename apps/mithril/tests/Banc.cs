@@ -137,6 +137,9 @@ namespace Banc
             // 11. Appairage : identifiant Syncthing derive du certificat, et encodeur QR.
             TesterAppairage();
 
+            // 12. Synchronisation native (MSYN1) : socle sans reseau.
+            TesterSynchroSocle();
+
             Console.WriteLine(echecs == 0 ? "\nTOUS LES TESTS PASSENT" : "\n" + echecs + " ECHEC(S)");
             Environment.Exit(echecs == 0 ? 0 : 1);
         }
@@ -497,6 +500,130 @@ namespace Banc
                 "qr : information de format coherente (niveau M, BCH valide, deux copies egales)");
             bool[,] court = Qr.Encoder("A");
             Verifier(court.GetLength(0) == 21, "qr : version 1 (21 modules) pour un texte court");
+        }
+
+        static void TesterSynchroSocle()
+        {
+            // 12a. Filtre d'adresses : privees acceptees, publiques refusees.
+            bool privees = Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("192.168.1.126"))
+                && Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("10.0.0.1"))
+                && Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("172.16.5.5"))
+                && Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("100.115.205.85"))
+                && Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("127.0.0.1"))
+                && Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("::ffff:192.168.0.9"))
+                && Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("fe80::1"));
+            bool publiques = !Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("8.8.8.8"))
+                && !Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("172.32.0.1"))
+                && !Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("100.128.0.1"))
+                && !Reseau.EstAdressePrivee(System.Net.IPAddress.Parse("2001:db8::1"))
+                && !Reseau.EstAdressePrivee(null);
+            Verifier(privees && publiques, "synchro : filtre d'adresses privees (RFC 1918, CGNAT, lien-local, v6)");
+
+            // 12b. Trames : aller-retour, et refus des trames malformees.
+            using (var flux = new MemoryStream())
+            {
+                Trame.Ecrire(flux, "ETAT", new byte[] { 1, 2, 3 });
+                flux.Position = 0;
+                string type;
+                byte[] charge = Trame.Lire(flux, out type);
+                Verifier(type == "ETAT" && charge.Length == 3 && charge[2] == 3, "synchro : trame ecrite puis relue");
+            }
+            bool refusTaille = false, refusType = false;
+            using (var flux = new MemoryStream(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 65, 65, 65, 65 }))
+            {
+                string t;
+                try { Trame.Lire(flux, out t); } catch (SynchroException) { refusTaille = true; }
+            }
+            using (var flux = new MemoryStream(new byte[] { 0, 0, 0, 4, 0x65, 0x74, 0x61, 0x74 }))
+            {
+                string t;
+                try { Trame.Lire(flux, out t); } catch (SynchroException) { refusType = true; }
+            }
+            Verifier(refusTaille && refusType, "synchro : trame trop longue ou type invalide refuses");
+
+            // 12c. Appairage complet en boucle locale : memes empreintes des deux cotes,
+            // codes egaux, preuves mutuelles acceptees.
+            byte[] fp = Reseau.Aleatoire(32), ft = Reseau.Aleatoire(32);
+            int codePc, codeTel;
+            bool preuves;
+            using (var tel = new Appairage(fp, ft))
+            using (var pc = new Appairage(fp, ft))
+            {
+                byte[] app2 = pc.PcRepondre(tel.TelEngagement());
+                pc.PcRecevoir(tel.TelReveler(app2));
+                codePc = pc.Code();
+                codeTel = tel.Code();
+                preuves = tel.TelVerifierCode(codePc) && pc.PcVerifierTel(tel.TelPreuve())
+                       && tel.TelVerifierPc(pc.PcPreuve("DJ")) == "DJ";
+            }
+            Verifier(codePc == codeTel && codePc >= 0 && codePc < 1000000 && preuves,
+                "synchro : appairage en boucle locale, code commun et preuves mutuelles");
+
+            // 12d. Intrus actif : deux connexions, donc deux empreintes differentes de chaque
+            // cote -> les codes divergent, le telephone refuse celui affiche par le PC.
+            byte[] fIntrus = Reseau.Aleatoire(32);
+            bool intrusDetecte;
+            using (var tel = new Appairage(fIntrus, ft))   // le telephone voit l'intrus comme PC
+            using (var intrusCotePc = new Appairage(fp, fIntrus)) // le PC voit l'intrus comme telephone
+            using (var pc = new Appairage(fp, fIntrus))
+            using (var intrusCoteTel = new Appairage(fIntrus, ft))
+            {
+                // l'intrus relaie fidelement les messages : meme ainsi, les codes divergent
+                byte[] app2 = pc.PcRepondre(intrusCotePc.TelEngagement());
+                pc.PcRecevoir(intrusCotePc.TelReveler(app2));
+                byte[] app2b = intrusCoteTel.PcRepondre(tel.TelEngagement());
+                intrusCoteTel.PcRecevoir(tel.TelReveler(app2b));
+                intrusDetecte = !tel.TelVerifierCode(pc.Code());
+            }
+            Verifier(intrusDetecte, "synchro : intrus actif detecte (codes lies aux empreintes TLS)");
+
+            // 12e. Engagement falsifie : le PC refuse APP3.
+            bool engagementRefuse = false;
+            using (var tel = new Appairage(fp, ft))
+            using (var pc = new Appairage(fp, ft))
+            {
+                byte[] app2 = pc.PcRepondre(Reseau.Aleatoire(32));
+                try { pc.PcRecevoir(tel.TelReveler(app2)); } catch (SynchroException) { engagementRefuse = true; }
+            }
+            bool mauvaisCode;
+            using (var tel = new Appairage(fp, ft))
+            using (var pc = new Appairage(fp, ft))
+            {
+                byte[] app2 = pc.PcRepondre(tel.TelEngagement());
+                pc.PcRecevoir(tel.TelReveler(app2));
+                mauvaisCode = !tel.TelVerifierCode((pc.Code() + 1) % 1000000) && !pc.PcVerifierTel(Reseau.Aleatoire(32));
+            }
+            Verifier(engagementRefuse && mauvaisCode, "synchro : engagement falsifie, code faux et preuve fausse refuses");
+
+            // 12f. Identite : certificat ECDSA P-256 sur cle CNG, empreinte stable d'un
+            // chargement a l'autre, cle privee disponible pour TLS.
+            string dossier = Path.Combine(Path.GetTempPath(), "MithrilBancS_" + Guid.NewGuid().ToString("N"));
+            string nomCle = "Mithril.Banc." + Guid.NewGuid().ToString("N");
+            try
+            {
+                var id1 = Identite.Charger(dossier, nomCle);
+                var id2 = Identite.Charger(dossier, nomCle);
+                Verifier(id1.HasPrivateKey && id2.HasPrivateKey
+                      && Coffre.ComparerConstant(Identite.Empreinte(id1), Identite.Empreinte(id2))
+                      && id1.PublicKey.Oid.FriendlyName == "ECC",
+                    "synchro : identite ECDSA P-256 persistante, empreinte stable");
+
+                // 12g. Annuaire DPAPI : aller-retour, recherche par empreinte, retrait.
+                var annuaire = new Annuaire(dossier);
+                var tel = new AppareilAppaire { Nom = "Xiaomi", Empreinte = ft };
+                tel.Adresses.Add("192.168.1.138");
+                annuaire.Ajouter(tel);
+                var relu = new Annuaire(dossier);
+                bool trouve = relu.Trouver(ft) != null && relu.Trouver(ft).Nom == "Xiaomi"
+                           && relu.Trouver(ft).Adresses[0] == "192.168.1.138" && relu.Trouver(fp) == null;
+                relu.Retirer(ft);
+                Verifier(trouve && new Annuaire(dossier).Appareils.Count == 0, "synchro : annuaire scelle DPAPI, aller-retour et retrait");
+            }
+            finally
+            {
+                try { System.Security.Cryptography.CngKey.Open(nomCle).Delete(); } catch (System.Security.Cryptography.CryptographicException) { }
+                try { Directory.Delete(dossier, true); } catch (IOException) { }
+            }
         }
 
         static void TesterEmbleme()
