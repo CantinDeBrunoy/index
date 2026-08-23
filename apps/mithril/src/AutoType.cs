@@ -215,6 +215,8 @@ namespace Mithril
                 }
                 Thread.Sleep(150); // le temps que la cible replace son curseur
             }
+            AttendreRelachementModificateurs();
+            RelacherModificateursPourLaCible();
             Thread.Sleep(60); // laisser le focus de la cible se stabiliser
             uint total = 0;
             if (!string.IsNullOrEmpty(identifiant))
@@ -240,6 +242,41 @@ namespace Mithril
         /// indispensable sur les formulaires web qui réimposent la valeur du champ à retardement
         /// (validation « debounce ») et écrasent ce qui a été tapé entre-temps ; vérifié dans Chrome.
         /// </summary>
+        /// <summary>
+        /// Après Ctrl+Alt+M, les doigts sont encore sur Ctrl et Alt quand la frappe démarre : le
+        /// navigateur reçoit alors « Ctrl+lettre », le traite comme un raccourci et n'insère rien —
+        /// observé en direct sur Twitch (9 keydown, 0 caractère inséré). On attend donc que Ctrl,
+        /// Alt, Maj et Win soient relâchés, 3 s au plus.
+        /// </summary>
+        static void AttendreRelachementModificateurs()
+        {
+            int[] modificateurs = { 0x11, 0x12, 0x10, 0x5B, 0x5C }; // VK_CONTROL, VK_MENU, VK_SHIFT, VK_LWIN, VK_RWIN
+            var limite = DateTime.UtcNow.AddSeconds(3);
+            while (DateTime.UtcNow < limite)
+            {
+                bool enfonce = false;
+                foreach (int vk in modificateurs) if ((GetAsyncKeyState(vk) & 0x8000) != 0) enfonce = true;
+                if (!enfonce) return;
+                Thread.Sleep(20);
+            }
+        }
+
+        /// <summary>
+        /// Même relâchés physiquement, les modificateurs peuvent rester « enfoncés » pour la cible :
+        /// leur relâchement réel est parti vers le dialogue de Mithril qui avait le focus. On envoie
+        /// donc des relâchements explicites — sans effet s'ils sont déjà relâchés.
+        /// </summary>
+        static void RelacherModificateursPourLaCible()
+        {
+            ushort[] modificateurs = { 0x11, 0x12, 0x10, 0x5B, 0x5C, 0xA2, 0xA3, 0xA4, 0xA5, 0xA0, 0xA1 };
+            var lot = new INPUT[modificateurs.Length];
+            for (int i = 0; i < modificateurs.Length; i++) lot[i] = EvenementTouche(modificateurs[i], true);
+            SendInput((uint)lot.Length, lot, Marshal.SizeOf(typeof(INPUT)));
+            // La cible traite ces relâchements avec un temps de retard (vu : ~30 ms sur Chrome) ;
+            // taper trop tôt, c'est encore taper sous Ctrl.
+            Thread.Sleep(200);
+        }
+
         static uint TaperTexte(string texte)
         {
             if (DelaiCarMs <= 0)
