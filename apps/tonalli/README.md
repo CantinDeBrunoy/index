@@ -1,81 +1,158 @@
-# Nuancier
+# Tonalli
 
-Chaque jour, une couleur pour la journée. Les couleurs s'accumulent et l'année
-devient une mosaïque.
+*Tonalli* — l'énergie vitale d'une personne en nahuatl, et aussi le jour, la
+chaleur du soleil.
 
-Application mobile React Native (Expo, TypeScript). **Tout est local** : pas de
-compte, pas de backend, aucune donnée qui quitte l'appareil.
+Deux personnes liées enregistrent chaque jour l'énergie de leur journée : une
+émotion, qui est une couleur, et une photo prise sur le moment. Chacun voit le
+calendrier de l'autre — mais seulement après avoir rempli le sien. C'est un
+rituel à deux, pas un réseau social.
 
-## Lancer le projet
+Site web (rien à installer), bilingue français / espagnol, mode sombre.
+
+## Stack
+
+React 19 + TypeScript + Vite · React Router · i18n-js · Supabase (auth,
+Postgres, Storage) · Web Push via service worker et Edge Functions.
 
 ```bash
 npm install
-npx expo start
+cp .env.example .env      # puis renseigner les clés Supabase
+npm run dev               # http://localhost:5173
+npm run build             # tsc -b && vite build
+npm run checks            # vérifications des dates, fuseaux et émotions
 ```
 
-Les notifications locales programmées ne fonctionnent pas dans Expo Go sur
-Android (limitation de l'app Expo Go depuis le SDK 53) : pour les tester,
-utiliser un *development build*.
+> La caméra n'est accessible qu'en **HTTPS** (ou sur `localhost`) : c'est une
+> règle des navigateurs, pas un réglage de l'app.
 
-```bash
-npx expo run:android   # ou: npx expo run:ios
-npm run typecheck      # tsc --noEmit
-```
+## Mise en place de Supabase
 
-## Écrans
+1. Créer un projet sur [supabase.com](https://supabase.com).
+2. Exécuter les migrations dans l'ordre, depuis le SQL Editor ou la CLI :
+   `supabase/migrations/0001_init.sql` puis `0002_notifications.sql`.
+   Elles créent les tables, la RLS, les fonctions de liaison et le bucket privé.
+3. Copier `Project URL` et la clé `anon` dans `.env`
+   (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
+4. Authentication → Providers : activer **Email**. La confirmation par e-mail
+   peut rester active, l'app affiche l'écran d'attente correspondant.
 
-| Route | Écran |
+La clé `anon` est publique par nature : c'est la Row Level Security qui protège
+les données, jamais le secret de la clé.
+
+## Modèle de données
+
+| Table | Rôle |
 | --- | --- |
-| `app/(tabs)/index.tsx` | **Aujourd'hui** — couleur du jour, palette, note |
-| `app/(tabs)/calendar.tsx` | **Calendrier** — vue mensuelle et mosaïque annuelle |
-| `app/(tabs)/settings.tsx` | **Réglages** — rappel quotidien, export/import |
-| `app/day/[date].tsx` | Détail d'une journée (modale) |
+| `emotions` | les 12 couples (clé, couleur), figés |
+| `profiles` | nom, langue, **fuseau**, `partner_id`, code d'invitation, réglages de rappel |
+| `entries` | une ligne par personne et par jour : `date`, `emotion`, `color`, `photo_path`, `note` |
 
-## Choix d'implémentation
+`entries` a une contrainte `unique (user_id, date)` — un seul choix par jour —
+et une clé étrangère `(emotion, color) → emotions (key, color)` : une couleur
+qui ne correspond pas à son émotion ne peut pas exister en base.
 
-**Le jour est une date locale.** Toutes les clés sont au format `YYYY-MM-DD`,
-construites à partir de `getFullYear` / `getMonth` / `getDate` — jamais depuis
-`toISOString()`, qui renvoie de l'UTC et décale la journée le soir. Le jour
-courant est recalculé au passage de minuit et à chaque retour au premier plan,
-donc la couleur reste modifiable jusqu'à minuit local, et un changement de
-fuseau en voyage est pris en compte.
+### Réciprocité, appliquée par la base
 
-**Palette fermée.** 18 teintes nommées et figées (`src/data/palette.ts`), pas de
-sélecteur RVB : trop de choix tue le rituel, et des teintes stables rendent
-l'année comparable d'un mois à l'autre.
+La mécanique « je vois sa journée quand j'ai rempli la mienne » n'est pas un
+simple masquage d'interface : la policy de lecture de `entries` n'autorise une
+ligne du binôme que s'il existe une ligne à moi à la même date. Un jour que je
+n'ai pas rempli reste donc masqué **définitivement** — on ne peut pas remplir le
+passé, c'est ce qui donne son poids au rituel.
 
-**Stockage.** `AsyncStorage`, deux clés JSON (`nuancier.entries.v1`,
-`nuancier.settings.v1`). Une entrée vaut
-`{ date: 'YYYY-MM-DD', color: '#RRGGBB', note?: string, updatedAt: number }` ;
-`updatedAt` ne sert qu'à départager un import. Tout ce qui est relu du stockage
-passe par une validation : une donnée corrompue est ignorée, jamais fatale.
+Pour afficher malgré tout une case hachurée « il/elle a posté ce jour-là », la
+fonction `partner_entry_dates()` ne renvoie que des **dates**, sans aucun
+contenu. Les photos suivent la même règle : la policy Storage n'autorise un
+objet que s'il existe une ligne `entries` visible qui pointe dessus.
 
-**Rappels.** Une notification quotidienne répétitive ne sait pas « sauter » un
-jour déjà rempli. L'app programme donc une fenêtre glissante de 14 rappels
-datés à l'heure choisie (21 h par défaut), en omettant les journées déjà
-colorées, et la resynchronise à chaque sauvegarde, à chaque changement de
-réglage et au retour au premier plan. La permission est demandée une seule fois
-au premier lancement ; un refus ne bloque rien.
+### Liaison du binôme
 
-**Export / import.** Export d'un fichier `nuancier-YYYY-MM-DD.json` via le
-partage natif. À l'import, le fichier est validé puis *fusionné* — à date égale
-la version la plus récente gagne — et un récapitulatif (ajoutées / mises à jour
-/ inchangées) est confirmé avant écriture.
+Chaque profil reçoit à l'inscription un code de 6 caractères (alphabet sans
+`O`/`0` ni `I`/`1`, pour se dicter au téléphone sans faute). `link_partner(code)`
+et `unlink_partner()` sont des fonctions transactionnelles : `partner_id` et
+`invite_code` sont protégés en écriture directe par un trigger, la relation
+1-1 est garantie par une contrainte `unique` sur `partner_id`.
 
-**Design.** Le châssis est strictement gris : les seules couleurs à l'écran sont
-celles choisies par l'utilisateur. Mode sombre suivant le système, animations
-limitées à un ressort sur la pastille sélectionnée et un fondu sur la couleur du
-jour (`Animated` natif, pas de dépendance supplémentaire).
+## Fuseaux horaires
+
+Le point le plus délicat de l'app, traité comme tel.
+
+- Le « jour » d'une entrée est **la date locale de son auteur**, calculée avec
+  `Intl` dans son fuseau, jamais avec `toISOString()` (qui renvoie de l'UTC et
+  décale la journée d'un cran le soir).
+- Cette date est stockée telle quelle et **jamais convertie** à l'affichage : le
+  calendrier du binôme se lit à ses dates à lui.
+- Le fuseau est enregistré dans le profil et remis à jour à chaque connexion,
+  donc un voyage suit la personne.
+- Les réglages affichent l'heure locale du binôme en direct, et le décalage.
+
+`npm run checks` teste explicitement le cas France / Mexique : au même instant,
+Paris est le 28 et Mexico le 27 ; le décalage vaut 8 h l'été et 7 h l'hiver (le
+Mexique n'applique plus l'heure d'été depuis 2022).
+
+## Notifications
+
+Un site web ne peut pas programmer de notification locale récurrente : c'est le
+serveur qui pousse. Deux Edge Functions s'en chargent.
+
+1. **Générer une paire de clés VAPID** puis renseigner la clé publique dans
+   `.env` (`VITE_VAPID_PUBLIC_KEY`) :
+
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+
+2. **Déployer les fonctions** et leurs secrets :
+
+   ```bash
+   supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... \
+     VAPID_SUBJECT=mailto:toi@exemple.fr WEBHOOK_SECRET=$(openssl rand -hex 16)
+   supabase functions deploy notify-partner
+   supabase functions deploy daily-reminders
+   ```
+
+3. **`notify-partner`** : Database → Webhooks, un webhook sur `INSERT` dans
+   `entries` qui appelle la fonction, avec l'en-tête `x-webhook-secret`. Le
+   binôme est notifié dans **sa** langue quand l'autre poste.
+
+4. **`daily-reminders`** : un cron toutes les 15 minutes (Integrations → Cron,
+   ou `pg_cron` + `pg_net`) appelant la fonction. Elle demande à la base
+   `due_reminders()`, qui sélectionne les personnes dont c'est l'heure choisie
+   **chez elles** et dont la journée locale n'est pas déjà remplie. Personne
+   n'est notifié pour une journée déjà faite.
+
+Textes : « Quelle est la couleur de ta journée ? » / « ¿De qué color es tu día? »
+
+> **iOS** : Safari n'autorise les notifications que si le site a été ajouté à
+> l'écran d'accueil. L'app le signale dans les réglages plutôt que de laisser
+> croire à une panne. Sur Android et sur ordinateur, rien à installer.
+
+## Hors ligne
+
+Le service worker met en cache l'application, et les entrées déjà chargées sont
+conservées en `localStorage` : le calendrier reste consultable sans réseau. Une
+journée validée hors ligne est mise en attente (photo comprise) et part au
+retour de la connexion — rien n'est envoyé à moitié.
+
+## Déploiement
+
+N'importe quel hébergeur de fichiers statiques convient (`npm run build` produit
+`dist/`). L'app utilise l'historique du navigateur : toutes les routes doivent
+retomber sur `index.html`. Le fichier `public/_redirects` fait le nécessaire sur
+Netlify ; sur Vercel, Cloudflare Pages ou un nginx, configurer la même règle.
+
+Variables d'environnement à définir chez l'hébergeur : `VITE_SUPABASE_URL`,
+`VITE_SUPABASE_ANON_KEY`, `VITE_VAPID_PUBLIC_KEY`.
 
 ## Structure
 
 ```
-app/                  routes expo-router
 src/
-  components/         palette, grilles, cellules, primitives d'écran
-  data/               palette figée, types
-  lib/                dates, notifications, export/import
-  state/              contextes entrées et réglages, synchro des rappels
-  storage/            AsyncStorage + validation
-  theme/              tokens clair / sombre
+  components/   grilles, caméra, cases de calendrier, feuilles de confirmation
+  lib/          émotions, dates et fuseaux, i18n, photos, push, cache, supabase
+  locales/      fr.ts (fait foi) et es.ts (typé d'après lui)
+  routes/       auth, liaison, aujourd'hui, calendriers, réglages
+  state/        contextes langue, session/profil, entrées
+scripts/        vérifications, génération des icônes
+supabase/       migrations SQL et Edge Functions
 ```
