@@ -273,6 +273,31 @@ create policy "profiles_delete_own" on public.profiles
   for delete to authenticated
   using (id = auth.uid());
 
+-- « Ai-je moi-même rempli ce jour-là ? »
+--
+-- Cette question DOIT passer par une fonction `security definer` : une policy
+-- de `entries` qui interrogerait `entries` verrait la policy réappliquée dans
+-- sa propre sous-requête, et Postgres couperait sur une récursion infinie
+-- (42P17), que PostgREST renvoie en 500. La fonction lit la table sans
+-- repasser par la RLS, et ne révèle jamais que mes propres dates.
+create or replace function public.has_own_entry(day date)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+      from public.entries e
+     where e.user_id = auth.uid()
+       and e.date = day
+  );
+$$;
+
+revoke execute on function public.has_own_entry(date) from public, anon;
+grant execute on function public.has_own_entry(date) to authenticated, service_role;
+
 -- Réciprocité : l'entrée du binôme à la date D n'est lisible que si j'ai moi
 -- même une entrée à la date D. La mécanique BeReal est appliquée par la base,
 -- pas seulement masquée à l'écran.
@@ -283,11 +308,7 @@ create policy "entries_select" on public.entries
     user_id = auth.uid()
     or (
       user_id = public.partner_of(auth.uid())
-      and exists (
-        select 1 from public.entries mine
-         where mine.user_id = auth.uid()
-           and mine.date = entries.date
-      )
+      and public.has_own_entry(entries.date)
     )
   );
 
