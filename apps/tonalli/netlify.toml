@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# La règle de repli est aussi dans public/_redirects, que Netlify lit en
+# priorité ; celle-ci sert de garde-fou si le fichier venait à disparaître.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
