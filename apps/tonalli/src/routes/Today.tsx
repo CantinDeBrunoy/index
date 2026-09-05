@@ -44,8 +44,11 @@ export function TodayScreen() {
     setError(null);
     try {
       await submitToday({ emotion, photo, note });
-    } catch {
-      setError(t('common.unknownError'));
+    } catch (caught) {
+      // On affiche le message brut du serveur : sur un envoi de photo ou une
+      // écriture refusée, c'est lui qui dit ce qui ne va pas, pas nous.
+      const detail = (caught as { message?: string })?.message;
+      setError(detail ? `${t('common.unknownError')} — ${detail}` : t('common.unknownError'));
     } finally {
       setBusy(false);
     }
