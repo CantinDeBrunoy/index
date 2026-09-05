@@ -180,20 +180,25 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
         await uploadPhoto(path, await dataUrlToBlob(entry.photoDataUrl));
       }
 
-      const { data, error: insertError } = await supabase
+      // `upsert` couvre les deux cas d'un seul coup : première validation de la
+      // journée, ou correction de celle-ci. Sans nouvelle photo, la colonne
+      // `photo_path` est absente du corps envoyé, donc l'ancienne est conservée.
+      const payload: Record<string, unknown> = {
+        user_id: userId,
+        date: entry.date,
+        emotion: entry.emotion,
+        color: entry.color,
+        note: entry.note,
+      };
+      if (path) payload.photo_path = path;
+
+      const { data, error: writeError } = await supabase
         .from('entries')
-        .insert({
-          user_id: userId,
-          date: entry.date,
-          emotion: entry.emotion,
-          color: entry.color,
-          photo_path: path,
-          note: entry.note,
-        })
+        .upsert(payload, { onConflict: 'user_id,date' })
         .select('*')
         .single<Entry>();
 
-      if (insertError) throw insertError;
+      if (writeError) throw writeError;
 
       setMine((current) => {
         const next = { ...current, [data.date]: data };
