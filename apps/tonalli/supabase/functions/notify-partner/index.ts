@@ -1,15 +1,22 @@
 /**
  * Notifie le binôme quand quelqu'un enregistre sa journée.
  *
- * Déclenchée par un Database Webhook Supabase sur `INSERT` dans `entries`
- * (voir README). Le webhook envoie l'en-tête `x-webhook-secret`, comparé à la
- * variable d'environnement du même nom : sans lui, n'importe qui pourrait
- * déclencher des notifications.
+ * Déclenchée par un Database Webhook sur `INSERT` dans `entries`. Le webhook
+ * envoie l'en-tête `x-webhook-secret`, comparé à la variable d'environnement
+ * du même nom : sans elle, n'importe qui pourrait déclencher des notifications.
+ *
+ * Ce fichier est volontairement autonome (aucun import local) pour pouvoir
+ * être collé tel quel dans l'éditeur du tableau de bord Supabase.
  */
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
 
-import { MESSAGES, localeOf } from '../_shared/push.ts';
+const MESSAGES = {
+  fr: { title: 'Tonalli', body: (name: string) => `${name} a rempli sa journée.` },
+  es: { title: 'Tonalli', body: (name: string) => `${name} ha registrado su día.` },
+} as const;
+
+const localeOf = (value: unknown) => (value === 'es' ? 'es' : 'fr');
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -22,20 +29,19 @@ webpush.setVapidDetails(
   Deno.env.get('VAPID_PRIVATE_KEY')!,
 );
 
-type Payload = {
-  type?: string;
-  record?: { user_id?: string; date?: string };
-};
-
 Deno.serve(async (request) => {
   const expected = Deno.env.get('WEBHOOK_SECRET');
   if (expected && request.headers.get('x-webhook-secret') !== expected) {
     return new Response('forbidden', { status: 403 });
   }
 
-  const payload = (await request.json()) as Payload;
-  const authorId = payload.record?.user_id;
-  if (payload.type !== 'INSERT' || !authorId) {
+  const event = (await request.json()) as {
+    type?: string;
+    record?: { user_id?: string };
+  };
+
+  const authorId = event.record?.user_id;
+  if (event.type !== 'INSERT' || !authorId) {
     return new Response('ignored', { status: 200 });
   }
 
@@ -45,7 +51,7 @@ Deno.serve(async (request) => {
     .eq('id', authorId)
     .maybeSingle();
 
-  if (!author?.partner_id) return new Response('no partner', { status: 200 });
+  if (!author?.partner_id) return new Response('pas de binôme', { status: 200 });
 
   const { data: partner } = await supabase
     .from('profiles')
@@ -53,26 +59,25 @@ Deno.serve(async (request) => {
     .eq('id', author.partner_id)
     .maybeSingle();
 
-  if (!partner?.push_token) return new Response('no subscription', { status: 200 });
+  if (!partner?.push_token) return new Response('pas d’abonnement', { status: 200 });
 
   const messages = MESSAGES[localeOf(partner.locale)];
-  const body = JSON.stringify({
-    title: messages.partnerTitle,
-    body: messages.partnerBody(author.display_name || '…'),
+  const payload = JSON.stringify({
+    title: messages.title,
+    body: messages.body(author.display_name || '…'),
     tag: 'partner-posted',
     url: '/',
   });
 
   try {
-    await webpush.sendNotification(JSON.parse(partner.push_token), body);
+    await webpush.sendNotification(JSON.parse(partner.push_token), payload);
   } catch (error) {
-    // 404/410 : l'abonnement n'existe plus côté navigateur, on le nettoie.
     const status = (error as { statusCode?: number }).statusCode;
     if (status === 404 || status === 410) {
       await supabase.from('profiles').update({ push_token: null }).eq('id', author.partner_id);
     }
-    return new Response('push failed', { status: 200 });
+    return new Response('échec de l’envoi', { status: 200 });
   }
 
-  return new Response('sent', { status: 200 });
+  return new Response('envoyé', { status: 200 });
 });
