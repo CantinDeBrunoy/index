@@ -28,19 +28,47 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
-webpush.setVapidDetails(
-  Deno.env.get('VAPID_SUBJECT') ?? 'mailto:contact@example.com',
-  Deno.env.get('VAPID_PUBLIC_KEY')!,
-  Deno.env.get('VAPID_PRIVATE_KEY')!,
-);
+/**
+ * Les valeurs collées à la main traînent souvent une espace ou un retour à la
+ * ligne, et un copier-coller trop large embarque le nom de la variable.
+ * On nettoie plutôt que de planter sur un détail invisible à l'œil.
+ */
+function env(name: string): string {
+  const raw = (Deno.env.get(name) ?? '').trim();
+  return raw.startsWith(`${name}=`) ? raw.slice(name.length + 1).trim() : raw;
+}
+
+/**
+ * L'initialisation VAPID se fait à l'appel, pas au chargement du module : si
+ * une clé est absente ou mal formée, on renvoie un message lisible au lieu
+ * d'un 500 opaque dû à une fonction qui refuse de démarrer.
+ */
+function configureVapid(): string | null {
+  const subject = env('VAPID_SUBJECT') || 'mailto:contact@example.com';
+  const publicKey = env('VAPID_PUBLIC_KEY');
+  const privateKey = env('VAPID_PRIVATE_KEY');
+
+  if (!publicKey || !privateKey) {
+    return 'VAPID_PUBLIC_KEY ou VAPID_PRIVATE_KEY manquante dans les secrets.';
+  }
+  try {
+    webpush.setVapidDetails(subject, publicKey, privateKey);
+    return null;
+  } catch (error) {
+    return `Clés VAPID refusées : ${(error as Error).message}`;
+  }
+}
 
 type Recipient = { id: string; push_token: string; locale: string };
 
 Deno.serve(async (request) => {
-  const expected = Deno.env.get('WEBHOOK_SECRET');
+  const expected = env('WEBHOOK_SECRET');
   if (expected && request.headers.get('x-webhook-secret') !== expected) {
     return new Response('forbidden', { status: 403 });
   }
+
+  const vapidError = configureVapid();
+  if (vapidError) return Response.json({ error: vapidError }, { status: 500 });
 
   // `force_user_id` envoie le rappel à une personne précise, sans regarder ni
   // l'heure ni sa journée : c'est le seul moyen de vérifier la chaîne complète
