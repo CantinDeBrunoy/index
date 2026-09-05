@@ -331,6 +331,7 @@ insert into storage.buckets (id, name, public)
 values ('entries', 'entries', false)
 on conflict (id) do nothing;
 
+-- Chacun est maître de son propre dossier, nommé d'après son identifiant.
 drop policy if exists "entry_photos_insert" on storage.objects;
 create policy "entry_photos_insert" on storage.objects
   for insert to authenticated
@@ -339,14 +340,34 @@ create policy "entry_photos_insert" on storage.objects
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
--- La photo est lisible exactement quand sa ligne l'est : la sous-requête sur
--- `entries` est elle-même filtrée par la policy de réciprocité ci-dessus.
+-- Indispensable : un envoi en mode `upsert` sur un fichier déjà présent est un
+-- UPDATE. Sans cette policy, toute reprise après un échec est refusée.
+drop policy if exists "entry_photos_update" on storage.objects;
+create policy "entry_photos_update" on storage.objects
+  for update to authenticated
+  using (
+    bucket_id = 'entries'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  )
+  with check (
+    bucket_id = 'entries'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Je vois toujours mes propres fichiers — y compris entre l'envoi de la photo
+-- et l'insertion de la ligne, où aucune entrée ne pointe encore dessus.
+-- Le binôme, lui, ne voit un fichier que si la ligne qui le référence lui est
+-- visible : la sous-requête sur `entries` est filtrée par la policy de
+-- réciprocité, donc la photo hérite exactement de la même règle.
 drop policy if exists "entry_photos_select" on storage.objects;
 create policy "entry_photos_select" on storage.objects
   for select to authenticated
   using (
     bucket_id = 'entries'
-    and exists (select 1 from public.entries e where e.photo_path = storage.objects.name)
+    and (
+      (storage.foldername(name))[1] = auth.uid()::text
+      or exists (select 1 from public.entries e where e.photo_path = storage.objects.name)
+    )
   );
 
 drop policy if exists "entry_photos_delete" on storage.objects;
