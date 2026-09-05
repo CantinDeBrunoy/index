@@ -395,3 +395,31 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* --- bascule ma journée / sa journée ------------------------------------ */
+.switcher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+.switcher > strong { font-size: 16px; font-weight: 600 }
+
+.dots { display: flex; justify-content: center; gap: 7px; margin-top: -4px }
+.dot-nav {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s var(--ease);
+}
+.dot-nav[data-active='true'] { background: var(--text-muted) }
+
+/* La clé de rendu change à chaque bascule : l'animation rejoue, ce qui donne
+   le sentiment d'un panneau qui arrive plutôt que d'un contenu qui saute. */
+.panel { animation: panel-in 0.24s var(--ease) }
+@keyframes panel-in {
+  from { opacity: 0; transform: translateX(8px) }
+  to { opacity: 1; transform: translateX(0) }
+}

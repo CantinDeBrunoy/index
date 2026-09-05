@@ -317,7 +317,31 @@ create policy "entries_insert_own" on public.entries
   for insert to authenticated
   with check (user_id = auth.uid());
 
--- Pas de policy UPDATE : une journée validée est verrouillée, définitivement.
+-- La date du jour telle que la vit une personne, dans son propre fuseau.
+create or replace function public.local_today(uid uuid)
+returns date
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select (now() at time zone p.timezone)::date
+    from public.profiles p
+   where p.id = uid;
+$$;
+
+revoke execute on function public.local_today(uuid) from public, anon;
+grant execute on function public.local_today(uuid) to authenticated, service_role;
+
+-- On peut corriger SA journée du jour, et elle seule : un jour passé reste
+-- impossible à repeindre. Le `with check` interdit aussi de déplacer une
+-- entrée vers une autre date, ce qui reviendrait à réécrire le passé.
+drop policy if exists "entries_update_today" on public.entries;
+create policy "entries_update_today" on public.entries
+  for update to authenticated
+  using (user_id = auth.uid() and date = public.local_today(auth.uid()))
+  with check (user_id = auth.uid() and date = public.local_today(auth.uid()));
+
 -- La suppression reste possible pour l'effacement du compte.
 drop policy if exists "entries_delete_own" on public.entries;
 create policy "entries_delete_own" on public.entries
