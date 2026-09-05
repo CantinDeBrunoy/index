@@ -137,12 +137,26 @@ retour de la connexion — rien n'est envoyé à moitié.
 ## Déploiement
 
 N'importe quel hébergeur de fichiers statiques convient (`npm run build` produit
-`dist/`). L'app utilise l'historique du navigateur : toutes les routes doivent
-retomber sur `index.html`. Le fichier `public/_redirects` fait le nécessaire sur
-Netlify ; sur Vercel, Cloudflare Pages ou un nginx, configurer la même règle.
+`dist/`). Commande de build `npm run build`, dossier publié `dist`.
+
+L'app utilise l'historique du navigateur : toutes les routes doivent retomber
+sur `index.html`. C'est déjà configuré pour Netlify (`public/_redirects` et
+`netlify.toml`) et pour Vercel (`vercel.json`) ; sur Cloudflare Pages ou un
+nginx, reproduire la même règle.
 
 Variables d'environnement à définir chez l'hébergeur : `VITE_SUPABASE_URL`,
-`VITE_SUPABASE_ANON_KEY`, `VITE_VAPID_PUBLIC_KEY`.
+`VITE_SUPABASE_ANON_KEY`, et `VITE_VAPID_PUBLIC_KEY` une fois les
+notifications configurées. Elles sont lues **au moment du build** : après les
+avoir modifiées, il faut relancer un déploiement, pas seulement recharger la
+page.
+
+Une fois l'adresse connue, la déclarer dans Supabase → Authentication → URL
+Configuration, en **Site URL**. Sans ça, les liens envoyés par courriel
+(confirmation, réinitialisation de mot de passe) pointeront vers localhost.
+
+La caméra n'est accessible qu'en HTTPS : c'est le déploiement qui la rend
+utilisable depuis un téléphone. Le service worker, lui, ne s'enregistre qu'en
+production — en développement il servirait des fichiers périmés.
 
 ## Structure
 
