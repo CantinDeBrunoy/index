@@ -1,0 +1,10 @@
+project_id = "iyaqtvcwvylabdjlmpxm"
+
+# Ces deux fonctions ne sont jamais appelées par un navigateur : elles le sont
+# par un webhook et par un cron. Elles ne vérifient donc pas de JWT
+# utilisateur — c'est l'en-tête `x-webhook-secret` qui les protège.
+[functions.notify-partner]
+verify_jwt = false
+
+[functions.daily-reminders]
+verify_jwt = false
