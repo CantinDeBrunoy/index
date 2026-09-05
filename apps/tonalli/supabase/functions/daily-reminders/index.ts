@@ -25,22 +25,44 @@ webpush.setVapidDetails(
 /** Fenêtre en minutes : doit couvrir l'intervalle du cron. */
 const WINDOW_MINUTES = 15;
 
+type Recipient = { id: string; push_token: string; locale: string };
+
 Deno.serve(async (request) => {
   const expected = Deno.env.get('WEBHOOK_SECRET');
   if (expected && request.headers.get('x-webhook-secret') !== expected) {
     return new Response('forbidden', { status: 403 });
   }
 
-  const { data: due, error } = await supabase.rpc('due_reminders', {
-    window_minutes: WINDOW_MINUTES,
-  });
+  // `force_user_id` envoie le rappel à une personne précise, sans regarder ni
+  // l'heure ni sa journée : c'est le seul moyen de vérifier la chaîne complète
+  // sans attendre l'heure dite. Protégé par le même secret que le reste.
+  const body = (await request.json().catch(() => ({}))) as { force_user_id?: string };
 
-  if (error) return new Response(error.message, { status: 500 });
+  let due: Recipient[] = [];
+  if (body.force_user_id) {
+    const { data, error: forcedError } = await supabase
+      .from('profiles')
+      .select('id, push_token, locale')
+      .eq('id', body.force_user_id)
+      .not('push_token', 'is', null)
+      .returns<Recipient[]>();
+    if (forcedError) return new Response(forcedError.message, { status: 500 });
+    due = data ?? [];
+    if (due.length === 0) {
+      return Response.json({ sent: 0, reason: 'aucun abonnement enregistré pour cette personne' });
+    }
+  } else {
+    const { data, error } = await supabase.rpc('due_reminders', {
+      window_minutes: WINDOW_MINUTES,
+    });
+    if (error) return new Response(error.message, { status: 500 });
+    due = (data ?? []) as Recipient[];
+  }
 
   let sent = 0;
-  for (const row of (due ?? []) as { id: string; push_token: string; locale: string }[]) {
+  for (const row of due) {
     const messages = MESSAGES[localeOf(row.locale)];
-    const body = JSON.stringify({
+    const payload = JSON.stringify({
       title: messages.reminderTitle,
       body: messages.reminderBody,
       tag: 'daily-reminder',
@@ -48,7 +70,7 @@ Deno.serve(async (request) => {
     });
 
     try {
-      await webpush.sendNotification(JSON.parse(row.push_token), body);
+      await webpush.sendNotification(JSON.parse(row.push_token), payload);
       sent += 1;
     } catch (pushError) {
       const status = (pushError as { statusCode?: number }).statusCode;
