@@ -75,7 +75,6 @@ export const es: Translation = {
     switchCamera: 'Cambiar de cámara',
     selfieStep: 'La cara del momento',
     dualHint: 'Un solo toque: la escena y luego tu cara, seguidas.',
-    dualHintLive: 'Un solo toque: las dos cámaras, en el mismo instante.',
     capturing: 'Tomando…',
     capturingSecond: 'Segunda cámara…',
     swapPhotos: 'Intercambiar las dos fotos',

@@ -73,7 +73,6 @@ export const fr = {
     switchCamera: 'Changer de caméra',
     selfieStep: 'Le visage du moment',
     dualHint: 'Un seul appui : la scène, puis ton visage, dans la foulée.',
-    dualHintLive: 'Un seul appui : les deux caméras, au même instant.',
     capturing: 'Prise en cours…',
     capturingSecond: 'Seconde caméra…',
     swapPhotos: 'Intervertir les deux photos',
