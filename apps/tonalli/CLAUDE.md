@@ -156,12 +156,32 @@ libellés FR/ES restent dans les fichiers de traduction, pas en base.
 fait la valeur du geste. Compression à 1200 px / qualité 0.7 **avant** tout
 envoi (≈300 Ko par photo).
 
-Un seul appui prend **deux** photos : la caméra cadrée (arrière par défaut, la
-bascule reste possible) puis l'autre, dans la foulée. Pas simultanément :
-aucun navigateur de téléphone ne garde deux flux vidéo actifs en même temps —
-ouvrir le second coupe le premier sur iOS et sur la plupart des Android. La
-cascade rapide est la seule façon d'avoir les deux images du même instant, et
-c'est aussi ce que fait BeReal.
+Un seul appui prend **deux** photos, la scène et le visage. Deux chemins,
+choisis à l'ouverture selon ce que l'appareil tolère — la nuance compte, et
+« deux flux, c'est impossible sur téléphone » est faux :
+
+| L'appareil… | Cadrage | Déclenchement |
+| --- | --- | --- |
+| tient deux flux (plusieurs Android récents) | vignette **en direct** | les deux images au **même instant**, sans bascule |
+| n'en tient qu'un (iOS : ouvrir le second tue le premier) | vignette = **image figée** de l'autre caméra, prise une fois à l'ouverture | cascade : une photo, bascule, l'autre photo |
+| n'a qu'une caméra | emplacement en pointillés | une seule photo |
+
+Le test de cohabitation est dans `prepareInset` : on ouvre l'autre caméra, puis
+on vérifie que le flux cadré **avance encore** (`currentTime` qui progresse, en
+plus de `readyState` et `muted` — certains navigateurs se contentent de rendre
+la piste muette au lieu de la couper). S'il est mort, on profite du flux ouvert
+pour figer une image avant de rouvrir la caméra cadrée : la bascule est payée
+une fois, au démarrage.
+
+**Ce qu'on ne fait pas : basculer en boucle** pour simuler le direct. Chaque
+tour coûte une réouverture complète — la grande vue se figerait et le capteur
+referait sa mise au point à chaque fois, abîmant précisément ce qu'on vient
+regarder.
+
+Détail qui a l'air cosmétique et ne l'est pas : la vidéo de la vignette n'est
+jamais en `display: none`, parce que c'est d'elle qu'on tire l'image figée et
+qu'un élément masqué ainsi peut cesser de décoder. Elle est recouverte, pas
+cachée.
 
 La seconde photo est **facultative** : un ordinateur portable n'a qu'une
 caméra, et le second flux peut être refusé. `Camera` compare le `deviceId` des
