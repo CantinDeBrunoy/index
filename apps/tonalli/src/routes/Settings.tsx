@@ -21,10 +21,10 @@ const STEP_MINUTES = 30;
 
 export function SettingsScreen() {
   const { t, locale, setLocale } = useI18n();
-  const { user, profile, partner, updateProfile, unlinkPartner, signOut, deleteAllData } = useAuth();
+  const { user, profile, partner, updateProfile, unlinkPartner, signOut } = useAuth();
   const { refresh } = useEntries();
 
-  const [confirm, setConfirm] = useState<'unlink' | 'delete' | null>(null);
+  const [confirm, setConfirm] = useState<'unlink' | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pushState, setPushState] = useState(() => permissionState());
@@ -84,19 +84,6 @@ export function SettingsScreen() {
     setBusy(true);
     try {
       await unlinkPartner();
-      await refresh();
-      setConfirm(null);
-    } catch {
-      setError(t('common.networkError'));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const runDelete = async () => {
-    setBusy(true);
-    try {
-      await deleteAllData();
       await refresh();
       setConfirm(null);
     } catch {
@@ -228,16 +215,6 @@ export function SettingsScreen() {
         </div>
       </div>
 
-      {/* ---------------- données ---------------- */}
-      <span className="section-title">{t('settings.dataSection')}</span>
-      <button
-        type="button"
-        className="btn btn--block btn--danger"
-        onClick={() => setConfirm('delete')}
-      >
-        {t('settings.deleteData')}
-      </button>
-
       {confirm === 'unlink' ? (
         <ConfirmSheet
           title={t('link.unlinkTitle', { name: partnerName })}
@@ -245,17 +222,6 @@ export function SettingsScreen() {
           confirmLabel={t('link.unlinkConfirm')}
           busy={busy}
           onConfirm={() => void runUnlink()}
-          onCancel={() => setConfirm(null)}
-        />
-      ) : null}
-
-      {confirm === 'delete' ? (
-        <ConfirmSheet
-          title={t('settings.deleteDataTitle')}
-          body={t('settings.deleteDataBody')}
-          confirmLabel={busy ? t('settings.deleting') : t('settings.deleteDataConfirm')}
-          busy={busy}
-          onConfirm={() => void runDelete()}
           onCancel={() => setConfirm(null)}
         />
       ) : null}
