@@ -254,6 +254,38 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 }
 .camera-actions { display: flex; gap: 10px; margin-top: 12px; }
 
+/* Le cadrage annonce le résultat : même vignette, même place. En direct elle
+   resterait vide — une seule caméra peut être ouverte à la fois — alors elle
+   montre l'emplacement réservé, puis la première photo dès qu'elle existe. */
+.camera__inset {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 30%;
+  min-width: 84px;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 2px dashed rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+}
+.camera__inset[data-filled='true'] {
+  border-style: solid;
+  border-color: #fff;
+  background: none;
+}
+.camera__inset-label {
+  color: #fff;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  padding: 0 6px;
+  opacity: 0.9;
+}
+
 .photo {
   width: 100%;
   border-radius: var(--radius);

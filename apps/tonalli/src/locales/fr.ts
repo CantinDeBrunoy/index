@@ -76,6 +76,8 @@ export const fr = {
     capturing: 'Prise en cours…',
     capturingSecond: 'Seconde caméra…',
     swapPhotos: 'Intervertir les deux photos',
+    insetFace: 'ton visage',
+    insetScene: 'la scène',
     noteLabel: 'Une note (facultatif)',
     notePlaceholder: 'Un mot sur la journée',
     submit: 'Valider ma journée',

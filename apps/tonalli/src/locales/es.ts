@@ -78,6 +78,8 @@ export const es: Translation = {
     capturing: 'Tomando…',
     capturingSecond: 'Segunda cámara…',
     swapPhotos: 'Intercambiar las dos fotos',
+    insetFace: 'tu cara',
+    insetScene: 'la escena',
     noteLabel: 'Una nota (opcional)',
     notePlaceholder: 'Una palabra sobre el día',
     submit: 'Guardar mi día',
