@@ -21,6 +21,8 @@ export type Entry = {
   emotion: string;
   color: string;
   photo_path: string | null;
+  /** Caméra frontale, prise dans la foulée de la première. Absente si l'appareil n'a qu'une caméra. */
+  selfie_path: string | null;
   note: string | null;
   created_at: string;
 };

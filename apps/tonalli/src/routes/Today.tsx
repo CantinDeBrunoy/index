@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Camera } from '@/components/Camera';
 import { EmotionGrid } from '@/components/EmotionGrid';
-import { PhotoImage } from '@/components/PhotoImage';
+import { EntryPhotos, PhotoPair } from '@/components/PhotoPair';
 import { ErrorBanner, OfflineBanner } from '@/components/States';
 import { formatLongDate, todayInTimeZone } from '@/lib/dates';
 import { colorOf, readableTextOn } from '@/lib/emotions';
+import type { Shot } from '@/lib/photo';
 import type { Entry } from '@/lib/types';
 import { useAuth } from '@/state/AuthProvider';
 import { useEntries } from '@/state/EntriesProvider';
@@ -21,7 +22,7 @@ export function TodayScreen() {
   const [panel, setPanel] = useState<Panel>('mine');
   const [editing, setEditing] = useState(false);
   const [emotion, setEmotion] = useState<string | null>(null);
-  const [photo, setPhoto] = useState<Blob | null>(null);
+  const [shot, setShot] = useState<Shot | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,32 +31,39 @@ export function TodayScreen() {
   const done = Boolean(myEntry) || Boolean(pending);
   const composing = !done || editing;
 
-  const previewUrl = useMemo(() => (photo ? URL.createObjectURL(photo) : null), [photo]);
+  const previewUrls = useMemo(
+    () => ({
+      main: shot ? URL.createObjectURL(shot.main) : null,
+      selfie: shot?.selfie ? URL.createObjectURL(shot.selfie) : null,
+    }),
+    [shot],
+  );
   useEffect(() => {
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (previewUrls.main) URL.revokeObjectURL(previewUrls.main);
+      if (previewUrls.selfie) URL.revokeObjectURL(previewUrls.selfie);
     };
-  }, [previewUrl]);
+  }, [previewUrls]);
 
   // Une nouvelle journée : le composeur repart de zéro.
   useEffect(() => {
     setEditing(false);
     setEmotion(null);
-    setPhoto(null);
+    setShot(null);
     setNote('');
   }, [today]);
 
   const startEditing = () => {
     setEmotion(myEntry?.emotion ?? pending?.emotion ?? null);
     setNote(myEntry?.note ?? pending?.note ?? '');
-    setPhoto(null);
+    setShot(null);
     setEditing(true);
     setError(null);
   };
 
   const cancelEditing = () => {
     setEditing(false);
-    setPhoto(null);
+    setShot(null);
     setError(null);
   };
 
@@ -64,9 +72,9 @@ export function TodayScreen() {
     setBusy(true);
     setError(null);
     try {
-      await submitToday({ emotion, photo, note });
+      await submitToday({ emotion, shot, note });
       setEditing(false);
-      setPhoto(null);
+      setShot(null);
     } catch (caught) {
       // On affiche le message brut du serveur : sur un envoi de photo ou une
       // écriture refusée, c'est lui qui dit ce qui ne va pas, pas nous.
@@ -141,9 +149,9 @@ export function TodayScreen() {
               entry={myEntry}
               emotion={emotion}
               onEmotion={setEmotion}
-              photo={photo}
-              previewUrl={previewUrl}
-              onPhoto={setPhoto}
+              shot={shot}
+              previewUrls={previewUrls}
+              onShot={setShot}
               note={note}
               onNote={setNote}
               busy={busy}
@@ -173,9 +181,9 @@ type ComposerProps = {
   entry: Entry | null;
   emotion: string | null;
   onEmotion: (value: string | null) => void;
-  photo: Blob | null;
-  previewUrl: string | null;
-  onPhoto: (value: Blob | null) => void;
+  shot: Shot | null;
+  previewUrls: { main: string | null; selfie: string | null };
+  onShot: (value: Shot | null) => void;
   note: string;
   onNote: (value: string) => void;
   busy: boolean;
@@ -188,9 +196,9 @@ function Composer({
   entry,
   emotion,
   onEmotion,
-  photo,
-  previewUrl,
-  onPhoto,
+  shot,
+  previewUrls,
+  onShot,
   note,
   onNote,
   busy,
@@ -201,7 +209,7 @@ function Composer({
   // En correction, la photo déjà enregistrée fait foi tant qu'on n'en reprend
   // pas une autre : on n'oblige pas à tout refaire pour changer une émotion.
   const [retaking, setRetaking] = useState(false);
-  const keepsExistingPhoto = editing && !photo && !retaking && Boolean(entry?.photo_path);
+  const keepsExistingPhoto = editing && !shot && !retaking && Boolean(entry?.photo_path);
 
   return (
     <div className="stack">
@@ -237,22 +245,29 @@ function Composer({
             </p>
           </div>
 
-          {previewUrl ? (
+          {previewUrls.main ? (
             <div className="stack">
-              <img className="photo" src={previewUrl} alt={t('today.photoStep')} />
-              <button type="button" className="btn" onClick={() => onPhoto(null)}>
+              <PhotoPair
+                main={<img className="photo" src={previewUrls.main} alt={t('today.photoStep')} />}
+                inset={
+                  previewUrls.selfie ? (
+                    <img className="photo" src={previewUrls.selfie} alt={t('today.selfieStep')} />
+                  ) : null
+                }
+              />
+              <button type="button" className="btn" onClick={() => onShot(null)}>
                 {t('today.retake')}
               </button>
             </div>
           ) : keepsExistingPhoto ? (
             <div className="stack">
-              <PhotoImage path={entry?.photo_path ?? null} alt={t('today.photoStep')} />
+              <EntryPhotos entry={entry} />
               <button type="button" className="btn" onClick={() => setRetaking(true)}>
                 {t('today.retakePhoto')}
               </button>
             </div>
           ) : (
-            <Camera onCapture={onPhoto} />
+            <Camera onCapture={onShot} />
           )}
 
           <div className="field">
@@ -271,7 +286,7 @@ function Composer({
             type="button"
             className="btn btn--primary btn--block"
             onClick={onSubmit}
-            disabled={busy || (!photo && !keepsExistingPhoto)}
+            disabled={busy || (!shot && !keepsExistingPhoto)}
           >
             {busy ? t('today.submitting') : editing ? t('today.save') : t('today.submit')}
           </button>
@@ -310,7 +325,7 @@ function MyDay({ entry, isPending, pendingColor, pendingEmotion, pendingNote, on
           <span className="small">{t('today.lockedTitle')}</span>
         </div>
       </div>
-      {entry?.photo_path ? <PhotoImage path={entry.photo_path} alt={t('today.photoStep')} /> : null}
+      {entry?.photo_path ? <EntryPhotos entry={entry} /> : null}
       {note ? <p>{note}</p> : null}
       <p className="faint small">{isPending ? t('today.pending') : t('today.lockedHint')}</p>
       {isPending ? null : (
@@ -354,7 +369,7 @@ function TheirDay({
         <strong style={{ fontSize: 20 }}>{t(`emotions.${entry.emotion}`)}</strong>
       </div>
       <p className="faint small capitalize">{formatLongDate(entry.date, locale)}</p>
-      <PhotoImage path={entry.photo_path} alt={t(`emotions.${entry.emotion}`)} />
+      <EntryPhotos entry={entry} alt={t(`emotions.${entry.emotion}`)} />
       {entry.note ? <p>{entry.note}</p> : null}
     </div>
   );

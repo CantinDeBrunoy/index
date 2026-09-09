@@ -4,7 +4,8 @@
 chaleur du soleil.
 
 Deux personnes liées enregistrent chaque jour l'énergie de leur journée : une
-émotion, qui est une couleur, et une photo prise sur le moment. Chacun voit le
+émotion, qui est une couleur, et deux photos prises sur le moment — la scène
+devant soi et son propre visage, au même appui. Chacun voit le
 calendrier de l'autre — mais seulement après avoir rempli le sien. C'est un
 rituel à deux, pas un réseau social.
 
@@ -49,7 +50,7 @@ les données, jamais le secret de la clé.
 | --- | --- |
 | `emotions` | les 12 couples (clé, couleur), figés |
 | `profiles` | nom, langue, **fuseau**, `partner_id`, code d'invitation, réglages de rappel |
-| `entries` | une ligne par personne et par jour : `date`, `emotion`, `color`, `photo_path`, `note` |
+| `entries` | une ligne par personne et par jour : `date`, `emotion`, `color`, `photo_path`, `selfie_path`, `note` |
 
 `entries` a une contrainte `unique (user_id, date)` — un seul choix par jour —
 et une clé étrangère `(emotion, color) → emotions (key, color)` : une couleur
@@ -134,7 +135,7 @@ Textes : « Quelle est la couleur de ta journée ? » / « ¿De qué color es tu
 
 Le service worker met en cache l'application, et les entrées déjà chargées sont
 conservées en `localStorage` : le calendrier reste consultable sans réseau. Une
-journée validée hors ligne est mise en attente (photo comprise) et part au
+journée validée hors ligne est mise en attente (les deux photos comprises) et part au
 retour de la connexion — rien n'est envoyé à moitié.
 
 ## Déploiement

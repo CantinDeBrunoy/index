@@ -4,7 +4,8 @@ import type { ReactNode } from 'react';
 import { readCache, writeCache } from '@/lib/cache';
 import { todayInTimeZone } from '@/lib/dates';
 import { colorOf } from '@/lib/emotions';
-import { blobToDataUrl, dataUrlToBlob, photoPath, uploadPhoto } from '@/lib/photo';
+import { blobToDataUrl, dataUrlToBlob, deletePhotos, photoPath, selfiePath, uploadPhoto } from '@/lib/photo';
+import type { Shot } from '@/lib/photo';
 import { supabase } from '@/lib/supabase';
 import type { Entry, EntryMap } from '@/lib/types';
 import { useAuth } from '@/state/AuthProvider';
@@ -16,6 +17,8 @@ type Pending = {
   color: string;
   note: string | null;
   photoDataUrl: string | null;
+  /** Caméra frontale du même appui. `null` si l'appareil n'a qu'une caméra. */
+  selfieDataUrl: string | null;
 };
 
 type EntriesValue = {
@@ -30,7 +33,7 @@ type EntriesValue = {
   online: boolean;
   pending: Pending | null;
   refresh: () => Promise<void>;
-  submitToday: (input: { emotion: string; photo: Blob | null; note: string }) => Promise<void>;
+  submitToday: (input: { emotion: string; shot: Shot | null; note: string }) => Promise<void>;
 };
 
 const EntriesContext = createContext<EntriesValue | null>(null);
@@ -175,14 +178,26 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
       if (!userId) throw new Error('not_authenticated');
 
       let path: string | null = null;
+      let selfie: string | null = null;
       if (entry.photoDataUrl) {
         path = photoPath(userId, entry.date);
         await uploadPhoto(path, await dataUrlToBlob(entry.photoDataUrl));
+
+        if (entry.selfieDataUrl) {
+          selfie = selfiePath(userId, entry.date);
+          await uploadPhoto(selfie, await dataUrlToBlob(entry.selfieDataUrl));
+        } else {
+          // Nouvelle photo sans seconde caméra : l'ancienne frontale ne
+          // correspond plus à rien, on ne la laisse pas s'apparier à une scène
+          // qu'elle n'a pas vue.
+          await deletePhotos([selfiePath(userId, entry.date)]);
+        }
       }
 
       // `upsert` couvre les deux cas d'un seul coup : première validation de la
-      // journée, ou correction de celle-ci. Sans nouvelle photo, la colonne
-      // `photo_path` est absente du corps envoyé, donc l'ancienne est conservée.
+      // journée, ou correction de celle-ci. Sans nouvelle photo, les colonnes
+      // de chemin sont absentes du corps envoyé, donc les anciennes valeurs
+      // sont conservées.
       const payload: Record<string, unknown> = {
         user_id: userId,
         date: entry.date,
@@ -190,7 +205,10 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
         color: entry.color,
         note: entry.note,
       };
-      if (path) payload.photo_path = path;
+      if (path) {
+        payload.photo_path = path;
+        payload.selfie_path = selfie;
+      }
 
       const { data, error: writeError } = await supabase
         .from('entries')
@@ -210,7 +228,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   );
 
   const submitToday = useCallback(
-    async ({ emotion, photo, note }: { emotion: string; photo: Blob | null; note: string }) => {
+    async ({ emotion, shot, note }: { emotion: string; shot: Shot | null; note: string }) => {
       const color = colorOf(emotion);
       if (!color) throw new Error('unknown_emotion');
 
@@ -219,7 +237,8 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
         emotion,
         color,
         note: note.trim() ? note.trim() : null,
-        photoDataUrl: photo ? await blobToDataUrl(photo) : null,
+        photoDataUrl: shot ? await blobToDataUrl(shot.main) : null,
+        selfieDataUrl: shot?.selfie ? await blobToDataUrl(shot.selfie) : null,
       };
 
       if (!navigator.onLine) {

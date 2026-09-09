@@ -199,11 +199,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!profile) return;
     const { data: entries } = await supabase
       .from('entries')
-      .select('photo_path')
+      .select('photo_path, selfie_path')
       .eq('user_id', profile.id)
-      .returns<{ photo_path: string | null }[]>();
+      .returns<{ photo_path: string | null; selfie_path: string | null }[]>();
 
-    const paths = (entries ?? []).map((row) => row.photo_path).filter((path): path is string => Boolean(path));
+    const paths = (entries ?? [])
+      .flatMap((row) => [row.photo_path, row.selfie_path])
+      .filter((path): path is string => Boolean(path));
     await deletePhotos(paths);
 
     const { error } = await supabase.from('entries').delete().eq('user_id', profile.id);
