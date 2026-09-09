@@ -10,6 +10,9 @@ rituel à deux, pas un réseau social.
 
 Site web (rien à installer), bilingue français / espagnol, mode sombre.
 
+> Pour reprendre ou modifier le projet, lire **[`CLAUDE.md`](CLAUDE.md)** :
+> invariants, schéma, pièges déjà rencontrés et reste à faire.
+
 ## Stack
 
 React 19 + TypeScript + Vite · React Router · i18n-js · Supabase (auth,
