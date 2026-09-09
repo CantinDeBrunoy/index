@@ -60,6 +60,9 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   const [facing, setFacing] = useState<Facing>('environment');
   const [state, setState] = useState<State>('starting');
   const [phase, setPhase] = useState<Phase>('idle');
+  // Première photo déjà prise : elle passe en vignette pendant que la seconde
+  // caméra travaille, comme elle le sera dans le résultat.
+  const [firstUrl, setFirstUrl] = useState<string | null>(null);
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -141,9 +144,12 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   const capture = async () => {
     if (!videoRef.current || state !== 'ready' || phase !== 'idle') return;
     setPhase('first');
+    let url: string | null = null;
     try {
       const main = await captureFromVideo(videoRef.current, facing === 'user');
       const firstDeviceId = deviceIdOf(streamRef.current);
+      url = URL.createObjectURL(main);
+      setFirstUrl(url);
       setPhase('second');
       const selfie = await captureOther(firstDeviceId);
       stop();
@@ -153,6 +159,8 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
       setState('unavailable');
     } finally {
       setPhase('idle');
+      setFirstUrl(null);
+      if (url) URL.revokeObjectURL(url);
     }
   };
 
@@ -160,6 +168,10 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   // miroir doit la suivre, sinon l'aperçu ment sur ce qui est enregistré.
   const shown = phase === 'second' ? opposite(facing) : facing;
   const busy = phase !== 'idle';
+  // La vignette ne peut pas être en direct : une seule caméra à la fois. Elle
+  // montre donc la place que l'autre photo prendra, puis la photo elle-même
+  // dès qu'elle existe — le cadrage annonce le résultat au lieu de le cacher.
+  const insetLabel = shown === 'user' ? t('today.insetScene') : t('today.insetFace');
 
   return (
     <div className="stack">
@@ -175,6 +187,15 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
               opacity: state === 'ready' ? 1 : 0.4,
             }}
           />
+        ) : null}
+        {state === 'ready' ? (
+          <div className="camera__inset" data-filled={Boolean(firstUrl)}>
+            {firstUrl ? (
+              <img src={firstUrl} alt={t('today.photoStep')} />
+            ) : (
+              <span className="camera__inset-label">{insetLabel}</span>
+            )}
+          </div>
         ) : null}
         {state === 'starting' ? <p className="camera-msg">{t('today.cameraStarting')}</p> : null}
         {state === 'ready' && phase === 'second' ? (
