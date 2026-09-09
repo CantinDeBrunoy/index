@@ -240,7 +240,10 @@ function Composer({
               style={{ background: colorOf(emotion) ?? undefined, width: 26, height: 26 }}
               aria-hidden
             >
-              <span className="emotion-dot__veil" style={{ opacity: veilOpacity(emotion) }} />
+              <span
+                className="emotion-dot__veil"
+                style={{ '--veil': veilOpacity(emotion) } as React.CSSProperties}
+              />
               <span className="emotion-dot__sheen" />
             </span>
             <span>{t(`emotions.${emotion}`)}</span>

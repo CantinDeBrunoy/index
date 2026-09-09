@@ -72,10 +72,23 @@ function contrastRatio(a: number, b: number): number {
 }
 
 /**
+ * Contraste minimal réellement atteint sur les 12 couleurs de la palette.
+ *
+ * C'est la tristesse (`#457B9D`) qui fixe le plancher, et elle reste sous les
+ * 4.5:1 du niveau AA. Le compromis est assumé : remonter le crème jusqu'à
+ * tenir AA sur cette couleur demanderait `#FFFDFA`, c'est-à-dire du blanc, ce
+ * qui ferait tomber la chaleur du châssis ; et retoucher `#457B9D` est exclu,
+ * la palette est fermée et vit en base derrière une clé étrangère. On garde
+ * donc l'encre chaude, et on documente le plancher plutôt que de le cacher —
+ * `npm run checks` échoue si une modification le fait redescendre.
+ */
+export const MIN_TEXT_CONTRAST = 4.3;
+
+/**
  * Encre lisible par-dessus `color` : on compare le contraste des deux encres
  * opaques du châssis et on garde la meilleure, plutôt qu'un seuil de
- * luminance fixe — c'est ce qui garantit >4.5:1 sur les 12 couleurs, y
- * compris les semi-froides comme la gratitude ou l'excitation.
+ * luminance fixe. Onze des douze couleurs passent AA (4.87:1 à 11.56:1) ;
+ * voir `MIN_TEXT_CONTRAST` pour la douzième.
  */
 export function readableTextOn(color: string): string {
   const l = luminance(color);
@@ -84,17 +97,26 @@ export function readableTextOn(color: string): string {
   return onCream > onBrown ? INK_CREAM : INK_BROWN;
 }
 
+/** Contraste obtenu par l'encre que `readableTextOn` choisit pour `color`. */
+export function textContrastOn(color: string): number {
+  return contrastRatio(luminance(color), luminance(readableTextOn(color)));
+}
+
+/** Réglage de base du voile, en pourcents, avant dosage par `COLDNESS`. */
+const VEIL_STRENGTH = 14;
+
 /**
  * Opacité du voile chaud posé sur une pastille d'émotion (linear-gradient
- * crème → terracotta). `veilStrength` est le réglage de base (défaut 14 %),
- * dosé par couleur via `COLDNESS`, et réduit de 20 % en mode sombre où le
- * voile porte davantage sur un fond déjà brun-noir.
+ * crème → terracotta), dosée par couleur via `COLDNESS`.
+ *
+ * Le mode sombre allège ce voile — il porte sur un fond déjà brun-noir — mais
+ * l'allègement se fait en CSS (`.emotion-dot__veil`), pas ici : le thème est
+ * une media query, et rien côté React ne le connaît. On expose donc la valeur
+ * de base en variable custom et c'est la feuille de style qui l'atténue.
  */
-export function veilOpacity(key: string, options?: { dark?: boolean; veilStrength?: number }): number {
-  const strength = options?.veilStrength ?? 14;
+export function veilOpacity(key: string): number {
   const k = (COLDNESS as Record<string, number>)[key] ?? 0.5;
-  const veil = Math.round(strength * k) / 100;
-  return options?.dark ? Math.round(veil * 0.8 * 1000) / 1000 : veil;
+  return Math.round(VEIL_STRENGTH * k) / 100;
 }
 
 /**

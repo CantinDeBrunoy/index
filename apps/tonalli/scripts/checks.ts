@@ -20,7 +20,14 @@ import {
   weekdayInitials,
   yearMonthOfKey,
 } from '../src/lib/dates.ts';
-import { EMOTIONS, colorOf, isEmotionKey, readableTextOn } from '../src/lib/emotions.ts';
+import {
+  EMOTIONS,
+  MIN_TEXT_CONTRAST,
+  colorOf,
+  isEmotionKey,
+  readableTextOn,
+  textContrastOn,
+} from '../src/lib/emotions.ts';
 
 let failures = 0;
 function check(label: string, condition: boolean, detail = '') {
@@ -102,6 +109,26 @@ console.log('Émotions');
   check('texte sombre sur jaune', readableTextOn('#FFD93D') === '#2A2019');
   check('texte clair sur bordeaux', readableTextOn('#9B2226') === '#FFF7EB');
   check('texte sombre sur gris clair', readableTextOn('#D8D8D8') === '#2A2019');
+
+  // Trois couleurs choisies à la main ne disent rien des neuf autres : c'est
+  // ainsi qu'un changement d'encre a fait passer la tristesse sous AA sans
+  // rien faire rougir. On mesure donc les douze, et on fige le plancher.
+  const worst = EMOTIONS.reduce(
+    (acc, e) => (textContrastOn(e.color) < acc.ratio ? { key: e.key, ratio: textContrastOn(e.color) } : acc),
+    { key: '', ratio: Infinity },
+  );
+  check(
+    `contraste minimal sur les 12 couleurs >= ${MIN_TEXT_CONTRAST}:1`,
+    worst.ratio >= MIN_TEXT_CONTRAST,
+    `${worst.key} à ${worst.ratio.toFixed(2)}:1`,
+  );
+  // Onze doivent tenir le vrai seuil AA ; seule la tristesse est en dessous,
+  // et si une deuxième couleur la rejoignait il faudrait le savoir.
+  check(
+    'onze couleurs sur douze tiennent AA (4.5:1)',
+    EMOTIONS.filter((e) => textContrastOn(e.color) >= 4.5).length === 11,
+    `${EMOTIONS.filter((e) => textContrastOn(e.color) >= 4.5).length} couleur(s) au-dessus de 4.5:1`,
+  );
 }
 
 if (failures > 0) {
