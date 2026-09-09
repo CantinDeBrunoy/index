@@ -4,28 +4,28 @@ import { useI18n } from '@/state/I18nProvider';
 
 const icons = {
   today: (
-    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden>
-      <circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" aria-hidden>
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4" />
     </svg>
   ),
   mine: (
-    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden>
-      {[0, 1, 2].map((row) =>
-        [0, 1, 2].map((col) => (
-          <rect key={`${row}-${col}`} x={2 + col * 6} y={2 + row * 6} width="4.5" height="4.5" rx="1" fill="currentColor" />
-        )),
-      )}
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" aria-hidden>
+      <rect x="3.2" y="5" width="17.6" height="16" rx="4" />
+      <path d="M8 3v3M16 3v3M3.4 10.5h17.2" />
     </svg>
   ),
   partner: (
-    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden>
-      <circle cx="7.5" cy="10" r="5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="12.5" cy="10" r="5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="8.5" cy="12" r="5.3" />
+      <circle cx="15.5" cy="12" r="5.3" />
     </svg>
   ),
   settings: (
-    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden>
-      <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" aria-hidden>
+      <path d="M4 7h6M14 7h6M4 17h3M11 17h9" />
+      <circle cx="12" cy="7" r="2.2" />
+      <circle cx="9" cy="17" r="2.2" />
     </svg>
   ),
 };

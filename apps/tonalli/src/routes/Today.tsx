@@ -5,7 +5,7 @@ import { EmotionGrid } from '@/components/EmotionGrid';
 import { EntryPhotos, PhotoPair } from '@/components/PhotoPair';
 import { ErrorBanner, OfflineBanner } from '@/components/States';
 import { formatLongDate, todayInTimeZone } from '@/lib/dates';
-import { colorOf, readableTextOn } from '@/lib/emotions';
+import { colorOf, readableTextOn, veilOpacity, washGradient } from '@/lib/emotions';
 import type { Shot } from '@/lib/photo';
 import type { Entry } from '@/lib/types';
 import { useAuth } from '@/state/AuthProvider';
@@ -106,8 +106,27 @@ export function TodayScreen() {
   const other: Panel = panel === 'mine' ? 'theirs' : 'mine';
   const partnerName = partner?.display_name || t('calendar.partner');
 
+  // Le lavis du jour : la couleur choisie ne reste pas une pastille, elle
+  // teint le haut de l'écran. Avant tout choix, le papier reste nu.
+  const myColor = !composing ? (myEntry?.color ?? pending?.color ?? null) : emotion ? colorOf(emotion) : null;
+  const theirEntry = partner ? (partnerEntries[todayInTimeZone(partner.timezone)] ?? null) : null;
+  const theirColor = done && theirEntry ? theirEntry.color : null;
+  const washColor = panel === 'mine' ? myColor : theirColor;
+
   return (
-    <div className="stack">
+    <div className="stack today-screen">
+      {washColor ? (
+        <div
+          className="wash"
+          aria-hidden
+          style={
+            {
+              '--wash-light': washGradient(washColor, false),
+              '--wash-dark': washGradient(washColor, true),
+            } as React.CSSProperties
+          }
+        />
+      ) : null}
       <div className="stack-sm">
         <h1>{t('today.title')}</h1>
         <p className="faint small capitalize">{formatLongDate(today, locale)}</p>
@@ -220,7 +239,10 @@ function Composer({
               className="emotion-dot"
               style={{ background: colorOf(emotion) ?? undefined, width: 26, height: 26 }}
               aria-hidden
-            />
+            >
+              <span className="emotion-dot__veil" style={{ opacity: veilOpacity(emotion) }} />
+              <span className="emotion-dot__sheen" />
+            </span>
             <span>{t(`emotions.${emotion}`)}</span>
           </span>
           <button type="button" className="btn" onClick={() => onEmotion(null)}>
