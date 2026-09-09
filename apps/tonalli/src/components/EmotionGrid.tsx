@@ -30,7 +30,10 @@ export function EmotionGrid({ value, onChange }: Props) {
           onClick={() => onChange(emotion.key)}
         >
           <span className="emotion-dot" style={{ background: emotion.color }} aria-hidden>
-            <span className="emotion-dot__veil" style={{ opacity: veilOpacity(emotion.key) }} />
+            <span
+              className="emotion-dot__veil"
+              style={{ '--veil': veilOpacity(emotion.key) } as React.CSSProperties}
+            />
             <span className="emotion-dot__sheen" />
           </span>
           <span className="emotion-name">{t(`emotions.${emotion.key}`)}</span>
