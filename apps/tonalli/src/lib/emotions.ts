@@ -32,18 +32,86 @@ export function colorOf(key: string): string | null {
   return COLOR_BY_KEY.get(key) ?? null;
 }
 
-/** Luminance relative (WCAG), pour poser un texte lisible sur une couleur. */
-export function isLightColor(color: string): boolean {
+/**
+ * À quel point une couleur jure avec le fond chaud (0 = à l'aise, 1 = jure).
+ * Sert à doser le voile chaud posé sur chaque pastille — plus une couleur est
+ * froide, plus elle a besoin d'être réchauffée pour tenir sur le papier crème.
+ */
+const COLDNESS: Record<EmotionKey, number> = {
+  joy: 0.35,
+  serenity: 1,
+  love: 0.5,
+  gratitude: 0.3,
+  pride: 0.3,
+  excitement: 0.45,
+  nostalgia: 0.85,
+  tiredness: 1,
+  sadness: 1,
+  anxiety: 0.9,
+  anger: 0.4,
+  neutral: 1,
+};
+
+/** Encres opaques du châssis : crème et brun-encre. Jamais de blanc/noir purs. */
+const INK_CREAM = '#FFF7EB';
+const INK_BROWN = '#2A2019';
+
+/** Luminance relative (WCAG). */
+function luminance(color: string): number {
   const hex = color.replace('#', '');
   const channel = (offset: number) => {
     const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
     return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
   };
-  const luminance = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
-  return luminance > 0.45;
+  return 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
 }
 
-/** Couleur de texte lisible par-dessus `color`. */
+/** Rapport de contraste WCAG entre deux luminances. */
+function contrastRatio(a: number, b: number): number {
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+/**
+ * Encre lisible par-dessus `color` : on compare le contraste des deux encres
+ * opaques du châssis et on garde la meilleure, plutôt qu'un seuil de
+ * luminance fixe — c'est ce qui garantit >4.5:1 sur les 12 couleurs, y
+ * compris les semi-froides comme la gratitude ou l'excitation.
+ */
 export function readableTextOn(color: string): string {
-  return isLightColor(color) ? '#1A1A1C' : '#FFFFFF';
+  const l = luminance(color);
+  const onCream = contrastRatio(l, luminance(INK_CREAM));
+  const onBrown = contrastRatio(l, luminance(INK_BROWN));
+  return onCream > onBrown ? INK_CREAM : INK_BROWN;
+}
+
+/**
+ * Opacité du voile chaud posé sur une pastille d'émotion (linear-gradient
+ * crème → terracotta). `veilStrength` est le réglage de base (défaut 14 %),
+ * dosé par couleur via `COLDNESS`, et réduit de 20 % en mode sombre où le
+ * voile porte davantage sur un fond déjà brun-noir.
+ */
+export function veilOpacity(key: string, options?: { dark?: boolean; veilStrength?: number }): number {
+  const strength = options?.veilStrength ?? 14;
+  const k = (COLDNESS as Record<string, number>)[key] ?? 0.5;
+  const veil = Math.round(strength * k) / 100;
+  return options?.dark ? Math.round(veil * 0.8 * 1000) / 1000 : veil;
+}
+
+/**
+ * Le lavis du jour : un dégradé radial posé en haut de l'écran uniquement,
+ * jamais sur les cartes. Les teintes pâles montent en opacité (elles ont
+ * besoin de plus de matière pour se sentir), les foncées redescendent ; le
+ * mode sombre pousse tout d'un cran, pour que la nuit chaude tienne sa
+ * braise.
+ */
+export function washGradient(color: string, dark = false): string {
+  const l = luminance(color);
+  const base = dark ? 0.42 : 0.3;
+  const span = dark ? 0.16 : 0.2;
+  const opacity = Math.min(0.5, base + l * span);
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return `radial-gradient(125% 62% at 50% 0%, rgba(${r},${g},${b},${opacity.toFixed(2)}), rgba(${r},${g},${b},0) 72%)`;
 }

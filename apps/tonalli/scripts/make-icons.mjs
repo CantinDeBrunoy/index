@@ -41,7 +41,7 @@ function hexToRgb(hex) {
 }
 
 function render(size) {
-  const background = hexToRgb('#FAFAFA');
+  const background = hexToRgb('#F5EAD8');
   const pixels = Buffer.alloc(size * size * 3);
   for (let i = 0; i < size * size; i += 1) {
     pixels[i * 3] = background[0];

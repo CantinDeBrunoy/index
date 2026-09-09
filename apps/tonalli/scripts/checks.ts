@@ -99,9 +99,9 @@ console.log('Émotions');
   check('hexadécimal valide', EMOTIONS.every((e) => /^#[0-9A-F]{6}$/.test(e.color)));
   check('couleur de la joie', colorOf('joy') === '#FFD93D');
   check('clé inconnue', colorOf('banana') === null && !isEmotionKey('banana'));
-  check('texte sombre sur jaune', readableTextOn('#FFD93D') === '#1A1A1C');
-  check('texte clair sur bordeaux', readableTextOn('#9B2226') === '#FFFFFF');
-  check('texte sombre sur gris clair', readableTextOn('#D8D8D8') === '#1A1A1C');
+  check('texte sombre sur jaune', readableTextOn('#FFD93D') === '#2A2019');
+  check('texte clair sur bordeaux', readableTextOn('#9B2226') === '#FFF7EB');
+  check('texte sombre sur gris clair', readableTextOn('#D8D8D8') === '#2A2019');
 }
 
 if (failures > 0) {
