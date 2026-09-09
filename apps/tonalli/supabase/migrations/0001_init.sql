@@ -66,6 +66,9 @@ create table if not exists public.entries (
   emotion    text not null,
   color      text not null,
   photo_path text,
+  -- Seconde photo, caméra frontale, prise dans la foulée de la première.
+  -- Facultative : tous les appareils n'ont pas deux caméras.
+  selfie_path text,
   note       text check (char_length(note) <= 140),
   created_at timestamptz not null default now(),
   unique (user_id, date),
@@ -390,7 +393,11 @@ create policy "entry_photos_select" on storage.objects
     bucket_id = 'entries'
     and (
       (storage.foldername(name))[1] = auth.uid()::text
-      or exists (select 1 from public.entries e where e.photo_path = storage.objects.name)
+      or exists (
+        select 1 from public.entries e
+         where e.photo_path = storage.objects.name
+            or e.selfie_path = storage.objects.name
+      )
     )
   );
 

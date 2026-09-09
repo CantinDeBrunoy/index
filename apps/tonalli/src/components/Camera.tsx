@@ -1,22 +1,65 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { captureFromVideo } from '@/lib/photo';
+import type { Shot } from '@/lib/photo';
 import { useI18n } from '@/state/I18nProvider';
 
 type Facing = 'environment' | 'user';
 type State = 'starting' | 'ready' | 'denied' | 'unavailable';
+/** `second` : la première photo est prise, l'autre caméra est en train de s'ouvrir. */
+type Phase = 'idle' | 'first' | 'second';
+
+const opposite = (facing: Facing): Facing => (facing === 'user' ? 'environment' : 'user');
+
+/** Temps laissé à une caméra qui vient de s'ouvrir pour régler son exposition. */
+const SETTLE_MS = 450;
+
+const constraintsFor = (facing: Facing): MediaStreamConstraints => ({
+  video: { facingMode: facing, width: { ideal: 1440 }, height: { ideal: 1920 } },
+  audio: false,
+});
+
+const deviceIdOf = (stream: MediaStream | null): string | undefined =>
+  stream?.getVideoTracks()[0]?.getSettings().deviceId;
+
+const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+
+/**
+ * Une image noire est le piège de la seconde prise : le flux répond avant que
+ * le capteur ait produit quoi que ce soit. On attend donc une vraie image, pas
+ * seulement l'ouverture du flux.
+ */
+async function waitForFrame(video: HTMLVideoElement): Promise<void> {
+  if (video.readyState < 2) {
+    await new Promise<void>((resolve) => {
+      const done = () => {
+        video.removeEventListener('loadeddata', done);
+        resolve();
+      };
+      video.addEventListener('loadeddata', done);
+      window.setTimeout(done, 2500);
+    });
+  }
+  await wait(SETTLE_MS);
+}
 
 /**
  * Photo prise dans l'app, jamais choisie dans la galerie : c'est ce qui fait
- * la valeur du rituel. Caméra arrière par défaut, bascule frontale possible.
+ * la valeur du rituel. Un seul appui prend **deux** photos, la scène puis le
+ * visage, l'une derrière l'autre.
+ *
+ * Pourquoi pas les deux caméras en même temps : aucun navigateur de téléphone
+ * ne garde deux flux vidéo actifs simultanément — ouvrir le second coupe le
+ * premier sur iOS, et sur la plupart des Android. La cascade rapide est la
+ * seule façon d'avoir les deux images du même instant.
  */
-export function Camera({ onCapture }: { onCapture: (photo: Blob) => void }) {
+export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [facing, setFacing] = useState<Facing>('environment');
   const [state, setState] = useState<State>('starting');
-  const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -34,10 +77,7 @@ export function Camera({ onCapture }: { onCapture: (photo: Blob) => void }) {
         return;
       }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: facing, width: { ideal: 1440 }, height: { ideal: 1920 } },
-          audio: false,
-        });
+        const stream = await navigator.mediaDevices.getUserMedia(constraintsFor(facing));
         if (!active) {
           stream.getTracks().forEach((track) => track.stop());
           return;
@@ -62,17 +102,64 @@ export function Camera({ onCapture }: { onCapture: (photo: Blob) => void }) {
     };
   }, [facing, stop]);
 
-  const capture = async () => {
-    if (!videoRef.current || state !== 'ready' || busy) return;
-    setBusy(true);
+  /**
+   * Bascule sur l'autre caméra et en prend une image. Renvoie `null` plutôt
+   * que d'échouer : un appareil à une seule caméra, ou un second flux refusé,
+   * ne doit pas empêcher de valider sa journée.
+   */
+  const captureOther = async (firstDeviceId: string | undefined): Promise<Blob | null> => {
+    const video = videoRef.current;
+    if (!video) return null;
+
+    const other = opposite(facing);
+    let stream: MediaStream;
     try {
-      const photo = await captureFromVideo(videoRef.current, facing === 'user');
+      // Le premier flux est coupé avant d'ouvrir le second : sur mobile, deux
+      // caméras ne cohabitent pas, et insister ferait échouer l'ouverture.
       stop();
-      onCapture(photo);
-    } finally {
-      setBusy(false);
+      stream = await navigator.mediaDevices.getUserMedia(constraintsFor(other));
+    } catch {
+      return null;
+    }
+
+    streamRef.current = stream;
+    // Même identifiant qu'à la première prise : l'appareil n'a qu'une caméra
+    // et `facingMode` a été ignoré. Deux fois la même image ne vaut rien.
+    if (firstDeviceId && deviceIdOf(stream) === firstDeviceId) return null;
+
+    video.srcObject = stream;
+    await video.play().catch(() => {});
+    await waitForFrame(video);
+
+    try {
+      return await captureFromVideo(video, other === 'user');
+    } catch {
+      return null;
     }
   };
+
+  const capture = async () => {
+    if (!videoRef.current || state !== 'ready' || phase !== 'idle') return;
+    setPhase('first');
+    try {
+      const main = await captureFromVideo(videoRef.current, facing === 'user');
+      const firstDeviceId = deviceIdOf(streamRef.current);
+      setPhase('second');
+      const selfie = await captureOther(firstDeviceId);
+      stop();
+      onCapture({ main, selfie });
+    } catch {
+      stop();
+      setState('unavailable');
+    } finally {
+      setPhase('idle');
+    }
+  };
+
+  // Pendant la seconde prise, c'est l'autre caméra qui est à l'écran : le
+  // miroir doit la suivre, sinon l'aperçu ment sur ce qui est enregistré.
+  const shown = phase === 'second' ? opposite(facing) : facing;
+  const busy = phase !== 'idle';
 
   return (
     <div className="stack">
@@ -84,12 +171,15 @@ export function Camera({ onCapture }: { onCapture: (photo: Blob) => void }) {
             muted
             autoPlay
             style={{
-              transform: facing === 'user' ? 'scaleX(-1)' : undefined,
+              transform: shown === 'user' ? 'scaleX(-1)' : undefined,
               opacity: state === 'ready' ? 1 : 0.4,
             }}
           />
         ) : null}
         {state === 'starting' ? <p className="camera-msg">{t('today.cameraStarting')}</p> : null}
+        {state === 'ready' && phase === 'second' ? (
+          <p className="camera-msg camera-msg--overlay">{t('today.capturingSecond')}</p>
+        ) : null}
         {state === 'denied' ? (
           <p className="camera-msg">
             <strong>{t('today.cameraDenied')}</strong>
@@ -107,17 +197,18 @@ export function Camera({ onCapture }: { onCapture: (photo: Blob) => void }) {
           onClick={() => void capture()}
           disabled={state !== 'ready' || busy}
         >
-          {t('today.takePhoto')}
+          {busy ? t('today.capturing') : t('today.takePhoto')}
         </button>
         <button
           type="button"
           className="btn"
-          onClick={() => setFacing((current) => (current === 'user' ? 'environment' : 'user'))}
-          disabled={state === 'denied'}
+          onClick={() => setFacing(opposite)}
+          disabled={state === 'denied' || busy}
         >
           {t('today.switchCamera')}
         </button>
       </div>
+      <p className="faint small">{t('today.dualHint')}</p>
     </div>
   );
 }

@@ -12,8 +12,8 @@ projet puisse le reprendre sans archéologie. Le `README.md` s'adresse à qui ve
 aussi le jour, la chaleur du soleil.
 
 Deux personnes liées entre elles (un binôme, souvent à distance) enregistrent
-chaque jour **une émotion, qui est une couleur, et une photo prise sur le
-moment**. Chacun voit le calendrier de l'autre, mais seulement après avoir
+chaque jour **une émotion, qui est une couleur, et deux photos prises sur le
+moment** — la scène et le visage, au même appui. Chacun voit le calendrier de l'autre, mais seulement après avoir
 rempli le sien. C'est un rituel quotidien partagé, pas un réseau social : pas de
 fil, pas de likes, pas de découverte, pas de troisième personne.
 
@@ -150,12 +150,27 @@ a une clé étrangère `(emotion, color) → emotions (key, color)`. Une couleur
 ne correspond pas à son émotion ne peut littéralement pas être écrite. Les
 libellés FR/ES restent dans les fichiers de traduction, pas en base.
 
-### La photo se prend dans l'app
+### La photo se prend dans l'app, et elle est double
 
 `getUserMedia` uniquement, jamais de sélection depuis la galerie — c'est ce qui
-fait la valeur du geste. Caméra arrière par défaut, bascule frontale possible,
-compression à 1200 px / qualité 0.7 **avant** tout envoi (≈300 Ko par photo,
-soit ~220 Mo par an pour deux personnes).
+fait la valeur du geste. Compression à 1200 px / qualité 0.7 **avant** tout
+envoi (≈300 Ko par photo).
+
+Un seul appui prend **deux** photos : la caméra cadrée (arrière par défaut, la
+bascule reste possible) puis l'autre, dans la foulée. Pas simultanément :
+aucun navigateur de téléphone ne garde deux flux vidéo actifs en même temps —
+ouvrir le second coupe le premier sur iOS et sur la plupart des Android. La
+cascade rapide est la seule façon d'avoir les deux images du même instant, et
+c'est aussi ce que fait BeReal.
+
+La seconde photo est **facultative** : un ordinateur portable n'a qu'une
+caméra, et le second flux peut être refusé. `Camera` compare le `deviceId` des
+deux flux et jette la seconde image si c'est le même appareil — deux fois la
+même photo ne vaut rien. Une journée à une seule photo reste valide, sinon la
+contrainte punirait l'appareil plutôt que la personne.
+
+Budget de stockage : ≈600 Ko par jour et par personne, soit ~440 Mo par an
+pour un binôme.
 
 ---
 
@@ -167,10 +182,13 @@ soit ~220 Mo par an pour deux personnes).
 | --- | --- |
 | `emotions` | les 12 couples (clé, couleur), figés, référencés par clé étrangère |
 | `profiles` | nom, langue, **fuseau**, `partner_id` (unique), code d'invitation, jeton push, réglages de rappel |
-| `entries` | une ligne par personne et par jour : `unique (user_id, date)` |
+| `entries` | une ligne par personne et par jour : `unique (user_id, date)`, deux chemins de photo (`photo_path`, `selfie_path`) |
 
-Bucket Storage **privé** `entries`, chemins `<user_id>/<YYYY-MM-DD>.jpg`, lus par
-URL signée d'une heure.
+Bucket Storage **privé** `entries`, chemins `<user_id>/<YYYY-MM-DD>.jpg` pour la
+scène et `<user_id>/<YYYY-MM-DD>-selfie.jpg` pour le visage, lus par URL signée
+d'une heure. Les deux vivent dans le même dossier : les policies raisonnent sur
+le premier segment du chemin, donc le propriétaire relit les siennes sans règle
+supplémentaire, et le binôme reste soumis à la réciprocité.
 
 ### Fonctions
 
@@ -201,8 +219,9 @@ les rejouer ne casse rien.
 | `0003_fix_entries_recursion.sql` | correctif de récursion, pour un projet créé avant la révision de 0001 |
 | `0004_storage_owner_access.sql` | droits d'écrasement et de relecture des photos |
 | `0005_edit_today.sql` | correction de la journée du jour |
+| `0006_dual_photos.sql` | colonne `selfie_path` et lecture de la seconde photo |
 
-Les migrations 0003 à 0005 sont des **rattrapages** : leur contenu est déjà
+Les migrations 0003 à 0006 sont des **rattrapages** : leur contenu est déjà
 intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
 
 ---
@@ -356,8 +375,9 @@ Par ordre d'importance :
 - **Modifier son prénom** après l'inscription : aucun écran ne le permet.
 - **Dévoilement en direct.** L'entrée du binôme arrive par sondage toutes les
   60 s ; le Realtime de Supabase le rendrait instantané.
-- **File d'attente hors ligne.** Une seule journée en attente, photo stockée en
-  data URL dans `localStorage` (quota ~5 Mo). Passer à IndexedDB si ça coince.
+- **File d'attente hors ligne.** Une seule journée en attente, les deux photos
+  stockées en data URL dans `localStorage` (quota ~5 Mo, et une paire pèse
+  ~800 Ko en base64). Passer à IndexedDB si ça coince.
 - **Limitation d'essais sur le code d'invitation** : rien n'empêche d'en tester
   en boucle. Le risque est faible (~10⁹ combinaisons) mais un compteur serait
   plus propre.

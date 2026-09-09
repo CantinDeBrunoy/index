@@ -44,6 +44,18 @@ export function photoPath(userId: string, date: string): string {
   return `${userId}/${date}.jpg`;
 }
 
+/**
+ * La photo frontale vit dans le même dossier que l'autre : les policies du
+ * bucket raisonnent sur le premier segment du chemin, donc le propriétaire la
+ * relit sans règle supplémentaire.
+ */
+export function selfiePath(userId: string, date: string): string {
+  return `${userId}/${date}-selfie.jpg`;
+}
+
+/** Les deux clichés d'un même appui. `selfie` manque si l'appareil n'a qu'une caméra. */
+export type Shot = { main: Blob; selfie: Blob | null };
+
 export async function uploadPhoto(path: string, blob: Blob): Promise<void> {
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
     contentType: 'image/jpeg',
