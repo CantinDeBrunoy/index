@@ -43,7 +43,7 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run dev` | serveur de développement |
 | `npm run build` | `tsc -b && vite build` — c'est le build de production |
 | `npm run typecheck` | typage seul |
-| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, émotions) |
+| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, émotions, choix de l'objectif) |
 | `npm run lint` | oxlint |
 
 **La caméra exige HTTPS** — elle fonctionne sur `localhost`, sinon il faut un
@@ -80,6 +80,7 @@ src/
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
+    camera.ts          ouverture de l'objectif demandé, appareils récalcitrants compris
     photo.ts           capture caméra → JPEG 1200px q0.7, upload, URLs signées
     push.ts            service worker, abonnement Web Push, détection iOS
     cache.ts           cache localStorage par utilisateur
@@ -164,10 +165,19 @@ cascade rapide est la seule façon d'avoir les deux images du même instant, et
 c'est aussi ce que fait BeReal.
 
 La seconde photo est **facultative** : un ordinateur portable n'a qu'une
-caméra, et le second flux peut être refusé. `Camera` compare le `deviceId` des
-deux flux et jette la seconde image si c'est le même appareil — deux fois la
-même photo ne vaut rien. Une journée à une seule photo reste valide, sinon la
-contrainte punirait l'appareil plutôt que la personne.
+caméra, et le second flux peut être refusé. `openCamera` écarte explicitement
+l'objectif déjà utilisé — par `deviceId` et par `facingMode` — et rend une
+erreur plutôt que deux fois la même image. Une journée à une seule photo reste
+valide, sinon la contrainte punirait l'appareil plutôt que la personne.
+
+**Demander la caméra frontale ne suffit pas à l'obtenir.** `facingMode: 'user'`
+n'est qu'un souhait : le navigateur note chaque objectif sur l'ensemble des
+contraintes et peut très bien rendre l'arrière. C'est ce qui se passait sur un
+Galaxy A03, où la bascule ne basculait rien. `src/lib/camera.ts` dégrade donc
+les contraintes une à une — `deviceId` exact, puis côté exigé, puis côté
+souhaité — et réessaie après une pause quand le pilote répond seulement « pas
+encore ». L'aperçu suit ensuite l'objectif *réellement* obtenu, jamais celui
+demandé : sans ça le miroir et la vignette mentent sur ce qui sera enregistré.
 
 Budget de stockage : ≈600 Ko par jour et par personne, soit ~440 Mo par an
 pour un binôme.
@@ -285,8 +295,12 @@ cher :
 
 **1. `npm run checks`** — fonctions pures, exécutées par Node avec
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
-(`dates.ts`, `emotions.ts`) ne doivent contenir **aucun import** vers un alias
-`@/`, que Node ne sait pas résoudre. Les garder sans dépendances.
+(`dates.ts`, `emotions.ts`, `camera.ts`) ne doivent contenir **aucun import**
+vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
+n'existe pas là-bas. Les garder sans dépendances. Le choix de l'objectif s'y
+vérifie contre un faux `navigator.mediaDevices` qui rejoue les manies d'un
+Android d'entrée de gamme : `facingMode` exact refusé, souhait ignoré, caméra
+encore occupée.
 
 **2. `npm run build`** — typage et bundle.
 
@@ -338,6 +352,21 @@ variables, il faut la redéployer pour forcer un démarrage à froid.
 module transformait une clé mal formée en fonction qui refuse de démarrer, donc
 en 500 sans message. Tout ce qui peut échouer sur une variable d'environnement
 doit être appelé *dans* le gestionnaire, avec un message clair.
+
+**`facingMode` n'est qu'une préférence.** Sans `exact`, le navigateur choisit
+la caméra qui satisfait le mieux *toutes* les contraintes : une résolution
+demandée qui colle mieux au capteur arrière suffit à ce que « frontale » rende
+l'arrière, sans la moindre erreur. Et les petits capteurs frontaux (640×480 sur
+un Galaxy A03) perdent ce calcul dès qu'on exprime une taille. Le seul choix
+fiable est le `deviceId`, lisible via `enumerateDevices()` — mais les libellés
+n'apparaissent qu'après une première autorisation, ce qui va bien : c'est la
+*seconde* ouverture qui en a besoin.
+
+**Une caméra n'est pas relâchée à l'instant où on la coupe.** Sur Android
+d'entrée de gamme, ouvrir le second objectif dans la foulée du premier échoue
+en `NotReadableError` — le matériel dit « pas encore », pas « impossible ».
+D'où la pause avant l'ouverture et les reprises espacées. Un `NotReadableError`
+traité comme une absence de caméra fait perdre la moitié du rituel.
 
 **Service worker en développement.** Il servait des fichiers périmés sous Vite
 et cassait le rechargement à chaud. Il n'est enregistré qu'en production, et

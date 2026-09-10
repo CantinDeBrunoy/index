@@ -20,6 +20,7 @@ import {
   weekdayInitials,
   yearMonthOfKey,
 } from '../src/lib/dates.ts';
+import { openCamera, isDenial } from '../src/lib/camera.ts';
 import {
   EMOTIONS,
   MIN_TEXT_CONTRAST,
@@ -129,6 +130,166 @@ console.log('Émotions');
     EMOTIONS.filter((e) => textContrastOn(e.color) >= 4.5).length === 11,
     `${EMOTIONS.filter((e) => textContrastOn(e.color) >= 4.5).length} couleur(s) au-dessus de 4.5:1`,
   );
+}
+
+console.log('\nCaméra — choix de l’objectif');
+{
+  /**
+   * Faux `navigator.mediaDevices` reproduisant un Android d'entrée de gamme.
+   * Le Galaxy A03 en est le cas type : `facingMode` exact échoue, `facingMode`
+   * souhaité renvoie toujours l'arrière, et la caméra reste occupée un instant
+   * après la coupure du flux précédent. Seul le `deviceId` explicite ouvre
+   * vraiment l'objectif frontal.
+   */
+  type Cam = { deviceId: string; label: string; facing: 'user' | 'environment' };
+  type Quirks = {
+    exactFacingWorks?: boolean;
+    idealFacingAlways?: 'user' | 'environment';
+    busyCalls?: number;
+    denied?: boolean;
+    hideLabels?: boolean;
+    hideFacing?: boolean;
+    hideDeviceId?: boolean;
+  };
+
+  function fakeDevices(cams: Cam[], quirks: Quirks = {}) {
+    let calls = 0;
+    let busy = quirks.busyCalls ?? 0;
+
+    const streamOf = (cam: Cam) => {
+      const track = {
+        stop() {},
+        getSettings: () => ({
+          deviceId: quirks.hideDeviceId ? undefined : cam.deviceId,
+          facingMode: quirks.hideFacing ? undefined : cam.facing,
+        }),
+      };
+      return { getVideoTracks: () => [track], getTracks: () => [track] };
+    };
+
+    const fail = (name: string) => {
+      throw Object.assign(new Error(name), { name });
+    };
+
+    return {
+      calls: () => calls,
+      enumerateDevices: async () =>
+        cams.map((cam) => ({
+          kind: 'videoinput',
+          deviceId: cam.deviceId,
+          label: quirks.hideLabels ? '' : cam.label,
+        })),
+      getUserMedia: async (constraints: { video: Record<string, unknown> }) => {
+        calls += 1;
+        if (quirks.denied) fail('NotAllowedError');
+        if (busy > 0) {
+          busy -= 1;
+          fail('NotReadableError');
+        }
+
+        const video = constraints.video ?? {};
+        const wantedId = (video.deviceId as { exact?: string } | undefined)?.exact;
+        if (wantedId) {
+          const cam = cams.find((c) => c.deviceId === wantedId);
+          if (!cam) fail('OverconstrainedError');
+          return streamOf(cam!);
+        }
+
+        const mode = video.facingMode as string | { exact?: string } | undefined;
+        if (mode && typeof mode === 'object' && mode.exact) {
+          if (!quirks.exactFacingWorks) fail('OverconstrainedError');
+          const cam = cams.find((c) => c.facing === mode.exact);
+          if (!cam) fail('OverconstrainedError');
+          return streamOf(cam!);
+        }
+        if (typeof mode === 'string') {
+          // Souhait, pas exigence : l'appareil rend ce qu'il veut.
+          const side = quirks.idealFacingAlways ?? mode;
+          return streamOf(cams.find((c) => c.facing === side) ?? cams[0]);
+        }
+        return streamOf(cams[0]);
+      },
+    };
+  }
+
+  const install = (devices: unknown) => {
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { mediaDevices: devices },
+      configurable: true,
+      writable: true,
+    });
+  };
+
+  const BACK: Cam = { deviceId: 'back-0', label: 'camera2 0, facing back', facing: 'environment' };
+  const FRONT: Cam = { deviceId: 'front-1', label: 'camera2 1, facing front', facing: 'user' };
+
+  // Le cas Galaxy A03, celui qui a motivé tout ce module.
+  {
+    const devices = fakeDevices([BACK, FRONT], { idealFacingAlways: 'environment', busyCalls: 1 });
+    install(devices);
+    const main = await openCamera('environment', { allowAny: true });
+    check('la caméra arrière s’ouvre malgré un premier refus du pilote', main.deviceId === 'back-0', String(main.deviceId));
+
+    const second = await openCamera('user', { avoidDeviceId: 'back-0', avoidFacing: 'environment' });
+    check('la frontale est trouvée par deviceId là où facingMode échoue', second.deviceId === 'front-1', String(second.deviceId));
+  }
+
+  // Même appareil, mais le navigateur masque les libellés : il ne reste qu'une
+  // caméra une fois écartée celle déjà utilisée, et c'est la bonne.
+  {
+    install(fakeDevices([BACK, FRONT], { idealFacingAlways: 'environment', hideLabels: true }));
+    const second = await openCamera('user', { avoidDeviceId: 'back-0', avoidFacing: 'environment' });
+    check('sans libellé, la caméra restante est retenue', second.deviceId === 'front-1', String(second.deviceId));
+  }
+
+  // Un appareil qui honore `facingMode: {exact}` doit marcher aussi, sans
+  // dépendre des libellés.
+  {
+    install(fakeDevices([BACK, FRONT], { exactFacingWorks: true, hideLabels: true, hideDeviceId: true }));
+    const second = await openCamera('user', { avoidFacing: 'environment' });
+    check('facingMode exact suffit quand il est honoré', second.facing === 'user', String(second.facing));
+  }
+
+  // Un ordinateur portable : pas de caméra arrière. La première ouverture doit
+  // quand même réussir, et la seconde prise doit renoncer plutôt que de rendre
+  // deux fois la même image.
+  {
+    install(fakeDevices([FRONT], { idealFacingAlways: 'user' }));
+    const main = await openCamera('environment', { allowAny: true });
+    check('une seule caméra suffit à démarrer', main.deviceId === 'front-1', String(main.deviceId));
+
+    let refused = false;
+    try {
+      await openCamera('environment', { avoidDeviceId: 'front-1', avoidFacing: 'user' });
+    } catch {
+      refused = true;
+    }
+    check('la même caméra n’est jamais rendue deux fois', refused);
+  }
+
+  // Une caméra occupée n'est pas une caméra absente : la reprise doit aboutir.
+  {
+    install(fakeDevices([BACK, FRONT], { exactFacingWorks: true, busyCalls: 8 }));
+    const main = await openCamera('environment', { allowAny: true });
+    check('le pilote lent finit par répondre', main.deviceId === 'back-0', String(main.deviceId));
+  }
+
+  // Un refus d'autorisation coupe court : réessayer ne ferait que multiplier
+  // les demandes sans jamais aboutir.
+  {
+    const devices = fakeDevices([BACK, FRONT], { denied: true });
+    install(devices);
+    let denied = false;
+    try {
+      await openCamera('user', { allowAny: true });
+    } catch (error) {
+      denied = isDenial(error);
+    }
+    check('un refus est reconnu comme tel', denied);
+    check('un refus n’est pas réessayé', devices.calls() === 1, `${devices.calls()} appel(s)`);
+  }
+
+  Object.defineProperty(globalThis, 'navigator', { value: undefined, configurable: true, writable: true });
 }
 
 if (failures > 0) {

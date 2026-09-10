@@ -95,6 +95,7 @@ export const es: Translation = {
     cameraDeniedHint: 'Autoriza la cámara en los ajustes del navegador y recarga la página.',
     cameraUnavailable: 'No hay cámara disponible en este dispositivo.',
     cameraStarting: 'Abriendo la cámara…',
+    cameraOneOnly: 'Aquí solo hay una cámara disponible: el día tendrá una sola foto.',
   },
   calendar: {
     mine: 'Mi calendario',

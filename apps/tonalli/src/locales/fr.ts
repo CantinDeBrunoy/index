@@ -93,6 +93,8 @@ export const fr = {
     cameraDeniedHint: "Autorise la caméra dans les réglages du navigateur, puis recharge la page.",
     cameraUnavailable: "Aucune caméra disponible sur cet appareil.",
     cameraStarting: 'Ouverture de la caméra…',
+    cameraOneOnly:
+      "Une seule caméra accessible ici : la journée n'aura qu'une photo.",
   },
   calendar: {
     mine: 'Mon calendrier',
