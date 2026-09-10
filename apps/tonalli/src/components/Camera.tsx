@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { countCameras, isDenial, openCamera, readSettings, wait } from '@/lib/camera';
+import type { Facing, Opened } from '@/lib/camera';
 import { captureFromVideo } from '@/lib/photo';
 import type { Shot } from '@/lib/photo';
 import { useI18n } from '@/state/I18nProvider';
 
-type Facing = 'environment' | 'user';
 type State = 'starting' | 'ready' | 'denied' | 'unavailable';
 /** `second` : la première photo est prise, l'autre caméra est en train de s'ouvrir. */
 type Phase = 'idle' | 'first' | 'second';
@@ -14,32 +15,40 @@ const opposite = (facing: Facing): Facing => (facing === 'user' ? 'environment' 
 /** Temps laissé à une caméra qui vient de s'ouvrir pour régler son exposition. */
 const SETTLE_MS = 450;
 
-const constraintsFor = (facing: Facing): MediaStreamConstraints => ({
-  video: { facingMode: facing, width: { ideal: 1440 }, height: { ideal: 1920 } },
-  audio: false,
-});
-
-const deviceIdOf = (stream: MediaStream | null): string | undefined =>
-  stream?.getVideoTracks()[0]?.getSettings().deviceId;
-
-const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+/**
+ * Pause entre la coupure d'un flux et l'ouverture de l'autre. Les pilotes
+ * Android d'entrée de gamme ne relâchent pas la caméra dans la foulée ;
+ * `openCamera` sait réessayer, mais commencer par attendre évite un premier
+ * échec systématique, donc une seconde photo prise trop tard.
+ */
+const RELEASE_MS = 150;
 
 /**
  * Une image noire est le piège de la seconde prise : le flux répond avant que
  * le capteur ait produit quoi que ce soit. On attend donc une vraie image, pas
- * seulement l'ouverture du flux.
+ * seulement l'ouverture du flux — `requestVideoFrameCallback` la garantit quand
+ * il existe, sinon `loadeddata` en approche.
  */
 async function waitForFrame(video: HTMLVideoElement): Promise<void> {
-  if (video.readyState < 2) {
-    await new Promise<void>((resolve) => {
-      const done = () => {
-        video.removeEventListener('loadeddata', done);
-        resolve();
-      };
-      video.addEventListener('loadeddata', done);
-      window.setTimeout(done, 2500);
-    });
-  }
+  type WithFrameCallback = HTMLVideoElement & {
+    requestVideoFrameCallback?: (callback: () => void) => number;
+  };
+  const request = (video as WithFrameCallback).requestVideoFrameCallback?.bind(video);
+
+  await new Promise<void>((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      video.removeEventListener('loadeddata', finish);
+      resolve();
+    };
+    if (request) request(finish);
+    else if (video.readyState >= 2) finish();
+    else video.addEventListener('loadeddata', finish);
+    window.setTimeout(finish, 2500);
+  });
+
   await wait(SETTLE_MS);
 }
 
@@ -58,8 +67,15 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [facing, setFacing] = useState<Facing>('environment');
+  // Côté réellement obtenu : sur un appareil qui n'a qu'une caméra, ou qui
+  // ignore la demande, il diffère de `facing`. L'aperçu doit suivre le vrai,
+  // sinon le miroir et la vignette mentent sur ce qui sera enregistré.
+  const [shown, setShown] = useState<Facing>('environment');
   const [state, setState] = useState<State>('starting');
   const [phase, setPhase] = useState<Phase>('idle');
+  // Vrai quand l'appareil ne rend qu'une caméra, quoi qu'on demande : le dire
+  // vaut mieux que laisser croire à un bouton mort et à une photo manquante.
+  const [oneCameraOnly, setOneCameraOnly] = useState(false);
   // Première photo déjà prise : elle passe en vignette pendant que la seconde
   // caméra travaille, comme elle le sera dans le résultat.
   const [firstUrl, setFirstUrl] = useState<string | null>(null);
@@ -69,32 +85,44 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
     streamRef.current = null;
   }, []);
 
+  /** Branche un flux sur l'élément vidéo et retient le côté réellement obtenu. */
+  const attach = useCallback((opened: Opened, requested: Facing) => {
+    streamRef.current = opened.stream;
+    setShown(opened.facing ?? requested);
+    const video = videoRef.current;
+    if (!video) return;
+    video.srcObject = opened.stream;
+    void video.play().catch(() => {});
+  }, []);
+
   useEffect(() => {
     let active = true;
 
     const start = async () => {
       setState('starting');
+      setOneCameraOnly(false);
       stop();
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setState('unavailable');
-        return;
-      }
+      // La caméra précédente vient d'être coupée : laisser le pilote la rendre.
+      await wait(RELEASE_MS);
+      if (!active) return;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraintsFor(facing));
+        // `allowAny` : un ordinateur portable n'a pas de caméra arrière, et
+        // refuser de démarrer pour ça serait absurde.
+        const opened = await openCamera(facing, { allowAny: true });
         if (!active) {
-          stream.getTracks().forEach((track) => track.stop());
+          opened.stream.getTracks().forEach((track) => track.stop());
           return;
         }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => {});
-        }
+        attach(opened, facing);
         setState('ready');
+        // Deux façons de savoir qu'il n'y a qu'un objectif : l'appareil n'en
+        // énumère qu'un, ou il rend l'autre côté que celui demandé.
+        const cameras = await countCameras();
+        if (!active) return;
+        setOneCameraOnly(cameras === 1 || (opened.facing !== null && opened.facing !== facing));
       } catch (error) {
         if (!active) return;
-        const name = (error as { name?: string }).name;
-        setState(name === 'NotAllowedError' || name === 'SecurityError' ? 'denied' : 'unavailable');
+        setState(isDenial(error) ? 'denied' : 'unavailable');
       }
     };
 
@@ -103,39 +131,47 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
       active = false;
       stop();
     };
-  }, [facing, stop]);
+  }, [attach, facing, stop]);
 
   /**
    * Bascule sur l'autre caméra et en prend une image. Renvoie `null` plutôt
    * que d'échouer : un appareil à une seule caméra, ou un second flux refusé,
    * ne doit pas empêcher de valider sa journée.
    */
-  const captureOther = async (firstDeviceId: string | undefined): Promise<Blob | null> => {
+  const captureOther = async (first: {
+    deviceId: string | null;
+    facing: Facing | null;
+  }): Promise<Blob | null> => {
     const video = videoRef.current;
     if (!video) return null;
 
-    const other = opposite(facing);
-    let stream: MediaStream;
+    const other = opposite(shown);
+    let opened: Opened;
     try {
       // Le premier flux est coupé avant d'ouvrir le second : sur mobile, deux
       // caméras ne cohabitent pas, et insister ferait échouer l'ouverture.
       stop();
-      stream = await navigator.mediaDevices.getUserMedia(constraintsFor(other));
+      await wait(RELEASE_MS);
+      // Sans `allowAny`, et en écartant explicitement la caméra déjà utilisée :
+      // deux fois la même image ne vaut rien, mieux vaut une journée à une
+      // seule photo.
+      opened = await openCamera(other, {
+        avoidDeviceId: first.deviceId,
+        avoidFacing: first.facing,
+      });
     } catch {
       return null;
     }
 
-    streamRef.current = stream;
-    // Même identifiant qu'à la première prise : l'appareil n'a qu'une caméra
-    // et `facingMode` a été ignoré. Deux fois la même image ne vaut rien.
-    if (firstDeviceId && deviceIdOf(stream) === firstDeviceId) return null;
-
-    video.srcObject = stream;
+    streamRef.current = opened.stream;
+    const shownNow = opened.facing ?? other;
+    setShown(shownNow);
+    video.srcObject = opened.stream;
     await video.play().catch(() => {});
     await waitForFrame(video);
 
     try {
-      return await captureFromVideo(video, other === 'user');
+      return await captureFromVideo(video, shownNow === 'user');
     } catch {
       return null;
     }
@@ -146,12 +182,15 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
     setPhase('first');
     let url: string | null = null;
     try {
-      const main = await captureFromVideo(videoRef.current, facing === 'user');
-      const firstDeviceId = deviceIdOf(streamRef.current);
+      const main = await captureFromVideo(videoRef.current, shown === 'user');
+      const first = readSettings(streamRef.current);
       url = URL.createObjectURL(main);
       setFirstUrl(url);
       setPhase('second');
-      const selfie = await captureOther(firstDeviceId);
+      const selfie = await captureOther({
+        deviceId: first.deviceId,
+        facing: first.facing ?? shown,
+      });
       stop();
       onCapture({ main, selfie });
     } catch {
@@ -164,9 +203,6 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
     }
   };
 
-  // Pendant la seconde prise, c'est l'autre caméra qui est à l'écran : le
-  // miroir doit la suivre, sinon l'aperçu ment sur ce qui est enregistré.
-  const shown = phase === 'second' ? opposite(facing) : facing;
   const busy = phase !== 'idle';
   // La vignette ne peut pas être en direct : une seule caméra à la fois. Elle
   // montre donc la place que l'autre photo prendra, puis la photo elle-même
@@ -223,13 +259,15 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
         <button
           type="button"
           className="btn"
-          onClick={() => setFacing(opposite)}
-          disabled={state === 'denied' || busy}
+          onClick={() => setFacing(opposite(shown))}
+          disabled={state === 'denied' || busy || oneCameraOnly}
         >
           {t('today.switchCamera')}
         </button>
       </div>
-      <p className="faint small">{t('today.dualHint')}</p>
+      <p className="faint small">
+        {oneCameraOnly && state === 'ready' ? t('today.cameraOneOnly') : t('today.dualHint')}
+      </p>
     </div>
   );
 }
