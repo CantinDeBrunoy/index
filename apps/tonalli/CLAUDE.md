@@ -157,6 +157,15 @@ libellés FR/ES restent dans les fichiers de traduction, pas en base.
 fait la valeur du geste. Compression à 1200 px / qualité 0.7 **avant** tout
 envoi (≈300 Ko par photo).
 
+**On ne demande jamais une taille sur les deux dimensions.** Contraindre
+`width` *et* `height` revient à imposer un rapport, et le navigateur y arrive en
+rognant le champ du capteur : l'image sort déjà zoomée. Un seul indice de
+largeur (`SIZE_HINT`) demande de la définition sans rien dire de la forme. Le
+cadrage en portrait 3/4 est fait une seule fois, à la prise, par `coverCrop` —
+le même calcul que le `object-fit: cover` de l'aperçu, pour que la photo gardée
+soit exactement celle qui était à l'écran, et que l'affichage n'ait plus rien à
+rogner.
+
 Un seul appui prend **deux** photos : la caméra cadrée (arrière par défaut, la
 bascule reste possible) puis l'autre, dans la foulée. Pas simultanément :
 aucun navigateur de téléphone ne garde deux flux vidéo actifs en même temps —
@@ -352,6 +361,13 @@ variables, il faut la redéployer pour forcer un démarrage à froid.
 module transformait une clé mal formée en fonction qui refuse de démarrer, donc
 en 500 sans message. Tout ce qui peut échouer sur une variable d'environnement
 doit être appelé *dans* le gestionnaire, avec un message clair.
+
+**Une contrainte de résolution est aussi une contrainte de cadrage.** Demander
+`1440 × 1920`, ce n'est pas demander « de la définition » : c'est exiger un
+rapport 3/4, que le navigateur obtient en rognant ce que voit le capteur. Sur un
+petit module frontal, qui n'offre souvent qu'un mode 16/9, la perte est
+spectaculaire — l'aperçu paraît zoomé sans qu'aucun zoom n'ait été demandé.
+Contraindre une seule dimension, et cadrer soi-même à la prise.
 
 **`facingMode` n'est qu'une préférence.** Sans `exact`, le navigateur choisit
 la caméra qui satisfait le mieux *toutes* les contraintes : une résolution
