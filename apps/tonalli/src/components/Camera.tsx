@@ -7,8 +7,15 @@ import type { Shot } from '@/lib/photo';
 import { useI18n } from '@/state/I18nProvider';
 
 type State = 'starting' | 'ready' | 'denied' | 'unavailable';
-/** `second` : la première photo est prise, l'autre caméra est en train de s'ouvrir. */
-type Phase = 'idle' | 'first' | 'second';
+/**
+ * `second` : la première photo est prise, l'autre caméra est en train de
+ * s'ouvrir. `manual` : la scène est prise et c'est la personne qui cadre son
+ * visage, avec la caméra qu'elle veut. `face` : elle vient d'appuyer.
+ */
+type Phase = 'idle' | 'first' | 'second' | 'manual' | 'face';
+
+/** Comment on est arrivé au cadrage manuel : par choix, ou faute de mieux. */
+type ManualReason = 'chosen' | 'failed';
 
 const opposite = (facing: Facing): Facing => (facing === 'user' ? 'environment' : 'user');
 
@@ -61,6 +68,11 @@ async function waitForFrame(video: HTMLVideoElement): Promise<void> {
  * ne garde deux flux vidéo actifs simultanément — ouvrir le second coupe le
  * premier sur iOS, et sur la plupart des Android. La cascade rapide est la
  * seule façon d'avoir les deux images du même instant.
+ *
+ * Et quand la cascade échoue — une caméra frontale qui refuse de s'ouvrir, un
+ * appareil qui n'en a qu'une — la personne prend le second cliché elle-même,
+ * avec la caméra dont elle dispose. Renoncer à la moitié du rituel parce que
+ * le matériel est capricieux serait le punir elle.
  */
 export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   const { t } = useI18n();
@@ -73,17 +85,41 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   const [shown, setShown] = useState<Facing>('environment');
   const [state, setState] = useState<State>('starting');
   const [phase, setPhase] = useState<Phase>('idle');
+  const [manualReason, setManualReason] = useState<ManualReason>('chosen');
   // Vrai quand l'appareil ne rend qu'une caméra, quoi qu'on demande : le dire
   // vaut mieux que laisser croire à un bouton mort et à une photo manquante.
   const [oneCameraOnly, setOneCameraOnly] = useState(false);
-  // Première photo déjà prise : elle passe en vignette pendant que la seconde
-  // caméra travaille, comme elle le sera dans le résultat.
+  // Rouvre la caméra sans changer de côté — après une seconde prise ratée, il
+  // n'y a plus de flux du tout.
+  const [session, setSession] = useState(0);
+  // Première photo prise, en attente de la seconde : elle passe en vignette,
+  // comme elle le sera dans le résultat.
+  const pendingRef = useRef<Blob | null>(null);
   const [firstUrl, setFirstUrl] = useState<string | null>(null);
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
   }, []);
+
+  /** Retient la scène et l'affiche en vignette. L'URL survit jusqu'au résultat. */
+  const holdFirst = useCallback((main: Blob) => {
+    pendingRef.current = main;
+    setFirstUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return URL.createObjectURL(main);
+    });
+  }, []);
+
+  const release = useCallback(() => {
+    pendingRef.current = null;
+    setFirstUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
+  }, []);
+
+  useEffect(() => release, [release]);
 
   /** Branche un flux sur l'élément vidéo et retient le côté réellement obtenu. */
   const attach = useCallback((opened: Opened, requested: Facing) => {
@@ -131,7 +167,35 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
       active = false;
       stop();
     };
-  }, [attach, facing, stop]);
+  }, [attach, facing, session, stop]);
+
+  /**
+   * Capture l'image courante, en attendant une vraie image si l'aperçu vient
+   * de rouvrir : `state === 'ready'` dit que le flux est branché, pas qu'il a
+   * déjà produit quelque chose. Sans cette attente, un appui rapide échoue
+   * sans rien dire.
+   */
+  const grab = async (video: HTMLVideoElement): Promise<Blob> => {
+    if (!video.videoWidth) await waitForFrame(video);
+    return captureFromVideo(video, shown === 'user');
+  };
+
+  const finish = (main: Blob, selfie: Blob | null) => {
+    stop();
+    release();
+    setPhase('idle');
+    onCapture({ main, selfie });
+  };
+
+  /**
+   * Passe la main : la scène est prise, c'est la personne qui cadre le visage.
+   * Si la tentative automatique a laissé l'appareil sans flux, on rouvre.
+   */
+  const handOver = (reason: ManualReason) => {
+    setManualReason(reason);
+    setPhase('manual');
+    if (!streamRef.current) setSession((current) => current + 1);
+  };
 
   /**
    * Bascule sur l'autre caméra et en prend une image. Renvoie `null` plutôt
@@ -177,37 +241,72 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
     }
   };
 
+  /** La prise en un appui : la scène, puis le visage dans la foulée. */
   const capture = async () => {
     if (!videoRef.current || state !== 'ready' || phase !== 'idle') return;
     setPhase('first');
-    let url: string | null = null;
     try {
-      const main = await captureFromVideo(videoRef.current, shown === 'user');
+      const main = await grab(videoRef.current);
       const first = readSettings(streamRef.current);
-      url = URL.createObjectURL(main);
-      setFirstUrl(url);
+      holdFirst(main);
       setPhase('second');
       const selfie = await captureOther({
         deviceId: first.deviceId,
         facing: first.facing ?? shown,
       });
-      stop();
-      onCapture({ main, selfie });
+      if (selfie) {
+        finish(main, selfie);
+        return;
+      }
+      // L'autre caméra n'a rien donné. Plutôt que de rendre une journée à une
+      // seule photo sans rien demander, on propose de cadrer le visage à la
+      // main — c'est le seul recours quand la frontale ne répond pas.
+      handOver('failed');
     } catch {
       stop();
-      setState('unavailable');
-    } finally {
+      release();
       setPhase('idle');
-      setFirstUrl(null);
-      if (url) URL.revokeObjectURL(url);
+      setState('unavailable');
     }
   };
 
-  const busy = phase !== 'idle';
+  /** Prendre la scène, puis cadrer le visage soi-même — sans essai automatique. */
+  const captureThenHandOver = async () => {
+    if (!videoRef.current || state !== 'ready' || phase !== 'idle') return;
+    setPhase('first');
+    try {
+      const main = await grab(videoRef.current);
+      holdFirst(main);
+      handOver('chosen');
+    } catch {
+      setPhase('idle');
+      setState('unavailable');
+    }
+  };
+
+  /** Le second cliché, cadré par la personne, avec la caméra de son choix. */
+  const captureFace = async () => {
+    const main = pendingRef.current;
+    if (!videoRef.current || !main || state !== 'ready' || phase !== 'manual') return;
+    setPhase('face');
+    try {
+      finish(main, await grab(videoRef.current));
+    } catch {
+      setPhase('manual');
+    }
+  };
+
+  const busy = phase === 'first' || phase === 'second' || phase === 'face';
+  const manual = phase === 'manual';
   // La vignette ne peut pas être en direct : une seule caméra à la fois. Elle
   // montre donc la place que l'autre photo prendra, puis la photo elle-même
   // dès qu'elle existe — le cadrage annonce le résultat au lieu de le cacher.
   const insetLabel = shown === 'user' ? t('today.insetScene') : t('today.insetFace');
+  const hint = manual
+    ? t(manualReason === 'failed' ? 'today.faceFallback' : 'today.faceHint')
+    : oneCameraOnly && state === 'ready'
+      ? t('today.cameraOneOnly')
+      : t('today.dualHint');
 
   return (
     <div className="stack">
@@ -251,10 +350,10 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
         <button
           type="button"
           className="btn btn--primary grow"
-          onClick={() => void capture()}
+          onClick={() => void (manual ? captureFace() : capture())}
           disabled={state !== 'ready' || busy}
         >
-          {busy ? t('today.capturing') : t('today.takePhoto')}
+          {busy ? t('today.capturing') : manual ? t('today.takeFace') : t('today.takePhoto')}
         </button>
         <button
           type="button"
@@ -265,9 +364,35 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
           {t('today.switchCamera')}
         </button>
       </div>
-      <p className="faint small">
-        {oneCameraOnly && state === 'ready' ? t('today.cameraOneOnly') : t('today.dualHint')}
-      </p>
+
+      {/* Le repli manuel, moins appuyé que la prise : avant, c'est le choix de
+          cadrer soi-même ; pendant, c'est le droit de s'en passer. */}
+      <div className="camera-actions camera-actions--second">
+        {manual ? (
+          <button
+            type="button"
+            className="btn grow"
+            onClick={() => {
+              const main = pendingRef.current;
+              if (main) finish(main, null);
+            }}
+            disabled={busy}
+          >
+            {t('today.skipFace')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn grow"
+            onClick={() => void captureThenHandOver()}
+            disabled={state !== 'ready' || busy}
+          >
+            {t('today.faceMyself')}
+          </button>
+        )}
+      </div>
+
+      <p className="faint small">{hint}</p>
     </div>
   );
 }

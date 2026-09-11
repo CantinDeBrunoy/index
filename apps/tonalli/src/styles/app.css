@@ -356,6 +356,9 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   padding: 6px 14px;
 }
 .camera-actions { display: flex; gap: 10px; margin-top: 12px; }
+/* Le repli manuel vit sous la prise, et se voit moins : c'est un recours,
+   pas le geste normal. */
+.camera-actions--second { margin-top: 8px; }
 
 /* Le cadrage annonce le résultat : même vignette, même place. En direct elle
    resterait vide — une seule caméra peut être ouverte à la fois — alors elle

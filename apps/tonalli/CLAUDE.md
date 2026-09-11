@@ -179,6 +179,15 @@ l'objectif déjà utilisé — par `deviceId` et par `facingMode` — et rend un
 erreur plutôt que deux fois la même image. Une journée à une seule photo reste
 valide, sinon la contrainte punirait l'appareil plutôt que la personne.
 
+**Quand la cascade échoue, la personne prend la relève.** Plutôt que de rendre
+une journée à une seule photo sans rien demander, `Camera` garde la scène et
+passe la main : l'aperçu reste ouvert, la bascule reste disponible, et un second
+appui enregistre le visage — avec la caméra dont l'appareil dispose vraiment.
+Le même passage de relais est accessible d'emblée (« Prendre le visage
+moi-même »), pour qui préfère cadrer les deux. « Continuer sans le visage »
+reste toujours offert : l'invariant tient, la journée à une photo est valide,
+mais elle devient un choix au lieu d'une fatalité.
+
 **Demander la caméra frontale ne suffit pas à l'obtenir.** `facingMode: 'user'`
 n'est qu'un souhait : le navigateur note chaque objectif sur l'ensemble des
 contraintes et peut très bien rendre l'arrière. C'est ce qui se passait sur un
@@ -368,6 +377,12 @@ rapport 3/4, que le navigateur obtient en rognant ce que voit le capteur. Sur un
 petit module frontal, qui n'offre souvent qu'un mode 16/9, la perte est
 spectaculaire — l'aperçu paraît zoomé sans qu'aucun zoom n'ait été demandé.
 Contraindre une seule dimension, et cadrer soi-même à la prise.
+
+**« Prête » ne veut pas dire « il y a une image ».** Un flux branché et joué
+répond `readyState` avant d'avoir produit la moindre image : `videoWidth` vaut
+alors 0 et la capture lève `video_not_ready`. Un appui rapide après une
+réouverture de caméra tombait ainsi dans le vide, sans message. Toute capture
+attend donc une vraie image quand l'aperçu vient de rouvrir.
 
 **`facingMode` n'est qu'une préférence.** Sans `exact`, le navigateur choisit
 la caméra qui satisfait le mieux *toutes* les contraintes : une résolution

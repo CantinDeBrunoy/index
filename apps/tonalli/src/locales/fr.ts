@@ -75,6 +75,13 @@ export const fr = {
     dualHint: 'Un seul appui : la scène, puis ton visage, dans la foulée.',
     capturing: 'Prise en cours…',
     capturingSecond: 'Seconde caméra…',
+    faceMyself: 'Prendre le visage moi-même',
+    takeFace: 'Prendre le visage',
+    skipFace: 'Continuer sans le visage',
+    faceHint:
+      'La scène est prise. Cadre ton visage — tu peux changer de caméra — puis appuie.',
+    faceFallback:
+      "La seconde photo ne s'est pas prise toute seule. Cadre ton visage, puis appuie.",
     swapPhotos: 'Intervertir les deux photos',
     insetFace: 'ton visage',
     insetScene: 'la scène',
