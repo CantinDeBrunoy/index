@@ -25,11 +25,45 @@
 
 export type Facing = 'environment' | 'user';
 
-/** Résolution souhaitée, jamais exigée : un capteur VGA doit rester acceptable. */
-const IDEAL_SIZE: MediaTrackConstraints = {
-  width: { ideal: 1440 },
-  height: { ideal: 1920 },
-};
+/**
+ * Indice de taille, sur **une seule** dimension et jamais exigé.
+ *
+ * Contraindre les deux côtés (c'était `1440 × 1920`) revient à imposer un
+ * rapport de 3/4 : le navigateur rogne alors le champ du capteur pour s'y
+ * conformer, et l'image arrive déjà zoomée — très visiblement sur les petits
+ * capteurs frontaux, qui n'offrent souvent qu'un mode 16/9. Une seule dimension
+ * demande de la définition sans rien dire de la forme : le capteur rend tout ce
+ * qu'il voit, et c'est nous qui cadrons ensuite, une seule fois, à la prise.
+ */
+const SIZE_HINT: MediaTrackConstraints = { width: { ideal: 1280 } };
+
+/** Le cadre de l'app, en largeur / hauteur — portrait 3/4, partout. */
+export const FRAME_RATIO = 3 / 4;
+
+/**
+ * Rectangle à retenir dans une image pour remplir un cadre d'un autre rapport,
+ * sans déformer : le `object-fit: cover` du CSS, en arithmétique. On l'applique
+ * à la prise pour que la photo enregistrée soit exactement celle que l'aperçu
+ * montrait — sinon le cadrage promis n'est pas celui qu'on garde, et l'affichage
+ * rogne une seconde fois.
+ */
+export function coverCrop(
+  width: number,
+  height: number,
+  ratio = FRAME_RATIO,
+): { x: number; y: number; width: number; height: number } {
+  if (width <= 0 || height <= 0) return { x: 0, y: 0, width: 0, height: 0 };
+  const tooWide = width / height > ratio;
+  const kept = {
+    width: tooWide ? Math.round(height * ratio) : width,
+    height: tooWide ? height : Math.round(width / ratio),
+  };
+  return {
+    x: Math.round((width - kept.width) / 2),
+    y: Math.round((height - kept.height) / 2),
+    ...kept,
+  };
+}
 
 /** Pauses de reprise quand le pilote n'a pas encore relâché la caméra. */
 const RETRY_DELAYS_MS = [200, 500, 1000];
@@ -133,14 +167,14 @@ async function deviceIdsFacing(facing: Facing, avoid: string | null): Promise<st
 function attemptsFor(facing: Facing, ids: string[], allowAny: boolean): MediaTrackConstraints[] {
   const attempts: MediaTrackConstraints[] = [];
   for (const id of ids) {
-    attempts.push({ deviceId: { exact: id }, ...IDEAL_SIZE });
+    attempts.push({ deviceId: { exact: id }, ...SIZE_HINT });
     attempts.push({ deviceId: { exact: id } });
   }
-  attempts.push({ facingMode: { exact: facing }, ...IDEAL_SIZE });
+  attempts.push({ facingMode: { exact: facing }, ...SIZE_HINT });
   attempts.push({ facingMode: { exact: facing } });
-  attempts.push({ facingMode: facing, ...IDEAL_SIZE });
+  attempts.push({ facingMode: facing, ...SIZE_HINT });
   attempts.push({ facingMode: facing });
-  if (allowAny) attempts.push({ ...IDEAL_SIZE }, {});
+  if (allowAny) attempts.push({ ...SIZE_HINT }, {});
   return attempts;
 }
 

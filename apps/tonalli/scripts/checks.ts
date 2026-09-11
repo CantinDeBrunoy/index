@@ -20,7 +20,7 @@ import {
   weekdayInitials,
   yearMonthOfKey,
 } from '../src/lib/dates.ts';
-import { openCamera, isDenial } from '../src/lib/camera.ts';
+import { coverCrop, isDenial, openCamera } from '../src/lib/camera.ts';
 import {
   EMOTIONS,
   MIN_TEXT_CONTRAST,
@@ -290,6 +290,46 @@ console.log('\nCaméra — choix de l’objectif');
   }
 
   Object.defineProperty(globalThis, 'navigator', { value: undefined, configurable: true, writable: true });
+}
+
+console.log('\nCaméra — cadrage de la prise');
+{
+  // Le cadre de l'app est un portrait 3/4. Le flux, lui, arrive dans la forme
+  // du capteur : c'est à la prise qu'on décide ce qu'on garde, et jamais à
+  // l'affichage, qui rognerait une image que personne n'a vue.
+  const wide = coverCrop(1280, 720);
+  check('un flux 16/9 est rogné sur les côtés', wide.width === 540 && wide.height === 720, JSON.stringify(wide));
+  check('le rognage est centré', wide.x === 370 && wide.y === 0, JSON.stringify(wide));
+
+  // Un capteur 4/3 tenu en portrait donne exactement le cadre : ne rien rogner
+  // du tout est la bonne réponse, pas un arrondi à un pixel près.
+  const exact = coverCrop(480, 640);
+  check(
+    'un flux déjà en 3/4 est gardé entier',
+    exact.x === 0 && exact.y === 0 && exact.width === 480 && exact.height === 640,
+    JSON.stringify(exact),
+  );
+
+  const tall = coverCrop(1080, 1920);
+  check('un flux 9/16 est rogné en haut et en bas', tall.width === 1080 && tall.height === 1440, JSON.stringify(tall));
+  check('et lui aussi au centre', tall.y === 240, String(tall.y));
+
+  const square = coverCrop(1000, 1000);
+  check('un flux carré perd de la largeur', square.width === 750 && square.height === 1000, JSON.stringify(square));
+
+  const empty = coverCrop(0, 0);
+  check('une vidéo sans image ne casse pas le calcul', empty.width === 0 && empty.height === 0);
+
+  // Le rapport obtenu doit être celui du cadre, à un pixel près — c'est ce qui
+  // garantit que l'affichage n'a plus rien à rogner.
+  for (const [w, h] of [[1280, 720], [640, 480], [1920, 1080], [720, 1280], [1440, 1080]]) {
+    const crop = coverCrop(w, h);
+    check(
+      `${w}×${h} donne bien un portrait 3/4`,
+      Math.abs(crop.width / crop.height - 3 / 4) < 0.002,
+      (crop.width / crop.height).toFixed(4),
+    );
+  }
 }
 
 if (failures > 0) {
