@@ -82,7 +82,11 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   // Côté réellement obtenu : sur un appareil qui n'a qu'une caméra, ou qui
   // ignore la demande, il diffère de `facing`. L'aperçu doit suivre le vrai,
   // sinon le miroir et la vignette mentent sur ce qui sera enregistré.
-  const [shown, setShown] = useState<Facing>('environment');
+  const [shown, setShownState] = useState<Facing>('environment');
+  // Le même côté, lisible depuis une fonction asynchrone : `shown` y serait
+  // figé à la valeur du rendu qui l'a créée, et la prise automatique change
+  // de caméra en cours de route.
+  const shownRef = useRef<Facing>('environment');
   const [state, setState] = useState<State>('starting');
   const [phase, setPhase] = useState<Phase>('idle');
   const [manualReason, setManualReason] = useState<ManualReason>('chosen');
@@ -96,6 +100,11 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   // comme elle le sera dans le résultat.
   const pendingRef = useRef<Blob | null>(null);
   const [firstUrl, setFirstUrl] = useState<string | null>(null);
+
+  const setShown = useCallback((side: Facing) => {
+    shownRef.current = side;
+    setShownState(side);
+  }, []);
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -129,7 +138,7 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
     if (!video) return;
     video.srcObject = opened.stream;
     void video.play().catch(() => {});
-  }, []);
+  }, [setShown]);
 
   useEffect(() => {
     let active = true;
@@ -177,7 +186,7 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
    */
   const grab = async (video: HTMLVideoElement): Promise<Blob> => {
     if (!video.videoWidth) await waitForFrame(video);
-    return captureFromVideo(video, shown === 'user');
+    return captureFromVideo(video, shownRef.current === 'user');
   };
 
   const finish = (main: Blob, selfie: Blob | null) => {
@@ -188,13 +197,21 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   };
 
   /**
-   * Passe la main : la scène est prise, c'est la personne qui cadre le visage.
-   * Si la tentative automatique a laissé l'appareil sans flux, on rouvre.
+   * Passe la main : la scène est prise, c'est la personne qui cadre le second
+   * cliché. Les deux photos se prennent alors avec **la même caméra**, celle
+   * qui a fait la première — la seule dont on sait qu'elle marche. Après une
+   * tentative automatique, c'est l'autre qui est à l'écran, ou plus rien du
+   * tout : dans les deux cas on rouvre celle de la scène, sinon on laisserait
+   * la personne devant l'objectif qui vient justement de la lâcher. La
+   * bascule reste offerte, mais c'est elle qui la demande.
    */
-  const handOver = (reason: ManualReason) => {
+  const handOver = (reason: ManualReason, sceneFacing: Facing) => {
     setManualReason(reason);
     setPhase('manual');
-    if (!streamRef.current) setSession((current) => current + 1);
+    if (!streamRef.current || shownRef.current !== sceneFacing) {
+      setFacing(sceneFacing);
+      setSession((current) => current + 1);
+    }
   };
 
   /**
@@ -231,8 +248,17 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
     const shownNow = opened.facing ?? other;
     setShown(shownNow);
     video.srcObject = opened.stream;
-    await video.play().catch(() => {});
+    // Surtout ne pas *attendre* `play()` : sur un objectif qui s'ouvre sans
+    // jamais produire d'image, cette promesse ne se résout jamais et l'app
+    // reste figée sur « Prise en cours… ». C'est l'image qu'on attend, et
+    // `waitForFrame` a, lui, une limite.
+    void video.play().catch(() => {});
     await waitForFrame(video);
+
+    // Un flux ouvert n'est pas un flux qui filme : sans image (`readyState`
+    // sous `HAVE_CURRENT_DATA`), la capture ne rendrait qu'un rectangle noir.
+    // Mieux vaut déclarer forfait et passer la main.
+    if (video.readyState < 2 || !video.videoWidth) return null;
 
     try {
       return await captureFromVideo(video, shownNow === 'user');
@@ -245,6 +271,7 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   const capture = async () => {
     if (!videoRef.current || state !== 'ready' || phase !== 'idle') return;
     setPhase('first');
+    const sceneFacing = shownRef.current;
     try {
       const main = await grab(videoRef.current);
       const first = readSettings(streamRef.current);
@@ -261,7 +288,7 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
       // L'autre caméra n'a rien donné. Plutôt que de rendre une journée à une
       // seule photo sans rien demander, on propose de cadrer le visage à la
       // main — c'est le seul recours quand la frontale ne répond pas.
-      handOver('failed');
+      handOver('failed', sceneFacing);
     } catch {
       stop();
       release();
@@ -274,17 +301,18 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
   const captureThenHandOver = async () => {
     if (!videoRef.current || state !== 'ready' || phase !== 'idle') return;
     setPhase('first');
+    const sceneFacing = shownRef.current;
     try {
       const main = await grab(videoRef.current);
       holdFirst(main);
-      handOver('chosen');
+      handOver('chosen', sceneFacing);
     } catch {
       setPhase('idle');
       setState('unavailable');
     }
   };
 
-  /** Le second cliché, cadré par la personne, avec la caméra de son choix. */
+  /** Le second cliché, cadré par la personne, avec la caméra de la scène. */
   const captureFace = async () => {
     const main = pendingRef.current;
     if (!videoRef.current || !main || state !== 'ready' || phase !== 'manual') return;
