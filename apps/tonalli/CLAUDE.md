@@ -181,12 +181,19 @@ valide, sinon la contrainte punirait l'appareil plutôt que la personne.
 
 **Quand la cascade échoue, la personne prend la relève.** Plutôt que de rendre
 une journée à une seule photo sans rien demander, `Camera` garde la scène et
-passe la main : l'aperçu reste ouvert, la bascule reste disponible, et un second
-appui enregistre le visage — avec la caméra dont l'appareil dispose vraiment.
-Le même passage de relais est accessible d'emblée (« Prendre le visage
-moi-même »), pour qui préfère cadrer les deux. « Continuer sans le visage »
-reste toujours offert : l'invariant tient, la journée à une photo est valide,
-mais elle devient un choix au lieu d'une fatalité.
+passe la main. En mode manuel, **les deux clichés se prennent avec la même
+caméra** : celle qui a fait la scène, la seule dont on sait qu'elle marche. Une
+tentative automatique ratée laisse justement l'autre objectif à l'écran — ou
+plus rien du tout — donc on rouvre celui de la scène avant de rendre la main,
+sinon on planterait la personne devant la caméra qui vient de la lâcher. La
+bascule reste offerte, mais c'est elle qui la demande. Le même passage de relais
+est accessible d'emblée (« Prendre les deux moi-même »). « Continuer sans le
+visage » reste toujours là : l'invariant tient, la journée à une photo est
+valide, mais elle devient un choix au lieu d'une fatalité.
+
+Corollaire de code : le côté réellement à l'écran vit aussi dans une *ref*
+(`shownRef`). Une fonction asynchrone qui lit l'état du rendu voit la caméra
+d'avant la bascule, et déciderait de ne rien rouvrir.
 
 **Demander la caméra frontale ne suffit pas à l'obtenir.** `facingMode: 'user'`
 n'est qu'un souhait : le navigateur note chaque objectif sur l'ensemble des
@@ -383,6 +390,16 @@ répond `readyState` avant d'avoir produit la moindre image : `videoWidth` vaut
 alors 0 et la capture lève `video_not_ready`. Un appui rapide après une
 réouverture de caméra tombait ainsi dans le vide, sans message. Toute capture
 attend donc une vraie image quand l'aperçu vient de rouvrir.
+
+**Un objectif qui s'ouvre sans jamais filmer fige l'app.** `await video.play()`
+ne se résout **jamais** sur un flux qui ne produit aucune image — et c'est
+exactement ce que fait une caméra frontale en panne : `getUserMedia` réussit, le
+flux existe, il ne sort rien. L'app restait sur « Prise en cours… » pour
+toujours. On ne l'attend donc plus (`void video.play()`) : ce qu'on attend,
+c'est une image, et `waitForFrame` a une limite. Et avant de capturer, on exige
+`readyState >= HAVE_CURRENT_DATA`, sinon la « photo » ne serait qu'un rectangle
+noir — un cliché noir enregistré est pire qu'un cliché manquant, qui lui ouvre
+le repli manuel.
 
 **`facingMode` n'est qu'une préférence.** Sans `exact`, le navigateur choisit
 la caméra qui satisfait le mieux *toutes* les contraintes : une résolution
