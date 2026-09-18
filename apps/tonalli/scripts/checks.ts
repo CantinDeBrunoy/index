@@ -10,6 +10,7 @@ import {
   dateKeyInTimeZone,
   daysInMonth,
   daysInYear,
+  formatInstant,
   formatLongDate,
   formatOffset,
   isValidKey,
@@ -101,6 +102,20 @@ console.log('Calendrier');
   check('initiales FR', weekdayInitials('fr').length === 7);
   check('date longue FR', formatLongDate('2026-08-28', 'fr').includes('août'), formatLongDate('2026-08-28', 'fr'));
   check('date longue ES', formatLongDate('2026-08-28', 'es').includes('agosto'), formatLongDate('2026-08-28', 'es'));
+}
+
+console.log('Repère de build');
+{
+  // Un instant réel, pas une journée : c'est le seul endroit de l'app où une
+  // conversion vers l'heure de qui regarde est la bonne réponse.
+  const stamped = formatInstant('2026-09-18T21:15:00Z', 'fr');
+  check('un horodatage se formate', typeof stamped === 'string' && stamped.length > 0, String(stamped));
+
+  // Le repère sert à diagnostiquer : il ne doit jamais devenir le bug qu'il
+  // aide à traquer. « Invalid Date » affiché en bas des réglages serait pire
+  // que rien.
+  check('une chaîne illisible rend null', formatInstant('pas une date', 'fr') === null);
+  check('une chaîne vide rend null', formatInstant('', 'fr') === null);
 }
 
 console.log('Émotions');
@@ -389,10 +404,13 @@ console.log('Réactions — la pluie de bulles');
     );
   }
 
-  // Le pire cas doit exister : une marge trop large ferait une fête qui traîne
-  // dans le vide après la dernière bulle.
-  const worst = Math.max(...bubbles(200, Math.random).map((b) => (b.delay + b.duration) * 1000));
-  check('la dernière bulle finit avec la fête', BURST_MS - worst <= 200, `${BURST_MS - worst} ms de battement`);
+  // Le pire cas EXACT, pas un échantillon : un hasard qui rend toujours 1 donne
+  // la bulle la plus tardive possible. En tirant au sort, cette vérification
+  // passait neuf fois sur dix — une vérification instable est pire qu'absente,
+  // elle apprend à ignorer les échecs.
+  const [latest] = bubbles(1, () => 1);
+  const end = (latest.delay + latest.duration) * 1000;
+  check('la dernière bulle finit pile avec la fête', end === BURST_MS, `${end} ≠ ${BURST_MS}`);
 
   // Toutes identiques, la pluie monterait en rang d'oignons.
   const varied = bubbles(12, Math.random);

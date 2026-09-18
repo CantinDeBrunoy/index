@@ -233,3 +233,20 @@ export function weekdayInitials(locale: string): string[] {
 export function formatTime(hour: number, minute: number): string {
   return `${pad(hour)}:${pad(minute)}`;
 }
+
+/**
+ * Un **instant** formaté dans le fuseau du navigateur — pas une journée.
+ *
+ * Toute la logique de ce fichier tourne autour des clés `YYYY-MM-DD`, qui sont
+ * des dates locales d'auteur et ne se convertissent jamais. Ceci est l'autre
+ * cas, rare : un horodatage réel (le moment où le site a été construit), qui
+ * lui a bien un sens universel et se lit donc à l'heure de qui regarde.
+ *
+ * Une chaîne illisible rend `null` plutôt que « Invalid Date » : c'est un
+ * repère de diagnostic, il ne doit jamais devenir le bug qu'il aide à traquer.
+ */
+export function formatInstant(iso: string, locale: string): string | null {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return null;
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(at);
+}

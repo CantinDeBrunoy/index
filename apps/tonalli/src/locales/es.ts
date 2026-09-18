@@ -158,6 +158,7 @@ export const es: Translation = {
     partnerLocalTime: 'Donde está {{name}} son las',
     sameTime: 'misma hora',
     offsetLabel: 'Diferencia',
+    build: 'Versión {{id}} — {{date}}',
   },
   emotions: {
     joy: 'Alegría',

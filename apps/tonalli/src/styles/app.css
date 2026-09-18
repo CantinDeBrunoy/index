@@ -431,6 +431,14 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   .reaction-burst { animation: none; }
 }
 
+/* Le repère de build : présent, jamais bavard. On ne le lit que quand on le
+   cherche. */
+.build-stamp {
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
 .hero {
   border-radius: var(--radius);
   min-height: 160px;
