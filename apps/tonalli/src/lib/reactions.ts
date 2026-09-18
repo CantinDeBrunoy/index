@@ -35,3 +35,43 @@ export function isReactionKey(value: unknown): value is ReactionKey {
 export function emojiOf(key: string): string | null {
   return EMOJI_BY_KEY.get(key) ?? null;
 }
+
+/** Une bulle du champ qui monte quand on ouvre une réaction reçue. */
+export type Bubble = {
+  /** Départ horizontal, en pourcentage de la largeur. */
+  left: number;
+  /** Retard avant l'envol, en secondes. */
+  delay: number;
+  /** Durée de la montée, en secondes. */
+  duration: number;
+  /** Taille du caractère, en pixels. */
+  size: number;
+  /** Dérive horizontale sur toute la montée, en pixels. */
+  drift: number;
+};
+
+/** Assez pour faire une pluie, pas assez pour faire ramer un vieux téléphone. */
+export const BUBBLE_COUNT = 18;
+
+/**
+ * Le champ de bulles : des départs, des retards et des vitesses différents,
+ * sinon les emoji montent en rang d'oignons et le geste perd tout son charme.
+ *
+ * `random` est injecté plutôt que pris dans `Math.random` : c'est ce qui rend
+ * la génération vérifiable, et `npm run checks` s'assure qu'aucune bulle ne
+ * part hors de l'écran ni avec une durée nulle — une bulle immobile resterait
+ * plantée en bas, bien visible.
+ */
+export function bubbles(count: number, random: () => number): Bubble[] {
+  const field: Bubble[] = [];
+  for (let index = 0; index < count; index += 1) {
+    field.push({
+      left: Math.round(random() * 100),
+      delay: Math.round(random() * 2600) / 1000,
+      duration: 2.6 + Math.round(random() * 2200) / 1000,
+      size: 22 + Math.round(random() * 26),
+      drift: Math.round((random() - 0.5) * 120),
+    });
+  }
+  return field;
+}

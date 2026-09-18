@@ -126,7 +126,8 @@ export const es: Translation = {
     remove: 'Toca el mismo para quitar tu reacción.',
     failed: 'La reacción no se envió. Inténtalo de nuevo.',
     offline: 'Sin conexión: no se puede reaccionar por ahora.',
-    received: '{{name}} ha reaccionado: {{reaction}}',
+    received: '{{name}} ha reaccionado',
+    receivedDetail: '{{name}} ha reaccionado: {{reaction}}',
     names: {
       heart: 'Corazón',
       hug: 'Abrazo',

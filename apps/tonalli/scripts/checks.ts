@@ -21,7 +21,7 @@ import {
   yearMonthOfKey,
 } from '../src/lib/dates.ts';
 import { coverCrop, isDenial, openCamera } from '../src/lib/camera.ts';
-import { REACTIONS, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
+import { BUBBLE_COUNT, REACTIONS, bubbles, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
 import { INSET_MARGIN, clampToFrame, moveCorner, nearestCorner } from '../src/lib/inset.ts';
 import { fr } from '../src/locales/fr.ts';
 import { es } from '../src/locales/es.ts';
@@ -359,6 +359,33 @@ console.log('Réactions rapides — palette fermée');
     check(`« ${key} » a un libellé français`, Boolean((fr.reactions.names as Record<string, string>)[key]), key);
     check(`« ${key} » a un libellé espagnol`, Boolean((es.reactions.names as Record<string, string>)[key]), key);
   }
+}
+
+console.log('Réactions — la pluie de bulles');
+{
+  // Un faux hasard déterministe : on veut vérifier les bornes, pas jouer aux dés.
+  let seed = 0;
+  const sequence = [0, 0.25, 0.5, 0.75, 0.999];
+  const fake = () => sequence[seed++ % sequence.length];
+
+  const field = bubbles(BUBBLE_COUNT, fake);
+  check('autant de bulles que demandé', field.length === BUBBLE_COUNT, String(field.length));
+
+  // Une bulle hors écran ne se voit jamais ; une bulle sans durée reste
+  // plantée en bas, bien visible. Les deux se repèrent ici, pas à l'œil.
+  for (const bubble of field) {
+    check('départ dans l’écran', bubble.left >= 0 && bubble.left <= 100, String(bubble.left));
+    check('retard raisonnable', bubble.delay >= 0 && bubble.delay <= 2.6, String(bubble.delay));
+    check('durée non nulle', bubble.duration >= 2.6 && bubble.duration <= 4.8, String(bubble.duration));
+    check('taille lisible', bubble.size >= 22 && bubble.size <= 48, String(bubble.size));
+    check('dérive contenue', Math.abs(bubble.drift) <= 60, String(bubble.drift));
+  }
+
+  // Toutes identiques, la pluie monterait en rang d'oignons.
+  const varied = bubbles(12, Math.random);
+  check('les bulles ne partent pas toutes du même endroit', new Set(varied.map((b) => b.left)).size > 1);
+
+  check('un champ vide reste vide', bubbles(0, Math.random).length === 0);
 }
 
 console.log('Vignette — glissement et collage aux coins');

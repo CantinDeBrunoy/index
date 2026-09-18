@@ -127,7 +127,8 @@ export const fr = {
     remove: 'Appuie sur le même pour retirer ta réaction.',
     failed: "La réaction n'est pas partie. Réessaie.",
     offline: 'Hors ligne : impossible de réagir pour le moment.',
-    received: '{{name}} a réagi : {{reaction}}',
+    received: '{{name}} a réagi',
+    receivedDetail: '{{name}} a réagi : {{reaction}}',
     names: {
       heart: 'Cœur',
       hug: 'Câlin',

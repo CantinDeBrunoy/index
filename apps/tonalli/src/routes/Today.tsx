@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Camera } from '@/components/Camera';
 import { EmotionGrid } from '@/components/EmotionGrid';
 import { EntryPhotos, PhotoPair } from '@/components/PhotoPair';
-import { DayReactions } from '@/components/Reactions';
+import { QuickReactions, ReceivedReaction } from '@/components/Reactions';
 import { ErrorBanner, OfflineBanner } from '@/components/States';
 import { formatLongDate, todayInTimeZone } from '@/lib/dates';
 import { colorOf, readableTextOn, veilOpacity, washGradient } from '@/lib/emotions';
@@ -352,8 +352,8 @@ function MyDay({ entry, isPending, pendingColor, pendingEmotion, pendingNote, on
         </div>
       </div>
       {entry?.photo_path ? <EntryPhotos entry={entry} /> : null}
+      <ReceivedReaction entry={entry} />
       {note ? <p>{note}</p> : null}
-      <DayReactions entry={entry} />
       <p className="faint small">{isPending ? t('today.pending') : t('today.lockedHint')}</p>
       {isPending ? null : (
         <button type="button" className="btn btn--block" onClick={onEdit}>
@@ -398,7 +398,7 @@ function TheirDay({
       <p className="faint small capitalize">{formatLongDate(entry.date, locale)}</p>
       <EntryPhotos entry={entry} alt={t(`emotions.${entry.emotion}`)} />
       {entry.note ? <p>{entry.note}</p> : null}
-      <DayReactions entry={entry} />
+      <QuickReactions entry={entry} />
     </div>
   );
 }
