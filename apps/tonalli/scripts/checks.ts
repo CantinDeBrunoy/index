@@ -22,6 +22,7 @@ import {
 } from '../src/lib/dates.ts';
 import { coverCrop, isDenial, openCamera } from '../src/lib/camera.ts';
 import { REACTIONS, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
+import { INSET_MARGIN, clampToFrame, moveCorner, nearestCorner } from '../src/lib/inset.ts';
 import { fr } from '../src/locales/fr.ts';
 import { es } from '../src/locales/es.ts';
 import {
@@ -358,6 +359,48 @@ console.log('Réactions rapides — palette fermée');
     check(`« ${key} » a un libellé français`, Boolean((fr.reactions.names as Record<string, string>)[key]), key);
     check(`« ${key} » a un libellé espagnol`, Boolean((es.reactions.names as Record<string, string>)[key]), key);
   }
+}
+
+console.log('Vignette — glissement et collage aux coins');
+{
+  // Cadre d'une photo en portrait 3/4 sur un téléphone, vignette à 30 %.
+  const frame = { width: 360, height: 480 };
+  const size = { width: 108, height: 144 };
+  const at = (x: number, y: number) => ({ x, y, ...size });
+
+  check('en haut à gauche', nearestCorner(at(12, 12), frame) === 'top-left');
+  check('en haut à droite', nearestCorner(at(240, 12), frame) === 'top-right');
+  check('en bas à gauche', nearestCorner(at(12, 324), frame) === 'bottom-left');
+  check('en bas à droite', nearestCorner(at(240, 324), frame) === 'bottom-right');
+
+  // Une vignette lâchée au centre doit rejoindre un coin, pas y rester : le
+  // centre géométrique bascule d'un coin à l'autre, jamais entre les deux.
+  const middle = nearestCorner(at(126, 168), frame);
+  check('le milieu retombe dans un coin', ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(middle), middle);
+
+  // Le doigt sort de la photo : la vignette reste dedans, marge comprise.
+  const farOut = clampToFrame(-500, -500, size, frame);
+  check('bornée en haut à gauche', farOut.x === INSET_MARGIN && farOut.y === INSET_MARGIN, JSON.stringify(farOut));
+  const farAway = clampToFrame(9999, 9999, size, frame);
+  check(
+    'bornée en bas à droite',
+    farAway.x === frame.width - size.width - INSET_MARGIN && farAway.y === frame.height - size.height - INSET_MARGIN,
+    JSON.stringify(farAway),
+  );
+  const inside = clampToFrame(80, 200, size, frame);
+  check('une position valable est laissée telle quelle', inside.x === 80 && inside.y === 200, JSON.stringify(inside));
+
+  // Cas dégénéré : une vignette plus grande que son cadre ne doit pas produire
+  // de borne croisée, sinon la position partirait à l'envers.
+  const tight = clampToFrame(0, 0, { width: 400, height: 600 }, frame);
+  check('un cadre trop petit ne croise pas ses bornes', tight.x === INSET_MARGIN && tight.y === INSET_MARGIN, JSON.stringify(tight));
+
+  // Au clavier, une direction ne change qu'un axe : la vignette longe les
+  // bords au lieu de sauter en diagonale.
+  check('flèche droite', moveCorner('top-left', 'right') === 'top-right');
+  check('flèche bas', moveCorner('top-left', 'down') === 'bottom-left');
+  check('flèche gauche depuis la droite', moveCorner('bottom-right', 'left') === 'bottom-left');
+  check('une direction déjà atteinte ne bouge pas', moveCorner('top-left', 'up') === 'top-left');
 }
 
 if (failures > 0) {

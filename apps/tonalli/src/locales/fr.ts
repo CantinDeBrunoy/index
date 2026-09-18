@@ -83,6 +83,7 @@ export const fr = {
     faceFallback:
       "La caméra frontale n'a pas répondu. Prends le visage toi-même, avec cette caméra-ci.",
     swapPhotos: 'Intervertir les deux photos',
+    insetHint: 'Appuie pour intervertir, glisse pour déplacer.',
     insetFace: 'ton visage',
     insetScene: 'la scène',
     noteLabel: 'Une note (facultatif)',

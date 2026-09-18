@@ -45,7 +45,7 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run dev` | serveur de développement |
 | `npm run build` | `tsc -b && vite build` — c'est le build de production |
 | `npm run typecheck` | typage seul |
-| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, émotions, réactions, choix de l'objectif) |
+| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, émotions, réactions, vignette, choix de l'objectif) |
 | `npm run lint` | oxlint |
 
 **La caméra exige HTTPS** — elle fonctionne sur `localhost`, sinon il faut un
@@ -80,6 +80,7 @@ src/
     dates.ts           TOUT le raisonnement calendaire et les fuseaux
     emotions.ts        les 12 couples (clé, couleur) + contraste du texte
     reactions.ts       les 6 couples (clé, emoji) de l'action rapide
+    inset.ts           géométrie de la vignette : bornes et collage aux coins
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -213,6 +214,22 @@ valide, mais elle devient un choix au lieu d'une fatalité.
 Corollaire de code : le côté réellement à l'écran vit aussi dans une *ref*
 (`shownRef`). Une fonction asynchrone qui lit l'état du rendu voit la caméra
 d'avant la bascule, et déciderait de ne rien rouvrir.
+
+**La vignette se déplace au doigt.** Le cadre BeReal a un défaut inévitable :
+la petite photo cache un coin de la grande, et c'est parfois là qu'il y a
+quelque chose à voir. On la fait donc glisser, et au relâchement elle se range
+dans le coin le plus proche — jamais au milieu du sujet, jamais à cheval sur un
+bord. Le calcul est dans `src/lib/inset.ts`, vérifié par `npm run checks` ; la
+marge y vaut `INSET_MARGIN` et doit rester égale au `--inset-margin` de la
+feuille de style, sinon le repos et la limite du glissement ne parlent plus du
+même bord. Un appui sec continue d'intervertir les deux photos : c'est le
+déplacement qui distingue les deux gestes, au-delà de `DRAG_THRESHOLD`. Les
+flèches du clavier font le même déplacement, un axe à la fois.
+
+Corollaire de code : la vignette **coupe la propagation des événements
+tactiles**. L'écran « Aujourd'hui » change de panneau sur un glissement
+horizontal ; sans cette coupure, déplacer la vignette vers la droite ferait
+aussi basculer sur la journée du binôme.
 
 **Demander la caméra frontale ne suffit pas à l'obtenir.** `facingMode: 'user'`
 n'est qu'un souhait : le navigateur note chaque objectif sur l'ensemble des
@@ -361,7 +378,7 @@ cher :
 
 **1. `npm run checks`** — fonctions pures, exécutées par Node avec
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
-(`dates.ts`, `emotions.ts`, `reactions.ts`, `camera.ts`) ne doivent contenir **aucun import**
+(`dates.ts`, `emotions.ts`, `reactions.ts`, `inset.ts`, `camera.ts`) ne doivent contenir **aucun import**
 vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
 n'existe pas là-bas. Les garder sans dépendances. Le choix de l'objectif s'y
 vérifie contre un faux `navigator.mediaDevices` qui rejoue les manies d'un
@@ -456,6 +473,14 @@ d'entrée de gamme, ouvrir le second objectif dans la foulée du premier échoue
 en `NotReadableError` — le matériel dit « pas encore », pas « impossible ».
 D'où la pause avant l'ouverture et les reprises espacées. Un `NotReadableError`
 traité comme une absence de caméra fait perdre la moitié du rituel.
+
+**Une image est nativement déplaçable.** Un `<img>` dans un élément qu'on veut
+faire glisser soi-même est un piège silencieux : au premier mouvement, le
+navigateur démarre son propre glisser-déposer et coupe le geste par un
+`pointercancel`. La vignette ne bougeait pas d'un pixel, sans la moindre erreur
+en console. Il faut `preventDefault()` sur `dragstart` (et `-webkit-user-drag:
+none` en renfort) — `touch-action: none` ne traite que le cas du défilement,
+pas celui-là.
 
 **Service worker en développement.** Il servait des fichiers périmés sous Vite
 et cassait le rechargement à chaud. Il n'est enregistré qu'en production, et

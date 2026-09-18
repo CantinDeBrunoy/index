@@ -83,6 +83,7 @@ export const es: Translation = {
     faceHint: 'La escena ya está. La cara se toma con la misma cámara —puedes cambiarla si quieres.',
     faceFallback: 'La cámara frontal no respondió. Toma la cara tú, con esta cámara.',
     swapPhotos: 'Intercambiar las dos fotos',
+    insetHint: 'Toca para intercambiar, arrastra para mover.',
     insetFace: 'tu cara',
     insetScene: 'la escena',
     noteLabel: 'Una nota (opcional)',
