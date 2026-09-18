@@ -336,18 +336,86 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 }
 .reaction:disabled { opacity: 0.45; cursor: default; transform: none; }
 
-.reaction-badge {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--pill);
+/* La réaction reçue : une pastille ronde à cheval sur le bas de la photo.
+   La marge négative la fait chevaucher l'image qui la précède — une phrase
+   entière à cet endroit pèserait plus lourd que la réaction elle-même. */
+.reaction-pill {
+  align-self: flex-end;
+  margin: -34px 14px -8px 0;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 2.5px solid var(--surface);
+  border-radius: 50%;
   background: var(--surface);
-  color: var(--text-muted);
-  align-self: flex-start;
+  box-shadow: 0 8px 20px rgba(64, 35, 16, 0.3);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.18s var(--ease);
 }
-.reaction-badge__emoji { font-size: 20px; line-height: 1; }
+.reaction-pill:hover { transform: scale(1.08); }
+.reaction-pill:active { transform: scale(0.94); }
+
+/* La réaction en grand. Au-dessus de `.fullscreen` (z-index 50), sinon elle
+   passerait sous le détail d'un jour depuis lequel on l'a ouverte. */
+.reaction-burst {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(26, 17, 16, 0.82);
+  animation: fade-in 0.2s var(--ease);
+  cursor: pointer;
+}
+.reaction-burst__sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.reaction-bubble {
+  position: absolute;
+  bottom: -70px;
+  left: var(--left);
+  font-size: var(--size);
+  line-height: 1;
+  animation: reaction-rise var(--duration) var(--delay) infinite cubic-bezier(0.32, 0.5, 0.45, 1);
+  will-change: transform, opacity;
+}
+@keyframes reaction-rise {
+  0% { transform: translate3d(0, 0, 0) scale(0.55); opacity: 0; }
+  12% { opacity: 1; }
+  70% { opacity: 0.9; }
+  100% { transform: translate3d(var(--drift), -102vh, 0) scale(1.1); opacity: 0; }
+}
+.reaction-burst__card {
+  position: relative;
+  align-items: center;
+  text-align: center;
+  color: #f3e7d6;
+  pointer-events: none;
+}
+.reaction-burst__card .btn { pointer-events: auto; }
+.reaction-burst__emoji { font-size: 84px; line-height: 1; }
+.reaction-burst__title {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.1;
+}
+/* Une pluie qui monte est exactement ce qu'on demande de ne pas imposer à qui
+   souffre du mouvement : le message, lui, reste entier. */
+@media (prefers-reduced-motion: reduce) {
+  .reaction-burst__sky { display: none; }
+  .reaction-burst { animation: none; }
+}
 
 .hero {
   border-radius: var(--radius);

@@ -171,6 +171,16 @@ geste. Les emoji sont volontairement d'avant Emoji 11 (2018) : un caractère
 trop récent s'affiche en carré vide sur un Android d'entrée de gamme, et une
 réaction illisible n'est pas une réaction.
 
+Côté écran, la réaction reçue tient dans une **pastille ronde**, à cheval sur
+le bas de la photo — pas dans une phrase. Une ligne de texte à cet endroit
+pèserait plus lourd que la réaction elle-même. L'appui ouvre l'emoji en grand,
+avec le nom, et une pluie de bulles qui monte du bas de l'écran : la réaction
+prend sa place quand on a décidé de la regarder, pas avant. Le champ de bulles
+est tiré **une seule fois** par ouverture (`bubbles()`, vérifié par
+`npm run checks`), sinon les emoji sauteraient d'un endroit à l'autre au
+premier changement d'état venu ; il disparaît sous `prefers-reduced-motion`,
+et le message, lui, reste entier.
+
 ### La photo se prend dans l'app, et elle est double
 
 `getUserMedia` uniquement, jamais de sélection depuis la galerie — c'est ce qui
