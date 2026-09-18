@@ -2,26 +2,33 @@
  * Géométrie de la vignette : où elle se pose, et jusqu'où elle peut aller.
  *
  * La vignette cache forcément un bout de la grande photo — c'est le prix du
- * cadre BeReal. On la rend donc déplaçable : au doigt, elle suit la main, et
- * au relâchement elle se range dans le coin le plus proche. Le collage aux
- * coins n'est pas une facilité d'implémentation, c'est ce qui garde le cadre
- * lisible : une vignette laissée au milieu masquerait le sujet, et une
- * vignette à moitié sortie ressemblerait à un bug.
+ * cadre BeReal. On la rend donc déplaçable, et elle **reste là où le doigt
+ * l'a laissée** : pas de rangement automatique dans un coin, c'est la personne
+ * qui décide de ce qu'elle veut découvrir et de ce qu'elle accepte de cacher.
+ *
+ * La seule contrainte gardée est le cadre lui-même : une vignette à moitié
+ * sortie de la photo ressemblerait à un bug, et une vignette lâchée hors de
+ * l'image serait perdue pour de bon.
+ *
+ * La position est mémorisée en **fraction du cadre**, jamais en pixels : une
+ * rotation d'écran ou un passage en grand change la taille de la photo, et des
+ * pixels d'hier n'y voudraient plus rien dire.
  *
  * Ce module ne dépend de rien (ni alias `@/`, ni `window`) : `npm run checks`
  * l'exécute directement sous Node.
  */
-export type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
-/** Un rectangle dans le repère du cadre. */
+/** Un rectangle dans le repère du cadre, en pixels. */
 export type Box = { x: number; y: number; width: number; height: number };
 
-/** Le cadre de la grande photo. */
+/** Le cadre de la grande photo, en pixels. */
 export type Frame = { width: number; height: number };
 
-/** Distance entre la vignette et le bord, en pixels. Vaut aussi en CSS. */
+/** Position du coin haut-gauche de la vignette, en fraction du cadre. */
+export type Spot = { x: number; y: number };
+
+/** Distance minimale entre la vignette et le bord, en pixels. Vaut aussi en CSS. */
 export const INSET_MARGIN = 12;
 
 /**
@@ -31,14 +38,8 @@ export const INSET_MARGIN = 12;
  */
 export const DRAG_THRESHOLD = 8;
 
-/** Le coin le plus proche du centre de la vignette. */
-export function nearestCorner(box: Box, frame: Frame): Corner {
-  const centerX = box.x + box.width / 2;
-  const centerY = box.y + box.height / 2;
-  const vertical = centerY < frame.height / 2 ? 'top' : 'bottom';
-  const horizontal = centerX < frame.width / 2 ? 'left' : 'right';
-  return `${vertical}-${horizontal}`;
-}
+/** Pas du clavier, en fraction du cadre. */
+export const NUDGE = 0.06;
 
 /**
  * Position gardée à l'intérieur du cadre, marge comprise. Sans ça, un doigt
@@ -61,10 +62,25 @@ export function clampToFrame(
   };
 }
 
-/** Coin voisin dans une direction — le déplacement au clavier. */
-export function moveCorner(corner: Corner, direction: Direction): Corner {
-  const [vertical, horizontal] = corner.split('-') as ['top' | 'bottom', 'left' | 'right'];
-  if (direction === 'up') return `top-${horizontal}`;
-  if (direction === 'down') return `bottom-${horizontal}`;
-  return `${vertical}-${direction}`;
+/**
+ * Pixels → fraction du cadre. Un cadre pas encore mesuré vaut zéro : mieux
+ * vaut la vignette à sa place de départ qu'une division par zéro propagée en
+ * `NaN` jusque dans le style.
+ */
+export function asFraction(x: number, y: number, frame: Frame): Spot {
+  return {
+    x: frame.width > 0 ? x / frame.width : 0,
+    y: frame.height > 0 ? y / frame.height : 0,
+  };
+}
+
+/** Déplacement demandé par une flèche du clavier, en pixels du cadre. */
+export function nudgeOffset(
+  direction: Direction,
+  frame: Frame,
+  step = NUDGE,
+): { dx: number; dy: number } {
+  const horizontal = direction === 'left' ? -1 : direction === 'right' ? 1 : 0;
+  const vertical = direction === 'up' ? -1 : direction === 'down' ? 1 : 0;
+  return { dx: horizontal * step * frame.width, dy: vertical * step * frame.height };
 }

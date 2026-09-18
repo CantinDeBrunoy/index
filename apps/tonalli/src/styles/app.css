@@ -519,13 +519,16 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 
 /* Les deux photos du même appui : la vignette se pose sur la grande. */
 .photo-pair { position: relative; }
-/* La vignette s'ancre dans un coin (`data-corner`, posé par React) et se
-   déplace au doigt entre les quatre. `--inset-margin` doit rester égal à
-   INSET_MARGIN de src/lib/inset.ts : c'est le même bord, calculé des deux
-   côtés — en CSS pour le repos, en JS pour la limite du glissement. */
+/* La vignette part en haut à gauche, puis se déplace au doigt et reste où on
+   la laisse (React pose alors `left`/`top` en pourcentage du cadre).
+   `--inset-margin` doit rester égal à INSET_MARGIN de src/lib/inset.ts :
+   c'est le même bord, calculé des deux côtés — en CSS pour la place de
+   départ, en JS pour la limite du glissement. */
 .photo-pair__inset {
   --inset-margin: 12px;
   position: absolute;
+  top: var(--inset-margin);
+  left: var(--inset-margin);
   width: 30%;
   min-width: 84px;
   padding: 0;
@@ -543,10 +546,6 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   -webkit-user-select: none;
   transition: transform 0.15s var(--ease);
 }
-.photo-pair__inset[data-corner='top-left'] { top: var(--inset-margin); left: var(--inset-margin); }
-.photo-pair__inset[data-corner='top-right'] { top: var(--inset-margin); right: var(--inset-margin); }
-.photo-pair__inset[data-corner='bottom-left'] { bottom: var(--inset-margin); left: var(--inset-margin); }
-.photo-pair__inset[data-corner='bottom-right'] { bottom: var(--inset-margin); right: var(--inset-margin); }
 .photo-pair__inset:hover { transform: scale(1.03); }
 .photo-pair__inset:active { transform: scale(0.98); }
 /* Pendant le geste, la vignette suit le doigt sans amortissement : une
