@@ -78,6 +78,51 @@ create table if not exists public.entries (
 create index if not exists entries_user_date_idx on public.entries (user_id, date desc);
 
 -- ---------------------------------------------------------------------------
+-- Réactions rapides
+-- Un emoji posé sur la journée du binôme, en un appui. Palette fermée, comme
+-- les émotions : le couple (clé, emoji) est référencé par clé étrangère, une
+-- réaction hors palette ne peut pas être écrite.
+-- ---------------------------------------------------------------------------
+create table if not exists public.reaction_emojis (
+  key        text primary key,
+  emoji      text not null,
+  sort_order integer not null,
+  unique (key, emoji)
+);
+
+insert into public.reaction_emojis (key, emoji, sort_order) values
+  ('heart',    '❤️', 1),
+  ('hug',      '🤗', 2),
+  ('laugh',    '😂', 3),
+  ('wow',      '😮', 4),
+  ('tender',   '🥺', 5),
+  ('strength', '💪', 6)
+on conflict (key) do update
+  set emoji = excluded.emoji, sort_order = excluded.sort_order;
+
+alter table public.reaction_emojis enable row level security;
+
+drop policy if exists "reaction_emojis_readable" on public.reaction_emojis;
+create policy "reaction_emojis_readable" on public.reaction_emojis
+  for select to authenticated using (true);
+
+-- La clé primaire (entry_id, author_id) dit tout : une personne, une journée,
+-- une réaction. Changer d'avis écrase la précédente ; la retirer supprime la
+-- ligne. Rien n'est conservé de l'historique : ce n'est pas un témoignage,
+-- c'est un geste.
+create table if not exists public.reactions (
+  entry_id   uuid not null references public.entries(id) on delete cascade,
+  author_id  uuid not null references public.profiles(id) on delete cascade,
+  key        text not null,
+  emoji      text not null,
+  created_at timestamptz not null default now(),
+  primary key (entry_id, author_id),
+  foreign key (key, emoji) references public.reaction_emojis (key, emoji)
+);
+
+create index if not exists reactions_entry_idx on public.reactions (entry_id);
+
+-- ---------------------------------------------------------------------------
 -- Fonctions utilitaires
 -- ---------------------------------------------------------------------------
 
@@ -350,6 +395,53 @@ drop policy if exists "entries_delete_own" on public.entries;
 create policy "entries_delete_own" on public.entries
   for delete to authenticated
   using (user_id = auth.uid());
+
+-- Réactions : le droit de réagir hérite du droit de voir, il ne l'élargit pas.
+--
+-- Lecture : les réactions posées sur une entrée que j'ai le droit de lire. La
+-- sous-requête repasse par la RLS de `entries`, qui porte déjà la réciprocité.
+-- Pas de récursion à craindre : la policy de `reactions` n'interroge pas
+-- `reactions`.
+alter table public.reactions enable row level security;
+
+drop policy if exists "reactions_select" on public.reactions;
+create policy "reactions_select" on public.reactions
+  for select to authenticated
+  using (exists (select 1 from public.entries e where e.id = reactions.entry_id));
+
+-- Écriture : uniquement mes réactions, et uniquement sur une journée du
+-- binôme. Le `exists` filtre deux fois — par la RLS de `entries` (donc par la
+-- réciprocité) et par `partner_of`, qui interdit de réagir à sa propre
+-- journée.
+drop policy if exists "reactions_insert" on public.reactions;
+create policy "reactions_insert" on public.reactions
+  for insert to authenticated
+  with check (
+    author_id = auth.uid()
+    and exists (
+      select 1 from public.entries e
+       where e.id = reactions.entry_id
+         and e.user_id = public.partner_of(auth.uid())
+    )
+  );
+
+drop policy if exists "reactions_update_own" on public.reactions;
+create policy "reactions_update_own" on public.reactions
+  for update to authenticated
+  using (author_id = auth.uid())
+  with check (
+    author_id = auth.uid()
+    and exists (
+      select 1 from public.entries e
+       where e.id = reactions.entry_id
+         and e.user_id = public.partner_of(auth.uid())
+    )
+  );
+
+drop policy if exists "reactions_delete_own" on public.reactions;
+create policy "reactions_delete_own" on public.reactions
+  for delete to authenticated
+  using (author_id = auth.uid());
 
 -- ---------------------------------------------------------------------------
 -- Stockage des photos : bucket privé, URLs signées côté client.

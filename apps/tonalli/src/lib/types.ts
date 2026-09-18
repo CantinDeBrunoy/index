@@ -32,3 +32,18 @@ export type EntryMap = Record<string, Entry>;
 
 /** Une journée du binôme qu'on sait exister sans avoir le droit de la lire. */
 export type PartnerDay = { date: string; hidden: true };
+
+/**
+ * Un emoji posé sur la journée de l'autre. Une seule par personne et par
+ * journée : la clé primaire en base est (entry_id, author_id).
+ */
+export type Reaction = {
+  entry_id: string;
+  author_id: string;
+  key: string;
+  emoji: string;
+  created_at: string;
+};
+
+/** Réactions indexées par identifiant d'entrée. */
+export type ReactionMap = Record<string, Reaction>;

@@ -119,6 +119,22 @@ export const es: Translation = {
     noPartner: 'Nadie vinculado.',
     photoMissing: 'Foto no disponible.',
   },
+  reactions: {
+    label: 'Reaccionar a su día',
+    hint: 'Con un toque basta para responderle.',
+    remove: 'Toca el mismo para quitar tu reacción.',
+    failed: 'La reacción no se envió. Inténtalo de nuevo.',
+    offline: 'Sin conexión: no se puede reaccionar por ahora.',
+    received: '{{name}} ha reaccionado: {{reaction}}',
+    names: {
+      heart: 'Corazón',
+      hug: 'Abrazo',
+      laugh: 'Risa',
+      wow: 'Sorpresa',
+      tender: 'Ternura',
+      strength: 'Ánimo',
+    },
+  },
   settings: {
     title: 'Ajustes',
     account: 'Cuenta',

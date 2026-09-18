@@ -21,6 +21,9 @@ import {
   yearMonthOfKey,
 } from '../src/lib/dates.ts';
 import { coverCrop, isDenial, openCamera } from '../src/lib/camera.ts';
+import { REACTIONS, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
+import { fr } from '../src/locales/fr.ts';
+import { es } from '../src/locales/es.ts';
 import {
   EMOTIONS,
   MIN_TEXT_CONTRAST,
@@ -329,6 +332,31 @@ console.log('\nCaméra — cadrage de la prise');
       Math.abs(crop.width / crop.height - 3 / 4) < 0.002,
       (crop.width / crop.height).toFixed(4),
     );
+  }
+}
+
+console.log('Réactions rapides — palette fermée');
+{
+  // La palette vit aussi en base, derrière une clé étrangère (key, emoji).
+  // Ajouter un emoji ici sans jouer la migration donnerait une réaction que le
+  // serveur refuse : c'est le genre d'écart qu'on veut voir tôt.
+  const keys = REACTIONS.map((reaction) => reaction.key);
+  const emojis = REACTIONS.map((reaction) => reaction.emoji);
+  check('les clés sont uniques', new Set(keys).size === keys.length);
+  check('les emoji sont uniques', new Set(emojis).size === emojis.length);
+  check('la palette tient sur une rangée', REACTIONS.length <= 6, String(REACTIONS.length));
+
+  check('emojiOf rend l\'emoji de la clé', emojiOf('heart') === '❤️', String(emojiOf('heart')));
+  check('une clé inconnue ne rend rien', emojiOf('shrug') === null);
+  check('isReactionKey reconnaît la palette', keys.every(isReactionKey));
+  check('isReactionKey rejette le reste', !isReactionKey('shrug') && !isReactionKey(null));
+
+  // Un emoji sans libellé, c'est un bouton que rien n'annonce au lecteur
+  // d'écran. Le typage garantit que fr et es ont les mêmes clés, pas qu'elles
+  // couvrent la palette.
+  for (const key of keys) {
+    check(`« ${key} » a un libellé français`, Boolean((fr.reactions.names as Record<string, string>)[key]), key);
+    check(`« ${key} » a un libellé espagnol`, Boolean((es.reactions.names as Record<string, string>)[key]), key);
   }
 }
 

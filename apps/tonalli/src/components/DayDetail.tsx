@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { EntryPhotos } from '@/components/PhotoPair';
+import { DayReactions } from '@/components/Reactions';
 import { formatLongDate } from '@/lib/dates';
 import { readableTextOn } from '@/lib/emotions';
 import type { Entry } from '@/lib/types';
@@ -47,6 +48,7 @@ export function DayDetail({ date, entry, hidden, onClose }: Props) {
             </div>
             <EntryPhotos entry={entry} alt={t(`emotions.${entry.emotion}`)} />
             {entry.note ? <p>{entry.note}</p> : null}
+            <DayReactions entry={entry} />
           </>
         ) : hidden ? (
           <div className="hero hero--empty stack-sm">
