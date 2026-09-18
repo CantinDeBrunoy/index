@@ -2,8 +2,8 @@ import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { PhotoImage } from '@/components/PhotoImage';
-import { DRAG_THRESHOLD, clampToFrame, moveCorner, nearestCorner } from '@/lib/inset';
-import type { Box, Corner, Direction, Frame } from '@/lib/inset';
+import { DRAG_THRESHOLD, asFraction, clampToFrame, nudgeOffset } from '@/lib/inset';
+import type { Box, Direction, Frame, Spot } from '@/lib/inset';
 import type { Entry } from '@/lib/types';
 import { useI18n } from '@/state/I18nProvider';
 
@@ -33,8 +33,9 @@ type Drag = {
  *
  * La vignette se **déplace au doigt** : elle masque forcément un coin de la
  * grande photo, et c'est parfois précisément là qu'il y a quelque chose à
- * voir. Au relâchement elle se range dans le coin le plus proche — elle ne
- * reste jamais au milieu du sujet ni à cheval sur un bord.
+ * voir. Elle reste exactement là où le doigt l'a laissée — rien ne la range
+ * dans un angle, c'est la personne qui décide de ce qu'elle cache. La seule
+ * limite est le cadre : elle ne sort pas de la photo.
  *
  * Une journée d'avant la double photo, ou prise sur un appareil à une seule
  * caméra, n'a pas de vignette : on affiche alors la photo seule, sans cadre
@@ -43,8 +44,9 @@ type Drag = {
 export function PhotoPair({ main, inset }: { main: ReactNode; inset: ReactNode | null }) {
   const { t } = useI18n();
   const [swapped, setSwapped] = useState(false);
-  const [corner, setCorner] = useState<Corner>('top-left');
-  /** Décalage appliqué pendant le geste, relatif au coin d'ancrage. */
+  /** Position choisie, en fraction du cadre. `null` = la place de départ. */
+  const [spot, setSpot] = useState<Spot | null>(null);
+  /** Décalage appliqué pendant le geste, relatif à la position de départ. */
   const [offset, setOffset] = useState<{ x: number; y: number } | null>(null);
 
   const frameRef = useRef<HTMLDivElement>(null);
@@ -107,19 +109,37 @@ export function PhotoPair({ main, inset }: { main: ReactNode; inset: ReactNode |
 
     if (drag.moved) {
       draggedRef.current = true;
-      setCorner(nearestCorner({ ...drag.box, ...drag.placed }, drag.frame));
+      setSpot(asFraction(drag.placed.x, drag.placed.y, drag.frame));
     }
     if (insetRef.current?.hasPointerCapture(event.pointerId)) {
       insetRef.current.releasePointerCapture(event.pointerId);
     }
   };
 
-  // Le clavier n'a pas de doigt : les flèches font le même déplacement.
+  // Le clavier n'a pas de doigt : les flèches déplacent d'un pas. On repart de
+  // la position réellement affichée, mesurée, plutôt que d'un état — c'est la
+  // seule façon de partir juste quand la vignette est encore à sa place de
+  // départ, qui vient de la feuille de style.
   const onKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    const direction = ARROWS[event.key];
+    const direction: Direction | undefined = ARROWS[event.key];
     if (!direction) return;
     event.preventDefault();
-    setCorner((current) => moveCorner(current, direction));
+
+    const frameElement = frameRef.current;
+    const element = insetRef.current;
+    if (!frameElement || !element) return;
+
+    const frameRect = frameElement.getBoundingClientRect();
+    const insetRect = element.getBoundingClientRect();
+    const frame: Frame = { width: frameRect.width, height: frameRect.height };
+    const { dx, dy } = nudgeOffset(direction, frame);
+    const placed = clampToFrame(
+      insetRect.left - frameRect.left + dx,
+      insetRect.top - frameRect.top + dy,
+      insetRect,
+      frame,
+    );
+    setSpot(asFraction(placed.x, placed.y, frame));
   };
 
   return (
@@ -129,9 +149,11 @@ export function PhotoPair({ main, inset }: { main: ReactNode; inset: ReactNode |
         type="button"
         ref={insetRef}
         className="photo-pair__inset"
-        data-corner={corner}
         data-dragging={offset !== null}
-        style={offset ? { transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` } : undefined}
+        style={{
+          ...(spot ? { left: `${spot.x * 100}%`, top: `${spot.y * 100}%` } : null),
+          ...(offset ? { transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` } : null),
+        }}
         // Une image est nativement « déplaçable » : au premier mouvement, le
         // navigateur démarre son propre glisser-déposer et coupe le nôtre par
         // un `pointercancel`. La vignette ne bougeait pas d'un pixel, sans la

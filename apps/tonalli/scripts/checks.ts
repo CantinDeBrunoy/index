@@ -22,7 +22,7 @@ import {
 } from '../src/lib/dates.ts';
 import { coverCrop, isDenial, openCamera } from '../src/lib/camera.ts';
 import { BUBBLE_COUNT, REACTIONS, bubbles, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
-import { INSET_MARGIN, clampToFrame, moveCorner, nearestCorner } from '../src/lib/inset.ts';
+import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
 import { fr } from '../src/locales/fr.ts';
 import { es } from '../src/locales/es.ts';
 import {
@@ -388,22 +388,18 @@ console.log('Réactions — la pluie de bulles');
   check('un champ vide reste vide', bubbles(0, Math.random).length === 0);
 }
 
-console.log('Vignette — glissement et collage aux coins');
+console.log('Vignette — déplacement libre');
 {
   // Cadre d'une photo en portrait 3/4 sur un téléphone, vignette à 30 %.
   const frame = { width: 360, height: 480 };
   const size = { width: 108, height: 144 };
-  const at = (x: number, y: number) => ({ x, y, ...size });
 
-  check('en haut à gauche', nearestCorner(at(12, 12), frame) === 'top-left');
-  check('en haut à droite', nearestCorner(at(240, 12), frame) === 'top-right');
-  check('en bas à gauche', nearestCorner(at(12, 324), frame) === 'bottom-left');
-  check('en bas à droite', nearestCorner(at(240, 324), frame) === 'bottom-right');
-
-  // Une vignette lâchée au centre doit rejoindre un coin, pas y rester : le
-  // centre géométrique bascule d'un coin à l'autre, jamais entre les deux.
-  const middle = nearestCorner(at(126, 168), frame);
-  check('le milieu retombe dans un coin', ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(middle), middle);
+  // La vignette reste où le doigt l'a laissée : aucune position valable n'est
+  // corrigée, pas même celle du milieu — c'est tout le sujet.
+  const middle = clampToFrame(126, 168, size, frame);
+  check('le milieu est une position comme une autre', middle.x === 126 && middle.y === 168, JSON.stringify(middle));
+  const offCentre = clampToFrame(80, 200, size, frame);
+  check('une position valable est laissée telle quelle', offCentre.x === 80 && offCentre.y === 200, JSON.stringify(offCentre));
 
   // Le doigt sort de la photo : la vignette reste dedans, marge comprise.
   const farOut = clampToFrame(-500, -500, size, frame);
@@ -414,20 +410,26 @@ console.log('Vignette — glissement et collage aux coins');
     farAway.x === frame.width - size.width - INSET_MARGIN && farAway.y === frame.height - size.height - INSET_MARGIN,
     JSON.stringify(farAway),
   );
-  const inside = clampToFrame(80, 200, size, frame);
-  check('une position valable est laissée telle quelle', inside.x === 80 && inside.y === 200, JSON.stringify(inside));
 
   // Cas dégénéré : une vignette plus grande que son cadre ne doit pas produire
   // de borne croisée, sinon la position partirait à l'envers.
   const tight = clampToFrame(0, 0, { width: 400, height: 600 }, frame);
   check('un cadre trop petit ne croise pas ses bornes', tight.x === INSET_MARGIN && tight.y === INSET_MARGIN, JSON.stringify(tight));
 
-  // Au clavier, une direction ne change qu'un axe : la vignette longe les
-  // bords au lieu de sauter en diagonale.
-  check('flèche droite', moveCorner('top-left', 'right') === 'top-right');
-  check('flèche bas', moveCorner('top-left', 'down') === 'bottom-left');
-  check('flèche gauche depuis la droite', moveCorner('bottom-right', 'left') === 'bottom-left');
-  check('une direction déjà atteinte ne bouge pas', moveCorner('top-left', 'up') === 'top-left');
+  // La position est gardée en fraction du cadre : une rotation d'écran change
+  // la taille de la photo, des pixels d'hier n'y voudraient plus rien dire.
+  const spot = asFraction(90, 240, frame);
+  check('fraction horizontale', Math.abs(spot.x - 0.25) < 1e-9, String(spot.x));
+  check('fraction verticale', Math.abs(spot.y - 0.5) < 1e-9, String(spot.y));
+  const unmeasured = asFraction(90, 240, { width: 0, height: 0 });
+  check('un cadre pas encore mesuré ne rend pas NaN', unmeasured.x === 0 && unmeasured.y === 0, JSON.stringify(unmeasured));
+
+  // Au clavier, une flèche ne déplace que sur son axe.
+  const right = nudgeOffset('right', frame);
+  check('flèche droite', right.dx === NUDGE * frame.width && right.dy === 0, JSON.stringify(right));
+  const up = nudgeOffset('up', frame);
+  check('flèche haut', up.dy === -NUDGE * frame.height && up.dx === 0, JSON.stringify(up));
+  check('le pas reste petit', NUDGE > 0 && NUDGE <= 0.1, String(NUDGE));
 }
 
 if (failures > 0) {

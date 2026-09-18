@@ -225,16 +225,27 @@ Corollaire de code : le côté réellement à l'écran vit aussi dans une *ref*
 (`shownRef`). Une fonction asynchrone qui lit l'état du rendu voit la caméra
 d'avant la bascule, et déciderait de ne rien rouvrir.
 
-**La vignette se déplace au doigt.** Le cadre BeReal a un défaut inévitable :
-la petite photo cache un coin de la grande, et c'est parfois là qu'il y a
-quelque chose à voir. On la fait donc glisser, et au relâchement elle se range
-dans le coin le plus proche — jamais au milieu du sujet, jamais à cheval sur un
-bord. Le calcul est dans `src/lib/inset.ts`, vérifié par `npm run checks` ; la
-marge y vaut `INSET_MARGIN` et doit rester égale au `--inset-margin` de la
-feuille de style, sinon le repos et la limite du glissement ne parlent plus du
-même bord. Un appui sec continue d'intervertir les deux photos : c'est le
-déplacement qui distingue les deux gestes, au-delà de `DRAG_THRESHOLD`. Les
-flèches du clavier font le même déplacement, un axe à la fois.
+**La vignette se déplace au doigt, et reste où on la laisse.** Le cadre BeReal
+a un défaut inévitable : la petite photo cache un coin de la grande, et c'est
+parfois là qu'il y a quelque chose à voir. On la fait donc glisser, et elle se
+pose exactement là où le doigt s'arrête — **aucun rangement dans un angle**.
+C'est la personne qui décide de ce qu'elle veut découvrir et de ce qu'elle
+accepte de cacher ; la remettre d'autorité dans un coin reviendrait à défaire
+son geste sous ses yeux.
+
+La seule limite gardée est le cadre lui-même : une vignette à moitié sortie
+ressemblerait à un bug, et lâchée hors de l'image elle serait perdue. Le calcul
+est dans `src/lib/inset.ts`, vérifié par `npm run checks` ; la marge y vaut
+`INSET_MARGIN` et doit rester égale au `--inset-margin` de la feuille de style,
+sinon la place de départ et la limite du glissement ne parlent plus du même
+bord.
+
+La position est mémorisée **en fraction du cadre**, jamais en pixels : une
+rotation d'écran change la taille de la photo, et des pixels d'hier n'y
+voudraient plus rien dire. Un appui sec continue d'intervertir les deux photos,
+sans déplacer la vignette : c'est le mouvement qui distingue les deux gestes,
+au-delà de `DRAG_THRESHOLD`. Les flèches du clavier déplacent d'un pas
+(`NUDGE`), un axe à la fois.
 
 Corollaire de code : la vignette **coupe la propagation des événements
 tactiles**. L'écran « Aujourd'hui » change de panneau sur un glissement
