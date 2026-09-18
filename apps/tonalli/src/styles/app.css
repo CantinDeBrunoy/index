@@ -362,7 +362,10 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 .reaction-pill:active { transform: scale(0.94); }
 
 /* La réaction en grand. Au-dessus de `.fullscreen` (z-index 50), sinon elle
-   passerait sous le détail d'un jour depuis lequel on l'a ouverte. */
+   passerait sous le détail d'un jour depuis lequel on l'a ouverte.
+   `--burst` vient de React (BURST_MS) : une seule durée pour l'animation et
+   pour le minuteur qui la démonte, sinon l'écran s'éteindrait avant la fin de
+   la pluie — ou traînerait après. */
 .reaction-burst {
   position: fixed;
   inset: 0;
@@ -371,8 +374,16 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   place-items: center;
   padding: 24px;
   background: rgba(26, 17, 16, 0.82);
-  animation: fade-in 0.2s var(--ease);
+  animation: reaction-burst-life var(--burst) linear forwards;
   cursor: pointer;
+}
+/* L'opacité de base vaut 1 : sous `prefers-reduced-motion`, l'animation est
+   coupée et l'écran doit rester visible jusqu'à ce que le minuteur l'enlève. */
+@keyframes reaction-burst-life {
+  0% { opacity: 0; }
+  6% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
 }
 .reaction-burst__sky {
   position: absolute;
@@ -386,7 +397,10 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   left: var(--left);
   font-size: var(--size);
   line-height: 1;
-  animation: reaction-rise var(--duration) var(--delay) infinite cubic-bezier(0.32, 0.5, 0.45, 1);
+  /* Une seule montée, puis la bulle reste à son état final — invisible. Une
+     boucle rendrait la fin de la fête impossible à caler. */
+  animation: reaction-rise var(--duration) var(--delay) forwards cubic-bezier(0.32, 0.5, 0.45, 1);
+  opacity: 0;
   will-change: transform, opacity;
 }
 @keyframes reaction-rise {

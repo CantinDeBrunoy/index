@@ -51,7 +51,19 @@ export type Bubble = {
 };
 
 /** Assez pour faire une pluie, pas assez pour faire ramer un vieux téléphone. */
-export const BUBBLE_COUNT = 18;
+export const BUBBLE_COUNT = 24;
+
+/**
+ * Durée de la réaction en grand, en millisecondes. Elle s'efface toute seule :
+ * c'est une fête, pas une boîte de dialogue — demander de fermer une
+ * célébration de quatre secondes serait lui donner plus d'importance qu'elle
+ * n'en demande.
+ *
+ * Les bornes de `bubbles()` sont calées dessus : la bulle la plus tardive
+ * atteint exactement cette durée, aucune n'est coupée en vol. `npm run checks`
+ * le vérifie — c'est le genre d'écart qu'on ne voit pas à l'œil.
+ */
+export const BURST_MS = 3800;
 
 /**
  * Le champ de bulles : des départs, des retards et des vitesses différents,
@@ -67,8 +79,8 @@ export function bubbles(count: number, random: () => number): Bubble[] {
   for (let index = 0; index < count; index += 1) {
     field.push({
       left: Math.round(random() * 100),
-      delay: Math.round(random() * 2600) / 1000,
-      duration: 2.6 + Math.round(random() * 2200) / 1000,
+      delay: Math.round(random() * 1000) / 1000,
+      duration: 1.8 + Math.round(random() * 1000) / 1000,
       size: 22 + Math.round(random() * 26),
       drift: Math.round((random() - 0.5) * 120),
     });

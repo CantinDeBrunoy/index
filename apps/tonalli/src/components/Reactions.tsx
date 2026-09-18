@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { BUBBLE_COUNT, REACTIONS, bubbles } from '@/lib/reactions';
+import { BUBBLE_COUNT, BURST_MS, REACTIONS, bubbles } from '@/lib/reactions';
 import type { Entry } from '@/lib/types';
 import { useAuth } from '@/state/AuthProvider';
 import { useEntries } from '@/state/EntriesProvider';
@@ -80,14 +80,19 @@ export function QuickReactions({ entry }: { entry: Entry | null }) {
  * sur le bas de la photo, rien de plus. Une phrase entière à cet endroit
  * pèserait plus lourd que la réaction elle-même.
  *
- * L'appui ouvre l'emoji en grand, avec son nom et une pluie de bulles : c'est
- * là que la réaction prend sa place, quand on a décidé de la regarder.
+ * L'appui ouvre l'emoji en grand, avec le nom et une pluie de bulles : c'est
+ * là que la réaction prend sa place, quand on a décidé de la regarder. Et
+ * elle s'efface toute seule au bout de quelques secondes.
  */
 export function ReceivedReaction({ entry }: { entry: Entry | null }) {
   const { t } = useI18n();
   const { profile, partner } = useAuth();
   const { theirReactions } = useEntries();
   const [open, setOpen] = useState(false);
+  // Référence stable : sans elle, le moindre nouveau rendu du parent (le
+  // sondage des entrées passe toutes les 60 s) relancerait le compte à rebours
+  // de la fête, qui ne s'effacerait jamais.
+  const close = useCallback(() => setOpen(false), []);
 
   const mine = entry && profile ? entry.user_id === profile.id : false;
   const reaction = mine && entry ? theirReactions[entry.id] : undefined;
@@ -105,11 +110,7 @@ export function ReceivedReaction({ entry }: { entry: Entry | null }) {
         <span aria-hidden>{reaction.emoji}</span>
       </button>
       {open ? (
-        <ReactionBurst
-          emoji={reaction.emoji}
-          title={t('reactions.received', { name })}
-          onClose={() => setOpen(false)}
-        />
+        <ReactionBurst emoji={reaction.emoji} title={t('reactions.received', { name })} onClose={close} />
       ) : null}
     </>
   );
@@ -117,11 +118,16 @@ export function ReceivedReaction({ entry }: { entry: Entry | null }) {
 
 /**
  * La réaction en grand : le nom de la personne, et l'emoji qui monte du bas
- * de l'écran en s'effaçant.
+ * de l'écran en s'effaçant. Le tout dure `BURST_MS` et s'en va tout seul —
+ * un appui l'écourte, mais rien n'oblige à s'en occuper.
  *
  * Le champ de bulles est tiré **une seule fois** : un nouveau tirage à chaque
  * rendu ferait sauter les emoji d'un endroit à l'autre au premier changement
  * d'état venu.
+ *
+ * Ce n'est volontairement pas une boîte de dialogue : rien à fermer, rien à
+ * décider, donc pas de `role="dialog"` qui retiendrait le focus le temps
+ * d'une célébration de quatre secondes.
  */
 function ReactionBurst({
   emoji,
@@ -132,19 +138,28 @@ function ReactionBurst({
   title: string;
   onClose: () => void;
 }) {
-  const { t } = useI18n();
   const field = useMemo(() => bubbles(BUBBLE_COUNT, Math.random), []);
 
   useEffect(() => {
+    const timer = window.setTimeout(onClose, BURST_MS);
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [onClose]);
 
   return (
-    <div className="reaction-burst" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
+    <div
+      className="reaction-burst"
+      role="status"
+      aria-live="polite"
+      style={{ '--burst': `${BURST_MS}ms` } as React.CSSProperties}
+      onClick={onClose}
+    >
       <div className="reaction-burst__sky" aria-hidden>
         {field.map((bubble, index) => (
           <span
@@ -169,9 +184,6 @@ function ReactionBurst({
           {emoji}
         </span>
         <strong className="reaction-burst__title">{title}</strong>
-        <button type="button" className="btn" onClick={onClose}>
-          {t('common.close')}
-        </button>
       </div>
     </div>
   );
