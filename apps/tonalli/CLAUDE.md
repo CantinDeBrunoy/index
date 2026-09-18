@@ -14,8 +14,10 @@ aussi le jour, la chaleur du soleil.
 Deux personnes liées entre elles (un binôme, souvent à distance) enregistrent
 chaque jour **une émotion, qui est une couleur, et deux photos prises sur le
 moment** — la scène et le visage, au même appui. Chacun voit le calendrier de l'autre, mais seulement après avoir
-rempli le sien. C'est un rituel quotidien partagé, pas un réseau social : pas de
-fil, pas de likes, pas de découverte, pas de troisième personne.
+rempli le sien, et peut y poser **un emoji d'une palette fermée** — la seule
+chose qu'on puisse faire sur la journée de l'autre. C'est un rituel quotidien
+partagé, pas un réseau social : pas de fil, pas de commentaires, pas de
+découverte, pas de troisième personne.
 
 Le projet a d'abord été une app mobile Expo (visible dans l'historique git sous
 le nom « Nuancier »), puis a basculé en site web quand il est apparu qu'il ne
@@ -43,7 +45,7 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run dev` | serveur de développement |
 | `npm run build` | `tsc -b && vite build` — c'est le build de production |
 | `npm run typecheck` | typage seul |
-| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, émotions, choix de l'objectif) |
+| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, émotions, réactions, choix de l'objectif) |
 | `npm run lint` | oxlint |
 
 **La caméra exige HTTPS** — elle fonctionne sur `localhost`, sinon il faut un
@@ -77,6 +79,7 @@ src/
   lib/
     dates.ts           TOUT le raisonnement calendaire et les fuseaux
     emotions.ts        les 12 couples (clé, couleur) + contraste du texte
+    reactions.ts       les 6 couples (clé, emoji) de l'action rapide
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -94,7 +97,7 @@ src/
     Today              les deux panneaux (ma journée / sa journée) + composeur
     CalendarScreens    mois, mosaïque année, répartition — mien et du binôme
     Settings           binôme, langue, rappel, compte, données
-  components/          grilles, caméra, cellules, feuilles, états
+  components/          grilles, caméra, cellules, feuilles, réactions, états
   locales/             fr.ts fait foi ; es.ts est typé d'après lui
 supabase/
   migrations/          0001 → 0005, à jouer dans l'ordre
@@ -150,6 +153,22 @@ témoignage.
 a une clé étrangère `(emotion, color) → emotions (key, color)`. Une couleur qui
 ne correspond pas à son émotion ne peut littéralement pas être écrite. Les
 libellés FR/ES restent dans les fichiers de traduction, pas en base.
+
+### Réagir ne donne rien de plus que voir
+
+L'action rapide — un emoji posé sur la journée du binôme — n'ouvre aucune porte
+nouvelle. La policy d'écriture de `reactions` exige que la ligne visée soit une
+entrée **du binôme** et que `entries` me la laisse déjà lire ; la réciprocité
+tient donc sans être réécrite, et une journée masquée le reste. Corollaire :
+on ne réagit pas à sa propre journée, et la palette est fermée comme celle des
+émotions — le couple (clé, emoji) vit en base derrière une clé étrangère.
+
+Une seule réaction par personne et par journée : la clé primaire est
+`(entry_id, author_id)`. Changer d'avis écrase, le même emoji deux fois retire.
+Rien n'est conservé de l'historique — ce n'est pas un témoignage, c'est un
+geste. Les emoji sont volontairement d'avant Emoji 11 (2018) : un caractère
+trop récent s'affiche en carré vide sur un Android d'entrée de gamme, et une
+réaction illisible n'est pas une réaction.
 
 ### La photo se prend dans l'app, et elle est double
 
@@ -218,6 +237,8 @@ pour un binôme.
 | `emotions` | les 12 couples (clé, couleur), figés, référencés par clé étrangère |
 | `profiles` | nom, langue, **fuseau**, `partner_id` (unique), code d'invitation, jeton push, réglages de rappel |
 | `entries` | une ligne par personne et par jour : `unique (user_id, date)`, deux chemins de photo (`photo_path`, `selfie_path`) |
+| `reaction_emojis` | les 6 couples (clé, emoji) de l'action rapide, figés, référencés par clé étrangère |
+| `reactions` | un emoji posé sur la journée du binôme : clé primaire `(entry_id, author_id)` |
 
 Bucket Storage **privé** `entries`, chemins `<user_id>/<YYYY-MM-DD>.jpg` pour la
 scène et `<user_id>/<YYYY-MM-DD>-selfie.jpg` pour le visage, lus par URL signée
@@ -255,8 +276,9 @@ les rejouer ne casse rien.
 | `0004_storage_owner_access.sql` | droits d'écrasement et de relecture des photos |
 | `0005_edit_today.sql` | correction de la journée du jour |
 | `0006_dual_photos.sql` | colonne `selfie_path` et lecture de la seconde photo |
+| `0007_reactions.sql` | `reaction_emojis`, `reactions` et leurs policies |
 
-Les migrations 0003 à 0006 sont des **rattrapages** : leur contenu est déjà
+Les migrations 0003 à 0007 sont des **rattrapages** : leur contenu est déjà
 intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
 
 ---
@@ -320,7 +342,7 @@ cher :
 
 **1. `npm run checks`** — fonctions pures, exécutées par Node avec
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
-(`dates.ts`, `emotions.ts`, `camera.ts`) ne doivent contenir **aucun import**
+(`dates.ts`, `emotions.ts`, `reactions.ts`, `camera.ts`) ne doivent contenir **aucun import**
 vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
 n'existe pas là-bas. Les garder sans dépendances. Le choix de l'objectif s'y
 vérifie contre un faux `navigator.mediaDevices` qui rejoue les manies d'un
@@ -450,6 +472,12 @@ Par ordre d'importance :
   21:50 ne déclencherait jamais. Les pas de 30 min de l'interface l'évitent, mais
   le calcul devrait se faire en minutes depuis minuit.
 - **Modifier son prénom** après l'inscription : aucun écran ne le permet.
+- **Notifier une réaction.** `notify-partner` est branchée sur l'`INSERT` dans
+  `entries` : une réaction posée n'envoie donc rien, elle se découvre au
+  prochain sondage. Il faudrait un second Database Webhook sur `reactions`.
+- **Réaction hors ligne.** La file d'attente ne porte que la journée du jour :
+  sans réseau, les boutons de réaction sont désactivés plutôt que de promettre
+  un envoi différé.
 - **Dévoilement en direct.** L'entrée du binôme arrive par sondage toutes les
   60 s ; le Realtime de Supabase le rendrait instantané.
 - **File d'attente hors ligne.** Une seule journée en attente, les deux photos

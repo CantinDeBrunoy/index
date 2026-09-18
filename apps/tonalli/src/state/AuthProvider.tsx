@@ -210,6 +210,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { error } = await supabase.from('entries').delete().eq('user_id', profile.id);
     if (error) throw new Error(error.message);
+
+    // Les réactions reçues partent avec mes entrées (cascade), mais celles que
+    // j'ai posées chez le binôme vivent sur ses lignes à lui : elles ne
+    // disparaissent que si on les supprime explicitement.
+    const { error: reactionsError } = await supabase
+      .from('reactions')
+      .delete()
+      .eq('author_id', profile.id);
+    if (reactionsError) throw new Error(reactionsError.message);
     clearCache(profile.id);
   }, [profile]);
 

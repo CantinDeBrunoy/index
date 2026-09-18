@@ -120,6 +120,22 @@ export const fr = {
     noPartner: 'Aucun binôme lié.',
     photoMissing: 'Photo indisponible.',
   },
+  reactions: {
+    label: 'Réagir à sa journée',
+    hint: 'Un appui suffit pour lui répondre.',
+    remove: 'Appuie sur le même pour retirer ta réaction.',
+    failed: "La réaction n'est pas partie. Réessaie.",
+    offline: 'Hors ligne : impossible de réagir pour le moment.',
+    received: '{{name}} a réagi : {{reaction}}',
+    names: {
+      heart: 'Cœur',
+      hug: 'Câlin',
+      laugh: 'Rire',
+      wow: 'Surprise',
+      tender: 'Tendresse',
+      strength: 'Courage',
+    },
+  },
   settings: {
     title: 'Réglages',
     account: 'Compte',
