@@ -330,8 +330,27 @@ Variables chez l'hébergeur : `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
 `VITE_VAPID_PUBLIC_KEY`. Elles sont lues **au moment du build** — après les
 avoir modifiées il faut redéployer, recharger la page ne suffit pas.
 
-Le développement se fait sur `claude/nuancier-mobile-app-7buvk1`, fusionnée dans
-`main` par un merge sans avance rapide. Vercel déploie `main`.
+### Le développement ne sort pas tout seul de sa branche
+
+Le travail se fait sur une branche `claude/…`, jamais directement sur `main`.
+Et **Vercel ne déploie que `main`** : tant que la branche n'y est pas fusionnée,
+la fonctionnalité n'existe pour personne, migration jouée ou non. Le site
+continue de servir la version d'avant, sans rien signaler — c'est une confusion
+qui a déjà coûté un aller-retour (« j'ai fait la migration, j'ai rien »).
+
+Donc : **à la fin de chaque développement, proposer la fusion**, sans attendre
+qu'on la demande. Le merge se fait sans avance rapide (`git merge --no-ff`),
+pour que l'historique garde chaque fonctionnalité comme un bloc lisible.
+
+Pousser sur `main`, c'est mettre en production : ça demande un accord explicite
+à chaque fois, jamais de sa propre initiative. En proposant, dire ce qui reste à
+faire à la main pour que ça marche vraiment :
+
+- les **migrations** à jouer dans le SQL Editor, s'il y en a de nouvelles ;
+- les **variables d'hébergeur** à ajouter, s'il y en a — elles sont lues au
+  build, donc il faut redéployer après les avoir changées ;
+- le **rechargement forcé** si l'écran ne bouge pas (voir le service worker
+  dans les pièges).
 
 ---
 
@@ -442,6 +461,12 @@ traité comme une absence de caméra fait perdre la moitié du rituel.
 et cassait le rechargement à chaud. Il n'est enregistré qu'en production, et
 celui d'une session précédente est désinscrit au démarrage.
 
+**Service worker après un déploiement.** En production il fait son travail :
+il sert l'app depuis le cache. Un simple retour sur l'onglet peut donc montrer
+la version d'avant alors que le déploiement est passé. Fermer complètement
+l'onglet (ou l'icône de l'écran d'accueil) et rouvrir, ou forcer le
+rechargement. Avant de conclure qu'un déploiement a échoué, vérifier ça.
+
 **Confirmation d'e-mail.** Laisser « Confirm email » activé avec le serveur
 d'envoi intégré de Supabase donne un `email rate limit exceeded` au bout de
 deux ou trois inscriptions. Le désactiver pour les tests ; pour la production,
@@ -503,3 +528,5 @@ Par ordre d'importance :
   `import type`.
 - Toute modification touchant aux dates, à la RLS ou aux policies Storage se
   vérifie avec les trois filets de la section 9 avant d'être poussée.
+- Un développement se termine par une **proposition de fusion dans `main`**
+  (section 8) : sans elle, le travail reste invisible dans l'app.
