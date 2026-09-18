@@ -175,11 +175,27 @@ Côté écran, la réaction reçue tient dans une **pastille ronde**, à cheval 
 le bas de la photo — pas dans une phrase. Une ligne de texte à cet endroit
 pèserait plus lourd que la réaction elle-même. L'appui ouvre l'emoji en grand,
 avec le nom, et une pluie de bulles qui monte du bas de l'écran : la réaction
-prend sa place quand on a décidé de la regarder, pas avant. Le champ de bulles
-est tiré **une seule fois** par ouverture (`bubbles()`, vérifié par
-`npm run checks`), sinon les emoji sauteraient d'un endroit à l'autre au
-premier changement d'état venu ; il disparaît sous `prefers-reduced-motion`,
-et le message, lui, reste entier.
+prend sa place quand on a décidé de la regarder, pas avant.
+
+La fête **s'efface toute seule** au bout de `BURST_MS`. Ce n'est pas une boîte
+de dialogue : rien à fermer, rien à décider, donc pas de `role="dialog"` qui
+retiendrait le focus le temps de quatre secondes. Un appui l'écourte, mais
+personne n'est obligé de s'en occuper.
+
+Une seule durée pilote les deux côtés — l'animation par la variable `--burst`,
+et le minuteur qui démonte l'écran — sinon la fête s'éteindrait avant la fin de
+la pluie, ou traînerait après. Les bornes de `bubbles()` sont calées dessus :
+la bulle la plus tardive finit pile à la fin, et `npm run checks` échoue si une
+modification laisse une bulle coupée en vol ou un battement à vide.
+
+Le champ de bulles est tiré **une seule fois** par ouverture, sinon les emoji
+sauteraient d'un endroit à l'autre au premier nouveau rendu venu — et le
+sondage des entrées en provoque un toutes les 60 s. Pour la même raison, le
+`onClose` passé à la fête est une référence stable : sans ça, chaque rendu du
+parent relancerait le compte à rebours, et l'écran ne s'effacerait jamais.
+
+La pluie disparaît sous `prefers-reduced-motion` ; le message, lui, reste
+entier, et le minuteur l'enlève au même moment.
 
 ### La photo se prend dans l'app, et elle est double
 

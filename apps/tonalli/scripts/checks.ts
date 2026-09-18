@@ -21,7 +21,7 @@ import {
   yearMonthOfKey,
 } from '../src/lib/dates.ts';
 import { coverCrop, isDenial, openCamera } from '../src/lib/camera.ts';
-import { BUBBLE_COUNT, REACTIONS, bubbles, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
+import { BUBBLE_COUNT, BURST_MS, REACTIONS, bubbles, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
 import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
 import { fr } from '../src/locales/fr.ts';
 import { es } from '../src/locales/es.ts';
@@ -375,11 +375,24 @@ console.log('Réactions — la pluie de bulles');
   // plantée en bas, bien visible. Les deux se repèrent ici, pas à l'œil.
   for (const bubble of field) {
     check('départ dans l’écran', bubble.left >= 0 && bubble.left <= 100, String(bubble.left));
-    check('retard raisonnable', bubble.delay >= 0 && bubble.delay <= 2.6, String(bubble.delay));
-    check('durée non nulle', bubble.duration >= 2.6 && bubble.duration <= 4.8, String(bubble.duration));
+    check('retard raisonnable', bubble.delay >= 0 && bubble.delay <= 1, String(bubble.delay));
+    check('durée non nulle', bubble.duration >= 1.8 && bubble.duration <= 2.8, String(bubble.duration));
     check('taille lisible', bubble.size >= 22 && bubble.size <= 48, String(bubble.size));
     check('dérive contenue', Math.abs(bubble.drift) <= 60, String(bubble.drift));
+
+    // La fête s'efface toute seule au bout de BURST_MS : une bulle qui finirait
+    // après serait coupée en plein vol, et ça se verrait.
+    check(
+      'la bulle a fini avant la fin de la fête',
+      (bubble.delay + bubble.duration) * 1000 <= BURST_MS,
+      `${bubble.delay} + ${bubble.duration} > ${BURST_MS / 1000}`,
+    );
   }
+
+  // Le pire cas doit exister : une marge trop large ferait une fête qui traîne
+  // dans le vide après la dernière bulle.
+  const worst = Math.max(...bubbles(200, Math.random).map((b) => (b.delay + b.duration) * 1000));
+  check('la dernière bulle finit avec la fête', BURST_MS - worst <= 200, `${BURST_MS - worst} ms de battement`);
 
   // Toutes identiques, la pluie monterait en rang d'oignons.
   const varied = bubbles(12, Math.random);
