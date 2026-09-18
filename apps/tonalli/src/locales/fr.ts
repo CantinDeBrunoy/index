@@ -159,6 +159,7 @@ export const fr = {
     partnerLocalTime: 'Chez {{name}}, il est',
     sameTime: 'même heure',
     offsetLabel: 'Décalage',
+    build: 'Version {{id}} — {{date}}',
   },
   emotions: {
     joy: 'Joie',

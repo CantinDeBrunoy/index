@@ -4,7 +4,7 @@ import { ConfirmSheet } from '@/components/ConfirmSheet';
 import { Segmented } from '@/components/Segmented';
 import { ErrorBanner } from '@/components/States';
 import { Switch } from '@/components/Switch';
-import { clockInTimeZone, formatOffset, formatTime, offsetBetween } from '@/lib/dates';
+import { clockInTimeZone, formatInstant, formatOffset, formatTime, offsetBetween } from '@/lib/dates';
 import {
   isIosWithoutStandalone,
   permissionState,
@@ -21,6 +21,9 @@ const STEP_MINUTES = 30;
 
 export function SettingsScreen() {
   const { t, locale, setLocale } = useI18n();
+  // L'heure du build se lit chez qui regarde : c'est un instant réel, pas une
+  // journée d'entrée — le seul endroit de l'app où une conversion est juste.
+  const buildDate = formatInstant(__BUILD_AT__, locale);
   const { user, profile, partner, updateProfile, unlinkPartner, signOut } = useAuth();
   const { refresh } = useEntries();
 
@@ -214,6 +217,13 @@ export function SettingsScreen() {
           </button>
         </div>
       </div>
+
+      {/* ----------- repère de build -----------
+          Tout en bas, en petit : ce n'est pas une information dont on se sert,
+          c'est celle qu'on va chercher quand on doute que l'écran soit à jour. */}
+      <p className="faint small center build-stamp">
+        {t('settings.build', { id: __BUILD_ID__, date: buildDate ?? '—' })}
+      </p>
 
       {confirm === 'unlink' ? (
         <ConfirmSheet

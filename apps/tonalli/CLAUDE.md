@@ -406,6 +406,13 @@ faire à la main pour que ça marche vraiment :
 - le **rechargement forcé** si l'écran ne bouge pas (voir le service worker
   dans les pièges).
 
+Pour trancher « est-ce que je regarde la dernière version ? » sans passer par
+le tableau de bord de l'hébergeur : **tout en bas des réglages**, le commit et
+la date du build. Il est calculé dans `vite.config.ts` (`define`), depuis
+`VERCEL_GIT_COMMIT_SHA` / `COMMIT_REF` chez l'hébergeur et depuis `git` en
+local, avec `dev` en repli. Comparer ce qui s'affiche à `git log -1 main`
+répond en trois secondes à une question qui a déjà coûté deux allers-retours.
+
 ---
 
 ## 9. Vérifier son travail
@@ -423,6 +430,14 @@ Android d'entrée de gamme : `facingMode` exact refusé, souhait ignoré, camér
 encore occupée.
 
 **2. `npm run build`** — typage et bundle.
+
+Attention à ce qu'il prouve exactement. **Sans `.env`, le bundle ne contient
+pas l'app** : `isSupabaseConfigured` se réduit à une constante fausse au build,
+et tout ce qui est derrière le garde de `App.tsx` est éliminé comme code mort —
+il ne reste que l'écran « variables manquantes ». Le filet reste valable pour ce
+qu'on lui demande (le typage passe, le bundle se construit), mais un `dist`
+produit sans `.env` ne dit rien de ce qui sera servi. Pour inspecter un vrai
+bundle, mettre des valeurs, même bidon, dans `.env` avant de construire.
 
 **3. Le bac à sable rendu** — la méthode qui a servi à valider chaque écran
 sans backend :
@@ -518,6 +533,14 @@ navigateur démarre son propre glisser-déposer et coupe le geste par un
 en console. Il faut `preventDefault()` sur `dragstart` (et `-webkit-user-drag:
 none` en renfort) — `touch-action: none` ne traite que le cas du défilement,
 pas celui-là.
+
+**Un bundle sans `.env` ne contient pas l'app.** `isSupabaseConfigured` vient
+de `import.meta.env`, que Vite remplace en dur au build. Sans les variables, il
+devient `false` à la compilation et le bundle ne garde que l'écran « variables
+manquantes » — le reste part au tree-shaking. Le build reste vert, le fichier
+fait toujours quelques centaines de kilo-octets (React et Supabase y sont), et
+chercher une classe CSS dedans ne rend rien. De quoi conclure à tort qu'une
+modification n'a pas été prise.
 
 **Service worker en développement.** Il servait des fichiers périmés sous Vite
 et cassait le rechargement à chaud. Il n'est enregistré qu'en production, et
