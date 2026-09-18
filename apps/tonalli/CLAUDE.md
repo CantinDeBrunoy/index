@@ -45,7 +45,7 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run dev` | serveur de développement |
 | `npm run build` | `tsc -b && vite build` — c'est le build de production |
 | `npm run typecheck` | typage seul |
-| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, émotions, réactions, choix de l'objectif) |
+| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, émotions, réactions, vignette, choix de l'objectif) |
 | `npm run lint` | oxlint |
 
 **La caméra exige HTTPS** — elle fonctionne sur `localhost`, sinon il faut un
@@ -80,6 +80,7 @@ src/
     dates.ts           TOUT le raisonnement calendaire et les fuseaux
     emotions.ts        les 12 couples (clé, couleur) + contraste du texte
     reactions.ts       les 6 couples (clé, emoji) de l'action rapide
+    inset.ts           géométrie de la vignette : bornes et collage aux coins
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -214,6 +215,22 @@ Corollaire de code : le côté réellement à l'écran vit aussi dans une *ref*
 (`shownRef`). Une fonction asynchrone qui lit l'état du rendu voit la caméra
 d'avant la bascule, et déciderait de ne rien rouvrir.
 
+**La vignette se déplace au doigt.** Le cadre BeReal a un défaut inévitable :
+la petite photo cache un coin de la grande, et c'est parfois là qu'il y a
+quelque chose à voir. On la fait donc glisser, et au relâchement elle se range
+dans le coin le plus proche — jamais au milieu du sujet, jamais à cheval sur un
+bord. Le calcul est dans `src/lib/inset.ts`, vérifié par `npm run checks` ; la
+marge y vaut `INSET_MARGIN` et doit rester égale au `--inset-margin` de la
+feuille de style, sinon le repos et la limite du glissement ne parlent plus du
+même bord. Un appui sec continue d'intervertir les deux photos : c'est le
+déplacement qui distingue les deux gestes, au-delà de `DRAG_THRESHOLD`. Les
+flèches du clavier font le même déplacement, un axe à la fois.
+
+Corollaire de code : la vignette **coupe la propagation des événements
+tactiles**. L'écran « Aujourd'hui » change de panneau sur un glissement
+horizontal ; sans cette coupure, déplacer la vignette vers la droite ferait
+aussi basculer sur la journée du binôme.
+
 **Demander la caméra frontale ne suffit pas à l'obtenir.** `facingMode: 'user'`
 n'est qu'un souhait : le navigateur note chaque objectif sur l'ensemble des
 contraintes et peut très bien rendre l'arrière. C'est ce qui se passait sur un
@@ -330,8 +347,27 @@ Variables chez l'hébergeur : `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
 `VITE_VAPID_PUBLIC_KEY`. Elles sont lues **au moment du build** — après les
 avoir modifiées il faut redéployer, recharger la page ne suffit pas.
 
-Le développement se fait sur `claude/nuancier-mobile-app-7buvk1`, fusionnée dans
-`main` par un merge sans avance rapide. Vercel déploie `main`.
+### Le développement ne sort pas tout seul de sa branche
+
+Le travail se fait sur une branche `claude/…`, jamais directement sur `main`.
+Et **Vercel ne déploie que `main`** : tant que la branche n'y est pas fusionnée,
+la fonctionnalité n'existe pour personne, migration jouée ou non. Le site
+continue de servir la version d'avant, sans rien signaler — c'est une confusion
+qui a déjà coûté un aller-retour (« j'ai fait la migration, j'ai rien »).
+
+Donc : **à la fin de chaque développement, proposer la fusion**, sans attendre
+qu'on la demande. Le merge se fait sans avance rapide (`git merge --no-ff`),
+pour que l'historique garde chaque fonctionnalité comme un bloc lisible.
+
+Pousser sur `main`, c'est mettre en production : ça demande un accord explicite
+à chaque fois, jamais de sa propre initiative. En proposant, dire ce qui reste à
+faire à la main pour que ça marche vraiment :
+
+- les **migrations** à jouer dans le SQL Editor, s'il y en a de nouvelles ;
+- les **variables d'hébergeur** à ajouter, s'il y en a — elles sont lues au
+  build, donc il faut redéployer après les avoir changées ;
+- le **rechargement forcé** si l'écran ne bouge pas (voir le service worker
+  dans les pièges).
 
 ---
 
@@ -342,7 +378,7 @@ cher :
 
 **1. `npm run checks`** — fonctions pures, exécutées par Node avec
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
-(`dates.ts`, `emotions.ts`, `reactions.ts`, `camera.ts`) ne doivent contenir **aucun import**
+(`dates.ts`, `emotions.ts`, `reactions.ts`, `inset.ts`, `camera.ts`) ne doivent contenir **aucun import**
 vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
 n'existe pas là-bas. Les garder sans dépendances. Le choix de l'objectif s'y
 vérifie contre un faux `navigator.mediaDevices` qui rejoue les manies d'un
@@ -438,9 +474,23 @@ en `NotReadableError` — le matériel dit « pas encore », pas « impossible �
 D'où la pause avant l'ouverture et les reprises espacées. Un `NotReadableError`
 traité comme une absence de caméra fait perdre la moitié du rituel.
 
+**Une image est nativement déplaçable.** Un `<img>` dans un élément qu'on veut
+faire glisser soi-même est un piège silencieux : au premier mouvement, le
+navigateur démarre son propre glisser-déposer et coupe le geste par un
+`pointercancel`. La vignette ne bougeait pas d'un pixel, sans la moindre erreur
+en console. Il faut `preventDefault()` sur `dragstart` (et `-webkit-user-drag:
+none` en renfort) — `touch-action: none` ne traite que le cas du défilement,
+pas celui-là.
+
 **Service worker en développement.** Il servait des fichiers périmés sous Vite
 et cassait le rechargement à chaud. Il n'est enregistré qu'en production, et
 celui d'une session précédente est désinscrit au démarrage.
+
+**Service worker après un déploiement.** En production il fait son travail :
+il sert l'app depuis le cache. Un simple retour sur l'onglet peut donc montrer
+la version d'avant alors que le déploiement est passé. Fermer complètement
+l'onglet (ou l'icône de l'écran d'accueil) et rouvrir, ou forcer le
+rechargement. Avant de conclure qu'un déploiement a échoué, vérifier ça.
 
 **Confirmation d'e-mail.** Laisser « Confirm email » activé avec le serveur
 d'envoi intégré de Supabase donne un `email rate limit exceeded` au bout de
@@ -503,3 +553,5 @@ Par ordre d'importance :
   `import type`.
 - Toute modification touchant aux dates, à la RLS ou aux policies Storage se
   vérifie avec les trois filets de la section 9 avant d'être poussée.
+- Un développement se termine par une **proposition de fusion dans `main`**
+  (section 8) : sans elle, le travail reste invisible dans l'app.

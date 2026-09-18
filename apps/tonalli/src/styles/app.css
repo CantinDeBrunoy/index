@@ -451,10 +451,13 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 
 /* Les deux photos du même appui : la vignette se pose sur la grande. */
 .photo-pair { position: relative; }
+/* La vignette s'ancre dans un coin (`data-corner`, posé par React) et se
+   déplace au doigt entre les quatre. `--inset-margin` doit rester égal à
+   INSET_MARGIN de src/lib/inset.ts : c'est le même bord, calculé des deux
+   côtés — en CSS pour le repos, en JS pour la limite du glissement. */
 .photo-pair__inset {
+  --inset-margin: 12px;
   position: absolute;
-  top: 12px;
-  left: 12px;
   width: 30%;
   min-width: 84px;
   padding: 0;
@@ -462,14 +465,30 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   border-radius: 16px;
   overflow: hidden;
   background: none;
-  cursor: pointer;
+  cursor: grab;
   box-shadow: 0 8px 20px rgba(64, 35, 16, 0.32);
   line-height: 0;
+  /* Le navigateur ne doit pas prendre le geste pour un défilement : sans ça,
+     la page glisse et la vignette reste sur place. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   transition: transform 0.15s var(--ease);
 }
+.photo-pair__inset[data-corner='top-left'] { top: var(--inset-margin); left: var(--inset-margin); }
+.photo-pair__inset[data-corner='top-right'] { top: var(--inset-margin); right: var(--inset-margin); }
+.photo-pair__inset[data-corner='bottom-left'] { bottom: var(--inset-margin); left: var(--inset-margin); }
+.photo-pair__inset[data-corner='bottom-right'] { bottom: var(--inset-margin); right: var(--inset-margin); }
 .photo-pair__inset:hover { transform: scale(1.03); }
 .photo-pair__inset:active { transform: scale(0.98); }
-.photo-pair__inset .photo { border-radius: 12px; }
+/* Pendant le geste, la vignette suit le doigt sans amortissement : une
+   transition ici la ferait traîner derrière la main. */
+.photo-pair__inset[data-dragging='true'] {
+  cursor: grabbing;
+  transition: none;
+  box-shadow: 0 14px 30px rgba(64, 35, 16, 0.42);
+}
+.photo-pair__inset .photo { border-radius: 12px; -webkit-user-drag: none; }
 
 /* --- calendrier ---------------------------------------------------------- */
 .weekdays, .month-grid {
