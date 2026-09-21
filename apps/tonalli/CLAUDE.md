@@ -331,9 +331,15 @@ les rejouer ne casse rien.
 | `0005_edit_today.sql` | correction de la journée du jour |
 | `0006_dual_photos.sql` | colonne `selfie_path` et lecture de la seconde photo |
 | `0007_reactions.sql` | `reaction_emojis`, `reactions` et leurs policies |
+| `0008_reaction_webhook.sql` | le trigger qui notifie une réaction, calqué sur celui de la journée |
 
 Les migrations 0003 à 0007 sont des **rattrapages** : leur contenu est déjà
 intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
+
+`0008` est à part : elle ne crée pas de schéma mais le **trigger de
+notification** des réactions, et elle ne peut pas vivre dans `0001` parce
+qu'elle a besoin d'un webhook déjà en place pour s'y calquer. Elle échoue avec
+un message clair si `notify_partner_of_entry` n'existe pas.
 
 ---
 
@@ -348,6 +354,17 @@ tableau de bord Supabase — plus besoin de la CLI ni de Docker.
 | --- | --- | --- |
 | `daily-reminders` | cron toutes les 15 min | rappel à l'heure locale, en sautant les journées remplies |
 | `notify-partner` | **deux** Database Webhooks sur `INSERT` : `entries` et `reactions` | prévient l'autre, dans **sa** langue |
+
+Le webhook des réactions se crée avec la migration `0008`, pas à la main. Elle
+**relit l'URL et le secret dans le corps du trigger existant** (celui de
+`entries`) et les réinjecte dans le nouveau : rien ne s'affiche, rien n'est
+écrit dans le dépôt, et les deux webhooks parlent forcément à la même adresse
+avec la même clé. Changer le secret un jour se réglera en rejouant `0008`.
+
+Sur ce projet, le webhook de `entries` n'est pas un Database Webhook du tableau
+de bord mais un trigger maison (`notify_partner_of_entry`) qui appelle
+`net.http_post`. Le chercher dans l'écran Webhooks ne donne rien ; c'est dans
+`pg_trigger` qu'il faut regarder.
 
 `notify-partner` sert les deux événements parce que la mécanique est la même —
 trouver le destinataire, son abonnement, sa langue. La dupliquer dans un second
