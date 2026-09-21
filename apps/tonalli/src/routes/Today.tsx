@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Camera } from '@/components/Camera';
 import { EmotionGrid } from '@/components/EmotionGrid';
 import { EntryPhotos, PhotoPair } from '@/components/PhotoPair';
 import { QuickReactions, ReceivedReaction } from '@/components/Reactions';
+import { SaveBloom } from '@/components/SaveBloom';
 import { ErrorBanner, OfflineBanner } from '@/components/States';
 import { formatLongDate, todayInTimeZone } from '@/lib/dates';
 import { colorOf, readableTextOn, veilOpacity, washGradient } from '@/lib/emotions';
@@ -27,6 +28,11 @@ export function TodayScreen() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Couleur en train de s'épanouir après une validation. */
+  const [bloom, setBloom] = useState<string | null>(null);
+  // Référence stable : un nouveau rendu du parent relancerait sinon le
+  // compte à rebours, et la couleur ne se retirerait jamais.
+  const endBloom = useCallback(() => setBloom(null), []);
 
   const myEntry = mine[today] ?? null;
   const done = Boolean(myEntry) || Boolean(pending);
@@ -52,6 +58,7 @@ export function TodayScreen() {
     setEmotion(null);
     setShot(null);
     setNote('');
+    setBloom(null);
   }, [today]);
 
   const startEditing = () => {
@@ -74,6 +81,9 @@ export function TodayScreen() {
     setError(null);
     try {
       await submitToday({ emotion, shot, note });
+      // La couleur ne s'épanouit qu'à la première validation. Une correction
+      // est une correction : lui donner la même cérémonie userait le geste.
+      if (!editing) setBloom(colorOf(emotion));
       setEditing(false);
       setShot(null);
     } catch (caught) {
@@ -116,6 +126,7 @@ export function TodayScreen() {
 
   return (
     <div className="stack today-screen">
+      {bloom ? <SaveBloom color={bloom} onDone={endBloom} /> : null}
       {washColor ? (
         <div
           className="wash"
