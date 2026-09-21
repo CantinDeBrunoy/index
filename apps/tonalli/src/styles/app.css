@@ -361,6 +361,60 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 .reaction-pill:hover { transform: scale(1.08); }
 .reaction-pill:active { transform: scale(0.94); }
 
+/* La journée validée : la couleur choisie s'épanouit sur tout l'écran puis se
+   retire, comme une goutte d'encre sur du papier mouillé. Au-dessus des
+   onglets (40) et du détail d'un jour (50), sous la fête des réactions (60).
+   `--bloom` vient de React (BLOOM_MS) : une seule durée pour l'animation et
+   pour le minuteur qui la démonte. */
+.bloom {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  overflow: hidden;
+  /* Une confirmation, pas un écran : un appui doit atteindre ce qu'il vise. */
+  pointer-events: none;
+  opacity: 0;
+  animation: bloom-life var(--bloom) var(--ease) forwards;
+}
+/* Centré par les marges, pas par la grille : un enfant plus grand que son
+   conteneur n'est pas centré par `place-items`, il est collé au bord — la
+   couleur s'épanouissait depuis la droite de l'écran. Les marges négatives
+   centrent vraiment, et laissent `transform` libre pour l'agrandissement. */
+.bloom__disc {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120vmax;
+  height: 120vmax;
+  margin: -60vmax 0 0 -60vmax;
+  border-radius: 50%;
+  /* Le bord fondu fait la tache d'encre ; un disque net ferait un flash. */
+  background: radial-gradient(
+    circle,
+    var(--bloom-color) 0%,
+    var(--bloom-color) 56%,
+    transparent 72%
+  );
+  transform: scale(0.04);
+  animation: bloom-spread var(--bloom) var(--ease) forwards;
+}
+@keyframes bloom-life {
+  0% { opacity: 0; }
+  12% { opacity: 0.92; }
+  55% { opacity: 0.92; }
+  100% { opacity: 0; }
+}
+@keyframes bloom-spread {
+  from { transform: scale(0.04); }
+  to { transform: scale(1); }
+}
+/* L'opacité de base vaut 0 : sans animation, rien ne s'affiche, et le
+   minuteur démonte l'élément comme si de rien n'était. */
+@media (prefers-reduced-motion: reduce) {
+  .bloom { animation: none; }
+  .bloom__disc { animation: none; }
+}
+
 /* La réaction en grand. Au-dessus de `.fullscreen` (z-index 50), sinon elle
    passerait sous le détail d'un jour depuis lequel on l'a ouverte.
    `--burst` vient de React (BURST_MS) : une seule durée pour l'animation et
@@ -457,7 +511,12 @@ a.btn { text-decoration: none; display: block; text-align: center; }
    bas du calque, posé derrière tout le reste du contenu. */
 .today-screen { position: relative; }
 .today-screen > .wash { z-index: 0; }
-.today-screen > *:not(.wash) { position: relative; z-index: 1; }
+/* Les enfants directs passent en `position: relative` pour se poser au-dessus
+   du lavis. Deux exceptions, qui ne sont pas du contenu : le lavis lui-même,
+   et l'épanouissement de la couleur, qui est en `position: fixed` — cette
+   règle a la même spécificité et le remettait dans le flux, où il n'avait
+   plus ni hauteur ni plein écran. */
+.today-screen > *:not(.wash):not(.bloom) { position: relative; z-index: 1; }
 .wash {
   position: absolute;
   left: -20px;

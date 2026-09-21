@@ -581,6 +581,17 @@ fait toujours quelques centaines de kilo-octets (React et Supabase y sont), et
 chercher une classe CSS dedans ne rend rien. De quoi conclure à tort qu'une
 modification n'a pas été prise.
 
+**Une règle `parent > *` écrase le `position: fixed` d'un enfant direct.**
+`.today-screen > *:not(.wash)` pose `position: relative` sur ses enfants pour
+qu'ils passent au-dessus du lavis. Un plein écran ajouté comme enfant direct
+hérite donc de `relative` — même spécificité, la règle écrite plus bas gagne —
+et retombe dans le flux : plus de plein écran, plus de hauteur, rien de
+visible. C'est ce qui est arrivé à l'épanouissement de la couleur, qui
+s'affichait en croissant sur le bord droit. Les superpositions de l'écran
+« Aujourd'hui » doivent être exclues nommément de cette règle, ou rendues plus
+profond dans l'arbre (c'est ce qui sauve la fête des réactions, petite-fille
+et non fille).
+
 **Service worker en développement.** Il servait des fichiers périmés sous Vite
 et cassait le rechargement à chaud. Il n'est enregistré qu'en production, et
 celui d'une session précédente est désinscrit au démarrage.
