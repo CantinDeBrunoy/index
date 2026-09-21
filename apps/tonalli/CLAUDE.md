@@ -347,7 +347,22 @@ tableau de bord Supabase — plus besoin de la CLI ni de Docker.
 | Fonction | Déclencheur | Rôle |
 | --- | --- | --- |
 | `daily-reminders` | cron toutes les 15 min | rappel à l'heure locale, en sautant les journées remplies |
-| `notify-partner` | Database Webhook sur `INSERT` dans `entries` | prévient le binôme, dans **sa** langue |
+| `notify-partner` | **deux** Database Webhooks sur `INSERT` : `entries` et `reactions` | prévient l'autre, dans **sa** langue |
+
+`notify-partner` sert les deux événements parce que la mécanique est la même —
+trouver le destinataire, son abonnement, sa langue. La dupliquer dans un second
+fichier obligerait à corriger chaque piège VAPID deux fois. Elle route sur le
+champ `table` du webhook, avec un repli sur la forme de la ligne.
+
+Pour une réaction, le destinataire est **l'auteur de la journée visée**, trouvé
+par `entry_id` — pas « le binôme de qui réagit ». C'est la même personne
+aujourd'hui, mais passer par l'entrée dit exactement ce qu'on veut, et reste
+juste même si la relation change entre la réaction et l'envoi.
+
+**Sur `INSERT` seulement, et c'est un choix.** Changer d'avis sur une réaction
+est un UPDATE (la clé primaire est `(entry_id, author_id)`), donc passer de ❤️
+à 😂 ne repingue personne. Une réaction est un geste, pas une conversation à
+notifier à chaque virage.
 
 **Secrets** (Edge Functions → Secrets) : `VAPID_PUBLIC_KEY`,
 `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:…`), `WEBHOOK_SECRET`.
@@ -365,6 +380,13 @@ regarder l'heure ni sa journée :
 
 ```powershell
 Invoke-RestMethod -Method Post -Uri "https://iyaqtvcwvylabdjlmpxm.supabase.co/functions/v1/daily-reminders" -Headers @{ "x-webhook-secret" = "SECRET" } -ContentType "application/json" -Body '{"force_user_id":"UUID"}'
+```
+
+`notify-partner` se teste de la même façon, en lui envoyant le corps qu'un
+webhook enverrait — pas besoin d'écrire en base :
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "https://iyaqtvcwvylabdjlmpxm.supabase.co/functions/v1/notify-partner" -Headers @{ "x-webhook-secret" = "SECRET" } -ContentType "application/json" -Body '{"type":"INSERT","table":"reactions","record":{"entry_id":"UUID-ENTREE","author_id":"UUID-AUTEUR","emoji":"❤️"}}'
 ```
 
 La clé publique VAPID doit être **la même** dans les secrets Supabase et dans
@@ -582,9 +604,6 @@ Par ordre d'importance :
   21:50 ne déclencherait jamais. Les pas de 30 min de l'interface l'évitent, mais
   le calcul devrait se faire en minutes depuis minuit.
 - **Modifier son prénom** après l'inscription : aucun écran ne le permet.
-- **Notifier une réaction.** `notify-partner` est branchée sur l'`INSERT` dans
-  `entries` : une réaction posée n'envoie donc rien, elle se découvre au
-  prochain sondage. Il faudrait un second Database Webhook sur `reactions`.
 - **Réaction hors ligne.** La file d'attente ne porte que la journée du jour :
   sans réseau, les boutons de réaction sont désactivés plutôt que de promettre
   un envoi différé.

@@ -128,9 +128,11 @@ serveur qui pousse. Deux Edge Functions s'en chargent.
    supabase functions deploy daily-reminders
    ```
 
-3. **`notify-partner`** : Database → Webhooks, un webhook sur `INSERT` dans
-   `entries` qui appelle la fonction, avec l'en-tête `x-webhook-secret`. Le
-   binôme est notifié dans **sa** langue quand l'autre poste.
+3. **`notify-partner`** : Database → Webhooks, **deux** webhooks sur `INSERT`
+   qui appellent la même fonction, avec l'en-tête `x-webhook-secret` — l'un sur
+   `entries`, l'autre sur `reactions`. L'autre est notifié dans **sa** langue
+   quand on poste sa journée, et quand on réagit à la sienne. Changer d'avis
+   sur une réaction est un UPDATE : personne n'est repingué.
 
 4. **`daily-reminders`** : un cron toutes les 15 minutes (Integrations → Cron,
    ou `pg_cron` + `pg_net`) appelant la fonction. Elle demande à la base
