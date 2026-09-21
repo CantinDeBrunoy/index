@@ -331,9 +331,15 @@ les rejouer ne casse rien.
 | `0005_edit_today.sql` | correction de la journée du jour |
 | `0006_dual_photos.sql` | colonne `selfie_path` et lecture de la seconde photo |
 | `0007_reactions.sql` | `reaction_emojis`, `reactions` et leurs policies |
+| `0008_reaction_webhook.sql` | le trigger qui notifie une réaction, calqué sur celui de la journée |
 
 Les migrations 0003 à 0007 sont des **rattrapages** : leur contenu est déjà
 intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
+
+`0008` est à part : elle ne crée pas de schéma mais le **trigger de
+notification** des réactions, et elle ne peut pas vivre dans `0001` parce
+qu'elle a besoin d'un webhook déjà en place pour s'y calquer. Elle échoue avec
+un message clair si `notify_partner_of_entry` n'existe pas.
 
 ---
 
@@ -347,7 +353,33 @@ tableau de bord Supabase — plus besoin de la CLI ni de Docker.
 | Fonction | Déclencheur | Rôle |
 | --- | --- | --- |
 | `daily-reminders` | cron toutes les 15 min | rappel à l'heure locale, en sautant les journées remplies |
-| `notify-partner` | Database Webhook sur `INSERT` dans `entries` | prévient le binôme, dans **sa** langue |
+| `notify-partner` | **deux** Database Webhooks sur `INSERT` : `entries` et `reactions` | prévient l'autre, dans **sa** langue |
+
+Le webhook des réactions se crée avec la migration `0008`, pas à la main. Elle
+**relit l'URL et le secret dans le corps du trigger existant** (celui de
+`entries`) et les réinjecte dans le nouveau : rien ne s'affiche, rien n'est
+écrit dans le dépôt, et les deux webhooks parlent forcément à la même adresse
+avec la même clé. Changer le secret un jour se réglera en rejouant `0008`.
+
+Sur ce projet, le webhook de `entries` n'est pas un Database Webhook du tableau
+de bord mais un trigger maison (`notify_partner_of_entry`) qui appelle
+`net.http_post`. Le chercher dans l'écran Webhooks ne donne rien ; c'est dans
+`pg_trigger` qu'il faut regarder.
+
+`notify-partner` sert les deux événements parce que la mécanique est la même —
+trouver le destinataire, son abonnement, sa langue. La dupliquer dans un second
+fichier obligerait à corriger chaque piège VAPID deux fois. Elle route sur le
+champ `table` du webhook, avec un repli sur la forme de la ligne.
+
+Pour une réaction, le destinataire est **l'auteur de la journée visée**, trouvé
+par `entry_id` — pas « le binôme de qui réagit ». C'est la même personne
+aujourd'hui, mais passer par l'entrée dit exactement ce qu'on veut, et reste
+juste même si la relation change entre la réaction et l'envoi.
+
+**Sur `INSERT` seulement, et c'est un choix.** Changer d'avis sur une réaction
+est un UPDATE (la clé primaire est `(entry_id, author_id)`), donc passer de ❤️
+à 😂 ne repingue personne. Une réaction est un geste, pas une conversation à
+notifier à chaque virage.
 
 **Secrets** (Edge Functions → Secrets) : `VAPID_PUBLIC_KEY`,
 `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:…`), `WEBHOOK_SECRET`.
@@ -365,6 +397,13 @@ regarder l'heure ni sa journée :
 
 ```powershell
 Invoke-RestMethod -Method Post -Uri "https://iyaqtvcwvylabdjlmpxm.supabase.co/functions/v1/daily-reminders" -Headers @{ "x-webhook-secret" = "SECRET" } -ContentType "application/json" -Body '{"force_user_id":"UUID"}'
+```
+
+`notify-partner` se teste de la même façon, en lui envoyant le corps qu'un
+webhook enverrait — pas besoin d'écrire en base :
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "https://iyaqtvcwvylabdjlmpxm.supabase.co/functions/v1/notify-partner" -Headers @{ "x-webhook-secret" = "SECRET" } -ContentType "application/json" -Body '{"type":"INSERT","table":"reactions","record":{"entry_id":"UUID-ENTREE","author_id":"UUID-AUTEUR","emoji":"❤️"}}'
 ```
 
 La clé publique VAPID doit être **la même** dans les secrets Supabase et dans
@@ -582,9 +621,6 @@ Par ordre d'importance :
   21:50 ne déclencherait jamais. Les pas de 30 min de l'interface l'évitent, mais
   le calcul devrait se faire en minutes depuis minuit.
 - **Modifier son prénom** après l'inscription : aucun écran ne le permet.
-- **Notifier une réaction.** `notify-partner` est branchée sur l'`INSERT` dans
-  `entries` : une réaction posée n'envoie donc rien, elle se découvre au
-  prochain sondage. Il faudrait un second Database Webhook sur `reactions`.
 - **Réaction hors ligne.** La file d'attente ne porte que la journée du jour :
   sans réseau, les boutons de réaction sont désactivés plutôt que de promettre
   un envoi différé.
