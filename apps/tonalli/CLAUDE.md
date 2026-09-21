@@ -45,7 +45,7 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run dev` | serveur de développement |
 | `npm run build` | `tsc -b && vite build` — c'est le build de production |
 | `npm run typecheck` | typage seul |
-| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, émotions, réactions, vignette, choix de l'objectif) |
+| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions, réactions, vignette, choix de l'objectif) |
 | `npm run lint` | oxlint |
 
 **La caméra exige HTTPS** — elle fonctionne sur `localhost`, sinon il faut un
@@ -80,6 +80,7 @@ src/
     dates.ts           TOUT le raisonnement calendaire et les fuseaux
     emotions.ts        les 12 couples (clé, couleur) + contraste du texte
     reactions.ts       les 6 couples (clé, emoji) de l'action rapide
+    streak.ts          les 6 symboles de la série (le calcul est dans dates.ts)
     inset.ts           géométrie de la vignette : bornes et collage aux coins
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
@@ -197,6 +198,37 @@ parent relancerait le compte à rebours, et l'écran ne s'effacerait jamais.
 La pluie disparaît sous `prefers-reduced-motion` ; le message, lui, reste
 entier, et le minuteur l'enlève au même moment.
 
+### La série se recalcule, elle ne se stocke pas
+
+Le nombre de jours d'affilée est obtenu en remontant les clés de date depuis
+aujourd'hui (`streakOf`, dans `dates.ts` — c'est du raisonnement calendaire).
+Une colonne « nombre de jours » serait une **vérité en double**, à réconcilier
+à chaque correction de journée ; remonter quelques dizaines de clés ne coûte
+rien.
+
+**Une journée du jour pas encore remplie ne casse pas la série** : la journée
+n'est pas finie, et remettre le compteur à zéro au réveil punirait quelqu'un
+qui n'a encore rien fait de mal. On repart d'hier, et c'est le lendemain
+seulement qu'un jour manquant compte comme une rupture. Le badge pâlit en
+attendant, au lieu de disparaître. La journée validée hors ligne compte
+aussi : de son point de vue elle est faite, c'est le réseau qui manque.
+
+Le décalage d'un jour se fait **sur la clé**, à midi UTC (`shiftDay`), jamais
+sur un instant réel : les nuits de changement d'heure durent 23 ou 25 heures,
+et un pas posé sur une heure locale tomberait à côté. `npm run checks` teste
+la nuit du 25 octobre, les passages de mois, d'année, et le 29 février.
+
+Le **symbole** est cosmétique et personnel : la base ne stocke que sa clé,
+derrière une simple contrainte `check` là où les réactions ont une clé
+étrangère — rien d'autre ne le référence, et il ne traverse jamais le binôme.
+`npm run checks` vérifie que la palette de `streak.ts` et la contrainte de
+`0009` listent exactement les mêmes clés : un symbole ajouté d'un seul côté
+serait refusé à l'écriture.
+
+Rien ne s'affiche tant qu'il n'y a pas de série. Un « 0 » en haut de l'écran
+ne serait pas une information, seulement un reproche — et le premier jour de
+quelqu'un n'a pas à commencer par un reproche.
+
 ### La photo se prend dans l'app, et elle est double
 
 `getUserMedia` uniquement, jamais de sélection depuis la galerie — c'est ce qui
@@ -289,7 +321,7 @@ pour un binôme.
 | Table | Rôle |
 | --- | --- |
 | `emotions` | les 12 couples (clé, couleur), figés, référencés par clé étrangère |
-| `profiles` | nom, langue, **fuseau**, `partner_id` (unique), code d'invitation, jeton push, réglages de rappel |
+| `profiles` | nom, langue, **fuseau**, `partner_id` (unique), code d'invitation, jeton push, réglages de rappel, symbole de la série |
 | `entries` | une ligne par personne et par jour : `unique (user_id, date)`, deux chemins de photo (`photo_path`, `selfie_path`) |
 | `reaction_emojis` | les 6 couples (clé, emoji) de l'action rapide, figés, référencés par clé étrangère |
 | `reactions` | un emoji posé sur la journée du binôme : clé primaire `(entry_id, author_id)` |
@@ -332,9 +364,10 @@ les rejouer ne casse rien.
 | `0006_dual_photos.sql` | colonne `selfie_path` et lecture de la seconde photo |
 | `0007_reactions.sql` | `reaction_emojis`, `reactions` et leurs policies |
 | `0008_reaction_webhook.sql` | le trigger qui notifie une réaction, calqué sur celui de la journée |
+| `0009_streak_symbol.sql` | colonne `streak_symbol` et sa palette fermée |
 
-Les migrations 0003 à 0007 sont des **rattrapages** : leur contenu est déjà
-intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
+Les migrations 0003 à 0007 et 0009 sont des **rattrapages** : leur contenu est
+déjà intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
 
 `0008` est à part : elle ne crée pas de schéma mais le **trigger de
 notification** des réactions, et elle ne peut pas vivre dans `0001` parce
@@ -461,7 +494,7 @@ cher :
 
 **1. `npm run checks`** — fonctions pures, exécutées par Node avec
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
-(`dates.ts`, `emotions.ts`, `reactions.ts`, `inset.ts`, `camera.ts`) ne doivent contenir **aucun import**
+(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `camera.ts`) ne doivent contenir **aucun import**
 vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
 n'existe pas là-bas. Les garder sans dépendances. Le choix de l'objectif s'y
 vérifie contre un faux `navigator.mediaDevices` qui rejoue les manies d'un

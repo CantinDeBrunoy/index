@@ -5,6 +5,7 @@ import { Segmented } from '@/components/Segmented';
 import { ErrorBanner } from '@/components/States';
 import { Switch } from '@/components/Switch';
 import { clockInTimeZone, formatInstant, formatOffset, formatTime, offsetBetween } from '@/lib/dates';
+import { DEFAULT_STREAK_SYMBOL, STREAK_SYMBOLS } from '@/lib/streak';
 import {
   isIosWithoutStandalone,
   permissionState,
@@ -183,6 +184,26 @@ export function SettingsScreen() {
       ) : isIosWithoutStandalone() ? (
         <p className="faint small">{t('settings.pushIosHint')}</p>
       ) : null}
+
+      {/* ---------------- série ---------------- */}
+      <span className="section-title">{t('streak.section')}</span>
+      <div className="reactions" role="radiogroup" aria-label={t('streak.section')}>
+        {STREAK_SYMBOLS.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            role="radio"
+            className="reaction"
+            aria-checked={(profile.streak_symbol || DEFAULT_STREAK_SYMBOL) === item.key}
+            aria-label={t(`streak.names.${item.key}`)}
+            title={t(`streak.names.${item.key}`)}
+            onClick={() => void updateProfile({ streak_symbol: item.key })}
+          >
+            <span aria-hidden>{item.symbol}</span>
+          </button>
+        ))}
+      </div>
+      <p className="faint small">{t('streak.hint')}</p>
 
       {/* ---------------- langue ---------------- */}
       <span className="section-title">{t('settings.languageSection')}</span>

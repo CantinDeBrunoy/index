@@ -51,6 +51,10 @@ create table if not exists public.profiles (
   reminder_hour   smallint not null default 21 check (reminder_hour between 0 and 23),
   reminder_minute smallint not null default 0  check (reminder_minute between 0 and 59),
   reminders_enabled boolean not null default true,
+  -- Symbole de la série, choisi dans les réglages. On garde la clé et non le
+  -- caractère : changer un glyphe ne doit obliger à réécrire aucun profil.
+  streak_symbol text not null default 'flame'
+    check (streak_symbol in ('flame', 'cherry', 'heart', 'star', 'leaf', 'sun')),
   created_at   timestamptz not null default now()
 );
 

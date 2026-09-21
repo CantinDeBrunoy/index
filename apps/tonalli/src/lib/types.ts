@@ -11,6 +11,8 @@ export type Profile = {
   reminder_hour: number;
   reminder_minute: number;
   reminders_enabled: boolean;
+  /** Clé du symbole de la série (voir `lib/streak.ts`). */
+  streak_symbol: string;
 };
 
 export type Entry = {

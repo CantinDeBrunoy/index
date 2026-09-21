@@ -138,6 +138,21 @@ export const fr = {
       strength: 'Courage',
     },
   },
+  streak: {
+    section: 'Symbole de la série',
+    hint: "Il s'affiche en haut de l'écran, avec le nombre de jours d'affilée.",
+    days: '{{count}} jour d’affilée',
+    daysPlural: '{{count}} jours d’affilée',
+    waiting: 'ta journée du jour reste à remplir',
+    names: {
+      flame: 'Flamme',
+      cherry: 'Cerise',
+      heart: 'Cœur',
+      star: 'Étoile',
+      leaf: 'Feuille',
+      sun: 'Soleil',
+    },
+  },
   settings: {
     title: 'Réglages',
     account: 'Compte',
