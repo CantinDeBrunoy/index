@@ -397,11 +397,11 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   border: 0;
 }
 
-/* La journée validée : la couleur choisie s'épanouit sur tout l'écran puis se
-   retire, comme une goutte d'encre sur du papier mouillé. Au-dessus des
-   onglets (40) et du détail d'un jour (50), sous la fête des réactions (60).
-   `--bloom` vient de React (BLOOM_MS) : une seule durée pour l'animation et
-   pour le minuteur qui la démonte. */
+/* La journée validée : l'encre part du bouton, envahit l'écran, puis se range
+   dans le bandeau de la journée. La géométrie du trajet est calculée en
+   JavaScript — elle dépend de la position du bouton et de celle du bandeau —
+   donc on ne trouve ici que le décor : au-dessus des onglets (40) et du détail
+   d'un jour (50), sous la fête des réactions (60). */
 .bloom {
   position: fixed;
   inset: 0;
@@ -409,46 +409,18 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   overflow: hidden;
   /* Une confirmation, pas un écran : un appui doit atteindre ce qu'il vise. */
   pointer-events: none;
-  opacity: 0;
-  animation: bloom-life var(--bloom) var(--ease) forwards;
 }
-/* Centré par les marges, pas par la grille : un enfant plus grand que son
-   conteneur n'est pas centré par `place-items`, il est collé au bord — la
-   couleur s'épanouissait depuis la droite de l'écran. Les marges négatives
-   centrent vraiment, et laissent `transform` libre pour l'agrandissement. */
-.bloom__disc {
+.bloom__ink {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 120vmax;
-  height: 120vmax;
-  margin: -60vmax 0 0 -60vmax;
+  /* Tout part de zéro et reste invisible : sans ça, un carré de couleur
+     clignoterait dans le coin avant que l'animation ne prenne la main. */
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
   border-radius: 50%;
-  /* Le bord fondu fait la tache d'encre ; un disque net ferait un flash. */
-  background: radial-gradient(
-    circle,
-    var(--bloom-color) 0%,
-    var(--bloom-color) 56%,
-    transparent 72%
-  );
-  transform: scale(0.04);
-  animation: bloom-spread var(--bloom) var(--ease) forwards;
-}
-@keyframes bloom-life {
-  0% { opacity: 0; }
-  12% { opacity: 0.92; }
-  55% { opacity: 0.92; }
-  100% { opacity: 0; }
-}
-@keyframes bloom-spread {
-  from { transform: scale(0.04); }
-  to { transform: scale(1); }
-}
-/* L'opacité de base vaut 0 : sans animation, rien ne s'affiche, et le
-   minuteur démonte l'élément comme si de rien n'était. */
-@media (prefers-reduced-motion: reduce) {
-  .bloom { animation: none; }
-  .bloom__disc { animation: none; }
+  opacity: 0;
+  box-shadow: 0 10px 40px rgba(64, 35, 16, 0.25);
 }
 
 /* La réaction en grand. Au-dessus de `.fullscreen` (z-index 50), sinon elle

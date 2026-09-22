@@ -659,6 +659,21 @@ s'affichait en croissant sur le bord droit. Les superpositions de l'écran
 profond dans l'arbre (c'est ce qui sauve la fête des réactions, petite-fille
 et non fille).
 
+**La position d'un bouton ne se relève plus après qu'il a disparu.**
+L'encre de validation part du bouton « Valider ma journée » — mais ce bouton
+appartient au composeur, qui est démonté à la seconde où la journée est
+enregistrée. Le point de départ se relève donc **au moment de l'appui**, dans
+le gestionnaire de clic, pas après. Même famille de piège que la *ref* de la
+caméra : ce qui est à l'écran maintenant ne l'est plus quand la suite
+s'exécute.
+
+Corollaire : cette animation est pilotée en JavaScript (Web Animations) et non
+en CSS, parce que sa géométrie n'est connue qu'au rendu — la position du bouton
+dépend de la longueur de la note, celle du bandeau de la taille de l'écran. Et
+chaque segment porte sa propre courbe d'accélération : une seule courbe
+appliquée à l'ensemble écrasait les dernières étapes, et l'encre arrivait
+rangée avant même d'avoir envahi l'écran.
+
 **Service worker en développement.** Il servait des fichiers périmés sous Vite
 et cassait le rechargement à chaud. Il n'est enregistré qu'en production, et
 celui d'une session précédente est désinscrit au démarrage.
