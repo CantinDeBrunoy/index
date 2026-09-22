@@ -3,7 +3,8 @@ import type { ReactNode } from 'react';
 
 import { readCache, writeCache } from '@/lib/cache';
 import { todayInTimeZone } from '@/lib/dates';
-import { colorOf } from '@/lib/emotions';
+import { shadeOf } from '@/lib/emotions';
+import type { Intensity } from '@/lib/emotions';
 import { emojiOf } from '@/lib/reactions';
 import { blobToDataUrl, dataUrlToBlob, deletePhotos, photoPath, selfiePath, uploadPhoto } from '@/lib/photo';
 import type { Shot } from '@/lib/photo';
@@ -38,7 +39,12 @@ type EntriesValue = {
   /** Les siennes sur les miennes. */
   theirReactions: ReactionMap;
   refresh: () => Promise<void>;
-  submitToday: (input: { emotion: string; shot: Shot | null; note: string }) => Promise<void>;
+  submitToday: (input: {
+    emotion: string;
+    intensity: Intensity;
+    shot: Shot | null;
+    note: string;
+  }) => Promise<void>;
   /**
    * Pose, remplace ou retire ma réaction sur une journée du binôme.
    * `key` à `null` retire. L'affichage est mis à jour d'abord et défait si le
@@ -279,8 +285,21 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   );
 
   const submitToday = useCallback(
-    async ({ emotion, shot, note }: { emotion: string; shot: Shot | null; note: string }) => {
-      const color = colorOf(emotion);
+    async ({
+      emotion,
+      intensity,
+      shot,
+      note,
+    }: {
+      emotion: string;
+      intensity: Intensity;
+      shot: Shot | null;
+      note: string;
+    }) => {
+      // La couleur écrite est celle du cran choisi. C'est elle qui porte
+      // l'intensité — la base n'a pas de colonne pour ça, le couple
+      // (émotion, couleur) suffit à la déterminer.
+      const color = shadeOf(emotion, intensity);
       if (!color) throw new Error('unknown_emotion');
 
       const entry: Pending = {

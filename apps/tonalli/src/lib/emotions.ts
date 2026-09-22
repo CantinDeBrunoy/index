@@ -21,6 +21,28 @@ export const EMOTIONS = [
 
 export type EmotionKey = (typeof EMOTIONS)[number]['key'];
 
+/**
+ * L'intensité d'une émotion : la même couleur, plus pâle ou plus dense.
+ *
+ * Trois crans et pas davantage. Un curseur continu donnerait une infinité de
+ * teintes, et un calendrier de l'année n'y lirait plus rien : deux journées
+ * voisines doivent se distinguer d'un coup d'œil, pas à la loupe.
+ *
+ * `plain` vaut **exactement** la couleur d'origine de l'émotion. C'est ce qui
+ * permet d'ajouter les nuances sans toucher aux journées déjà écrites : elles
+ * restent valides, et deviennent rétroactivement des « franches ».
+ */
+export const INTENSITIES = ['light', 'plain', 'deep'] as const;
+
+export type Intensity = (typeof INTENSITIES)[number];
+
+/** Le cran par défaut — celui d'avant les nuances. */
+export const DEFAULT_INTENSITY: Intensity = 'plain';
+
+export function isIntensity(value: unknown): value is Intensity {
+  return typeof value === 'string' && (INTENSITIES as readonly string[]).includes(value);
+}
+
 const COLOR_BY_KEY = new Map<string, string>(EMOTIONS.map((e) => [e.key, e.color]));
 
 export function isEmotionKey(value: unknown): value is EmotionKey {
@@ -55,6 +77,58 @@ const COLDNESS: Record<EmotionKey, number> = {
 /** Encres opaques du châssis : crème et brun-encre. Jamais de blanc/noir purs. */
 const INK_CREAM = '#FFF7EB';
 const INK_BROWN = '#2A2019';
+
+/**
+ * Vers quoi et de combien chaque cran s'écarte de la couleur d'origine.
+ *
+ * On mélange vers les **encres du châssis**, jamais vers du blanc ou du noir
+ * purs : une nuance claire tirée vers le blanc jurerait sur le papier crème,
+ * et une nuance dense tirée vers le noir ferait un trou dans le calendrier.
+ *
+ * Les proportions ne sont pas choisies à l'œil. Plus faibles, les nuances
+ * denses tombaient dans le creux de contraste — là où une couleur ne tranche
+ * ni sur le crème ni sur le brun — et faisaient descendre le plancher de la
+ * palette sous les 4.3 garantis. À 0.55, le plancher redevient celui de la
+ * tristesse, c'est-à-dire celui d'avant les nuances : ajouter des crans n'a
+ * rien coûté à la lisibilité. `npm run checks` échoue si une retouche le fait
+ * redescendre.
+ */
+const MIX = { light: 0.4, deep: 0.55 } as const;
+
+function channels(color: string): [number, number, number] {
+  const hex = color.replace('#', '');
+  return [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16)) as [number, number, number];
+}
+
+function mix(from: string, to: string, amount: number): string {
+  const a = channels(from);
+  const b = channels(to);
+  const blended = a.map((value, index) => Math.round(value + (b[index] - value) * amount));
+  return `#${blended.map((value) => value.toString(16).padStart(2, '0').toUpperCase()).join('')}`;
+}
+
+/**
+ * Couleur d'une émotion à un cran donné. `null` si la clé est inconnue —
+ * même règle que `colorOf`, dont c'est la généralisation : `shadeOf(k, 'plain')`
+ * rend exactement `colorOf(k)`.
+ */
+export function shadeOf(key: string, intensity: Intensity = DEFAULT_INTENSITY): string | null {
+  const base = COLOR_BY_KEY.get(key);
+  if (!base) return null;
+  if (intensity === 'plain') return base;
+  return intensity === 'light' ? mix(base, INK_CREAM, MIX.light) : mix(base, INK_BROWN, MIX.deep);
+}
+
+/**
+ * Retrouve le cran d'une couleur déjà enregistrée. Une entrée ne stocke que
+ * son émotion et sa couleur : l'intensité se relit, elle ne se duplique pas en
+ * base. `null` si la couleur n'appartient pas à la palette de cette émotion —
+ * une donnée d'avant une retouche de palette, par exemple.
+ */
+export function intensityOf(key: string, color: string): Intensity | null {
+  const wanted = color.toUpperCase();
+  return INTENSITIES.find((intensity) => shadeOf(key, intensity)?.toUpperCase() === wanted) ?? null;
+}
 
 /** Luminance relative (WCAG). */
 function luminance(color: string): number {

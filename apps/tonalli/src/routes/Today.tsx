@@ -8,7 +8,16 @@ import { SaveBloom } from '@/components/SaveBloom';
 import { StreakBadge } from '@/components/Streak';
 import { ErrorBanner, OfflineBanner } from '@/components/States';
 import { formatLongDate, todayInTimeZone } from '@/lib/dates';
-import { colorOf, readableTextOn, veilOpacity, washGradient } from '@/lib/emotions';
+import {
+  DEFAULT_INTENSITY,
+  INTENSITIES,
+  intensityOf,
+  readableTextOn,
+  shadeOf,
+  veilOpacity,
+  washGradient,
+} from '@/lib/emotions';
+import type { Intensity } from '@/lib/emotions';
 import type { Shot } from '@/lib/photo';
 import type { Entry } from '@/lib/types';
 import { useAuth } from '@/state/AuthProvider';
@@ -25,6 +34,7 @@ export function TodayScreen() {
   const [panel, setPanel] = useState<Panel>('mine');
   const [editing, setEditing] = useState(false);
   const [emotion, setEmotion] = useState<string | null>(null);
+  const [intensity, setIntensity] = useState<Intensity>(DEFAULT_INTENSITY);
   const [shot, setShot] = useState<Shot | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -57,13 +67,20 @@ export function TodayScreen() {
   useEffect(() => {
     setEditing(false);
     setEmotion(null);
+    setIntensity(DEFAULT_INTENSITY);
     setShot(null);
     setNote('');
     setBloom(null);
   }, [today]);
 
   const startEditing = () => {
-    setEmotion(myEntry?.emotion ?? pending?.emotion ?? null);
+    const previous = myEntry ?? pending;
+    setEmotion(previous?.emotion ?? null);
+    // Le cran se relit de la couleur enregistrée : une correction repart de ce
+    // qui avait été choisi, pas du cran par défaut.
+    setIntensity(
+      (previous ? intensityOf(previous.emotion, previous.color) : null) ?? DEFAULT_INTENSITY,
+    );
     setNote(myEntry?.note ?? pending?.note ?? '');
     setShot(null);
     setEditing(true);
@@ -81,10 +98,10 @@ export function TodayScreen() {
     setBusy(true);
     setError(null);
     try {
-      await submitToday({ emotion, shot, note });
+      await submitToday({ emotion, intensity, shot, note });
       // La couleur ne s'épanouit qu'à la première validation. Une correction
       // est une correction : lui donner la même cérémonie userait le geste.
-      if (!editing) setBloom(colorOf(emotion));
+      if (!editing) setBloom(shadeOf(emotion, intensity));
       setEditing(false);
       setShot(null);
     } catch (caught) {
@@ -120,7 +137,11 @@ export function TodayScreen() {
 
   // Le lavis du jour : la couleur choisie ne reste pas une pastille, elle
   // teint le haut de l'écran. Avant tout choix, le papier reste nu.
-  const myColor = !composing ? (myEntry?.color ?? pending?.color ?? null) : emotion ? colorOf(emotion) : null;
+  const myColor = !composing
+    ? (myEntry?.color ?? pending?.color ?? null)
+    : emotion
+      ? shadeOf(emotion, intensity)
+      : null;
   const theirEntry = partner ? (partnerEntries[todayInTimeZone(partner.timezone)] ?? null) : null;
   const theirColor = done && theirEntry ? theirEntry.color : null;
   const washColor = panel === 'mine' ? myColor : theirColor;
@@ -184,6 +205,8 @@ export function TodayScreen() {
               entry={myEntry}
               emotion={emotion}
               onEmotion={setEmotion}
+              intensity={intensity}
+              onIntensity={setIntensity}
               shot={shot}
               previewUrls={previewUrls}
               onShot={setShot}
@@ -216,6 +239,8 @@ type ComposerProps = {
   entry: Entry | null;
   emotion: string | null;
   onEmotion: (value: string | null) => void;
+  intensity: Intensity;
+  onIntensity: (value: Intensity) => void;
   shot: Shot | null;
   previewUrls: { main: string | null; selfie: string | null };
   onShot: (value: Shot | null) => void;
@@ -231,6 +256,8 @@ function Composer({
   entry,
   emotion,
   onEmotion,
+  intensity,
+  onIntensity,
   shot,
   previewUrls,
   onShot,
@@ -253,7 +280,7 @@ function Composer({
           <span className="row">
             <span
               className="emotion-dot"
-              style={{ background: colorOf(emotion) ?? undefined, width: 26, height: 26 }}
+              style={{ background: shadeOf(emotion, intensity) ?? undefined, width: 26, height: 26 }}
               aria-hidden
             >
               <span
@@ -277,6 +304,30 @@ function Composer({
 
       {emotion ? (
         <>
+          <div className="stack-sm">
+            <span className="section-title" style={{ marginBottom: 0 }}>
+              {t('today.intensityStep')}
+            </span>
+            <div className="intensities" role="radiogroup" aria-label={t('today.intensityStep')}>
+              {INTENSITIES.map((level) => {
+                const color = shadeOf(emotion, level) ?? undefined;
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    role="radio"
+                    className="intensity"
+                    aria-checked={intensity === level}
+                    onClick={() => onIntensity(level)}
+                    style={{ background: color, color: color ? readableTextOn(color) : undefined }}
+                  >
+                    {t(`today.intensities.${level}`)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="stack-sm">
             <span className="section-title" style={{ marginBottom: 0 }}>
               {t('today.photoStep')}

@@ -66,6 +66,12 @@ export const fr = {
     chooseEmotion: 'Quelle est la couleur de ta journée ?',
     chosenEmotion: 'Émotion choisie',
     change: 'Changer',
+    intensityStep: "L'intensité",
+    intensities: {
+      light: 'Légère',
+      plain: 'Franche',
+      deep: 'Intense',
+    },
     photoStep: 'La photo du moment',
     photoHint: "Prise maintenant, pas depuis la galerie. C'est le principe.",
     takePhoto: 'Prendre la photo',

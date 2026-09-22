@@ -45,7 +45,7 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run dev` | serveur de développement |
 | `npm run build` | `tsc -b && vite build` — c'est le build de production |
 | `npm run typecheck` | typage seul |
-| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions, réactions, vignette, choix de l'objectif) |
+| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions et nuances, réactions, vignette, choix de l'objectif) |
 | `npm run lint` | oxlint |
 
 **La caméra exige HTTPS** — elle fonctionne sur `localhost`, sinon il faut un
@@ -78,7 +78,7 @@ src/
   main.tsx             montage React, service worker (production seulement)
   lib/
     dates.ts           TOUT le raisonnement calendaire et les fuseaux
-    emotions.ts        les 12 couples (clé, couleur) + contraste du texte
+    emotions.ts        les 12 émotions, les 3 crans, les 36 nuances + contraste
     reactions.ts       les 6 couples (clé, emoji) de l'action rapide
     streak.ts          les 6 symboles de la série (le calcul est dans dates.ts)
     inset.ts           géométrie de la vignette : bornes et collage aux coins
@@ -151,10 +151,42 @@ témoignage.
 
 ### La palette est fermée
 
-12 émotions, 12 couleurs, l'association est fixe et vit **en base** : `entries`
-a une clé étrangère `(emotion, color) → emotions (key, color)`. Une couleur qui
-ne correspond pas à son émotion ne peut littéralement pas être écrite. Les
+12 émotions, **3 crans d'intensité**, donc 36 couples (émotion, couleur) —
+figés, et vivant **en base** dans `emotion_shades`. `entries` a une clé
+étrangère `(emotion, color) → emotion_shades (emotion, color)` : une couleur
+qui ne correspond pas à son émotion ne peut littéralement pas être écrite. Les
 libellés FR/ES restent dans les fichiers de traduction, pas en base.
+
+La palette a grandi une fois, en ajoutant les crans ; la règle, elle, n'a pas
+bougé. C'est la distinction à garder en tête si une demande semble la
+contredire : ce qui est fermé, c'est l'ensemble des couples autorisés, pas
+leur nombre.
+
+**Le cran « franc » vaut exactement la couleur d'origine de l'émotion.** C'est
+ce qui a permis d'ajouter les nuances sans toucher à une seule journée déjà
+écrite : elles sont restées valides et sont devenues rétroactivement des
+« franches ». Toute retouche future de la palette doit se poser la même
+question — une couleur retirée invaliderait les entrées qui la portent, et la
+clé étrangère refuserait de se valider.
+
+**L'intensité n'est pas stockée.** Le couple (émotion, couleur) la détermine,
+et `intensityOf()` la relit ; une colonne de plus serait une vérité en double.
+C'est aussi pourquoi les 36 couleurs doivent rester distinctes — deux crans
+qui rendraient le même code rendraient l'intensité impossible à relire.
+
+Les nuances sont **calculées**, pas choisies à l'œil : mélange vers les encres
+du châssis (crème à 0,40, brun-encre à 0,55), jamais vers du blanc ou du noir
+purs, qui jureraient sur le papier. Les proportions ne sont pas arbitraires —
+plus timides, les crans denses tombaient dans le creux de contraste, là où une
+couleur ne tranche ni sur le crème ni sur le brun, et faisaient passer le
+plancher de la palette sous les 4.3 garantis. À 0,55 il redevient celui de la
+tristesse, c'est-à-dire celui d'avant les nuances.
+
+`npm run checks` tient toute cette chaîne : franc = couleur d'origine, 36
+couleurs distinctes, aller-retour couleur → cran exact, plancher de contraste,
+et surtout **concordance avec les deux migrations** — une nuance retouchée
+dans le code et pas en base serait refusée à l'écriture, sans que rien ne le
+dise avant la production.
 
 ### Réagir ne donne rien de plus que voir
 
@@ -320,7 +352,8 @@ pour un binôme.
 
 | Table | Rôle |
 | --- | --- |
-| `emotions` | les 12 couples (clé, couleur), figés, référencés par clé étrangère |
+| `emotions` | les 12 émotions et leur couleur d'origine, figées |
+| `emotion_shades` | les 36 couples (émotion, cran, couleur) — c'est **eux** que référence `entries` |
 | `profiles` | nom, langue, **fuseau**, `partner_id` (unique), code d'invitation, jeton push, réglages de rappel, symbole de la série |
 | `entries` | une ligne par personne et par jour : `unique (user_id, date)`, deux chemins de photo (`photo_path`, `selfie_path`) |
 | `reaction_emojis` | les 6 couples (clé, emoji) de l'action rapide, figés, référencés par clé étrangère |
@@ -365,9 +398,10 @@ les rejouer ne casse rien.
 | `0007_reactions.sql` | `reaction_emojis`, `reactions` et leurs policies |
 | `0008_reaction_webhook.sql` | le trigger qui notifie une réaction, calqué sur celui de la journée |
 | `0009_streak_symbol.sql` | colonne `streak_symbol` et sa palette fermée |
+| `0010_emotion_intensity.sql` | `emotion_shades` et la clé étrangère de `entries` qui s'y déplace |
 
-Les migrations 0003 à 0007 et 0009 sont des **rattrapages** : leur contenu est
-déjà intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
+Les migrations 0003 à 0007, 0009 et 0010 sont des **rattrapages** : leur
+contenu est déjà intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
 
 `0008` est à part : elle ne crée pas de schéma mais le **trigger de
 notification** des réactions, et elle ne peut pas vivre dans `0001` parce

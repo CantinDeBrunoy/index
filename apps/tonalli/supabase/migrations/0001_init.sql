@@ -36,6 +36,68 @@ create policy "emotions_readable" on public.emotions
   for select to authenticated using (true);
 
 -- ---------------------------------------------------------------------------
+-- Nuances
+-- Trois crans d'intensité par émotion : la même couleur, plus pâle ou plus
+-- dense. C'est cette table que référence `entries`, pas `emotions` : la
+-- palette grandit à 36 couples, elle reste fermée, et une couleur qui ne
+-- correspond pas à son émotion reste impossible à écrire.
+--
+-- Le cran « franc » vaut exactement la couleur d'origine de l'émotion, ce qui
+-- rend les nuances rétrocompatibles avec les journées déjà écrites.
+-- ---------------------------------------------------------------------------
+create table if not exists public.emotion_shades (
+  emotion   text not null references public.emotions(key) on delete cascade,
+  intensity text not null check (intensity in ('light', 'plain', 'deep')),
+  color     text not null,
+  primary key (emotion, intensity),
+  unique (emotion, color)
+);
+
+insert into public.emotion_shades (emotion, intensity, color) values
+  ('joy', 'light', '#FFE583'),
+  ('joy', 'plain', '#FFD93D'),
+  ('joy', 'deep', '#8A7329'),
+  ('serenity', 'light', '#CBE6E2'),
+  ('serenity', 'plain', '#A8DADC'),
+  ('serenity', 'deep', '#637471'),
+  ('love', 'light', '#FFA3BC'),
+  ('love', 'plain', '#FF6B9D'),
+  ('love', 'deep', '#8A4254'),
+  ('gratitude', 'light', '#F8C498'),
+  ('gratitude', 'plain', '#F4A261'),
+  ('gratitude', 'deep', '#855B39'),
+  ('pride', 'light', '#F1A58F'),
+  ('pride', 'plain', '#E76F51'),
+  ('pride', 'deep', '#7F4432'),
+  ('excitement', 'light', '#FF918C'),
+  ('excitement', 'plain', '#FF4D4D'),
+  ('excitement', 'deep', '#8A3430'),
+  ('nostalgia', 'light', '#D0B6CE'),
+  ('nostalgia', 'plain', '#B08BBB'),
+  ('nostalgia', 'deep', '#665062'),
+  ('tiredness', 'light', '#BBBFC6'),
+  ('tiredness', 'plain', '#8D99AE'),
+  ('tiredness', 'deep', '#57565C'),
+  ('sadness', 'light', '#8FADBC'),
+  ('sadness', 'plain', '#457B9D'),
+  ('sadness', 'deep', '#364954'),
+  ('anxiety', 'light', '#A690B6'),
+  ('anxiety', 'plain', '#6A4C93'),
+  ('anxiety', 'deep', '#473450'),
+  ('anger', 'light', '#C37775'),
+  ('anger', 'plain', '#9B2226'),
+  ('anger', 'deep', '#5D211F'),
+  ('neutral', 'light', '#E8E4E0'),
+  ('neutral', 'plain', '#D8D8D8'),
+  ('neutral', 'deep', '#78736F')
+on conflict (emotion, intensity) do update set color = excluded.color;
+
+alter table public.emotion_shades enable row level security;
+
+create policy "emotion_shades_readable" on public.emotion_shades
+  for select to authenticated using (true);
+
+-- ---------------------------------------------------------------------------
 -- Profils
 -- ---------------------------------------------------------------------------
 create table if not exists public.profiles (
@@ -76,7 +138,7 @@ create table if not exists public.entries (
   note       text check (char_length(note) <= 140),
   created_at timestamptz not null default now(),
   unique (user_id, date),
-  foreign key (emotion, color) references public.emotions (key, color)
+  foreign key (emotion, color) references public.emotion_shades (emotion, color)
 );
 
 create index if not exists entries_user_date_idx on public.entries (user_id, date desc);

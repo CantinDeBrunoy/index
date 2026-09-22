@@ -68,6 +68,12 @@ export const es: Translation = {
     chooseEmotion: '¿De qué color es tu día?',
     chosenEmotion: 'Emoción elegida',
     change: 'Cambiar',
+    intensityStep: 'La intensidad',
+    intensities: {
+      light: 'Leve',
+      plain: 'Clara',
+      deep: 'Intensa',
+    },
     photoStep: 'La foto del momento',
     photoHint: 'Tomada ahora, no desde la galería. Ese es el punto.',
     takePhoto: 'Tomar la foto',
