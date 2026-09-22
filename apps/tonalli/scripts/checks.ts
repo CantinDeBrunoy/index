@@ -32,11 +32,16 @@ import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../s
 import { fr } from '../src/locales/fr.ts';
 import { es } from '../src/locales/es.ts';
 import {
+  DEFAULT_INTENSITY,
   EMOTIONS,
+  INTENSITIES,
   MIN_TEXT_CONTRAST,
   colorOf,
+  intensityOf,
   isEmotionKey,
+  isIntensity,
   readableTextOn,
+  shadeOf,
   textContrastOn,
 } from '../src/lib/emotions.ts';
 
@@ -121,6 +126,80 @@ console.log('Repère de build');
   // que rien.
   check('une chaîne illisible rend null', formatInstant('pas une date', 'fr') === null);
   check('une chaîne vide rend null', formatInstant('', 'fr') === null);
+}
+
+console.log('Émotions — crans d’intensité');
+{
+  // Le cran « franc » vaut EXACTEMENT la couleur d'origine : c'est ce qui rend
+  // les nuances rétrocompatibles. Une journée écrite avant ce changement reste
+  // valide, et devient rétroactivement une « franche ». Si cette égalité
+  // tombait, la nouvelle clé étrangère rejetterait des lignes existantes.
+  for (const emotion of EMOTIONS) {
+    check(
+      `« ${emotion.key} » franc est la couleur d'origine`,
+      shadeOf(emotion.key, 'plain') === colorOf(emotion.key),
+      `${shadeOf(emotion.key, 'plain')} ≠ ${colorOf(emotion.key)}`,
+    );
+  }
+
+  check('le cran par défaut est le franc', DEFAULT_INTENSITY === 'plain');
+  check('isIntensity reconnaît les trois crans', INTENSITIES.every(isIntensity));
+  check('isIntensity rejette le reste', !isIntensity('moyen') && !isIntensity(null));
+  check('une émotion inconnue ne rend rien', shadeOf('licorne', 'light') === null);
+
+  // Trente-six couleurs, toutes distinctes : deux crans qui rendraient le même
+  // code rendraient l'intensité impossible à relire depuis une entrée.
+  const all = EMOTIONS.flatMap((e) => INTENSITIES.map((i) => shadeOf(e.key, i)!));
+  check('36 couleurs', all.length === 36, String(all.length));
+  check('toutes distinctes', new Set(all).size === 36, String(new Set(all).size));
+
+  // L'intensité n'est pas stockée : elle se relit du couple (émotion, couleur).
+  // L'aller-retour doit donc être exact pour les 36.
+  for (const emotion of EMOTIONS) {
+    for (const level of INTENSITIES) {
+      check(
+        `aller-retour ${emotion.key}/${level}`,
+        intensityOf(emotion.key, shadeOf(emotion.key, level)!) === level,
+      );
+    }
+  }
+  check('une couleur étrangère ne rend aucun cran', intensityOf('joy', '#123456') === null);
+
+  // Le plancher de contraste ne doit pas descendre : c'est la garantie que les
+  // libellés restent lisibles sur toute la palette, nuances comprises. Des
+  // mélanges plus timides faisaient tomber les crans denses dans le creux où
+  // une couleur ne tranche ni sur le crème ni sur le brun.
+  let floor = Infinity;
+  let worst = '';
+  for (const emotion of EMOTIONS) {
+    for (const level of INTENSITIES) {
+      const color = shadeOf(emotion.key, level)!;
+      const contrast = textContrastOn(color);
+      if (contrast < floor) {
+        floor = contrast;
+        worst = `${emotion.key}/${level} ${color}`;
+      }
+      check(`${emotion.key}/${level} a une encre`, Boolean(readableTextOn(color)));
+    }
+  }
+  check(
+    'le plancher de contraste tient sur les 36 couleurs',
+    floor >= MIN_TEXT_CONTRAST,
+    `${floor.toFixed(2)} < ${MIN_TEXT_CONTRAST} (${worst})`,
+  );
+
+  // La base doit connaître exactement les mêmes couples. Une nuance retouchée
+  // ici et pas en migration serait refusée à l'écriture par la clé étrangère,
+  // sans que rien ne le dise avant la production.
+  const sql = readFileSync(new URL('../supabase/migrations/0010_emotion_intensity.sql', import.meta.url), 'utf8');
+  const init = readFileSync(new URL('../supabase/migrations/0001_init.sql', import.meta.url), 'utf8');
+  for (const emotion of EMOTIONS) {
+    for (const level of INTENSITIES) {
+      const row = `('${emotion.key}', '${level}', '${shadeOf(emotion.key, level)}')`;
+      check(`la migration connaît ${emotion.key}/${level}`, sql.includes(row), row);
+      check(`le schéma initial connaît ${emotion.key}/${level}`, init.includes(row), row);
+    }
+  }
 }
 
 console.log('Série — jours d’affilée');
