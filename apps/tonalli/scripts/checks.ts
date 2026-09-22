@@ -5,6 +5,8 @@
  * Le cas France / Mexique est testé explicitement : c'est là que se cachent
  * les bugs de « jour » dans une app à deux bouts du monde.
  */
+import { readFileSync } from 'node:fs';
+
 import {
   clockInTimeZone,
   dateKeyInTimeZone,
@@ -17,12 +19,15 @@ import {
   monthGrid,
   offsetBetween,
   offsetMinutes,
+  shiftDay,
   shiftMonth,
+  streakOf,
   weekdayInitials,
   yearMonthOfKey,
 } from '../src/lib/dates.ts';
 import { coverCrop, isDenial, openCamera } from '../src/lib/camera.ts';
 import { BUBBLE_COUNT, BURST_MS, REACTIONS, bubbles, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
+import { DEFAULT_STREAK_SYMBOL, STREAK_SYMBOLS, isStreakSymbolKey, symbolOf } from '../src/lib/streak.ts';
 import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
 import { fr } from '../src/locales/fr.ts';
 import { es } from '../src/locales/es.ts';
@@ -116,6 +121,82 @@ console.log('Repère de build');
   // que rien.
   check('une chaîne illisible rend null', formatInstant('pas une date', 'fr') === null);
   check('une chaîne vide rend null', formatInstant('', 'fr') === null);
+}
+
+console.log('Série — jours d’affilée');
+{
+  // Le pas d'un jour se fait sur la clé, à midi UTC : les nuits de changement
+  // d'heure durent 23 ou 25 heures, et un pas posé sur un instant réel
+  // tomberait à côté.
+  check('jour suivant', shiftDay('2026-09-21', 1) === '2026-09-22', shiftDay('2026-09-21', 1));
+  check('jour précédent', shiftDay('2026-09-21', -1) === '2026-09-20', shiftDay('2026-09-21', -1));
+  check('passage de mois', shiftDay('2026-09-01', -1) === '2026-08-31', shiftDay('2026-09-01', -1));
+  check('passage d’année', shiftDay('2026-01-01', -1) === '2025-12-31', shiftDay('2026-01-01', -1));
+  check('29 février existe en 2028', shiftDay('2028-02-28', 1) === '2028-02-29', shiftDay('2028-02-28', 1));
+  check('et pas en 2027', shiftDay('2027-02-28', 1) === '2027-03-01', shiftDay('2027-02-28', 1));
+
+  // Le dimanche 25 octobre 2026, la France recule d'une heure : la journée
+  // dure 25 heures. Le pas doit rester un pas.
+  check('nuit de changement d’heure', shiftDay('2026-10-25', -1) === '2026-10-24', shiftDay('2026-10-25', -1));
+
+  const today = '2026-09-21';
+  const set = (...days: string[]) => new Set(days);
+
+  const run = streakOf(set('2026-09-21', '2026-09-20', '2026-09-19'), today);
+  check('trois jours d’affilée', run.length === 3, String(run.length));
+  check('la journée du jour est faite', run.todayDone);
+
+  // Aujourd'hui pas encore rempli ne casse pas la série : la journée n'est pas
+  // finie, et remettre le compteur à zéro au réveil punirait quelqu'un qui n'a
+  // encore rien fait de mal.
+  const waiting = streakOf(set('2026-09-20', '2026-09-19'), today);
+  check('la série survit à une journée en cours', waiting.length === 2, String(waiting.length));
+  check('mais elle est signalée en attente', !waiting.todayDone);
+
+  // Un jour manquant avant-hier, lui, coupe pour de bon.
+  const broken = streakOf(set('2026-09-21', '2026-09-19', '2026-09-18'), today);
+  check('un trou coupe la série', broken.length === 1, String(broken.length));
+
+  check('rien ne donne zéro', streakOf(set(), today).length === 0);
+  check('hier seul mais avant-hier vide', streakOf(set('2026-09-20'), today).length === 1);
+  check('avant-hier seul ne compte pas', streakOf(set('2026-09-19'), today).length === 0);
+
+  // Une série qui traverse un mois et une année ne doit pas se briser sur la
+  // frontière : c'est exactement ce qu'un calcul naïf raterait.
+  const across = streakOf(set('2026-01-01', '2025-12-31', '2025-12-30'), '2026-01-01');
+  check('la série traverse le 1er janvier', across.length === 3, String(across.length));
+
+  // Des journées futures ne gonflent pas le compteur.
+  const future = streakOf(set('2026-09-22', '2026-09-21'), today);
+  check('demain ne compte pas', future.length === 1, String(future.length));
+}
+
+console.log('Série — symboles');
+{
+  const keys = STREAK_SYMBOLS.map((item) => item.key);
+  const symbols = STREAK_SYMBOLS.map((item) => item.symbol);
+  check('les clés sont uniques', new Set(keys).size === keys.length);
+  check('les symboles sont uniques', new Set(symbols).size === symbols.length);
+  check('la palette tient sur une rangée', STREAK_SYMBOLS.length <= 6, String(STREAK_SYMBOLS.length));
+  check('le repli fait partie de la palette', isStreakSymbolKey(DEFAULT_STREAK_SYMBOL));
+
+  check('symbolOf rend le bon caractère', symbolOf('cherry') === '🍒', symbolOf('cherry'));
+  // Un badge doit toujours s'afficher : une donnée abîmée ne doit pas laisser
+  // un trou à la place du compteur.
+  check('une clé inconnue retombe sur la flamme', symbolOf('licorne') === '🔥', symbolOf('licorne'));
+  check('une clé absente aussi', symbolOf(null) === '🔥' && symbolOf(undefined) === '🔥');
+
+  for (const key of keys) {
+    check(`« ${key} » a un libellé français`, Boolean((fr.streak.names as Record<string, string>)[key]), key);
+    check(`« ${key} » a un libellé espagnol`, Boolean((es.streak.names as Record<string, string>)[key]), key);
+  }
+
+  // La contrainte `check` de la migration doit couvrir exactement la palette :
+  // un symbole ajouté ici et pas en base serait refusé à l'écriture.
+  const sql = readFileSync(new URL('../supabase/migrations/0009_streak_symbol.sql', import.meta.url), 'utf8');
+  for (const key of keys) {
+    check(`« ${key} » est accepté par la base`, sql.includes(`'${key}'`), key);
+  }
 }
 
 console.log('Émotions');

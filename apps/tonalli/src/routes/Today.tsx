@@ -5,6 +5,7 @@ import { EmotionGrid } from '@/components/EmotionGrid';
 import { EntryPhotos, PhotoPair } from '@/components/PhotoPair';
 import { QuickReactions, ReceivedReaction } from '@/components/Reactions';
 import { SaveBloom } from '@/components/SaveBloom';
+import { StreakBadge } from '@/components/Streak';
 import { ErrorBanner, OfflineBanner } from '@/components/States';
 import { formatLongDate, todayInTimeZone } from '@/lib/dates';
 import { colorOf, readableTextOn, veilOpacity, washGradient } from '@/lib/emotions';
@@ -139,9 +140,12 @@ export function TodayScreen() {
           }
         />
       ) : null}
-      <div className="stack-sm">
-        <h1>{t('today.title')}</h1>
-        <p className="faint small capitalize">{formatLongDate(today, locale)}</p>
+      <div className="row-between">
+        <div className="stack-sm">
+          <h1>{t('today.title')}</h1>
+          <p className="faint small capitalize">{formatLongDate(today, locale)}</p>
+        </div>
+        <StreakBadge />
       </div>
 
       {!online ? <OfflineBanner /> : null}

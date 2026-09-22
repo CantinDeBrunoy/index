@@ -199,6 +199,51 @@ function keyToNeutralDate(key: string): Date {
   return new Date(Date.UTC(year, month - 1, day, 12));
 }
 
+/**
+ * Jour voisin d'une clé de date. Le décalage se fait **sur la clé**, à midi
+ * UTC, jamais sur un instant réel : un pas d'un jour posé sur une heure locale
+ * tomberait à côté les nuits de changement d'heure, où une journée fait 23 ou
+ * 25 heures.
+ */
+export function shiftDay(key: string, delta: number): string {
+  const at = keyToNeutralDate(key);
+  at.setUTCDate(at.getUTCDate() + delta);
+  return makeKey(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
+}
+
+/** Une série de jours remplis d'affilée, et l'état de la journée en cours. */
+export type Streak = {
+  /** Nombre de jours consécutifs, aujourd'hui compris s'il est rempli. */
+  length: number;
+  /** La journée du jour est-elle déjà remplie ? */
+  todayDone: boolean;
+};
+
+/**
+ * Remonte le temps depuis aujourd'hui tant que les journées se suivent.
+ *
+ * Une journée du jour pas encore remplie **ne casse pas** la série : la
+ * journée n'est pas finie, et une app qui remettrait le compteur à zéro au
+ * réveil punirait quelqu'un qui n'a encore rien fait de mal. On repart donc
+ * d'hier, et c'est le lendemain seulement qu'un jour manquant compte comme
+ * une rupture.
+ *
+ * Le calcul se fait sur des clés de date, donc dans le fuseau de la personne,
+ * sans aucune conversion.
+ */
+export function streakOf(filled: ReadonlySet<string>, today: string): Streak {
+  const todayDone = filled.has(today);
+  let cursor = todayDone ? today : shiftDay(today, -1);
+  let length = 0;
+
+  while (filled.has(cursor)) {
+    length += 1;
+    cursor = shiftDay(cursor, -1);
+  }
+
+  return { length, todayDone };
+}
+
 export function formatLongDate(key: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
     weekday: 'long',

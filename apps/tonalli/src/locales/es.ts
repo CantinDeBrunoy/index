@@ -137,6 +137,21 @@ export const es: Translation = {
       strength: 'Ánimo',
     },
   },
+  streak: {
+    section: 'Símbolo de la racha',
+    hint: 'Aparece arriba de la pantalla, con los días seguidos.',
+    days: '{{count}} día seguido',
+    daysPlural: '{{count}} días seguidos',
+    waiting: 'aún te falta registrar el día de hoy',
+    names: {
+      flame: 'Llama',
+      cherry: 'Cereza',
+      heart: 'Corazón',
+      star: 'Estrella',
+      leaf: 'Hoja',
+      sun: 'Sol',
+    },
+  },
   settings: {
     title: 'Ajustes',
     account: 'Cuenta',
