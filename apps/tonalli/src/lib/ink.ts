@@ -264,18 +264,59 @@ export function inkFrame(plan: InkPlan, t: number): InkFrame {
     };
   }
 
+  return {
+    phase: 'clear',
+    ...waterDrop(time, WATER, plan.clear, plan.ripple, plan.swirl),
+    drift,
+    message,
+  };
+}
+
+/**
+ * Les jalons d'une goutte d'eau, en fraction de la durée de l'animation qui
+ * la porte : l'encre de validation, ou le dévoilement de la journée du binôme.
+ */
+type Waterfall = {
+  /** La goutte commence à tomber, au-dessus du cadre. */
+  fall: number;
+  /** Elle touche l'eau. */
+  impact: number;
+  /** Écrasée, elle s'est arrondie : l'eau claire se diffuse depuis là. */
+  clearDrop: number;
+  /** Départ de chaque rond dans l'eau après l'impact. */
+  rings: readonly number[];
+  /** Durée de vie d'un rond. */
+  ringSpan: number;
+};
+
+const WATER: Waterfall = {
+  fall: PHASES.fall,
+  impact: PHASES.impact,
+  clearDrop: PHASES.clearDrop,
+  rings: RINGS,
+  ringSpan: RING_SPAN,
+};
+
+/**
+ * La goutte d'eau, ses ronds, et l'eau claire qui en part — tous des trous
+ * dans une nappe de couleur. Commun à la validation et au dévoilement : la
+ * même eau efface l'encre qu'on vient de poser, et découvre celle de l'autre.
+ */
+function waterDrop(time: number, timing: Waterfall, clear: Spread, ripple: number, swirl: number) {
+  const center = clear.from;
+
   // La goutte tombe en accélérant, comme tout ce qui tombe, et s'étire avec
   // la vitesse. À l'impact elle s'écrase, puis s'arrondit à la taille de la
   // goutte d'encre : c'est de là que l'eau claire se diffuse, et le cœur de
   // la diffusion la recouvre sans raccord.
   let droplet: Blob;
-  if (time < PHASES.impact) {
-    const fall = span(time, PHASES.fall, PHASES.impact) ** 2;
+  if (time < timing.impact) {
+    const fall = span(time, timing.fall, timing.impact) ** 2;
     const height = DROPLET * (1 + STRETCH * fall);
     const y = mix(-height, center.y, fall);
     droplet = { x: center.x - DROPLET / 2, y: y - height / 2, width: DROPLET, height, rx: DROPLET / 2 };
   } else {
-    const landing = easeOut(span(time, PHASES.impact, PHASES.clearDrop));
+    const landing = easeOut(span(time, timing.impact, timing.clearDrop));
     // Écrasée d'abord — plus large que haute —, puis ronde.
     const squash = Math.sin(Math.PI * landing) * 0.5;
     // La hauteur part de celle de la chute : sans ça, la goutte étirée
@@ -290,25 +331,24 @@ export function inkFrame(plan: InkPlan, t: number): InkFrame {
   // efface tout ce qui passe sous un tiers d'opacité : la leur descend donc
   // jusque-là et pas plus bas, sinon ils disparaîtraient d'un coup à
   // mi-course au lieu de s'éteindre.
-  const rings = RINGS.map((delay) => {
-    const p = span(time, PHASES.impact + delay, PHASES.impact + delay + RING_SPAN);
+  const rings = timing.rings.map((delay) => {
+    const p = span(time, timing.impact + delay, timing.impact + delay + timing.ringSpan);
     const alive = p > 0 && p < 1;
     return {
-      blob: circle(center, mix(SEED / 2, plan.ripple, easeOut(p))),
+      blob: circle(center, mix(SEED / 2, ripple, easeOut(p))),
       stroke: alive ? mix(4, 1.5, p) : 0,
       opacity: alive ? 0.34 + 0.66 * (1 - p) : 0,
     };
   });
 
   // L'eau claire : la même diffusion que l'encre, depuis l'impact, jusqu'au
-  // bout de la durée. Elle finit pile à la fin — l'écran est alors
+  // bout de la durée. Elle finit pile à la fin — le cadre est alors
   // entièrement découvert, turbulence comprise, et il ne reste rien à
   // effacer. Pendant la chute, elle n'a pas commencé : la turbulence est
   // nulle, et la goutte tombe nette.
-  const wash = diffusion(plan.clear, time, PHASES.impact, PHASES.clearDrop, 1, CLEAR_FLOW);
-  const strength = plan.swirl * wash.agitation;
+  const wash = diffusion(clear, time, timing.impact, timing.clearDrop, 1, CLEAR_FLOW);
+  const strength = swirl * wash.agitation;
   return {
-    phase: 'clear',
     blobs: [...wash.blobs, droplet],
     rings,
     veil: wash.veil,
@@ -317,9 +357,69 @@ export function inkFrame(plan: InkPlan, t: number): InkFrame {
     // l'encre. Un fondu par-dessus brouillerait le front de l'eau claire.
     opacity: 1,
     swirl: strength,
-    blur: (MAX_BLUR * strength) / plan.swirl,
-    drift,
-    message,
+    blur: (MAX_BLUR * strength) / swirl,
+  };
+}
+
+/**
+ * Durée du dévoilement de la journée du binôme, en millisecondes. Plus court
+ * que l'encre de validation : c'est la seconde cérémonie de la journée, et
+ * elle se joue dans une carte, pas sur tout l'écran — le plein écran reste
+ * réservé à son propre geste.
+ */
+export const REVEAL_MS = 1700;
+
+/** Les jalons du dévoilement, en fraction de `REVEAL_MS`. */
+export const REVEAL = {
+  /** La goutte tombe dès l'appui : c'est le doigt qui l'a lâchée. */
+  fall: 0,
+  /** Elle touche la carte, là où le doigt s'est posé. L'invitation se dissout. */
+  impact: 0.2,
+  /** Écrasée, elle s'est arrondie ; l'invitation a disparu. */
+  clearDrop: 0.3,
+} as const;
+
+/** Les ronds du dévoilement : mêmes durées réelles que ceux de la validation. */
+const REVEAL_RINGS = RINGS.map((delay) => (delay * BLOOM_MS) / REVEAL_MS);
+const REVEAL_RING_SPAN = (RING_SPAN * BLOOM_MS) / REVEAL_MS;
+
+export type RevealPlan = { clear: Spread; ripple: number; swirl: number };
+
+/**
+ * Le plan d'un dévoilement : la carte couverte de la couleur du binôme, et le
+ * point où le doigt l'a touchée — c'est là que tombe la goutte. Tiré une
+ * seule fois, comme celui de l'encre.
+ */
+export function revealPlan(frame: Size, impact: Point, random: () => number): RevealPlan {
+  const swirl = Math.min(MAX_SWIRL, Math.max(40, 0.28 * Math.min(frame.width, frame.height)));
+  return {
+    clear: spreadFrom(impact, frame, swirl, random),
+    ripple: 0.32 * Math.min(frame.width, frame.height),
+    swirl,
+  };
+}
+
+/** L'image du dévoilement à l'instant `t`, en fraction de `REVEAL_MS` (0 → 1). */
+export function revealFrame(plan: RevealPlan, t: number): InkFrame {
+  const time = clamp01(t);
+  // L'invitation est lisible dès le départ — la carte couverte l'affichait
+  // déjà — et se dissout sous la goutte, comme la phrase de la validation.
+  const leaving = easeOut(span(time, REVEAL.impact, REVEAL.clearDrop));
+  return {
+    phase: 'clear',
+    ...waterDrop(
+      time,
+      { ...REVEAL, rings: REVEAL_RINGS, ringSpan: REVEAL_RING_SPAN },
+      plan.clear,
+      plan.ripple,
+      plan.swirl,
+    ),
+    drift: { x: -0.25 * plan.swirl * time, y: -0.9 * plan.swirl * time },
+    message: {
+      opacity: 1 - leaving,
+      blur: MESSAGE_BLUR * leaving,
+      rise: -MESSAGE_RISE * 1.5 * leaving,
+    },
   };
 }
 
