@@ -82,7 +82,7 @@ src/
     reactions.ts       les 6 couples (clé, emoji) de l'action rapide
     streak.ts          les 6 symboles de la série (le calcul est dans dates.ts)
     inset.ts           géométrie de la vignette : bornes et collage aux coins
-    ink.ts             l'encre de validation : l'encre, l'eau claire, la turbulence
+    ink.ts             l'encre de validation : l'encre, le message, l'eau claire
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -676,7 +676,7 @@ appliquée à l'ensemble écrasait les dernières.
 **Une encre, ce n'est pas un disque qui grossit.** La première version faisait
 grandir un cercle parfait puis le repliait dans le bandeau : propre, mais
 géométrique. C'est maintenant une goutte d'encre dans l'eau, qui couvre
-l'écran, puis une goutte d'eau claire qui éclot au cœur de l'écran et
+l'écran le temps qu'une phrase s'y lise, puis une goutte d'eau claire qui éclot au cœur de l'écran et
 repousse l'encre vers les bords jusqu'à rendre l'app. Les deux temps sont
 **la même diffusion** (`diffusion()` dans `src/lib/ink.ts`) : un cœur,
 quatre panaches accrochés à son front, un voile dilué devant. Seul change ce
@@ -698,6 +698,14 @@ Trois choses à savoir avant d'y toucher :
   l'eau claire n'a encore rien ouvert. À la fin, le trou couvre tout à son
   tour : il ne reste pas un coin d'encre quand le composant se démonte.
   `npm run checks` vérifie les trois.
+- **Le message ne se lit que sur la couleur.** « Aujourd'hui porte ta
+  teinte. » (`today.sealed`) se lève quand l'écran est couvert, et il s'est
+  dissous avant que la goutte claire ait perlé — à sa place, au centre, si
+  bien qu'elle semble l'emporter. Posé sur le papier, il serait illisible
+  dans sa propre teinte. Sa courbe (opacité, flou, montée) est calculée dans
+  `inkFrame`, sur la même horloge que l'encre, et `npm run checks` vérifie
+  qu'il ne paraît jamais sur un écran découvert et qu'il tient assez
+  longtemps pour être lu.
 - **Un groupe sans rien à peindre peut voir son filtre sauté.** Quand l'eau
   claire tombe, ses taches ont une taille nulle ; sans l'ancre transparente
   hors champ, la nappe de couleur disparaîtrait le temps d'une frame.

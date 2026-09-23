@@ -154,7 +154,7 @@ export function TodayScreen() {
   return (
     <div className="stack today-screen">
       {bloom ? (
-        <SaveBloom color={bloom.color} from={bloom.from} onDone={endBloom} />
+        <SaveBloom color={bloom.color} from={bloom.from} message={t('today.sealed')} onDone={endBloom} />
       ) : null}
       {washColor ? (
         <div

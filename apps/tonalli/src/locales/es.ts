@@ -60,6 +60,7 @@ export const es: Translation = {
   today: {
     title: 'Hoy',
     mine: 'Mi día',
+    sealed: 'Hoy lleva tu matiz.',
     edit: 'Cambiar',
     save: 'Guardar',
     cancel: 'Cancelar',

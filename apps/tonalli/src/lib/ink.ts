@@ -10,9 +10,11 @@
  * 1. **L'encre.** Une goutte tombe du bouton qu'on vient d'appuyer et se
  *    déploie en panaches jusqu'à couvrir l'écran — c'est la couleur du jour,
  *    elle a le droit.
- * 2. **L'eau claire.** Une goutte d'eau tombe à son tour, au cœur de l'écran,
- *    et repousse l'encre vers les bords avec les mêmes volutes, jusqu'à ce
- *    que l'app réapparaisse.
+ * 2. **Le message.** Tant que la couleur occupe tout, une phrase courte
+ *    s'y lève au centre — « Aujourd'hui porte ta teinte. » — puis se dissout.
+ * 3. **L'eau claire.** Une goutte d'eau tombe à son tour, au cœur de l'écran,
+ *    là où le message vient de s'effacer, et repousse l'encre vers les bords
+ *    avec les mêmes volutes, jusqu'à ce que l'app réapparaisse.
  *
  * Le second temps est littéralement le premier rejoué : mêmes courbes, mêmes
  * panaches, même voile — seulement, ce qui se diffuse est un trou dans
@@ -35,7 +37,7 @@
  * minuteur de secours qui démonte l'écran : deux durées séparées finiraient
  * par diverger, et l'encre disparaîtrait avant la fin, ou traînerait après.
  */
-export const BLOOM_MS = 1800;
+export const BLOOM_MS = 3200;
 
 /** Taille de la goutte qui perle, en pixels. */
 export const SEED = 44;
@@ -46,16 +48,22 @@ export const PLUMES = 4;
 /** Les jalons, en fraction de `BLOOM_MS`. */
 export const PHASES = {
   /** La goutte d'encre a perlé sur le bouton. */
-  drop: 0.06,
-  /** L'encre couvre l'écran. */
-  full: 0.36,
+  drop: 0.035,
+  /** L'encre couvre l'écran. Le message ne se lève qu'à partir d'ici. */
+  full: 0.22,
+  /** Le message est entièrement lisible. */
+  shown: 0.32,
+  /** Il commence à se dissoudre. */
+  fading: 0.56,
   /**
-   * La goutte d'eau claire tombe : un souffle après `full`, le temps que
-   * l'écran plein soit vu comme tel, pas davantage.
+   * La goutte d'eau claire tombe, au centre, pendant que le message finit de
+   * se dissoudre : c'est elle qui semble l'emporter.
    */
-  clear: 0.38,
-  /** Elle a perlé. */
-  clearDrop: 0.43,
+  clear: 0.62,
+  /** Le message a disparu. */
+  gone: 0.66,
+  /** La goutte claire a perlé. */
+  clearDrop: 0.67,
 } as const;
 
 export type Point = { x: number; y: number };
@@ -108,7 +116,15 @@ export type InkFrame = {
   blur: number;
   /** Dérive du champ de turbulence, en pixels : c'est elle qui fait tourner les volutes. */
   drift: Point;
+  /** Le message au centre : son opacité, son flou et sa montée, en pixels. */
+  message: { opacity: number; blur: number; rise: number };
 };
+
+/** Flou du message quand il se dissout : il se défait comme l'encre dans l'eau. */
+const MESSAGE_BLUR = 8;
+
+/** Le message se lève de quelques pixels en apparaissant, et continue en partant. */
+const MESSAGE_RISE = 10;
 
 /** La turbulence ne dépasse jamais ça, même sur un grand écran : au-delà, l'encre se déchire. */
 const MAX_SWIRL = 150;
@@ -182,6 +198,18 @@ export function inkFrame(plan: InkPlan, t: number): InkFrame {
   // dérive qui accélère se verrait comme un glissement de l'image.
   const drift = { x: -0.25 * plan.swirl * time, y: -0.9 * plan.swirl * time };
 
+  // Le message ne paraît que sur un écran entièrement couvert — posé sur le
+  // papier, il serait illisible dans sa propre couleur — et il est parti
+  // avant que la goutte claire ait perlé. Il monte doucement tout du long :
+  // un texte qui s'arrête net pour repartir aurait l'air posé là, pas porté.
+  const rising = easeOut(span(time, PHASES.full, PHASES.shown));
+  const leaving = inOut(span(time, PHASES.fading, PHASES.gone));
+  const message = {
+    opacity: rising * (1 - leaving),
+    blur: MESSAGE_BLUR * leaving,
+    rise: MESSAGE_RISE * (1 - rising) - MESSAGE_RISE * 1.5 * leaving,
+  };
+
   if (time < PHASES.clear) {
     const bloom = diffusion(plan.ink, time, 0, PHASES.drop, PHASES.full, INK_FLOW);
     const strength = plan.swirl * bloom.agitation;
@@ -190,11 +218,12 @@ export function inkFrame(plan: InkPlan, t: number): InkFrame {
       blobs: bloom.blobs,
       veil: bloom.veil,
       // Le voile s'éteint quand l'écran est couvert : il n'a plus rien à montrer.
-      veilOpacity: VEIL * (1 - span(time, PHASES.full - 0.08, PHASES.full)),
+      veilOpacity: VEIL * (1 - span(time, PHASES.full - 0.05, PHASES.full)),
       opacity: bloom.drop,
       swirl: strength,
       blur: (MAX_BLUR * strength) / plan.swirl,
       drift,
+      message,
     };
   }
 
@@ -214,6 +243,7 @@ export function inkFrame(plan: InkPlan, t: number): InkFrame {
     swirl: strength,
     blur: (MAX_BLUR * strength) / plan.swirl,
     drift,
+    message,
   };
 }
 
@@ -277,5 +307,9 @@ function span(t: number, a: number, b: number) {
 
 function easeOut(p: number) {
   return 1 - (1 - p) ** 3;
+}
+
+function inOut(p: number) {
+  return p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2;
 }
 

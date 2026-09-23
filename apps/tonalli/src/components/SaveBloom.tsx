@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { readableTextOn } from '@/lib/emotions';
 import { BLOOM_MS, PLUMES, inkFrame, inkPlan } from '@/lib/ink';
 import type { Blob, Point } from '@/lib/ink';
 
@@ -13,9 +14,10 @@ const CLEAR_ID = 'save-bloom-clear';
 /**
  * La couleur du jour part du bouton qu'on vient d'appuyer, comme une goutte
  * d'encre qui tombe dans l'eau : elle se déploie en panaches jusqu'à occuper
- * tout l'écran — c'est la couleur du jour, elle a le droit. Puis une goutte
- * d'eau claire tombe au cœur de l'écran et repousse l'encre vers les bords,
- * avec les mêmes volutes, jusqu'à rendre l'app.
+ * tout l'écran — c'est la couleur du jour, elle a le droit. Une phrase s'y
+ * lève au centre, puis se dissout ; une goutte d'eau claire tombe à sa place
+ * et repousse l'encre vers les bords, avec les mêmes volutes, jusqu'à rendre
+ * l'app.
  *
  * La géométrie vit dans `src/lib/ink.ts`, vérifiée par `npm run checks`. Ici
  * on ne fait que la dessiner : un SVG plein écran, une poignée de rectangles
@@ -36,8 +38,20 @@ const CLEAR_ID = 'save-bloom-clear';
  * `pointer-events: none` : c'est une confirmation, pas un écran. Un appui
  * pendant le trajet doit atteindre ce qu'il vise.
  */
-export function SaveBloom({ color, from, onDone }: { color: string; from: Origin; onDone: () => void }) {
+export function SaveBloom({
+  color,
+  from,
+  message,
+  onDone,
+}: {
+  color: string;
+  from: Origin;
+  /** La phrase qui se lève au centre quand la couleur occupe tout l'écran. */
+  message: string;
+  onDone: () => void;
+}) {
   const group = useRef<SVGGElement>(null);
+  const words = useRef<HTMLParagraphElement>(null);
   const veil = useRef<SVGRectElement>(null);
   const blobs = useRef<(SVGRectElement | null)[]>([]);
   const filters = useRef<SVGFilterElement[]>([]);
@@ -89,6 +103,14 @@ export function SaveBloom({ color, from, onDone }: { color: string; from: Origin
         flow?.setAttribute('dx', image.drift.x.toFixed(1));
         flow?.setAttribute('dy', image.drift.y.toFixed(1));
       }
+      // Le message lit la même horloge que l'encre : réglé à part, en CSS, il
+      // finirait par paraître sur du papier ou survivre à l'eau claire.
+      const text = words.current;
+      if (text) {
+        text.style.opacity = image.message.opacity.toFixed(3);
+        text.style.filter = image.message.blur > 0.05 ? `blur(${image.message.blur.toFixed(2)}px)` : '';
+        text.style.transform = `translateY(${image.message.rise.toFixed(1)}px)`;
+      }
 
       if (t >= 1) finish();
       else raf = requestAnimationFrame(paint);
@@ -138,51 +160,58 @@ export function SaveBloom({ color, from, onDone }: { color: string; from: Origin
   );
 
   return (
-    <svg className="bloom" aria-hidden focusable="false">
-      <defs>
-        <filter
-          id={INK_ID}
-          {...region}
-          ref={(element) => {
-            if (element) filters.current[0] = element;
-          }}
-        >
-          {swirl}
-        </filter>
-        <filter
-          id={CLEAR_ID}
-          {...region}
-          ref={(element) => {
-            if (element) filters.current[1] = element;
-          }}
-        >
-          {swirl}
-          {/* L'eau claire : une nappe de couleur, moins la tache. Le voile, à
-              moitié transparent, y devient une encre éclaircie au bord du
-              trou — elle se dilue avant de disparaître. */}
-          <feFlood floodColor={color} result="sea" />
-          <feComposite in="sea" in2="stain" operator="out" />
-        </filter>
-      </defs>
-      {/* Tout part invisible : sans ça, un rectangle vide clignoterait dans le
-          coin avant la première frame. */}
-      <g ref={group} filter={`url(#${INK_ID})`} fill={color} opacity="0">
-        {/* Une ancre transparente, hors champ : quand l'eau claire tombe, ses
-            taches ont encore une taille nulle, et un groupe sans rien à
-            peindre peut voir son filtre sauté — la nappe de couleur
-            disparaîtrait le temps d'une frame, en plein écran. */}
-        <rect x={-margin / 2} y={-margin / 2} width="1" height="1" fillOpacity="0" />
-        <rect ref={veil} fillOpacity="0" />
-        {Array.from({ length: PLUMES + 1 }, (_, index) => (
-          <rect
-            key={index}
+    <div className="bloom">
+      <svg className="bloom__ink" aria-hidden focusable="false">
+        <defs>
+          <filter
+            id={INK_ID}
+            {...region}
             ref={(element) => {
-              blobs.current[index] = element;
+              if (element) filters.current[0] = element;
             }}
-          />
-        ))}
-      </g>
-    </svg>
+          >
+            {swirl}
+          </filter>
+          <filter
+            id={CLEAR_ID}
+            {...region}
+            ref={(element) => {
+              if (element) filters.current[1] = element;
+            }}
+          >
+            {swirl}
+            {/* L'eau claire : une nappe de couleur, moins la tache. Le voile, à
+                moitié transparent, y devient une encre éclaircie au bord du
+                trou — elle se dilue avant de disparaître. */}
+            <feFlood floodColor={color} result="sea" />
+            <feComposite in="sea" in2="stain" operator="out" />
+          </filter>
+        </defs>
+        {/* Tout part invisible : sans ça, un rectangle vide clignoterait dans le
+            coin avant la première frame. */}
+        <g ref={group} filter={`url(#${INK_ID})`} fill={color} opacity="0">
+          {/* Une ancre transparente, hors champ : quand l'eau claire tombe, ses
+              taches ont encore une taille nulle, et un groupe sans rien à
+              peindre peut voir son filtre sauté — la nappe de couleur
+              disparaîtrait le temps d'une frame, en plein écran. */}
+          <rect x={-margin / 2} y={-margin / 2} width="1" height="1" fillOpacity="0" />
+          <rect ref={veil} fillOpacity="0" />
+          {Array.from({ length: PLUMES + 1 }, (_, index) => (
+            <rect
+              key={index}
+              ref={(element) => {
+                blobs.current[index] = element;
+              }}
+            />
+          ))}
+        </g>
+      </svg>
+      {/* `role="status"` : la phrase dit que la journée est enregistrée, et
+          c'est aussi vrai pour qui ne voit pas l'encre. */}
+      <p ref={words} className="bloom__message" role="status" style={{ color: readableTextOn(color) }}>
+        {message}
+      </p>
+    </div>
   );
 }
 

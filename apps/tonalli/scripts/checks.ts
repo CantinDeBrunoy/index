@@ -647,9 +647,10 @@ console.log('Encre de validation');
   };
 
   check('un panache par tache, plus le cœur', at(0.3).blobs.length === PLUMES + 1, String(at(0.3).blobs.length));
-  check('la durée reste un geste, pas une attente', BLOOM_MS >= 1000 && BLOOM_MS <= 2200, String(BLOOM_MS));
+  check('la durée reste un geste, pas une attente', BLOOM_MS >= 1000 && BLOOM_MS <= 3600, String(BLOOM_MS));
   check('les jalons sont dans l\'ordre',
-    0 < PHASES.drop && PHASES.drop < PHASES.full && PHASES.full < PHASES.clear && PHASES.clear < PHASES.clearDrop && PHASES.clearDrop < 1);
+    0 < PHASES.drop && PHASES.drop < PHASES.full && PHASES.full < PHASES.shown && PHASES.shown < PHASES.fading
+      && PHASES.fading < PHASES.clear && PHASES.clear < PHASES.clearDrop && PHASES.clearDrop < 1);
 
   // Au départ, rien : un rectangle qui clignoterait avant la première frame
   // se verrait dans le coin de l'écran.
@@ -676,6 +677,28 @@ console.log('Encre de validation');
   check('à la bascule, l\'eau claire n\'a encore rien ouvert',
     turn.phase === 'clear' && turn.opacity === 1 && turn.blobs.every((blob) => blob.width === 0) && turn.veilOpacity === 0,
     JSON.stringify(turn.blobs[0]));
+
+  // Le message ne se lit que sur la couleur : posé sur le papier, il serait
+  // illisible dans sa propre teinte. Il paraît quand l'écran est couvert, et
+  // il est parti avant que la goutte claire ait perlé.
+  let messageSafe = true;
+  for (let step = 0; step <= 800; step += 1) {
+    const t = step / 800;
+    const image = at(t);
+    if (image.message.opacity <= 0) continue;
+    const onColor = image.phase === 'ink' ? covers(image) : t < PHASES.clearDrop;
+    if (!onColor) messageSafe = false;
+  }
+  check('le message ne paraît que sur un écran couvert', messageSafe);
+  check('rien à lire avant que l\'écran soit plein', at(PHASES.full - 1e-6).message.opacity === 0);
+  for (const t of [PHASES.shown, (PHASES.shown + PHASES.fading) / 2, PHASES.fading]) {
+    const { message } = at(t);
+    check(`message net et lisible à ${t.toFixed(3)}`, message.opacity === 1 && message.blur === 0 && message.rise === 0, JSON.stringify(message));
+  }
+  check('le message a disparu avant l\'eau claire', at(PHASES.gone).message.opacity === 0 && PHASES.gone <= PHASES.clearDrop);
+  // Assez longtemps pour être lu : une phrase courte se lit en une seconde.
+  check('le message tient au moins une seconde', (PHASES.fading - PHASES.shown) * BLOOM_MS >= 700 && (PHASES.gone - PHASES.full) * BLOOM_MS >= 1000,
+    `${(PHASES.fading - PHASES.shown) * BLOOM_MS} ms`);
 
   // L'eau claire tombe au cœur de l'écran.
   const clearDrop = at(PHASES.clearDrop);
@@ -704,6 +727,7 @@ console.log('Encre de validation');
   for (let step = 0; step <= 400; step += 1) {
     const image = at(step / 400);
     const numbers = [image.opacity, image.swirl, image.blur, image.veilOpacity, image.drift.x, image.drift.y,
+      image.message.opacity, image.message.blur, image.message.rise,
       ...[image.veil, ...image.blobs].flatMap((blob) => [blob.x, blob.y, blob.width, blob.height, blob.rx])];
     if (!numbers.every(Number.isFinite) || image.blobs.some((blob) => blob.width < 0 || blob.height < 0)) finite = false;
   }
