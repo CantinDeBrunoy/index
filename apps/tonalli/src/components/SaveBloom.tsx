@@ -5,7 +5,7 @@ import type { InkCanvasHandle } from '@/components/InkCanvas';
 import { paintWords } from '@/components/inkWords';
 import { readableTextOn } from '@/lib/emotions';
 import { BLOOM_MS, inkFrame, inkPlan } from '@/lib/ink';
-import type { Point } from '@/lib/ink';
+import type { Gesture, Point } from '@/lib/ink';
 
 /** Point de départ de l'encre, en coordonnées d'écran. */
 export type Origin = Point;
@@ -32,11 +32,14 @@ export type Origin = Point;
 export function SaveBloom({
   color,
   from,
+  gesture,
   message,
   onDone,
 }: {
   color: string;
   from: Origin;
+  /** La façon dont l'émotion touche l'eau (`gestureOf`). */
+  gesture: Gesture;
   /** La phrase qui se lève au centre quand la couleur occupe tout l'écran. */
   message: string;
   onDone: () => void;
@@ -54,7 +57,7 @@ export function SaveBloom({
       return;
     }
 
-    const plan = inkPlan(from, { width: window.innerWidth, height: window.innerHeight }, Math.random);
+    const plan = inkPlan(from, { width: window.innerWidth, height: window.innerHeight }, Math.random, gesture);
 
     let raf = 0;
     let start: number | null = null;
@@ -87,7 +90,7 @@ export function SaveBloom({
       cancelAnimationFrame(raf);
       window.clearTimeout(timer);
     };
-  }, [from, onDone]);
+  }, [from, gesture, onDone]);
 
   return (
     <div className="bloom">

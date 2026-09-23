@@ -29,14 +29,16 @@ import { coverCrop, isDenial, openCamera } from '../src/lib/camera.ts';
 import { BUBBLE_COUNT, BURST_MS, REACTIONS, bubbles, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
 import { DEFAULT_STREAK_SYMBOL, STREAK_SYMBOLS, isStreakSymbolKey, symbolOf } from '../src/lib/streak.ts';
 import {
+  BLOB_SLOTS,
   BLOOM_MS,
+  DROP_SLOT,
   DROPLET,
   PHASES,
-  PLUMES,
   REVEAL,
   REVEAL_MS,
   RINGS,
   SEED,
+  gestureOf,
   inkFrame,
   inkPlan,
   revealFrame,
@@ -660,7 +662,7 @@ console.log('Encre de validation');
   };
 
   for (const t of [0.3, 0.9]) {
-    check(`le cœur, les panaches et la goutte d'eau à ${t}`, at(t).blobs.length === PLUMES + 2, String(at(t).blobs.length));
+    check(`le cœur, les panaches et les gouttes à ${t}`, at(t).blobs.length === BLOB_SLOTS, String(at(t).blobs.length));
     check(`les ronds dans l'eau à ${t}`, at(t).rings.length === RINGS.length, String(at(t).rings.length));
   }
   check('la durée reste un geste, pas une attente', BLOOM_MS >= 1000 && BLOOM_MS <= 3600, String(BLOOM_MS));
@@ -692,26 +694,26 @@ console.log('Encre de validation');
   // À la bascule, rien n'est ouvert : l'eau claire n'a pas commencé, et la
   // goutte est encore au-dessus de l'écran.
   const turn = at(PHASES.fall);
-  const turnDroplet = turn.blobs.at(-1)!;
+  const turnDroplet = turn.blobs[DROP_SLOT];
   check('à la bascule, rien n\'est ouvert',
     turn.phase === 'clear' && turn.opacity === 1 && turn.veilOpacity === 0
-      && turn.blobs.slice(0, -1).every((blob) => blob.width === 0)
+      && turn.blobs.slice(0, DROP_SLOT).every((blob) => blob.width === 0)
       && turnDroplet.y + turnDroplet.height <= 0
       && turn.rings.every((ring) => ring.opacity === 0),
     JSON.stringify(turnDroplet));
 
   // La goutte tombe en accélérant, nette — la turbulence n'a pas commencé —
   // et touche l'eau au centre, à l'impact.
-  const heights = [0.25, 0.5, 0.75].map((f) => centerOf(at(PHASES.fall + f * (PHASES.impact - PHASES.fall)).blobs.at(-1)!).y);
+  const heights = [0.25, 0.5, 0.75].map((f) => centerOf(at(PHASES.fall + f * (PHASES.impact - PHASES.fall)).blobs[DROP_SLOT]).y);
   const falling = at((PHASES.fall + PHASES.impact) / 2);
   check('la goutte accélère', heights[2] - heights[1] > heights[1] - heights[0], heights.map((h) => h.toFixed(1)).join(' → '));
   check('la goutte tombe nette', falling.swirl === 0 && falling.blur === 0, `${falling.swirl} / ${falling.blur}`);
-  check('la vitesse l\'étire', falling.blobs.at(-1)!.height > DROPLET, String(falling.blobs.at(-1)!.height));
-  const hit = centerOf(at(PHASES.impact).blobs.at(-1)!);
+  check('la vitesse l\'étire', falling.blobs[DROP_SLOT].height > DROPLET, String(falling.blobs[DROP_SLOT].height));
+  const hit = centerOf(at(PHASES.impact).blobs[DROP_SLOT]);
   check('elle touche l\'eau au centre', Math.abs(hit.x - center.x) < 1e-6 && Math.abs(hit.y - center.y) < 1e-6, JSON.stringify(hit));
   // Pas de saut à l'impact : la goutte écrasée part de la forme de la chute.
-  const before = at(PHASES.impact - 1e-6).blobs.at(-1)!;
-  const after = at(PHASES.impact + 1e-6).blobs.at(-1)!;
+  const before = at(PHASES.impact - 1e-6).blobs[DROP_SLOT];
+  const after = at(PHASES.impact + 1e-6).blobs[DROP_SLOT];
   check('pas de saut à l\'impact', Math.abs(before.height - after.height) < 1 && Math.abs(before.width - after.width) < 1,
     `${before.width}×${before.height} → ${after.width}×${after.height}`);
   check('le message se dissout sous la goutte', at(PHASES.impact).message.opacity === 1 && at(PHASES.impact + 0.01).message.opacity < 1);
@@ -810,20 +812,20 @@ console.log('Dévoilement de la journée du binôme');
   // au-dessus, rien n'est ouvert, l'invitation est lisible. C'est ce qui rend
   // invisible le passage du bouton couvert à l'encre.
   const first = at(0);
-  const firstDroplet = first.blobs.at(-1)!;
+  const firstDroplet = first.blobs[DROP_SLOT];
   check('au toucher, rien n\'est ouvert',
     first.phase === 'clear' && first.opacity === 1 && first.veilOpacity === 0
-      && first.blobs.slice(0, -1).every((blob) => blob.width === 0)
+      && first.blobs.slice(0, DROP_SLOT).every((blob) => blob.width === 0)
       && firstDroplet.y + firstDroplet.height <= 0
       && first.rings.every((ring) => ring.opacity === 0),
     JSON.stringify(firstDroplet));
   check('l\'invitation est lisible au toucher', first.message.opacity === 1 && first.message.blur === 0);
 
   // La goutte tombe là où le doigt s'est posé.
-  const hit = centerOf(at(REVEAL.impact).blobs.at(-1)!);
+  const hit = centerOf(at(REVEAL.impact).blobs[DROP_SLOT]);
   check('la goutte tombe sous le doigt', Math.abs(hit.x - touch.x) < 1e-6 && Math.abs(hit.y - touch.y) < 1e-6, JSON.stringify(hit));
   check('elle tombe nette', at(REVEAL.impact / 2).swirl === 0, String(at(REVEAL.impact / 2).swirl));
-  check('et étirée par la vitesse', at(REVEAL.impact * 0.9).blobs.at(-1)!.height > DROPLET);
+  check('et étirée par la vitesse', at(REVEAL.impact * 0.9).blobs[DROP_SLOT].height > DROPLET);
 
   // L'invitation se dissout sous la goutte, et a disparu avant que le trou
   // grandisse : posée sur les photos, elle serait illisible.
@@ -870,6 +872,113 @@ console.log('Dévoilement de la journée du binôme');
     if (!numbers.every(Number.isFinite)) finite = false;
   }
   check('aucune valeur impossible sur tout le dévoilement', finite);
+}
+
+console.log('Gestes des émotions');
+{
+  check('l\'Amour : deux gouttes', gestureOf('love') === 'pair');
+  check('la Joie : le rebond', gestureOf('joy') === 'bounce');
+  for (const key of ['serenity', 'sadness', 'anger', 'neutral', 'inconnue', null, undefined]) {
+    check(`${String(key)} : la goutte simple`, gestureOf(key) === 'drop');
+  }
+
+  const viewport = { width: 390, height: 844 };
+  const from = { x: 195, y: 760 };
+  const center = { x: 195, y: 422 };
+  const centerOf = (blob: { x: number; y: number; width: number; height: number }) => ({
+    x: blob.x + blob.width / 2,
+    y: blob.y + blob.height / 2,
+  });
+  const covers = (image: ReturnType<typeof inkFrame>, frame = viewport) => {
+    const [core] = image.blobs;
+    const c = centerOf(core);
+    const edges = [[0, 0], [frame.width, 0], [0, frame.height], [frame.width, frame.height]];
+    const reach = Math.max(...edges.map(([x, y]) => Math.hypot(x - c.x, y - c.y)));
+    return core.width / 2 - image.swirl / 2 >= reach;
+  };
+
+  // Quel que soit le geste, le récit tient : l'écran est couvert quand le
+  // message se lève et à la bascule vers l'eau claire, rien n'est ouvert à
+  // cet instant, l'app est entièrement rendue à la fin, et le message ne
+  // paraît jamais sur le papier.
+  for (const gesture of ['drop', 'pair', 'bounce'] as const) {
+    const plan = inkPlan(from, viewport, Math.random, gesture);
+    const at = (t: number) => inkFrame(plan, t);
+    check(`${gesture} : autant de taches que de places`, [0.05, 0.3, 0.7, 1].every((t) => at(t).blobs.length === BLOB_SLOTS));
+    check(`${gesture} : rien au départ`, at(0).opacity === 0);
+    for (const t of [PHASES.full, (PHASES.full + PHASES.fall) / 2, PHASES.fall - 1e-6]) {
+      check(`${gesture} : écran couvert à ${t.toFixed(3)}`, at(t).phase === 'ink' && at(t).opacity === 1 && covers(at(t)));
+    }
+    const turn = at(PHASES.fall);
+    check(`${gesture} : à la bascule, rien n'est ouvert`,
+      turn.blobs.every((blob) => blob.width === 0 || blob.y + blob.height <= 0) && turn.rings.every((ring) => ring.opacity === 0));
+    check(`${gesture} : l'app est rendue à la fin`, covers(at(1)));
+    let safe = true;
+    let finite = true;
+    for (let step = 0; step <= 800; step += 1) {
+      const t = step / 800;
+      const image = at(t);
+      if (image.message.opacity > 0 && !(image.phase === 'ink' ? covers(image) : t <= PHASES.gone)) safe = false;
+      const numbers = [image.opacity, image.swirl, image.blur, ...image.blobs.flatMap((b) => [b.x, b.y, b.width, b.height, b.rx])];
+      if (!numbers.every(Number.isFinite) || image.blobs.some((b) => b.width < 0 || b.height < 0)) finite = false;
+    }
+    check(`${gesture} : le message ne paraît que sur la couleur`, safe);
+    check(`${gesture} : aucune valeur impossible`, finite);
+    check(`${gesture} : le message a disparu avant que l'eau grandisse`,
+      at(PHASES.gone).message.opacity === 0 && at(PHASES.gone).blobs[0].width <= 1.01 * SEED, String(at(PHASES.gone).blobs[0].width));
+
+    // Le dévoilement aussi : rien d'ouvert au toucher, tout découvert à la fin.
+    const card = { width: 358, height: 620 };
+    const reveal = revealPlan(card, { x: 120, y: 300 }, Math.random, gesture);
+    const first = revealFrame(reveal, 0);
+    check(`${gesture} : au toucher, rien n'est ouvert`, first.blobs.every((blob) => blob.width === 0 || blob.y + blob.height <= 0));
+    check(`${gesture} : la carte est découverte à la fin`, covers(revealFrame(reveal, 1), card));
+  }
+
+  // L'Amour : deux gouttes perlent de part et d'autre du bouton, la seconde
+  // après la première, puis se rejoignent sur lui.
+  {
+    const plan = inkPlan(from, viewport, Math.random, 'pair');
+    const [a, b] = [DROP_SLOT, DROP_SLOT + 1];
+    const early = inkFrame(plan, 0.02);
+    check('Amour : la première goutte perle seule', early.blobs[a].width > 0 && early.blobs[b].width === 0);
+    const apart = inkFrame(plan, 0.08);
+    const gap = centerOf(apart.blobs[b]).x - centerOf(apart.blobs[a]).x;
+    check('Amour : deux gouttes bien séparées', gap > 0.2 * viewport.width, String(gap));
+    const joined = inkFrame(plan, 0.16);
+    check('Amour : elles se rejoignent sur le bouton',
+      Math.abs(centerOf(joined.blobs[a]).x - from.x) < 1e-6 && Math.abs(centerOf(joined.blobs[b]).x - from.x) < 1e-6);
+    check('Amour : le flou tend un pont entre elles', inkFrame(plan, 0.13).blur >= 5, String(inkFrame(plan, 0.13).blur));
+
+    // Côté eau : deux gouttes tombent côte à côte, et leurs ronds partent
+    // chacun de sa goutte.
+    const water = inkFrame(plan, PHASES.impact + 0.05);
+    const left = centerOf(water.blobs[a]);
+    const right = centerOf(water.blobs[b]);
+    check('Amour : deux gouttes d\'eau de part et d\'autre du centre', left.x < center.x && right.x > center.x && left.y === center.y);
+    const r0 = centerOf(water.rings[0].blob);
+    const r1 = centerOf(water.rings[1].blob);
+    check('Amour : leurs ronds se croisent', r0.x < center.x && r1.x > center.x && water.rings.every((ring) => ring.opacity > 0));
+  }
+
+  // La Joie : une gouttelette rebondit, et la couleur n'éclot qu'à la
+  // seconde touche.
+  {
+    const plan = inkPlan(from, viewport, Math.random, 'bounce');
+    const hop = DROP_SLOT + 1;
+    check('Joie : pas de rebond avant que la goutte ait perlé', inkFrame(plan, 0.02).blobs[hop].width === 0);
+    const high = inkFrame(plan, 0.08);
+    check('Joie : la gouttelette monte au-dessus de la goutte', high.blobs[hop].width > 0 && centerOf(high.blobs[hop]).y < from.y - 0.8 * plan.hop,
+      String(centerOf(high.blobs[hop]).y));
+    check('Joie : l\'encre attend la seconde touche', inkFrame(plan, 0.1).blobs[0].width === 0);
+    check('Joie : elle éclot après', inkFrame(plan, 0.17).blobs[0].width > SEED);
+
+    const up = inkFrame(plan, PHASES.impact + 0.035);
+    check('Joie : la goutte d\'eau rebondit aussi', up.blobs[hop].width > 0 && centerOf(up.blobs[hop]).y < center.y - 0.8 * plan.hop);
+    check('Joie : l\'eau claire attend la seconde touche', up.blobs[0].width === 0 && up.swirl === 0);
+    const second = inkFrame(plan, PHASES.impact + 0.07 + 0.02);
+    check('Joie : un rond à chaque touche', second.rings[1].opacity > 0, JSON.stringify(second.rings[1]));
+  }
 }
 
 if (failures > 0) {

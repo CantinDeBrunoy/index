@@ -82,7 +82,7 @@ src/
     reactions.ts       les 6 couples (clé, emoji) de l'action rapide
     streak.ts          les 6 symboles de la série (le calcul est dans dates.ts)
     inset.ts           géométrie de la vignette : bornes et collage aux coins
-    ink.ts             l'encre : validation (encre, message, goutte d'eau, eau claire) et dévoilement
+    ink.ts             l'encre : validation, dévoilement, et le geste de chaque émotion
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -757,6 +757,33 @@ deux, et `waterDrop()` dans `ink.ts` calcule la goutte, les ronds et l'eau
 claire pour les deux. Les identifiants de filtres sont préfixés par
 composant : la validation peut encore se jouer quand on glisse vers la
 journée de l'autre, et deux filtres homonymes se voleraient leurs réglages.
+
+**Une émotion, un geste — jamais un dessin.** Certaines émotions touchent
+l'eau à leur façon, à la validation comme au dévoilement (`gestureOf` dans
+`ink.ts`) :
+
+- **Amour** (`pair`) : deux gouttes perlent de part et d'autre du bouton,
+  s'attirent et se fondent en une seule ; côté eau, deux gouttes tombent
+  ensemble et leurs ronds se croisent. Deux personnes, un rituel.
+- **Joie** (`bounce`) : une gouttelette rebondit, remonte et retombe, et la
+  couleur n'éclot qu'à la seconde touche ; un rond à chaque touche.
+- les autres : la goutte simple.
+
+La règle qui a tranché, et qui doit trancher les suivants : **tout ce que
+fait l'encre doit pouvoir arriver à de la vraie encre dans l'eau.** Une Joie
+en soleil a été essayée et écartée : figée, elle se lisait comme un dessin,
+et un dessin fait tomber la matière. Pas de cœur, pas de larme, pas de
+soleil — les symboles, l'app les a déjà, ce sont les emoji des réactions.
+Un premier essai en ne modulant que la vitesse et l'agitation de l'encre par
+émotion a aussi été écarté : trop peu lisible. C'est un **geste** propre qui
+se remarque.
+
+Un geste change le début — ce qui précède la diffusion — mais jamais la
+durée ni le récit : l'écran est couvert quand le message se lève, rien n'est
+ouvert à la bascule, tout est découvert à la fin. `npm run checks` le vérifie
+pour chaque geste. Le nombre de taches est fixe (`BLOB_SLOTS`) : les gouttes
+du geste ont deux places réservées après les panaches, vides quand le geste
+n'en a pas besoin.
 
 **Service worker en développement.** Il servait des fichiers périmés sous Vite
 et cassait le rechargement à chaud. Il n'est enregistré qu'en production, et
