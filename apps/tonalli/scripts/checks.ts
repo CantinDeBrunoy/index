@@ -626,67 +626,73 @@ console.log('Vignette — déplacement libre');
 
 console.log('Encre de validation');
 {
-  // Un téléphone en portrait, le bouton en bas, le bandeau en haut.
+  // Un téléphone en portrait, le bouton en bas.
   const viewport = { width: 390, height: 844 };
   const from = { x: 195, y: 760 };
-  const hero = { left: 16, top: 120, width: 358, height: 180 };
-  const plan = inkPlan(from, hero, 22, viewport, Math.random);
+  const center = { x: 195, y: 422 };
+  const plan = inkPlan(from, viewport, Math.random);
   const at = (t: number) => inkFrame(plan, t);
+  const corners = [[0, 0], [viewport.width, 0], [0, viewport.height], [viewport.width, viewport.height]];
+  const centerOf = (blob: { x: number; y: number; width: number; height: number }) => ({
+    x: blob.x + blob.width / 2,
+    y: blob.y + blob.height / 2,
+  });
+  // Le cœur couvre-t-il l'écran entier, turbulence comprise ? Le creux d'une
+  // volute déplace le bord d'au plus la moitié de la force du déplacement.
+  const covers = (image: ReturnType<typeof at>) => {
+    const [core] = image.blobs;
+    const c = centerOf(core);
+    const reach = Math.max(...corners.map(([x, y]) => Math.hypot(x - c.x, y - c.y)));
+    return core.width / 2 - image.swirl / 2 >= reach;
+  };
 
   check('un panache par tache, plus le cœur', at(0.3).blobs.length === PLUMES + 1, String(at(0.3).blobs.length));
-  check('la durée reste un geste, pas une attente', BLOOM_MS >= 1000 && BLOOM_MS <= 2000, String(BLOOM_MS));
+  check('la durée reste un geste, pas une attente', BLOOM_MS >= 1000 && BLOOM_MS <= 2200, String(BLOOM_MS));
+  check('les jalons sont dans l\'ordre',
+    0 < PHASES.drop && PHASES.drop < PHASES.full && PHASES.full < PHASES.clear && PHASES.clear < PHASES.clearDrop && PHASES.clearDrop < 1);
 
   // Au départ, rien : un rectangle qui clignoterait avant la première frame
   // se verrait dans le coin de l'écran.
   check('rien au départ', at(0).opacity === 0, String(at(0).opacity));
 
-  // La goutte perle sur le bouton, centrée sur lui : décentrée, l'encre
+  // La goutte d'encre perle sur le bouton, centrée sur lui : décentrée, elle
   // semblerait jaillir d'à côté du geste.
-  const drop = at(PHASES.drop).blobs[0];
-  check('la goutte est centrée sur le bouton',
-    Math.abs(drop.x + drop.width / 2 - from.x) < 1e-6 && Math.abs(drop.y + drop.height / 2 - from.y) < 1e-6,
-    JSON.stringify(drop));
-  check('la goutte a sa taille', Math.abs(drop.width - SEED) < 1e-6, String(drop.width));
+  const drop = at(PHASES.drop);
+  const dropCenter = centerOf(drop.blobs[0]);
+  check('l\'encre part du bouton', drop.phase === 'ink' && Math.abs(dropCenter.x - from.x) < 1e-6 && Math.abs(dropCenter.y - from.y) < 1e-6,
+    JSON.stringify(dropCenter));
+  check('la goutte a sa taille', Math.abs(drop.blobs[0].width - SEED) < 1e-6, String(drop.blobs[0].width));
+  check('un soupçon de turbulence seulement sur la goutte', drop.swirl <= plan.swirl * 0.1, String(drop.swirl));
+  check('la turbulence est vive pendant la diffusion', at(0.25).swirl > plan.swirl * 0.5, String(at(0.25).swirl));
 
-  // Au plus plein, le cœur couvre l'écran entier, **turbulence comprise** :
-  // le creux d'une volute ne doit pas laisser passer le papier.
-  const full = at(PHASES.full);
-  const [core] = full.blobs;
-  const r = core.width / 2;
-  const cx = core.x + r;
-  const cy = core.y + r;
-  const corners = [[0, 0], [viewport.width, 0], [0, viewport.height], [viewport.width, viewport.height]];
-  const reach = Math.max(...corners.map(([x, y]) => Math.hypot(x - cx, y - cy)));
-  check('l\'écran est couvert malgré la turbulence', r - full.swirl / 2 >= reach, `${r} - ${full.swirl / 2} < ${reach}`);
-  check('la turbulence est vive pendant la diffusion', at(0.3).swirl > plan.swirl * 0.5, String(at(0.3).swirl));
-  check('un soupçon seulement sur la goutte', at(PHASES.drop).swirl <= plan.swirl * 0.2, String(at(PHASES.drop).swirl));
-
-  // À l'arrivée, tout est posé exactement sur le bandeau, bord net : le
-  // fondu se fait sur une forme identique au vrai bandeau, sinon le raccord
-  // se verrait.
-  for (const t of [PHASES.settled, 0.95, 1]) {
+  // Au plus plein, l'écran est entièrement couvert — et il le reste jusqu'à
+  // la bascule vers l'eau claire : c'est là que les filtres changent, et le
+  // raccord ne peut passer inaperçu que sur un écran uni.
+  for (const t of [PHASES.full, (PHASES.full + PHASES.clear) / 2, PHASES.clear - 1e-6]) {
     const image = at(t);
-    check(`turbulence éteinte à ${t}`, image.swirl === 0, String(image.swirl));
-    check(`voile éteint à ${t}`, image.veilOpacity === 0, String(image.veilOpacity));
-    check(`flou éteint à ${t}`, image.blur === 0, String(image.blur));
-    image.blobs.forEach((blob, index) =>
-      check(`tache ${index} posée sur le bandeau à ${t}`,
-        blob.x === hero.left && blob.y === hero.top && blob.width === hero.width && blob.height === hero.height && blob.rx === 22,
-        JSON.stringify(blob)));
+    check(`écran couvert à ${t.toFixed(3)}`, image.phase === 'ink' && image.opacity === 1 && covers(image));
   }
-  check('le bord se calme avant la fin du trajet', PHASES.calm <= PHASES.settled);
-  check('encore pleine en arrivant', at(PHASES.settled).opacity === 1, String(at(PHASES.settled).opacity));
-  check('effacée à la fin', at(1).opacity === 0, String(at(1).opacity));
-  check('au-delà de la fin, rien ne revient', at(1.4).opacity === 0);
+  const turn = at(PHASES.clear);
+  check('à la bascule, l\'eau claire n\'a encore rien ouvert',
+    turn.phase === 'clear' && turn.opacity === 1 && turn.blobs.every((blob) => blob.width === 0) && turn.veilOpacity === 0,
+    JSON.stringify(turn.blobs[0]));
 
-  // Un bandeau petit : l'arrondi ne peut pas dépasser la moitié du côté,
-  // sinon le rectangle deviendrait une forme impossible.
-  const small = inkFrame(inkPlan(from, { left: 0, top: 0, width: 30, height: 20 }, 22, viewport, Math.random), 1);
-  check('l\'arrondi reste possible', small.blobs[0].rx === 10, String(small.blobs[0].rx));
+  // L'eau claire tombe au cœur de l'écran.
+  const clearDrop = at(PHASES.clearDrop);
+  const clearCenter = centerOf(clearDrop.blobs[0]);
+  check('l\'eau claire part du cœur de l\'écran',
+    clearDrop.phase === 'clear' && Math.abs(clearCenter.x - center.x) < 1e-6 && Math.abs(clearCenter.y - center.y) < 1e-6,
+    JSON.stringify(clearCenter));
+  check('la goutte claire a sa taille', Math.abs(clearDrop.blobs[0].width - SEED) < 1e-6, String(clearDrop.blobs[0].width));
+
+  // À la fin, le trou couvre tout l'écran, turbulence comprise : il ne reste
+  // plus un coin d'encre, et le démontage ne fait rien disparaître d'un coup.
+  check('l\'app est entièrement rendue à la fin', at(1).phase === 'clear' && covers(at(1)));
+  check('au-delà de la fin, rien ne revient', JSON.stringify(at(1.4)) === JSON.stringify(at(1)));
 
   // La turbulence reste bornée sur un grand écran : au-delà, l'encre se
   // déchire au lieu d'onduler.
-  const wide = inkPlan(from, hero, 22, { width: 2560, height: 1440 }, Math.random);
+  const wide = inkPlan(from, { width: 2560, height: 1440 }, Math.random);
   check('turbulence bornée', wide.swirl <= 150, String(wide.swirl));
 
   // Le plan est tiré une fois : la même ouverture rend la même image.
@@ -695,9 +701,9 @@ console.log('Encre de validation');
   // Rien ne doit rendre NaN, à aucun instant — un attribut SVG « NaN » fait
   // disparaître la forme sans la moindre erreur en console.
   let finite = true;
-  for (let step = 0; step <= 200; step += 1) {
-    const image = at(step / 200);
-    const numbers = [image.opacity, image.swirl, image.veilOpacity, image.drift.x, image.drift.y,
+  for (let step = 0; step <= 400; step += 1) {
+    const image = at(step / 400);
+    const numbers = [image.opacity, image.swirl, image.blur, image.veilOpacity, image.drift.x, image.drift.y,
       ...[image.veil, ...image.blobs].flatMap((blob) => [blob.x, blob.y, blob.width, blob.height, blob.rx])];
     if (!numbers.every(Number.isFinite) || image.blobs.some((blob) => blob.width < 0 || blob.height < 0)) finite = false;
   }

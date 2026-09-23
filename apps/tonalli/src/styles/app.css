@@ -397,11 +397,11 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   border: 0;
 }
 
-/* La journée validée : une goutte d'encre tombe dans l'eau depuis le bouton,
-   se déploie en panaches, puis se range dans le bandeau de la journée. La
-   géométrie est calculée en JavaScript (src/lib/ink.ts) — elle dépend de la
-   position du bouton et de celle du bandeau — et la matière vient du filtre
-   SVG : on ne trouve ici que le décor. Au-dessus des onglets (40) et du
+/* La journée validée : une goutte d'encre tombe dans l'eau depuis le bouton
+   et couvre l'écran, puis une goutte d'eau claire éclot en son cœur et rend
+   l'app. La géométrie est calculée en JavaScript (src/lib/ink.ts) — elle
+   dépend de la position du bouton — et la matière vient des filtres SVG : on
+   ne trouve ici que le décor. Au-dessus des onglets (40) et du
    détail d'un jour (50), sous la fête des réactions (60). */
 .bloom {
   position: fixed;
