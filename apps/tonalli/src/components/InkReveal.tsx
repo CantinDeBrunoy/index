@@ -6,7 +6,7 @@ import type { InkCanvasHandle } from '@/components/InkCanvas';
 import { paintWords } from '@/components/inkWords';
 import { readableTextOn } from '@/lib/emotions';
 import { REVEAL_MS, revealFrame, revealPlan } from '@/lib/ink';
-import type { RevealPlan, Size } from '@/lib/ink';
+import type { Gesture, RevealPlan, Size } from '@/lib/ink';
 
 type Run = { plan: RevealPlan; frame: Size };
 
@@ -30,6 +30,7 @@ type Run = { plan: RevealPlan; frame: Size };
  */
 export function InkReveal({
   color,
+  gesture,
   label,
   initiallyOpen,
   onReveal,
@@ -37,6 +38,8 @@ export function InkReveal({
 }: {
   /** La couleur du binôme : c'est elle qui couvre la carte. */
   color: string;
+  /** La façon dont son émotion touche l'eau (`gestureOf`). */
+  gesture: Gesture;
   /** L'invitation, qui est aussi le nom du bouton. */
   label: string;
   initiallyOpen: boolean;
@@ -69,7 +72,7 @@ export function InkReveal({
       event.detail === 0
         ? { x: frame.width / 2, y: frame.height / 2 }
         : { x: event.clientX - rect.left, y: event.clientY - rect.top };
-    setRun({ plan: revealPlan(frame, impact, Math.random), frame });
+    setRun({ plan: revealPlan(frame, impact, Math.random, gesture), frame });
     setState('revealing');
   };
 

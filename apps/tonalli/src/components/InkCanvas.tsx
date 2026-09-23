@@ -1,7 +1,7 @@
 import { useImperativeHandle, useRef, useState } from 'react';
 import type { Ref } from 'react';
 
-import { PLUMES, RINGS } from '@/lib/ink';
+import { BLOB_SLOTS, RINGS } from '@/lib/ink';
 import type { Blob, InkFrame, Size } from '@/lib/ink';
 
 /** Ce que l'animation appelle à chaque frame : dessiner l'image de `inkFrame` ou `revealFrame`. */
@@ -155,8 +155,8 @@ export function InkCanvas({
             disparaîtrait le temps d'une frame. */}
         <rect x={-margin / 2} y={-margin / 2} width="1" height="1" fillOpacity="0" />
         <rect ref={veil} fillOpacity="0" />
-        {/* Le cœur, les panaches, puis la goutte d'eau. */}
-        {Array.from({ length: PLUMES + 2 }, (_, index) => (
+        {/* Le cœur, les panaches, puis les gouttes du geste. */}
+        {Array.from({ length: BLOB_SLOTS }, (_, index) => (
           <rect
             key={index}
             ref={(element) => {

@@ -88,6 +88,47 @@ export const RINGS = [0, 0.035];
 /** Durée de vie d'un rond dans l'eau, en fraction de `BLOOM_MS`. */
 const RING_SPAN = 0.13;
 
+/**
+ * Le geste propre à une émotion. Le récit reste le même pour toutes — la
+ * goutte d'encre, le message, la goutte d'eau, l'eau claire — mais certaines
+ * émotions ont leur façon de toucher l'eau. On garde une règle : tout ce que
+ * fait l'encre doit pouvoir arriver à de la vraie encre dans l'eau. Un geste,
+ * jamais un dessin — pas de cœur, pas de soleil.
+ *
+ * - `drop` : une goutte, la version de base ;
+ * - `pair` (Amour) : deux gouttes qui s'attirent et se fondent en une seule —
+ *   deux personnes, un rituel ;
+ * - `bounce` (Joie) : à l'impact, une gouttelette rebondit, remonte et
+ *   retombe, et c'est à cette seconde touche que la couleur éclot. C'est ce
+ *   que fait une vraie goutte, et c'est joyeux par nature.
+ */
+export type Gesture = 'drop' | 'pair' | 'bounce';
+
+export function gestureOf(emotion: string | null | undefined): Gesture {
+  if (emotion === 'love') return 'pair';
+  if (emotion === 'joy') return 'bounce';
+  return 'drop';
+}
+
+/**
+ * Le nombre de taches est fixe, quel que soit le geste : le cœur, les
+ * panaches, puis deux places pour les gouttes du geste (les deux gouttes de
+ * l'Amour, la goutte et sa gouttelette de la Joie). Une place inutilisée est
+ * vide ; sans ça, une tache d'avant resterait dessinée, et deviendrait un
+ * trou en changeant de filtre.
+ */
+export const DROP_SLOT = PLUMES + 1;
+export const BLOB_SLOTS = PLUMES + 3;
+
+/** Amour : écart entre les deux gouttes d'encre, en fraction de la largeur. */
+const PAIR_GAP = 0.3;
+
+/** Amour : écart entre les deux gouttes d'eau, en pixels — elles se touchent en s'écrasant. */
+const PAIR_WATER = 20;
+
+/** Flou qui fond deux gouttes en une : assez pour qu'un pont d'encre se forme entre elles. */
+const MELT_BLUR = 9;
+
 export type Point = { x: number; y: number };
 export type Size = { width: number; height: number };
 
@@ -107,15 +148,24 @@ export type Spread = { from: Point; cover: number; plumes: Plume[] };
 /** Un rond dans l'eau : un cercle tracé, pas rempli. */
 export type Ring = { blob: Blob; stroke: number; opacity: number };
 
-export type InkPlan = {
-  /** L'encre, depuis le bouton. */
-  ink: Spread;
-  /** L'eau claire, depuis le cœur de l'écran, là où la goutte tombe. */
+/** Ce qu'il faut à une goutte d'eau et à l'eau claire qui en part. */
+type Water = {
+  /** L'eau claire, depuis le point où la goutte tombe. */
   clear: Spread;
   /** Jusqu'où vont les ronds dans l'eau avant de s'éteindre, en pixels. */
   ripple: number;
   /** Force maximale de la turbulence, en pixels de déplacement. */
   swirl: number;
+  /** Joie : hauteur du rebond, en pixels. */
+  hop: number;
+  gesture: Gesture;
+};
+
+export type InkPlan = Water & {
+  /** L'encre, depuis le bouton. */
+  ink: Spread;
+  /** Largeur de l'écran : l'écart des deux gouttes de l'Amour s'y mesure. */
+  width: number;
 };
 
 export type InkFrame = {
@@ -185,7 +235,7 @@ const CLEAR_FLOW = 1.15;
  * des réactions. Retiré à chaque frame, les panaches sauteraient d'un endroit
  * à l'autre.
  */
-export function inkPlan(from: Point, viewport: Size, random: () => number): InkPlan {
+export function inkPlan(from: Point, viewport: Size, random: () => number, gesture: Gesture = 'drop'): InkPlan {
   const swirl = Math.min(MAX_SWIRL, Math.max(60, 0.28 * Math.min(viewport.width, viewport.height)));
   const center = { x: viewport.width / 2, y: viewport.height / 2 };
   return {
@@ -193,7 +243,15 @@ export function inkPlan(from: Point, viewport: Size, random: () => number): InkP
     clear: spreadFrom(center, viewport, swirl, random),
     ripple: 0.32 * Math.min(viewport.width, viewport.height),
     swirl,
+    hop: hopFor(viewport),
+    gesture,
+    width: viewport.width,
   };
+}
+
+/** Un rebond visible sans être démesuré : de 50 à 110 px selon l'écran. */
+function hopFor(frame: Size) {
+  return Math.min(110, Math.max(50, 0.22 * Math.min(frame.width, frame.height)));
 }
 
 function spreadFrom(from: Point, viewport: Size, swirl: number, random: () => number): Spread {
@@ -247,18 +305,19 @@ export function inkFrame(plan: InkPlan, t: number): InkFrame {
   const center = plan.clear.from;
 
   if (time < PHASES.fall) {
-    const bloom = diffusion(plan.ink, time, 0, PHASES.drop, PHASES.full, INK_FLOW);
+    const touch = inkTouch(plan, time);
+    const bloom = diffusion(plan.ink, time, touch.start, touch.start + PHASES.drop, PHASES.full, INK_FLOW);
     const strength = plan.swirl * bloom.agitation;
     return {
       phase: 'ink',
-      blobs: [...bloom.blobs, circle(center, 0)],
+      blobs: slots(bloom.blobs, touch.extras),
       rings: RINGS.map(() => ({ blob: circle(center, 0), stroke: 0, opacity: 0 })),
       veil: bloom.veil,
       // Le voile s'éteint quand l'écran est couvert : il n'a plus rien à montrer.
       veilOpacity: VEIL * (1 - span(time, PHASES.full - 0.05, PHASES.full)),
-      opacity: bloom.drop,
+      opacity: Math.max(bloom.drop, touch.opacity),
       swirl: strength,
-      blur: (MAX_BLUR * strength) / plan.swirl,
+      blur: Math.max((MAX_BLUR * strength) / plan.swirl, touch.blur),
       drift,
       message,
     };
@@ -266,10 +325,71 @@ export function inkFrame(plan: InkPlan, t: number): InkFrame {
 
   return {
     phase: 'clear',
-    ...waterDrop(time, WATER, plan.clear, plan.ripple, plan.swirl),
+    ...waterDrop(time, WATER, plan),
     drift,
     message,
   };
+}
+
+/**
+ * Le geste de l'encre, avant qu'elle se diffuse : quand la diffusion commence
+ * (`start`), et les gouttes qui la précèdent. Pour la goutte simple, rien ne
+ * précède : l'encre se diffuse dès qu'elle touche.
+ */
+function inkTouch(plan: InkPlan, time: number) {
+  const from = plan.ink.from;
+
+  if (plan.gesture === 'pair') {
+    // Deux gouttes perlent de part et d'autre du bouton, la seconde un peu
+    // après la première, s'attirent, et se fondent en une seule. Le flou
+    // monte au moment où elles se touchent : c'est lui qui tend un pont
+    // d'encre entre elles au lieu de deux cercles qui se chevauchent.
+    const gap = (PAIR_GAP * plan.width) / 2;
+    const a = easeOut(span(time, 0, 0.05));
+    const b = easeOut(span(time, 0.03, 0.08));
+    const meet = inOut(span(time, 0.07, 0.16));
+    const off = gap * (1 - meet);
+    const melt = span(time, 0.08, 0.12) * (1 - span(time, 0.16, 0.2));
+    return {
+      start: 0.14,
+      extras: [
+        circle({ x: from.x - off, y: from.y - 6 * (1 - meet) }, 30 * a),
+        circle({ x: from.x + off, y: from.y + 6 * (1 - meet) }, 30 * b),
+      ],
+      opacity: a,
+      blur: MELT_BLUR * melt,
+    };
+  }
+
+  if (plan.gesture === 'bounce') {
+    // La goutte perle, une gouttelette en jaillit, monte, retombe — et c'est
+    // à cette seconde touche que l'encre éclot. Au départ du saut, le flou
+    // la tient encore à la goutte par un col, comme un vrai jet qui se
+    // détache.
+    const land = easeOut(span(time, 0, 0.035));
+    const jump = span(time, 0.035, 0.125);
+    const lift = 4 * jump * (1 - jump) * plan.hop;
+    const flying = jump > 0 && jump < 1;
+    const neck = span(time, 0.03, 0.045) * (1 - span(time, 0.055, 0.075));
+    return {
+      start: 0.12,
+      extras: [
+        circle(from, 16 * land),
+        circle({ x: from.x, y: from.y - lift }, flying ? DROPLET * 0.65 : 0),
+      ],
+      opacity: land,
+      blur: 7 * neck,
+    };
+  }
+
+  return { start: 0, extras: [], opacity: 0, blur: 0 };
+}
+
+/** Le cœur et les panaches, puis les gouttes du geste, toujours à la même place. */
+function slots(bloom: Blob[], extras: Blob[]): Blob[] {
+  const all = [...bloom, ...extras];
+  while (all.length < BLOB_SLOTS) all.push(circle({ x: 0, y: 0 }, 0));
+  return all.slice(0, BLOB_SLOTS);
 }
 
 /**
@@ -287,6 +407,10 @@ type Waterfall = {
   rings: readonly number[];
   /** Durée de vie d'un rond. */
   ringSpan: number;
+  /** Amour : retard de la seconde goutte d'eau sur la première. */
+  lag: number;
+  /** Joie : durée du rebond, entre l'impact et la seconde touche. */
+  rebound: number;
 };
 
 const WATER: Waterfall = {
@@ -295,6 +419,8 @@ const WATER: Waterfall = {
   clearDrop: PHASES.clearDrop,
   rings: RINGS,
   ringSpan: RING_SPAN,
+  lag: 0.02,
+  rebound: 0.07,
 };
 
 /**
@@ -302,28 +428,44 @@ const WATER: Waterfall = {
  * dans une nappe de couleur. Commun à la validation et au dévoilement : la
  * même eau efface l'encre qu'on vient de poser, et découvre celle de l'autre.
  */
-function waterDrop(time: number, timing: Waterfall, clear: Spread, ripple: number, swirl: number) {
+function waterDrop(time: number, timing: Waterfall, water: Water) {
+  const { clear, ripple, swirl, gesture } = water;
   const center = clear.from;
 
-  // La goutte tombe en accélérant, comme tout ce qui tombe, et s'étire avec
-  // la vitesse. À l'impact elle s'écrase, puis s'arrondit à la taille de la
-  // goutte d'encre : c'est de là que l'eau claire se diffuse, et le cœur de
-  // la diffusion la recouvre sans raccord.
-  let droplet: Blob;
-  if (time < timing.impact) {
-    const fall = span(time, timing.fall, timing.impact) ** 2;
-    const height = DROPLET * (1 + STRETCH * fall);
-    const y = mix(-height, center.y, fall);
-    droplet = { x: center.x - DROPLET / 2, y: y - height / 2, width: DROPLET, height, rx: DROPLET / 2 };
+  // La Joie rebondit : l'eau claire ne part qu'à la seconde touche.
+  const rebound = gesture === 'bounce' ? timing.rebound : 0;
+  const spreadStart = timing.impact + rebound;
+
+  // Les gouttes d'eau du geste, et d'où partent leurs ronds.
+  let drops: Blob[];
+  let ringAt: { center: Point; start: number }[];
+  if (gesture === 'pair') {
+    // L'Amour : deux gouttes tombent ensemble, à un souffle d'écart, et
+    // s'écrasent l'une contre l'autre. Leurs ronds se croisent.
+    const left = { x: center.x - PAIR_WATER, y: center.y };
+    const right = { x: center.x + PAIR_WATER, y: center.y };
+    drops = [droplet(time, timing, left, 0, SEED), droplet(time, timing, right, timing.lag, SEED)];
+    ringAt = [
+      { center: left, start: timing.impact },
+      { center: right, start: timing.impact + timing.lag },
+    ];
+  } else if (gesture === 'bounce') {
+    // La Joie : la goutte s'écrase à peine, une gouttelette remonte et
+    // retombe. Un rond à chaque touche.
+    const jump = span(time, timing.impact, spreadStart);
+    const flying = jump > 0 && jump < 1;
+    const lift = 4 * jump * (1 - jump) * water.hop;
+    drops = [
+      droplet(time, timing, center, 0, SEED * 0.6),
+      circle({ x: center.x, y: center.y - lift }, flying ? DROPLET * 0.65 : 0),
+    ];
+    ringAt = [
+      { center, start: timing.impact },
+      { center, start: spreadStart },
+    ];
   } else {
-    const landing = easeOut(span(time, timing.impact, timing.clearDrop));
-    // Écrasée d'abord — plus large que haute —, puis ronde.
-    const squash = Math.sin(Math.PI * landing) * 0.5;
-    // La hauteur part de celle de la chute : sans ça, la goutte étirée
-    // redeviendrait ronde d'un coup, le temps d'une frame, à l'impact.
-    const width = mix(DROPLET, SEED, landing) * (1 + squash);
-    const height = mix(DROPLET * (1 + STRETCH), SEED, landing) * (1 - squash);
-    droplet = { x: center.x - width / 2, y: center.y - height / 2, width, height, rx: Math.min(width, height) / 2 };
+    drops = [droplet(time, timing, center, 0, SEED)];
+    ringAt = timing.rings.map((delay) => ({ center, start: timing.impact + delay }));
   }
 
   // Les ronds dans l'eau : un cercle fin qui s'élargit en s'amincissant, et
@@ -331,25 +473,25 @@ function waterDrop(time: number, timing: Waterfall, clear: Spread, ripple: numbe
   // efface tout ce qui passe sous un tiers d'opacité : la leur descend donc
   // jusque-là et pas plus bas, sinon ils disparaîtraient d'un coup à
   // mi-course au lieu de s'éteindre.
-  const rings = timing.rings.map((delay) => {
-    const p = span(time, timing.impact + delay, timing.impact + delay + timing.ringSpan);
+  const rings = ringAt.map(({ center: at, start }) => {
+    const p = span(time, start, start + timing.ringSpan);
     const alive = p > 0 && p < 1;
     return {
-      blob: circle(center, mix(SEED / 2, ripple, easeOut(p))),
+      blob: circle(at, mix(SEED / 2, ripple, easeOut(p))),
       stroke: alive ? mix(4, 1.5, p) : 0,
       opacity: alive ? 0.34 + 0.66 * (1 - p) : 0,
     };
   });
 
-  // L'eau claire : la même diffusion que l'encre, depuis l'impact, jusqu'au
-  // bout de la durée. Elle finit pile à la fin — le cadre est alors
-  // entièrement découvert, turbulence comprise, et il ne reste rien à
-  // effacer. Pendant la chute, elle n'a pas commencé : la turbulence est
+  // L'eau claire : la même diffusion que l'encre, depuis l'impact — ou la
+  // seconde touche —, jusqu'au bout de la durée. Elle finit pile à la fin —
+  // le cadre est alors entièrement découvert, turbulence comprise, et il ne
+  // reste rien à effacer. Avant, elle n'a pas commencé : la turbulence est
   // nulle, et la goutte tombe nette.
-  const wash = diffusion(clear, time, timing.impact, timing.clearDrop, 1, CLEAR_FLOW);
+  const wash = diffusion(clear, time, spreadStart, spreadStart + (timing.clearDrop - timing.impact), 1, CLEAR_FLOW);
   const strength = swirl * wash.agitation;
   return {
-    blobs: [...wash.blobs, droplet],
+    blobs: slots(wash.blobs, drops),
     rings,
     veil: wash.veil,
     veilOpacity: VEIL * wash.drop,
@@ -359,6 +501,31 @@ function waterDrop(time: number, timing: Waterfall, clear: Spread, ripple: numbe
     swirl: strength,
     blur: (MAX_BLUR * strength) / swirl,
   };
+}
+
+/**
+ * Une goutte d'eau : elle tombe en accélérant, comme tout ce qui tombe, et
+ * s'étire avec la vitesse. À l'impact elle s'écrase, puis s'arrondit à la
+ * taille `size` : c'est de là que l'eau claire se diffuse, et le cœur de la
+ * diffusion la recouvre sans raccord. `lag` la retarde, pour la seconde
+ * goutte de l'Amour.
+ */
+function droplet(time: number, timing: Waterfall, center: Point, lag: number, size: number): Blob {
+  const impact = timing.impact + lag;
+  if (time < impact) {
+    const fall = span(time, timing.fall + lag, impact) ** 2;
+    const height = DROPLET * (1 + STRETCH * fall);
+    const y = mix(-height, center.y, fall);
+    return { x: center.x - DROPLET / 2, y: y - height / 2, width: DROPLET, height, rx: DROPLET / 2 };
+  }
+  const landing = easeOut(span(time, impact, timing.clearDrop + lag));
+  // Écrasée d'abord — plus large que haute —, puis ronde.
+  const squash = Math.sin(Math.PI * landing) * 0.5;
+  // La hauteur part de celle de la chute : sans ça, la goutte étirée
+  // redeviendrait ronde d'un coup, le temps d'une frame, à l'impact.
+  const width = mix(DROPLET, size, landing) * (1 + squash);
+  const height = mix(DROPLET * (1 + STRETCH), size, landing) * (1 - squash);
+  return { x: center.x - width / 2, y: center.y - height / 2, width, height, rx: Math.min(width, height) / 2 };
 }
 
 /**
@@ -383,19 +550,30 @@ export const REVEAL = {
 const REVEAL_RINGS = RINGS.map((delay) => (delay * BLOOM_MS) / REVEAL_MS);
 const REVEAL_RING_SPAN = (RING_SPAN * BLOOM_MS) / REVEAL_MS;
 
-export type RevealPlan = { clear: Spread; ripple: number; swirl: number };
+/** Le dévoilement, dans les unités de `REVEAL_MS` : mêmes durées réelles que la validation. */
+const REVEAL_WATER: Waterfall = {
+  ...REVEAL,
+  rings: REVEAL_RINGS,
+  ringSpan: REVEAL_RING_SPAN,
+  lag: (0.02 * BLOOM_MS) / REVEAL_MS,
+  rebound: (0.07 * BLOOM_MS) / REVEAL_MS,
+};
+
+export type RevealPlan = Water;
 
 /**
  * Le plan d'un dévoilement : la carte couverte de la couleur du binôme, et le
  * point où le doigt l'a touchée — c'est là que tombe la goutte. Tiré une
  * seule fois, comme celui de l'encre.
  */
-export function revealPlan(frame: Size, impact: Point, random: () => number): RevealPlan {
+export function revealPlan(frame: Size, impact: Point, random: () => number, gesture: Gesture = 'drop'): RevealPlan {
   const swirl = Math.min(MAX_SWIRL, Math.max(40, 0.28 * Math.min(frame.width, frame.height)));
   return {
     clear: spreadFrom(impact, frame, swirl, random),
     ripple: 0.32 * Math.min(frame.width, frame.height),
     swirl,
+    hop: hopFor(frame),
+    gesture,
   };
 }
 
@@ -407,13 +585,7 @@ export function revealFrame(plan: RevealPlan, t: number): InkFrame {
   const leaving = easeOut(span(time, REVEAL.impact, REVEAL.clearDrop));
   return {
     phase: 'clear',
-    ...waterDrop(
-      time,
-      { ...REVEAL, rings: REVEAL_RINGS, ringSpan: REVEAL_RING_SPAN },
-      plan.clear,
-      plan.ripple,
-      plan.swirl,
-    ),
+    ...waterDrop(time, REVEAL_WATER, plan),
     drift: { x: -0.25 * plan.swirl * time, y: -0.9 * plan.swirl * time },
     message: {
       opacity: 1 - leaving,
@@ -483,6 +655,10 @@ function span(t: number, a: number, b: number) {
 
 function easeOut(p: number) {
   return 1 - (1 - p) ** 3;
+}
+
+function inOut(p: number) {
+  return p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
 }
 
 

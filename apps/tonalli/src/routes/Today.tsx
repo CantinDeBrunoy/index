@@ -20,7 +20,9 @@ import {
   veilOpacity,
   washGradient,
 } from '@/lib/emotions';
+import { gestureOf } from '@/lib/ink';
 import type { Intensity } from '@/lib/emotions';
+import type { Gesture } from '@/lib/ink';
 import type { Shot } from '@/lib/photo';
 import type { Entry } from '@/lib/types';
 import { useAuth } from '@/state/AuthProvider';
@@ -43,7 +45,7 @@ export function TodayScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** Couleur et point de départ de l'encre, après une validation. */
-  const [bloom, setBloom] = useState<{ color: string; from: Origin } | null>(null);
+  const [bloom, setBloom] = useState<{ color: string; from: Origin; gesture: Gesture } | null>(null);
   // Référence stable : un nouveau rendu du parent relancerait sinon le
   // compte à rebours, et la couleur ne se retirerait jamais.
   const endBloom = useCallback(() => setBloom(null), []);
@@ -108,7 +110,7 @@ export function TodayScreen() {
       // La couleur ne s'épanouit qu'à la première validation. Une correction
       // est une correction : lui donner la même cérémonie userait le geste.
       const color = shadeOf(emotion, intensity);
-      if (!editing && color) setBloom({ color, from: origin });
+      if (!editing && color) setBloom({ color, from: origin, gesture: gestureOf(emotion) });
       setEditing(false);
       setShot(null);
     } catch (caught) {
@@ -156,7 +158,13 @@ export function TodayScreen() {
   return (
     <div className="stack today-screen">
       {bloom ? (
-        <SaveBloom color={bloom.color} from={bloom.from} message={t('today.sealed')} onDone={endBloom} />
+        <SaveBloom
+          color={bloom.color}
+          from={bloom.from}
+          gesture={bloom.gesture}
+          message={t('today.sealed')}
+          onDone={endBloom}
+        />
       ) : null}
       {washColor ? (
         <div
@@ -482,6 +490,7 @@ function TheirDay({
     <InkReveal
       key={entry.id}
       color={entry.color}
+      gesture={gestureOf(entry.emotion)}
       label={t('today.reveal', { name })}
       initiallyOpen={revealed.includes(entry.id)}
       onReveal={remember}
