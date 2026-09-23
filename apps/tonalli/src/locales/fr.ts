@@ -58,6 +58,9 @@ export const fr = {
   today: {
     title: "Aujourd'hui",
     mine: 'Ma journée',
+    // Le message de l'encre, au centre de l'écran plein. Court et imagé :
+    // il se lit en une seconde, et le mot « teinte » fait écho au projet.
+    sealed: "Aujourd'hui porte ta teinte.",
     edit: 'Modifier',
     save: 'Enregistrer',
     cancel: 'Annuler',

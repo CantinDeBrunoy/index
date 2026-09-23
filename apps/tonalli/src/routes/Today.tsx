@@ -42,8 +42,6 @@ export function TodayScreen() {
   const [error, setError] = useState<string | null>(null);
   /** Couleur et point de départ de l'encre, après une validation. */
   const [bloom, setBloom] = useState<{ color: string; from: Origin } | null>(null);
-  /** Le bandeau de la journée enregistrée : c'est là que l'encre va se poser. */
-  const heroRef = useRef<HTMLDivElement>(null);
   // Référence stable : un nouveau rendu du parent relancerait sinon le
   // compte à rebours, et la couleur ne se retirerait jamais.
   const endBloom = useCallback(() => setBloom(null), []);
@@ -156,7 +154,7 @@ export function TodayScreen() {
   return (
     <div className="stack today-screen">
       {bloom ? (
-        <SaveBloom color={bloom.color} from={bloom.from} target={heroRef} onDone={endBloom} />
+        <SaveBloom color={bloom.color} from={bloom.from} message={t('today.sealed')} onDone={endBloom} />
       ) : null}
       {washColor ? (
         <div
@@ -233,7 +231,6 @@ export function TodayScreen() {
               pendingNote={pending?.note ?? null}
               isPending={Boolean(pending)}
               onEdit={startEditing}
-              heroRef={heroRef}
             />
           )
         ) : (
@@ -409,7 +406,6 @@ function Composer({
 
 type MyDayProps = {
   entry: Entry | null;
-  heroRef: React.RefObject<HTMLDivElement | null>;
   isPending: boolean;
   pendingColor: string | null;
   pendingEmotion: string | null;
@@ -417,7 +413,7 @@ type MyDayProps = {
   onEdit: () => void;
 };
 
-function MyDay({ entry, isPending, pendingColor, pendingEmotion, pendingNote, onEdit, heroRef }: MyDayProps) {
+function MyDay({ entry, isPending, pendingColor, pendingEmotion, pendingNote, onEdit }: MyDayProps) {
   const { t } = useI18n();
   const color = entry?.color ?? pendingColor ?? '#D8D8D8';
   const emotion = entry?.emotion ?? pendingEmotion;
@@ -425,7 +421,7 @@ function MyDay({ entry, isPending, pendingColor, pendingEmotion, pendingNote, on
 
   return (
     <div className="stack">
-      <div className="hero" ref={heroRef} style={{ background: color, color: readableTextOn(color) }}>
+      <div className="hero" style={{ background: color, color: readableTextOn(color) }}>
         <div className="stack-sm">
           <strong style={{ fontSize: 22 }}>{emotion ? t(`emotions.${emotion}`) : ''}</strong>
           <span className="small">{t('today.lockedTitle')}</span>
