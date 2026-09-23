@@ -82,7 +82,7 @@ src/
     reactions.ts       les 6 couples (clé, emoji) de l'action rapide
     streak.ts          les 6 symboles de la série (le calcul est dans dates.ts)
     inset.ts           géométrie de la vignette : bornes et collage aux coins
-    ink.ts             l'encre de validation : l'encre, le message, l'eau claire
+    ink.ts             l'encre de validation : encre, message, goutte d'eau, eau claire
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -675,12 +675,15 @@ appliquée à l'ensemble écrasait les dernières.
 
 **Une encre, ce n'est pas un disque qui grossit.** La première version faisait
 grandir un cercle parfait puis le repliait dans le bandeau : propre, mais
-géométrique. C'est maintenant une goutte d'encre dans l'eau, qui couvre
-l'écran le temps qu'une phrase s'y lise, puis une goutte d'eau claire qui éclot au cœur de l'écran et
-repousse l'encre vers les bords jusqu'à rendre l'app. Les deux temps sont
-**la même diffusion** (`diffusion()` dans `src/lib/ink.ts`) : un cœur,
+géométrique. C'est maintenant un petit récit en quatre temps : une goutte
+d'encre tombe du bouton et couvre l'écran ; « Aujourd'hui porte ta teinte. »
+s'y lève ; une goutte d'eau tombe du haut de l'écran, s'écrase sur la phrase
+— qui se dissout — et fait deux ronds dans l'eau ; l'eau claire repousse
+enfin l'encre vers les bords jusqu'à rendre l'app. L'encre et l'eau claire
+sont **la même diffusion** (`diffusion()` dans `src/lib/ink.ts`) : un cœur,
 quatre panaches accrochés à son front, un voile dilué devant. Seul change ce
-qui se diffuse — l'encre elle-même, puis un trou dans l'encre.
+qui se diffuse — l'encre elle-même, puis un trou dans l'encre. La goutte
+d'eau et les ronds sont des trous eux aussi : on voit l'app à travers.
 
 Le rendu est un SVG plein écran et deux filtres qui partagent la même chaîne,
 `feTurbulence` → `feDisplacementMap` → flou → seuil sur l'alpha. Le
@@ -694,18 +697,22 @@ peut pas se voir.
 Trois choses à savoir avant d'y toucher :
 
 - **L'écran doit être couvert à la bascule.** Entre `PHASES.full` et
-  `PHASES.clear`, l'encre couvre tout, turbulence comprise, et à `clear`
-  l'eau claire n'a encore rien ouvert. À la fin, le trou couvre tout à son
+  `PHASES.fall`, l'encre couvre tout, turbulence comprise, et à `fall` rien
+  n'est encore ouvert : l'eau claire n'a pas commencé et la goutte est
+  au-dessus de l'écran. À la fin, le trou couvre tout à son
   tour : il ne reste pas un coin d'encre quand le composant se démonte.
   `npm run checks` vérifie les trois.
 - **Le message ne se lit que sur la couleur.** « Aujourd'hui porte ta
-  teinte. » (`today.sealed`) se lève quand l'écran est couvert, et il s'est
-  dissous avant que la goutte claire ait perlé — à sa place, au centre, si
-  bien qu'elle semble l'emporter. Posé sur le papier, il serait illisible
+  teinte. » (`today.sealed`) se lève quand l'écran est couvert, se dissout
+  quand la goutte d'eau le touche, et a disparu quand la goutte écrasée s'est
+  arrondie — avant que le trou ne grandisse sous lui. Posé sur le papier, il serait illisible
   dans sa propre teinte. Sa courbe (opacité, flou, montée) est calculée dans
   `inkFrame`, sur la même horloge que l'encre, et `npm run checks` vérifie
   qu'il ne paraît jamais sur un écran découvert et qu'il tient assez
   longtemps pour être lu.
+- **Les ronds dans l'eau ne descendent pas sous un tiers d'opacité.** Le
+  seuil du filtre (`3a − 1`) efface tout ce qui passe en dessous : un rond
+  qui s'éteindrait jusqu'à zéro disparaîtrait d'un coup à mi-course.
 - **Un groupe sans rien à peindre peut voir son filtre sauté.** Quand l'eau
   claire tombe, ses taches ont une taille nulle ; sans l'ancre transparente
   hors champ, la nappe de couleur disparaîtrait le temps d'une frame.

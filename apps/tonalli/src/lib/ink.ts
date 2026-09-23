@@ -12,9 +12,14 @@
  *    elle a le droit.
  * 2. **Le message.** Tant que la couleur occupe tout, une phrase courte
  *    s'y lève au centre — « Aujourd'hui porte ta teinte. » — puis se dissout.
- * 3. **L'eau claire.** Une goutte d'eau tombe à son tour, au cœur de l'écran,
- *    là où le message vient de s'effacer, et repousse l'encre vers les bords
+ * 3. **La goutte d'eau.** Elle tombe du haut de l'écran en accélérant,
+ *    étirée par la vitesse, et s'écrase au centre, sur le message — qui se
+ *    dissout sous le choc. Deux ronds dans l'eau partent de l'impact.
+ * 4. **L'eau claire.** Depuis l'impact, elle repousse l'encre vers les bords
  *    avec les mêmes volutes, jusqu'à ce que l'app réapparaisse.
+ *
+ * La goutte, les ronds et l'eau claire sont tous des **trous** dans l'encre :
+ * on voit l'app à travers, comme à travers de l'eau.
  *
  * Le second temps est littéralement le premier rejoué : mêmes courbes, mêmes
  * panaches, même voile — seulement, ce qui se diffuse est un trou dans
@@ -37,7 +42,7 @@
  * minuteur de secours qui démonte l'écran : deux durées séparées finiraient
  * par diverger, et l'encre disparaîtrait avant la fin, ou traînerait après.
  */
-export const BLOOM_MS = 3200;
+export const BLOOM_MS = 3400;
 
 /** Taille de la goutte qui perle, en pixels. */
 export const SEED = 44;
@@ -53,18 +58,35 @@ export const PHASES = {
   full: 0.22,
   /** Le message est entièrement lisible. */
   shown: 0.32,
-  /** Il commence à se dissoudre. */
-  fading: 0.56,
   /**
-   * La goutte d'eau claire tombe, au centre, pendant que le message finit de
-   * se dissoudre : c'est elle qui semble l'emporter.
+   * La goutte d'eau commence à tomber, au-dessus de l'écran. C'est aussi là
+   * qu'on passe au filtre de l'eau claire : l'écran est encore plein, le
+   * raccord ne peut pas se voir.
    */
-  clear: 0.62,
+  fall: 0.5,
+  /** Elle touche l'eau, au centre, sur le message, qui commence à se dissoudre. */
+  impact: 0.6,
+  /**
+   * La goutte écrasée s'est arrondie : l'eau claire se diffuse depuis là. Le
+   * message a disparu au même instant — le trou qui grandit ensuite sous lui
+   * le poserait sur le papier, où il serait illisible.
+   */
+  clearDrop: 0.66,
   /** Le message a disparu. */
   gone: 0.66,
-  /** La goutte claire a perlé. */
-  clearDrop: 0.67,
 } as const;
+
+/** Largeur de la goutte qui tombe, en pixels : plus fine que celle d'encre, c'est de l'eau. */
+export const DROPLET = 18;
+
+/** Combien la vitesse étire la goutte, en fraction de sa largeur, au moment de l'impact. */
+const STRETCH = 1.3;
+
+/** Départ des ronds dans l'eau après l'impact, en fraction de `BLOOM_MS`. */
+export const RINGS = [0, 0.035];
+
+/** Durée de vie d'un rond dans l'eau, en fraction de `BLOOM_MS`. */
+const RING_SPAN = 0.13;
 
 export type Point = { x: number; y: number };
 export type Size = { width: number; height: number };
@@ -82,11 +104,16 @@ export type Plume = { angle: number; reach: number; size: number; lag: number; t
 /** Une diffusion : d'où elle part, jusqu'où elle doit aller, et ses panaches. */
 export type Spread = { from: Point; cover: number; plumes: Plume[] };
 
+/** Un rond dans l'eau : un cercle tracé, pas rempli. */
+export type Ring = { blob: Blob; stroke: number; opacity: number };
+
 export type InkPlan = {
   /** L'encre, depuis le bouton. */
   ink: Spread;
-  /** L'eau claire, depuis le cœur de l'écran. */
+  /** L'eau claire, depuis le cœur de l'écran, là où la goutte tombe. */
   clear: Spread;
+  /** Jusqu'où vont les ronds dans l'eau avant de s'éteindre, en pixels. */
+  ripple: number;
   /** Force maximale de la turbulence, en pixels de déplacement. */
   swirl: number;
 };
@@ -97,8 +124,13 @@ export type InkFrame = {
    * que l'eau claire fait dans une encre qui couvre tout le reste.
    */
   phase: 'ink' | 'clear';
-  /** Le cœur, puis les panaches. Tous pleins : leur union fait la tache. */
+  /**
+   * Le cœur, les panaches, puis la goutte d'eau. Tous pleins : leur union
+   * fait la tache — ou le trou.
+   */
   blobs: Blob[];
+  /** Les ronds dans l'eau, après l'impact. */
+  rings: Ring[];
   /** Le voile, plus pâle, qui précède le front. */
   veil: Blob;
   /** Densité du voile. */
@@ -159,6 +191,7 @@ export function inkPlan(from: Point, viewport: Size, random: () => number): InkP
   return {
     ink: spreadFrom(from, viewport, swirl, random),
     clear: spreadFrom(center, viewport, swirl, random),
+    ripple: 0.32 * Math.min(viewport.width, viewport.height),
     swirl,
   };
 }
@@ -199,23 +232,27 @@ export function inkFrame(plan: InkPlan, t: number): InkFrame {
   const drift = { x: -0.25 * plan.swirl * time, y: -0.9 * plan.swirl * time };
 
   // Le message ne paraît que sur un écran entièrement couvert — posé sur le
-  // papier, il serait illisible dans sa propre couleur — et il est parti
-  // avant que la goutte claire ait perlé. Il monte doucement tout du long :
-  // un texte qui s'arrête net pour repartir aurait l'air posé là, pas porté.
+  // papier, il serait illisible dans sa propre couleur. Il se dissout quand
+  // la goutte le touche, et il est parti avant que l'eau claire ait grandi.
+  // Il monte doucement tout du long : un texte qui s'arrête net pour
+  // repartir aurait l'air posé là, pas porté.
   const rising = easeOut(span(time, PHASES.full, PHASES.shown));
-  const leaving = inOut(span(time, PHASES.fading, PHASES.gone));
+  const leaving = easeOut(span(time, PHASES.impact, PHASES.gone));
   const message = {
     opacity: rising * (1 - leaving),
     blur: MESSAGE_BLUR * leaving,
     rise: MESSAGE_RISE * (1 - rising) - MESSAGE_RISE * 1.5 * leaving,
   };
 
-  if (time < PHASES.clear) {
+  const center = plan.clear.from;
+
+  if (time < PHASES.fall) {
     const bloom = diffusion(plan.ink, time, 0, PHASES.drop, PHASES.full, INK_FLOW);
     const strength = plan.swirl * bloom.agitation;
     return {
       phase: 'ink',
-      blobs: bloom.blobs,
+      blobs: [...bloom.blobs, circle(center, 0)],
+      rings: RINGS.map(() => ({ blob: circle(center, 0), stroke: 0, opacity: 0 })),
       veil: bloom.veil,
       // Le voile s'éteint quand l'écran est couvert : il n'a plus rien à montrer.
       veilOpacity: VEIL * (1 - span(time, PHASES.full - 0.05, PHASES.full)),
@@ -227,14 +264,53 @@ export function inkFrame(plan: InkPlan, t: number): InkFrame {
     };
   }
 
-  // L'eau claire : la même diffusion, jusqu'au bout de la durée. Elle finit
-  // pile à la fin — l'écran est alors entièrement découvert, turbulence
-  // comprise, et il ne reste rien à effacer.
-  const wash = diffusion(plan.clear, time, PHASES.clear, PHASES.clearDrop, 1, CLEAR_FLOW);
+  // La goutte tombe en accélérant, comme tout ce qui tombe, et s'étire avec
+  // la vitesse. À l'impact elle s'écrase, puis s'arrondit à la taille de la
+  // goutte d'encre : c'est de là que l'eau claire se diffuse, et le cœur de
+  // la diffusion la recouvre sans raccord.
+  let droplet: Blob;
+  if (time < PHASES.impact) {
+    const fall = span(time, PHASES.fall, PHASES.impact) ** 2;
+    const height = DROPLET * (1 + STRETCH * fall);
+    const y = mix(-height, center.y, fall);
+    droplet = { x: center.x - DROPLET / 2, y: y - height / 2, width: DROPLET, height, rx: DROPLET / 2 };
+  } else {
+    const landing = easeOut(span(time, PHASES.impact, PHASES.clearDrop));
+    // Écrasée d'abord — plus large que haute —, puis ronde.
+    const squash = Math.sin(Math.PI * landing) * 0.5;
+    // La hauteur part de celle de la chute : sans ça, la goutte étirée
+    // redeviendrait ronde d'un coup, le temps d'une frame, à l'impact.
+    const width = mix(DROPLET, SEED, landing) * (1 + squash);
+    const height = mix(DROPLET * (1 + STRETCH), SEED, landing) * (1 - squash);
+    droplet = { x: center.x - width / 2, y: center.y - height / 2, width, height, rx: Math.min(width, height) / 2 };
+  }
+
+  // Les ronds dans l'eau : un cercle fin qui s'élargit en s'amincissant, et
+  // s'éteint avant d'être rattrapé par l'eau claire. Le seuil du filtre
+  // efface tout ce qui passe sous un tiers d'opacité : la leur descend donc
+  // jusque-là et pas plus bas, sinon ils disparaîtraient d'un coup à
+  // mi-course au lieu de s'éteindre.
+  const rings = RINGS.map((delay) => {
+    const p = span(time, PHASES.impact + delay, PHASES.impact + delay + RING_SPAN);
+    const alive = p > 0 && p < 1;
+    return {
+      blob: circle(center, mix(SEED / 2, plan.ripple, easeOut(p))),
+      stroke: alive ? mix(4, 1.5, p) : 0,
+      opacity: alive ? 0.34 + 0.66 * (1 - p) : 0,
+    };
+  });
+
+  // L'eau claire : la même diffusion que l'encre, depuis l'impact, jusqu'au
+  // bout de la durée. Elle finit pile à la fin — l'écran est alors
+  // entièrement découvert, turbulence comprise, et il ne reste rien à
+  // effacer. Pendant la chute, elle n'a pas commencé : la turbulence est
+  // nulle, et la goutte tombe nette.
+  const wash = diffusion(plan.clear, time, PHASES.impact, PHASES.clearDrop, 1, CLEAR_FLOW);
   const strength = plan.swirl * wash.agitation;
   return {
     phase: 'clear',
-    blobs: wash.blobs,
+    blobs: [...wash.blobs, droplet],
+    rings,
     veil: wash.veil,
     veilOpacity: VEIL * wash.drop,
     // Pas de fondu d'ensemble ici : c'est le trou qui fait disparaître
@@ -309,7 +385,4 @@ function easeOut(p: number) {
   return 1 - (1 - p) ** 3;
 }
 
-function inOut(p: number) {
-  return p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2;
-}
 

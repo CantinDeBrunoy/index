@@ -28,7 +28,7 @@ import {
 import { coverCrop, isDenial, openCamera } from '../src/lib/camera.ts';
 import { BUBBLE_COUNT, BURST_MS, REACTIONS, bubbles, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
 import { DEFAULT_STREAK_SYMBOL, STREAK_SYMBOLS, isStreakSymbolKey, symbolOf } from '../src/lib/streak.ts';
-import { BLOOM_MS, PHASES, PLUMES, SEED, inkFrame, inkPlan } from '../src/lib/ink.ts';
+import { BLOOM_MS, DROPLET, PHASES, PLUMES, RINGS, SEED, inkFrame, inkPlan } from '../src/lib/ink.ts';
 import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
 import { fr } from '../src/locales/fr.ts';
 import { es } from '../src/locales/es.ts';
@@ -646,11 +646,14 @@ console.log('Encre de validation');
     return core.width / 2 - image.swirl / 2 >= reach;
   };
 
-  check('un panache par tache, plus le cœur', at(0.3).blobs.length === PLUMES + 1, String(at(0.3).blobs.length));
+  for (const t of [0.3, 0.9]) {
+    check(`le cœur, les panaches et la goutte d'eau à ${t}`, at(t).blobs.length === PLUMES + 2, String(at(t).blobs.length));
+    check(`les ronds dans l'eau à ${t}`, at(t).rings.length === RINGS.length, String(at(t).rings.length));
+  }
   check('la durée reste un geste, pas une attente', BLOOM_MS >= 1000 && BLOOM_MS <= 3600, String(BLOOM_MS));
   check('les jalons sont dans l\'ordre',
-    0 < PHASES.drop && PHASES.drop < PHASES.full && PHASES.full < PHASES.shown && PHASES.shown < PHASES.fading
-      && PHASES.fading < PHASES.clear && PHASES.clear < PHASES.clearDrop && PHASES.clearDrop < 1);
+    0 < PHASES.drop && PHASES.drop < PHASES.full && PHASES.full < PHASES.shown && PHASES.shown < PHASES.fall
+      && PHASES.fall < PHASES.impact && PHASES.impact < PHASES.clearDrop && PHASES.clearDrop < 1 && PHASES.impact < PHASES.gone);
 
   // Au départ, rien : un rectangle qui clignoterait avant la première frame
   // se verrait dans le coin de l'écran.
@@ -669,14 +672,50 @@ console.log('Encre de validation');
   // Au plus plein, l'écran est entièrement couvert — et il le reste jusqu'à
   // la bascule vers l'eau claire : c'est là que les filtres changent, et le
   // raccord ne peut passer inaperçu que sur un écran uni.
-  for (const t of [PHASES.full, (PHASES.full + PHASES.clear) / 2, PHASES.clear - 1e-6]) {
+  for (const t of [PHASES.full, (PHASES.full + PHASES.fall) / 2, PHASES.fall - 1e-6]) {
     const image = at(t);
     check(`écran couvert à ${t.toFixed(3)}`, image.phase === 'ink' && image.opacity === 1 && covers(image));
   }
-  const turn = at(PHASES.clear);
-  check('à la bascule, l\'eau claire n\'a encore rien ouvert',
-    turn.phase === 'clear' && turn.opacity === 1 && turn.blobs.every((blob) => blob.width === 0) && turn.veilOpacity === 0,
-    JSON.stringify(turn.blobs[0]));
+  // À la bascule, rien n'est ouvert : l'eau claire n'a pas commencé, et la
+  // goutte est encore au-dessus de l'écran.
+  const turn = at(PHASES.fall);
+  const turnDroplet = turn.blobs.at(-1)!;
+  check('à la bascule, rien n\'est ouvert',
+    turn.phase === 'clear' && turn.opacity === 1 && turn.veilOpacity === 0
+      && turn.blobs.slice(0, -1).every((blob) => blob.width === 0)
+      && turnDroplet.y + turnDroplet.height <= 0
+      && turn.rings.every((ring) => ring.opacity === 0),
+    JSON.stringify(turnDroplet));
+
+  // La goutte tombe en accélérant, nette — la turbulence n'a pas commencé —
+  // et touche l'eau au centre, à l'impact.
+  const heights = [0.25, 0.5, 0.75].map((f) => centerOf(at(PHASES.fall + f * (PHASES.impact - PHASES.fall)).blobs.at(-1)!).y);
+  const falling = at((PHASES.fall + PHASES.impact) / 2);
+  check('la goutte accélère', heights[2] - heights[1] > heights[1] - heights[0], heights.map((h) => h.toFixed(1)).join(' → '));
+  check('la goutte tombe nette', falling.swirl === 0 && falling.blur === 0, `${falling.swirl} / ${falling.blur}`);
+  check('la vitesse l\'étire', falling.blobs.at(-1)!.height > DROPLET, String(falling.blobs.at(-1)!.height));
+  const hit = centerOf(at(PHASES.impact).blobs.at(-1)!);
+  check('elle touche l\'eau au centre', Math.abs(hit.x - center.x) < 1e-6 && Math.abs(hit.y - center.y) < 1e-6, JSON.stringify(hit));
+  // Pas de saut à l'impact : la goutte écrasée part de la forme de la chute.
+  const before = at(PHASES.impact - 1e-6).blobs.at(-1)!;
+  const after = at(PHASES.impact + 1e-6).blobs.at(-1)!;
+  check('pas de saut à l\'impact', Math.abs(before.height - after.height) < 1 && Math.abs(before.width - after.width) < 1,
+    `${before.width}×${before.height} → ${after.width}×${after.height}`);
+  check('le message se dissout sous la goutte', at(PHASES.impact).message.opacity === 1 && at(PHASES.impact + 0.01).message.opacity < 1);
+
+  // Les ronds dans l'eau partent de l'impact et s'éteignent. Leur opacité ne
+  // descend pas sous le tiers : en dessous, le seuil du filtre les couperait
+  // net à mi-course.
+  check('aucun rond avant l\'impact', at(PHASES.impact - 1e-6).rings.every((ring) => ring.opacity === 0));
+  const ripple = at(PHASES.impact + 0.05).rings[0];
+  check('un rond après l\'impact', ripple.opacity > 0 && ripple.stroke > 0 && Math.abs(centerOf(ripple.blob).x - center.x) < 1e-6,
+    JSON.stringify(ripple));
+  let ringsFade = true;
+  for (let step = 0; step <= 400; step += 1) {
+    for (const ring of at(step / 400).rings) if (ring.opacity !== 0 && ring.opacity < 0.34 - 1e-9) ringsFade = false;
+  }
+  check('les ronds s\'éteignent sans être coupés', ringsFade);
+  check('les ronds sont éteints à la fin', at(1).rings.every((ring) => ring.opacity === 0));
 
   // Le message ne se lit que sur la couleur : posé sur le papier, il serait
   // illisible dans sa propre teinte. Il paraît quand l'écran est couvert, et
@@ -686,21 +725,24 @@ console.log('Encre de validation');
     const t = step / 800;
     const image = at(t);
     if (image.message.opacity <= 0) continue;
-    const onColor = image.phase === 'ink' ? covers(image) : t < PHASES.clearDrop;
+    // Après l'impact, le trou grandit sous le message : il doit être parti
+    // avant que ce trou soit plus grand que la goutte d'encre.
+    const onColor = image.phase === 'ink' ? covers(image) : t <= PHASES.gone;
     if (!onColor) messageSafe = false;
   }
   check('le message ne paraît que sur un écran couvert', messageSafe);
   check('rien à lire avant que l\'écran soit plein', at(PHASES.full - 1e-6).message.opacity === 0);
-  for (const t of [PHASES.shown, (PHASES.shown + PHASES.fading) / 2, PHASES.fading]) {
+  for (const t of [PHASES.shown, (PHASES.shown + PHASES.impact) / 2, PHASES.impact]) {
     const { message } = at(t);
     check(`message net et lisible à ${t.toFixed(3)}`, message.opacity === 1 && message.blur === 0 && message.rise === 0, JSON.stringify(message));
   }
-  check('le message a disparu avant l\'eau claire', at(PHASES.gone).message.opacity === 0 && PHASES.gone <= PHASES.clearDrop);
+  check('le message a disparu avant que l\'eau claire grandisse',
+    at(PHASES.gone).message.opacity === 0 && at(PHASES.gone).blobs[0].width <= 2.5 * SEED, String(at(PHASES.gone).blobs[0].width));
   // Assez longtemps pour être lu : une phrase courte se lit en une seconde.
-  check('le message tient au moins une seconde', (PHASES.fading - PHASES.shown) * BLOOM_MS >= 700 && (PHASES.gone - PHASES.full) * BLOOM_MS >= 1000,
-    `${(PHASES.fading - PHASES.shown) * BLOOM_MS} ms`);
+  check('le message tient au moins une seconde', (PHASES.impact - PHASES.shown) * BLOOM_MS >= 700 && (PHASES.gone - PHASES.full) * BLOOM_MS >= 1000,
+    `${(PHASES.impact - PHASES.shown) * BLOOM_MS} ms`);
 
-  // L'eau claire tombe au cœur de l'écran.
+  // L'eau claire se diffuse depuis le cœur de l'écran, là où la goutte est tombée.
   const clearDrop = at(PHASES.clearDrop);
   const clearCenter = centerOf(clearDrop.blobs[0]);
   check('l\'eau claire part du cœur de l\'écran',
@@ -728,6 +770,7 @@ console.log('Encre de validation');
     const image = at(step / 400);
     const numbers = [image.opacity, image.swirl, image.blur, image.veilOpacity, image.drift.x, image.drift.y,
       image.message.opacity, image.message.blur, image.message.rise,
+      ...image.rings.flatMap((ring) => [ring.stroke, ring.opacity, ring.blob.x, ring.blob.width]),
       ...[image.veil, ...image.blobs].flatMap((blob) => [blob.x, blob.y, blob.width, blob.height, blob.rx])];
     if (!numbers.every(Number.isFinite) || image.blobs.some((blob) => blob.width < 0 || blob.height < 0)) finite = false;
   }

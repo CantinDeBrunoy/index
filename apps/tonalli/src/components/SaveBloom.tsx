@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { readableTextOn } from '@/lib/emotions';
-import { BLOOM_MS, PLUMES, inkFrame, inkPlan } from '@/lib/ink';
+import { BLOOM_MS, PLUMES, RINGS, inkFrame, inkPlan } from '@/lib/ink';
 import type { Blob, Point } from '@/lib/ink';
 
 /** Point de départ de l'encre, en coordonnées d'écran. */
@@ -15,8 +15,9 @@ const CLEAR_ID = 'save-bloom-clear';
  * La couleur du jour part du bouton qu'on vient d'appuyer, comme une goutte
  * d'encre qui tombe dans l'eau : elle se déploie en panaches jusqu'à occuper
  * tout l'écran — c'est la couleur du jour, elle a le droit. Une phrase s'y
- * lève au centre, puis se dissout ; une goutte d'eau claire tombe à sa place
- * et repousse l'encre vers les bords, avec les mêmes volutes, jusqu'à rendre
+ * lève au centre. Une goutte d'eau tombe du haut de l'écran et s'écrase sur
+ * elle ; la phrase se dissout, des ronds partent dans l'eau, et l'eau claire
+ * repousse l'encre vers les bords, avec les mêmes volutes, jusqu'à rendre
  * l'app.
  *
  * La géométrie vit dans `src/lib/ink.ts`, vérifiée par `npm run checks`. Ici
@@ -54,6 +55,7 @@ export function SaveBloom({
   const words = useRef<HTMLParagraphElement>(null);
   const veil = useRef<SVGRectElement>(null);
   const blobs = useRef<(SVGRectElement | null)[]>([]);
+  const rings = useRef<(SVGRectElement | null)[]>([]);
   const filters = useRef<SVGFilterElement[]>([]);
   // Le motif du bruit change à chaque validation : deux journées ne font pas
   // la même tache. Tiré une fois, sinon il sauterait au premier rendu venu.
@@ -94,6 +96,12 @@ export function SaveBloom({
       place(veil.current, image.veil);
       veil.current?.setAttribute('fill-opacity', image.veilOpacity.toFixed(3));
       image.blobs.forEach((blob, index) => place(blobs.current[index], blob));
+      image.rings.forEach((ring, index) => {
+        const element = rings.current[index];
+        place(element, ring.blob);
+        element?.setAttribute('stroke-width', ring.stroke.toFixed(2));
+        element?.setAttribute('stroke-opacity', ring.opacity.toFixed(3));
+      });
       // Les deux filtres reçoivent les mêmes réglages : seul celui du groupe
       // est calculé, l'autre n'est référencé par personne.
       for (const filter of filters.current) {
@@ -196,11 +204,24 @@ export function SaveBloom({
               disparaîtrait le temps d'une frame, en plein écran. */}
           <rect x={-margin / 2} y={-margin / 2} width="1" height="1" fillOpacity="0" />
           <rect ref={veil} fillOpacity="0" />
-          {Array.from({ length: PLUMES + 1 }, (_, index) => (
+          {/* Le cœur, les panaches, puis la goutte d'eau. */}
+          {Array.from({ length: PLUMES + 2 }, (_, index) => (
             <rect
               key={index}
               ref={(element) => {
                 blobs.current[index] = element;
+              }}
+            />
+          ))}
+          {/* Les ronds dans l'eau : tracés, pas remplis. */}
+          {RINGS.map((_, index) => (
+            <rect
+              key={`ring-${index}`}
+              fill="none"
+              stroke={color}
+              strokeOpacity="0"
+              ref={(element) => {
+                rings.current[index] = element;
               }}
             />
           ))}
