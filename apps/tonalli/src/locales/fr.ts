@@ -105,6 +105,9 @@ export const fr = {
     partnerTitle: 'Sa journée',
     partnerWaiting: "{{name}} n'a pas encore rempli sa journée.",
     partnerHidden: 'Valide ta journée pour voir la sienne.',
+    // Sur la carte couverte de la couleur du binôme : c'est à la fois
+    // l'invitation et le nom du bouton qui la découvre.
+    reveal: 'Découvre la journée de {{name}} en couleur',
     partnerNoLink: 'Aucun binôme lié pour le moment.',
     cameraDenied: 'Accès à la caméra refusé',
     cameraDeniedHint: "Autorise la caméra dans les réglages du navigateur, puis recharge la page.",

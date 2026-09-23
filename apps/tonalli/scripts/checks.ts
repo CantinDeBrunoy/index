@@ -28,7 +28,20 @@ import {
 import { coverCrop, isDenial, openCamera } from '../src/lib/camera.ts';
 import { BUBBLE_COUNT, BURST_MS, REACTIONS, bubbles, emojiOf, isReactionKey } from '../src/lib/reactions.ts';
 import { DEFAULT_STREAK_SYMBOL, STREAK_SYMBOLS, isStreakSymbolKey, symbolOf } from '../src/lib/streak.ts';
-import { BLOOM_MS, DROPLET, PHASES, PLUMES, RINGS, SEED, inkFrame, inkPlan } from '../src/lib/ink.ts';
+import {
+  BLOOM_MS,
+  DROPLET,
+  PHASES,
+  PLUMES,
+  REVEAL,
+  REVEAL_MS,
+  RINGS,
+  SEED,
+  inkFrame,
+  inkPlan,
+  revealFrame,
+  revealPlan,
+} from '../src/lib/ink.ts';
 import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
 import { fr } from '../src/locales/fr.ts';
 import { es } from '../src/locales/es.ts';
@@ -775,6 +788,88 @@ console.log('Encre de validation');
     if (!numbers.every(Number.isFinite) || image.blobs.some((blob) => blob.width < 0 || blob.height < 0)) finite = false;
   }
   check('aucune valeur impossible sur tout le trajet', finite);
+}
+
+console.log('Dévoilement de la journée du binôme');
+{
+  // Une carte de la journée de l'autre, touchée un peu à gauche du centre.
+  const card = { width: 358, height: 620 };
+  const touch = { x: 120, y: 300 };
+  const plan = revealPlan(card, touch, Math.random);
+  const at = (t: number) => revealFrame(plan, t);
+  const corners = [[0, 0], [card.width, 0], [0, card.height], [card.width, card.height]];
+  const centerOf = (blob: { x: number; y: number; width: number; height: number }) => ({
+    x: blob.x + blob.width / 2,
+    y: blob.y + blob.height / 2,
+  });
+
+  check('plus court que la validation', REVEAL_MS < BLOOM_MS && REVEAL_MS >= 1000, String(REVEAL_MS));
+  check('les jalons sont dans l\'ordre', 0 <= REVEAL.fall && REVEAL.fall < REVEAL.impact && REVEAL.impact < REVEAL.clearDrop && REVEAL.clearDrop < 1);
+
+  // Au toucher, la carte est encore entièrement couverte : la goutte est
+  // au-dessus, rien n'est ouvert, l'invitation est lisible. C'est ce qui rend
+  // invisible le passage du bouton couvert à l'encre.
+  const first = at(0);
+  const firstDroplet = first.blobs.at(-1)!;
+  check('au toucher, rien n\'est ouvert',
+    first.phase === 'clear' && first.opacity === 1 && first.veilOpacity === 0
+      && first.blobs.slice(0, -1).every((blob) => blob.width === 0)
+      && firstDroplet.y + firstDroplet.height <= 0
+      && first.rings.every((ring) => ring.opacity === 0),
+    JSON.stringify(firstDroplet));
+  check('l\'invitation est lisible au toucher', first.message.opacity === 1 && first.message.blur === 0);
+
+  // La goutte tombe là où le doigt s'est posé.
+  const hit = centerOf(at(REVEAL.impact).blobs.at(-1)!);
+  check('la goutte tombe sous le doigt', Math.abs(hit.x - touch.x) < 1e-6 && Math.abs(hit.y - touch.y) < 1e-6, JSON.stringify(hit));
+  check('elle tombe nette', at(REVEAL.impact / 2).swirl === 0, String(at(REVEAL.impact / 2).swirl));
+  check('et étirée par la vitesse', at(REVEAL.impact * 0.9).blobs.at(-1)!.height > DROPLET);
+
+  // L'invitation se dissout sous la goutte, et a disparu avant que le trou
+  // grandisse : posée sur les photos, elle serait illisible.
+  check('l\'invitation se dissout à l\'impact', at(REVEAL.impact + 0.02).message.opacity < 1);
+  const gone = at(REVEAL.clearDrop);
+  check('l\'invitation est partie avant que l\'eau grandisse',
+    gone.message.opacity === 0 && gone.blobs[0].width <= 1.01 * SEED, String(gone.blobs[0].width));
+
+  // Les ronds durent autant, en temps réel, que ceux de la validation, et
+  // s'éteignent sans être coupés par le seuil du filtre.
+  let ringsFade = true;
+  let ringSeen = false;
+  for (let step = 0; step <= 400; step += 1) {
+    for (const ring of at(step / 400).rings) {
+      if (ring.opacity > 0) ringSeen = true;
+      if (ring.opacity !== 0 && ring.opacity < 0.34 - 1e-9) ringsFade = false;
+    }
+  }
+  check('des ronds dans l\'eau', ringSeen);
+  check('les ronds s\'éteignent sans être coupés', ringsFade);
+
+  // À la fin, toute la carte est découverte, turbulence comprise : rien ne
+  // disparaît d'un coup quand l'encre se démonte.
+  const end = at(1);
+  const [core] = end.blobs;
+  const c = centerOf(core);
+  const reach = Math.max(...corners.map(([x, y]) => Math.hypot(x - c.x, y - c.y)));
+  check('la carte est entièrement découverte à la fin', core.width / 2 - end.swirl / 2 >= reach, `${core.width / 2} < ${reach}`);
+  check('plus aucun rond à la fin', end.rings.every((ring) => ring.opacity === 0));
+
+  // Un toucher dans un coin ne doit pas laisser l'autre coin couvert.
+  const corner = revealPlan(card, { x: 4, y: card.height - 4 }, Math.random);
+  const cornerEnd = revealFrame(corner, 1).blobs[0];
+  const far = Math.hypot(card.width - 4, card.height - 4);
+  check('touchée dans un coin, elle se découvre jusqu\'à l\'autre', cornerEnd.width / 2 - revealFrame(corner, 1).swirl / 2 >= far);
+
+  let finite = true;
+  for (let step = 0; step <= 400; step += 1) {
+    const image = at(step / 400);
+    const numbers = [image.opacity, image.swirl, image.blur, image.veilOpacity, image.drift.x, image.drift.y,
+      image.message.opacity, image.message.blur, image.message.rise,
+      ...image.rings.flatMap((ring) => [ring.stroke, ring.opacity, ring.blob.x, ring.blob.width]),
+      ...[image.veil, ...image.blobs].flatMap((blob) => [blob.x, blob.y, blob.width, blob.height, blob.rx])];
+    if (!numbers.every(Number.isFinite)) finite = false;
+  }
+  check('aucune valeur impossible sur tout le dévoilement', finite);
 }
 
 if (failures > 0) {

@@ -438,6 +438,50 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   will-change: opacity, filter, transform;
 }
 
+/* La journée du binôme arrive sous son encre : une carte couverte de sa
+   couleur, que l'on touche pour la découvrir. La géométrie de l'eau qui la
+   découvre est calculée en JavaScript (src/lib/ink.ts) ; ici, le décor. */
+.reveal { position: relative; }
+.reveal__cover {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  border: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  -webkit-tap-highlight-color: transparent;
+}
+.reveal__cover:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+/* Pendant le trajet, un appui doit atteindre ce que l'eau vient de découvrir. */
+.reveal__cover--ink { cursor: default; pointer-events: none; box-shadow: none; }
+.reveal__ink {
+  position: absolute;
+  inset: 0;
+  /* Un SVG ne s'étire pas avec `inset: 0` : sans taille, il resterait à
+     300 × 150 dans le coin. */
+  width: 100%;
+  height: 100%;
+}
+.reveal__words {
+  position: relative;
+  max-width: 16ch;
+  font-family: var(--font-heading);
+  font-size: clamp(22px, 6.5vw, 30px);
+  line-height: 1.2;
+  text-align: center;
+  text-wrap: balance;
+  will-change: opacity, filter, transform;
+}
+/* Mouvement réduit : pas de goutte, la couleur s'efface simplement. */
+.reveal__cover--fading { animation: reveal-fade 0.3s var(--ease) forwards; cursor: default; }
+@keyframes reveal-fade { to { opacity: 0; } }
+
 /* La réaction en grand. Au-dessus de `.fullscreen` (z-index 50), sinon elle
    passerait sous le détail d'un jour depuis lequel on l'a ouverte.
    `--burst` vient de React (BURST_MS) : une seule durée pour l'animation et

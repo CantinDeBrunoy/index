@@ -45,7 +45,7 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run dev` | serveur de développement |
 | `npm run build` | `tsc -b && vite build` — c'est le build de production |
 | `npm run typecheck` | typage seul |
-| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions et nuances, réactions, vignette, choix de l'objectif) |
+| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions et nuances, réactions, vignette, encre et dévoilement, choix de l'objectif) |
 | `npm run lint` | oxlint |
 
 **La caméra exige HTTPS** — elle fonctionne sur `localhost`, sinon il faut un
@@ -82,7 +82,7 @@ src/
     reactions.ts       les 6 couples (clé, emoji) de l'action rapide
     streak.ts          les 6 symboles de la série (le calcul est dans dates.ts)
     inset.ts           géométrie de la vignette : bornes et collage aux coins
-    ink.ts             l'encre de validation : encre, message, goutte d'eau, eau claire
+    ink.ts             l'encre : validation (encre, message, goutte d'eau, eau claire) et dévoilement
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -100,7 +100,8 @@ src/
     Today              les deux panneaux (ma journée / sa journée) + composeur
     CalendarScreens    mois, mosaïque année, répartition — mien et du binôme
     Settings           binôme, langue, rappel, compte, données
-  components/          grilles, caméra, cellules, feuilles, réactions, états
+  components/          grilles, caméra, cellules, feuilles, réactions, états,
+                       encre (InkCanvas, SaveBloom, InkReveal)
   locales/             fr.ts fait foi ; es.ts est typé d'après lui
 supabase/
   migrations/          0001 → 0005, à jouer dans l'ordre
@@ -722,6 +723,40 @@ Trois choses à savoir avant d'y toucher :
   frame. Pour capturer l'animation image par image dans le bac à sable, figer
   l'horloge (`page.clock.install()` puis `pauseAt`) : sans ça, le temps
   continue de courir pendant les captures.
+
+**La journée de l'autre se découvre, elle ne s'affiche pas.** La première
+fois qu'on passe sur la journée du binôme, elle arrive sous sa couleur :
+« Découvre la journée de Léa en couleur ». Au toucher, la même goutte d'eau
+que celle de la validation tombe là où le doigt s'est posé, et l'eau claire
+découvre ses photos ; sa couleur reste dans le bandeau de sa journée, qui
+était sous la nappe. C'est le miroir de la validation — sa journée, on la
+pose ; celle de l'autre, on la découvre — et c'est **au toucher**, jamais
+d'office, pour la même raison que la réaction en grand : elle prend sa place
+quand on a décidé de la regarder. Plus courte que la validation (`REVEAL_MS`)
+et limitée à la carte : le plein écran reste réservé à son propre geste.
+
+Trois choses à savoir :
+
+- **Ce n'est pas une serrure.** La réciprocité est tenue par la RLS : quand
+  la carte couverte s'affiche, la base a déjà accepté de rendre la journée.
+  La couverture est une mise en scène, pas une protection — ne jamais y
+  cacher quelque chose que la base ne devrait pas rendre.
+- **Une fois par journée, retenue sur l'appareil.** L'identifiant de la
+  journée découverte va dans le cache local (`revealed`, quatorze au plus),
+  au toucher et non à la fin : quitter le panneau pendant le trajet ne
+  rejoue pas la cérémonie. Une correction de sa journée garde le même
+  identifiant, donc ne la rejoue pas non plus. La base n'a rien à en savoir.
+- **Couverte, la carte est `inert`.** Tant qu'elle est sous la nappe, ses
+  réactions ne répondent ni au doigt ni au clavier, et un lecteur d'écran
+  n'y lit que l'invitation, qui est le nom du bouton. Au clavier, la goutte
+  tombe au centre. Sous `prefers-reduced-motion`, la couleur s'efface en
+  fondu.
+
+La matière est commune : `InkCanvas` dessine l'encre et l'eau claire pour les
+deux, et `waterDrop()` dans `ink.ts` calcule la goutte, les ronds et l'eau
+claire pour les deux. Les identifiants de filtres sont préfixés par
+composant : la validation peut encore se jouer quand on glisse vers la
+journée de l'autre, et deux filtres homonymes se voleraient leurs réglages.
 
 **Service worker en développement.** Il servait des fichiers périmés sous Vite
 et cassait le rechargement à chaud. Il n'est enregistré qu'en production, et

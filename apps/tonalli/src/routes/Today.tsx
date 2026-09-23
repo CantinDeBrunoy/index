@@ -3,11 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Camera } from '@/components/Camera';
 import { EmotionGrid } from '@/components/EmotionGrid';
 import { EntryPhotos, PhotoPair } from '@/components/PhotoPair';
+import { InkReveal } from '@/components/InkReveal';
 import { QuickReactions, ReceivedReaction } from '@/components/Reactions';
 import { SaveBloom } from '@/components/SaveBloom';
 import type { Origin } from '@/components/SaveBloom';
 import { StreakBadge } from '@/components/Streak';
 import { ErrorBanner, OfflineBanner } from '@/components/States';
+import { readCache, writeCache } from '@/lib/cache';
 import { formatLongDate, todayInTimeZone } from '@/lib/dates';
 import {
   DEFAULT_INTENSITY,
@@ -455,7 +457,7 @@ function TheirDay({
   name: string;
 }) {
   const { t, locale } = useI18n();
-  const { partner } = useAuth();
+  const { partner, user } = useAuth();
 
   if (!partner) return <div className="hero hero--empty">{t('today.partnerNoLink')}</div>;
   if (!unlocked) return <div className="hero hero--empty">{t('today.partnerHidden')}</div>;
@@ -463,18 +465,39 @@ function TheirDay({
   const entry = entries[todayInTimeZone(partner.timezone)] ?? null;
   if (!entry) return <div className="hero hero--empty">{t('today.partnerWaiting', { name })}</div>;
 
+  // Une journée du binôme ne se découvre qu'une fois : revenir sur son
+  // panneau, ou le voir se rafraîchir, ne rejoue pas la cérémonie. Le
+  // souvenir est gardé sur l'appareil, par journée — c'est un confort
+  // d'affichage, pas une vérité à partager, et la base n'a pas à le savoir.
+  const revealed = user ? readCache<string[]>('revealed', user.id, []) : [];
+  const remember = () => {
+    if (!user) return;
+    const kept = readCache<string[]>('revealed', user.id, []).filter((id) => id !== entry.id);
+    // Deux semaines suffisent : on ne revient pas découvrir une journée
+    // passée, et la liste ne doit pas grossir sans fin.
+    writeCache('revealed', user.id, [entry.id, ...kept].slice(0, 14));
+  };
+
   return (
-    <div className="stack">
-      <div
-        className="hero"
-        style={{ background: entry.color, color: readableTextOn(entry.color), minHeight: 96 }}
-      >
-        <strong style={{ fontSize: 20 }}>{t(`emotions.${entry.emotion}`)}</strong>
+    <InkReveal
+      key={entry.id}
+      color={entry.color}
+      label={t('today.reveal', { name })}
+      initiallyOpen={revealed.includes(entry.id)}
+      onReveal={remember}
+    >
+      <div className="stack">
+        <div
+          className="hero"
+          style={{ background: entry.color, color: readableTextOn(entry.color), minHeight: 96 }}
+        >
+          <strong style={{ fontSize: 20 }}>{t(`emotions.${entry.emotion}`)}</strong>
+        </div>
+        <p className="faint small capitalize">{formatLongDate(entry.date, locale)}</p>
+        <EntryPhotos entry={entry} alt={t(`emotions.${entry.emotion}`)} />
+        {entry.note ? <p>{entry.note}</p> : null}
+        <QuickReactions entry={entry} />
       </div>
-      <p className="faint small capitalize">{formatLongDate(entry.date, locale)}</p>
-      <EntryPhotos entry={entry} alt={t(`emotions.${entry.emotion}`)} />
-      {entry.note ? <p>{entry.note}</p> : null}
-      <QuickReactions entry={entry} />
-    </div>
+    </InkReveal>
   );
 }

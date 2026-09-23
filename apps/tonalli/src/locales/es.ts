@@ -103,6 +103,7 @@ export const es: Translation = {
     partnerTitle: 'Su día',
     partnerWaiting: '{{name}} todavía no ha guardado su día.',
     partnerHidden: 'Guarda tu día para ver el suyo.',
+    reveal: 'Descubre el día de {{name}} en color',
     partnerNoLink: 'Aún no hay nadie vinculado.',
     cameraDenied: 'Acceso a la cámara denegado',
     cameraDeniedHint: 'Autoriza la cámara en los ajustes del navegador y recarga la página.',

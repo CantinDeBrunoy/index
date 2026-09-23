@@ -27,7 +27,7 @@ export function writeCache(name: string, userId: string, value: unknown): void {
 
 export function clearCache(userId: string): void {
   try {
-    for (const name of ['entries', 'partnerEntries', 'partnerDates', 'pending', 'myReactions', 'theirReactions']) {
+    for (const name of ['entries', 'partnerEntries', 'partnerDates', 'pending', 'myReactions', 'theirReactions', 'revealed']) {
       localStorage.removeItem(key(name, userId));
     }
   } catch {
