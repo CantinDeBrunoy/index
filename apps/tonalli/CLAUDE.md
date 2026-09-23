@@ -82,6 +82,7 @@ src/
     reactions.ts       les 6 couples (clé, emoji) de l'action rapide
     streak.ts          les 6 symboles de la série (le calcul est dans dates.ts)
     inset.ts           géométrie de la vignette : bornes et collage aux coins
+    ink.ts             l'encre de validation : trajet, panaches, turbulence
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -528,7 +529,7 @@ cher :
 
 **1. `npm run checks`** — fonctions pures, exécutées par Node avec
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
-(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `camera.ts`) ne doivent contenir **aucun import**
+(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `ink.ts`, `camera.ts`) ne doivent contenir **aucun import**
 vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
 n'existe pas là-bas. Les garder sans dépendances. Le choix de l'objectif s'y
 vérifie contre un faux `navigator.mediaDevices` qui rejoue les manies d'un
@@ -667,12 +668,39 @@ le gestionnaire de clic, pas après. Même famille de piège que la *ref* de la
 caméra : ce qui est à l'écran maintenant ne l'est plus quand la suite
 s'exécute.
 
-Corollaire : cette animation est pilotée en JavaScript (Web Animations) et non
-en CSS, parce que sa géométrie n'est connue qu'au rendu — la position du bouton
-dépend de la longueur de la note, celle du bandeau de la taille de l'écran. Et
-chaque segment porte sa propre courbe d'accélération : une seule courbe
-appliquée à l'ensemble écrasait les dernières étapes, et l'encre arrivait
-rangée avant même d'avoir envahi l'écran.
+Corollaire : cette animation est pilotée en JavaScript et non en CSS, parce
+que sa géométrie n'est connue qu'au rendu — la position du bouton dépend de la
+longueur de la note, celle du bandeau de la taille de l'écran. Chaque étape
+porte sa propre courbe : une seule courbe appliquée à l'ensemble écrasait les
+dernières, et l'encre arrivait rangée avant même d'avoir envahi l'écran.
+
+**Une encre, ce n'est pas un disque qui grossit.** La première version faisait
+grandir un cercle parfait puis le repliait en rectangle : propre, mais
+géométrique. C'est maintenant une goutte dans l'eau — un SVG plein écran, une
+poignée de taches (le cœur, quatre panaches accrochés à son front, un voile
+dilué devant), et un filtre `feTurbulence` → `feDisplacementMap` → flou →
+seuil sur l'alpha. Le déplacement fait onduler le bord, le flou et le seuil
+fondent les taches en une seule et lissent le contour poilu que le
+déplacement laisse seul. Toute la géométrie est dans `src/lib/ink.ts`,
+vérifiée par `npm run checks`.
+
+Trois choses à savoir avant d'y toucher :
+
+- **Le bord doit être calme en arrivant.** La turbulence et le flou tombent à
+  zéro à `PHASES.calm`, avant que l'encre soit posée : le fondu final se fait
+  sur une forme identique au vrai bandeau, sinon le raccord se voit.
+  `npm run checks` le vérifie.
+- **Le retour se fait en rond, puis en rectangle.** Un cercle géant interpolé
+  droit vers le bandeau donnait des blocs arrondis, et l'écran restait uni
+  tant que le rectangle restait plus grand que lui. L'encre se contracte
+  d'abord en cercles vers le centre du bandeau, et n'en prend la forme qu'à
+  la fin.
+- **`requestAnimationFrame`, pas Web Animations.** Les attributs d'un filtre
+  SVG ne s'animent pas autrement, et la forme comme la turbulence doivent lire
+  la même horloge. Les écritures vont droit dans le DOM, sans rendu React par
+  frame. Pour capturer l'animation image par image dans le bac à sable, figer
+  l'horloge (`page.clock.install()` puis `pauseAt`) : sans ça, le temps
+  continue de courir pendant les captures.
 
 **Service worker en développement.** Il servait des fichiers périmés sous Vite
 et cassait le rechargement à chaud. Il n'est enregistré qu'en production, et
