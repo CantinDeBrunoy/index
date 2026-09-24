@@ -25,6 +25,11 @@ type Props = {
   outfit?: Outfit;
   /** Largeur en pixels ; la hauteur suit (200 × 220). */
   size?: number;
+  /**
+   * Immobile : pour les vignettes, où une vingtaine de personnages animés à la
+   * fois coûteraient cher à un téléphone d'entrée de gamme pour rien dire.
+   */
+  still?: boolean;
   className?: string;
 };
 
@@ -36,7 +41,7 @@ type Props = {
  * Il ne se déplace jamais hors de son cadre : les animations bougent le corps
  * sur place, et s'arrêtent sous `prefers-reduced-motion`.
  */
-export function Character({ emotion, color, state = 'scene', outfit = {}, size = 120, className }: Props) {
+export function Character({ emotion, color, state = 'scene', outfit = {}, size = 120, still = false, className }: Props) {
   // Plusieurs personnages cohabitent sur un écran : les motifs doivent avoir
   // des identifiants propres, et `useId` rend des deux-points qu'une
   // référence `url(#…)` ne tolère pas partout.
@@ -68,7 +73,7 @@ export function Character({ emotion, color, state = 'scene', outfit = {}, size =
     <svg
       // Le mouvement porte sur tout le dessin, comme dans le canevas : il se
       // calcule autour du centre de la boîte, pas du coin du repère SVG.
-      className={['character', pose.motion, className].filter(Boolean).join(' ')}
+      className={['character', still ? 'character--still' : pose.motion, className].filter(Boolean).join(' ')}
       width={size}
       height={(size * 220) / 200}
       viewBox="0 0 200 220"

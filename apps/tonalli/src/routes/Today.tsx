@@ -11,6 +11,7 @@ import type { Origin } from '@/components/SaveBloom';
 import { StreakBadge } from '@/components/Streak';
 import { ErrorBanner, OfflineBanner } from '@/components/States';
 import { readCache, writeCache } from '@/lib/cache';
+import { outfitOf } from '@/lib/character';
 import { formatLongDate, todayInTimeZone } from '@/lib/dates';
 import {
   DEFAULT_INTENSITY,
@@ -286,6 +287,8 @@ function Composer({
   onCancel,
 }: ComposerProps) {
   const { t } = useI18n();
+  const { profile } = useAuth();
+  const outfit = outfitOf(profile);
   // En correction, la photo déjà enregistrée fait foi tant qu'on n'en reprend
   // pas une autre : on n'oblige pas à tout refaire pour changer une émotion.
   const [retaking, setRetaking] = useState(false);
@@ -301,6 +304,7 @@ function Composer({
             <Character
               emotion={isEmotionKey(emotion) ? emotion : null}
               color={shadeOf(emotion, intensity)}
+              outfit={outfit}
               size={72}
             />
             <span>{t(`emotions.${emotion}`)}</span>
@@ -312,7 +316,7 @@ function Composer({
       ) : (
         <>
           {/* Pas encore de teinte : le personnage attend, incolore. */}
-          <Character emotion={null} state="waiting" size={96} className="character--centered" />
+          <Character emotion={null} state="waiting" outfit={outfit} size={96} className="character--centered" />
           <p className="muted center">{t('today.chooseEmotion')}</p>
           <EmotionGrid value={emotion} onChange={onEmotion} />
         </>
@@ -424,6 +428,7 @@ type MyDayProps = {
 
 function MyDay({ entry, isPending, pendingColor, pendingEmotion, pendingNote, onEdit }: MyDayProps) {
   const { t } = useI18n();
+  const { profile } = useAuth();
   const color = entry?.color ?? pendingColor ?? '#D8D8D8';
   const emotion = entry?.emotion ?? pendingEmotion;
   const note = entry?.note ?? pendingNote;
@@ -431,7 +436,7 @@ function MyDay({ entry, isPending, pendingColor, pendingEmotion, pendingNote, on
   return (
     <div className="stack">
       <div className="hero hero--character" style={{ background: color, color: readableTextOn(color) }}>
-        <Character emotion={isEmotionKey(emotion) ? emotion : null} color={color} size={96} />
+        <Character emotion={isEmotionKey(emotion) ? emotion : null} color={color} outfit={outfitOf(profile)} size={96} />
         <div className="stack-sm">
           <strong style={{ fontSize: 22 }}>{emotion ? t(`emotions.${emotion}`) : ''}</strong>
           <span className="small">{t('today.lockedTitle')}</span>
@@ -476,7 +481,7 @@ function TheirDay({
       <div className="hero hero--empty">
         <div className="stack-sm center">
           {/* Sa journée n'a pas encore de teinte : son personnage attend. */}
-          <Character emotion={null} state="waiting" size={80} className="character--centered" />
+          <Character emotion={null} state="waiting" outfit={outfitOf(partner)} size={80} className="character--centered" />
           <span>{t('today.partnerWaiting', { name })}</span>
         </div>
       </div>
@@ -510,7 +515,13 @@ function TheirDay({
           className="hero hero--character"
           style={{ background: entry.color, color: readableTextOn(entry.color) }}
         >
-          <Character emotion={isEmotionKey(entry.emotion) ? entry.emotion : null} color={entry.color} size={96} />
+          {/* Le binôme voit la tenue de l'autre : le personnage traverse le binôme. */}
+          <Character
+            emotion={isEmotionKey(entry.emotion) ? entry.emotion : null}
+            color={entry.color}
+            outfit={outfitOf(partner)}
+            size={96}
+          />
           <strong style={{ fontSize: 20 }}>{t(`emotions.${entry.emotion}`)}</strong>
         </div>
         <p className="faint small capitalize">{formatLongDate(entry.date, locale)}</p>

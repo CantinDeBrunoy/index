@@ -104,3 +104,39 @@ export type Outfit = {
   face?: (typeof FACE_ACCESSORIES)[number] | null;
   motif?: (typeof MOTIFS)[number] | null;
 };
+
+export type OutfitCategory = keyof Outfit;
+
+/** Les catégories dans l'ordre de l'écran, chacune avec sa liste fermée. */
+export const OUTFIT_CATEGORIES = [
+  { key: 'head', column: 'character_head', items: HEAD_ACCESSORIES },
+  { key: 'body', column: 'character_body', items: BODY_ACCESSORIES },
+  { key: 'face', column: 'character_face', items: FACE_ACCESSORIES },
+  { key: 'motif', column: 'character_motif', items: MOTIFS },
+] as const;
+
+type OutfitColumns = {
+  character_head?: string | null;
+  character_body?: string | null;
+  character_face?: string | null;
+  character_motif?: string | null;
+};
+
+function pick<T extends string>(items: readonly T[], value: string | null | undefined): T | null {
+  return value && (items as readonly string[]).includes(value) ? (value as T) : null;
+}
+
+/**
+ * La tenue d'un profil. Une clé inconnue — un profil lu avant une mise à
+ * jour de l'app, ou une donnée abîmée — donne « rien » plutôt qu'un dessin
+ * cassé : la base la refuserait de toute façon à l'écriture.
+ */
+export function outfitOf(profile: OutfitColumns | null | undefined): Outfit {
+  if (!profile) return {};
+  return {
+    head: pick(HEAD_ACCESSORIES, profile.character_head),
+    body: pick(BODY_ACCESSORIES, profile.character_body),
+    face: pick(FACE_ACCESSORIES, profile.character_face),
+    motif: pick(MOTIFS, profile.character_motif),
+  };
+}

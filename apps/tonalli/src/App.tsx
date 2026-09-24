@@ -5,6 +5,7 @@ import { Tabs } from '@/components/Tabs';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { SignInScreen, SignUpScreen } from '@/routes/AuthScreens';
 import { MyCalendarScreen, PartnerCalendarScreen } from '@/routes/CalendarScreens';
+import { CharacterScreen } from '@/routes/CharacterScreen';
 import { LinkPartnerScreen } from '@/routes/LinkPartner';
 import { SettingsScreen } from '@/routes/Settings';
 import { TodayScreen } from '@/routes/Today';
@@ -105,6 +106,7 @@ export function App() {
                     <Route path="/me" element={<MyCalendarScreen />} />
                     <Route path="/partner" element={<PartnerCalendarScreen />} />
                     <Route path="/settings" element={<SettingsScreen />} />
+                    <Route path="/character" element={<CharacterScreen />} />
                   </Route>
                 </Route>
               </Route>

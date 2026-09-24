@@ -13,6 +13,11 @@ export type Profile = {
   reminders_enabled: boolean;
   /** Clé du symbole de la série (voir `lib/streak.ts`). */
   streak_symbol: string;
+  /** La tenue du personnage, une clé par catégorie ou `null` (voir `lib/character.ts`). */
+  character_head: string | null;
+  character_body: string | null;
+  character_face: string | null;
+  character_motif: string | null;
 };
 
 export type Entry = {
