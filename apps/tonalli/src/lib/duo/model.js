@@ -239,6 +239,8 @@ export function duoScene(props) {
 
   const lyingParts = (tint, held, cfg) => {
     const L = [];
+    // couché, il garde son drapeau planté derrière lui
+    L.push(...pieces(cfg.acc && cfg.acc.layers && cfg.acc.layers.flag, tint, held));
     if (!cfg.noPillow) L.push(P(RR(14, 184, 54, 24, 12), { fill: held, sw: 3.5 }));
     L.push(P("M40,206 C28,158 56,128 104,130 C154,132 176,162 166,206 C166,214 40,214 40,206 Z", { fill: tint, sw: 5 }));
     // couché, on le reconnaît encore : la mèche sur le haut du crâne, les taches sur les joues
@@ -266,6 +268,7 @@ export function duoScene(props) {
     if (cfg.lying) return lyingParts(tint, held, cfg);
     const parts = [];
     if (cfg.feet) parts.push(P(E(70, 194, 15, 9), { fill: tint, sw: 4, c: cfg.feetCls }), P(E(130, 194, 15, 9), { fill: tint, sw: 4, c: cfg.feetCls }));
+    parts.push(...pieces(layers.flag, tint, held));
     parts.push(...pieces(layers.behind, tint, held));
     parts.push(P(BODY, { fill: tint, sw: 5 }));
     // Le motif remplit le corps lui-même : la forme du corps sert de découpe.

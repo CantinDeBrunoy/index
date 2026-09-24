@@ -313,12 +313,22 @@ nommé dans `POSES` existe bien dans `app.css` — une faute de frappe le
 laisserait figé sans rien dire.
 
 **La tenue traverse le binôme, le symbole de la série non.** Un accessoire
-au plus par catégorie (tête, corps, visage, motif), dans une liste fermée :
-quatre colonnes de `profiles`, chacune derrière une contrainte `check`, et
-`null` pour rien. Le binôme voit la tenue de l'autre — son personnage paraît
+au plus par catégorie (tête, corps, visage, motif, drapeau), dans une liste
+fermée : cinq colonnes de `profiles`, chacune derrière une contrainte
+`check`, et `null` pour rien. Le binôme voit la tenue de l'autre — son personnage paraît
 dans « Sa journée » — et la policy de lecture de `profiles` le permettait
-déjà. `npm run checks` compare la liste de chaque contrainte, dans `0001` et
-`0011`, à celle de `character.ts`.
+déjà. `npm run checks` compare la liste de chaque contrainte, dans `0001`,
+`0011` et `0012`, à celle de `character.ts`.
+
+**Le drapeau est la seule couleur qui n'est pas une émotion.** Un fanion sur
+un mât planté derrière le personnage — France, Mexique, puis Espagne, Italie,
+Brésil. À l'encre, la France et l'Italie seraient le même drapeau : il garde
+ses vraies couleurs, et reste assez petit pour ne pas disputer la place à la
+teinte du jour. Il a sa propre catégorie plutôt qu'une place dans « Tête »
+pour se cumuler avec un chapeau, et c'est le seul accessoire qui reste quand
+le personnage est couché : planté derrière lui, il ne touche pas son corps.
+Un drapeau de plus s'ajoute dans `FLAGS` et `FLAG_PIECES`, et dans une
+nouvelle migration pour la contrainte.
 
 **La tenue vit au profil, pas dans la journée.** Changer de chapeau change
 aussi l'apparence des jours passés : le personnage, c'est la personne
@@ -526,8 +536,9 @@ les rejouer ne casse rien.
 | `0009_streak_symbol.sql` | colonne `streak_symbol` et sa palette fermée |
 | `0010_emotion_intensity.sql` | `emotion_shades` et la clé étrangère de `entries` qui s'y déplace |
 | `0011_character_outfit.sql` | les quatre colonnes de la tenue du personnage et leurs listes fermées |
+| `0012_character_flag.sql` | la colonne du drapeau et sa liste fermée |
 
-Les migrations 0003 à 0007 et 0009 à 0011 sont des **rattrapages** : leur
+Les migrations 0003 à 0007 et 0009 à 0012 sont des **rattrapages** : leur
 contenu est déjà intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
 
 `0008` est à part : elle ne crée pas de schéma mais le **trigger de

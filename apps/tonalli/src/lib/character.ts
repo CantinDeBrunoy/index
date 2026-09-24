@@ -97,12 +97,15 @@ export const HEAD_ACCESSORIES = ['beanie', 'flower', 'ears', 'lock', 'cap', 'bow
 export const BODY_ACCESSORIES = ['scarf', 'satchel', 'cape', 'bowtie', 'necklace'] as const;
 export const FACE_ACCESSORIES = ['glasses', 'freckles', 'blush', 'lashes', 'mole', 'bandage'] as const;
 export const MOTIFS = ['stripes', 'dots', 'checks', 'stars'] as const;
+/** Les nôtres d'abord (France, Mexique), puis trois autres. */
+export const FLAGS = ['france', 'mexico', 'spain', 'italy', 'brazil'] as const;
 
 export type Outfit = {
   head?: (typeof HEAD_ACCESSORIES)[number] | null;
   body?: (typeof BODY_ACCESSORIES)[number] | null;
   face?: (typeof FACE_ACCESSORIES)[number] | null;
   motif?: (typeof MOTIFS)[number] | null;
+  flag?: (typeof FLAGS)[number] | null;
 };
 
 export type OutfitCategory = keyof Outfit;
@@ -113,6 +116,7 @@ export const OUTFIT_CATEGORIES = [
   { key: 'body', column: 'character_body', items: BODY_ACCESSORIES },
   { key: 'face', column: 'character_face', items: FACE_ACCESSORIES },
   { key: 'motif', column: 'character_motif', items: MOTIFS },
+  { key: 'flag', column: 'character_flag', items: FLAGS },
 ] as const;
 
 type OutfitColumns = {
@@ -120,6 +124,7 @@ type OutfitColumns = {
   character_body?: string | null;
   character_face?: string | null;
   character_motif?: string | null;
+  character_flag?: string | null;
 };
 
 function pick<T extends string>(items: readonly T[], value: string | null | undefined): T | null {
@@ -138,6 +143,7 @@ export function outfitOf(profile: OutfitColumns | null | undefined): Outfit {
     body: pick(BODY_ACCESSORIES, profile.character_body),
     face: pick(FACE_ACCESSORIES, profile.character_face),
     motif: pick(MOTIFS, profile.character_motif),
+    flag: pick(FLAGS, profile.character_flag),
   };
 }
 
@@ -255,17 +261,78 @@ export const ACCESSORY_PIECES: Record<AccessoryKey, Piece[]> = {
   ],
 };
 
+/**
+ * Le drapeau : un fanion sur un mât planté derrière le personnage, qui dépasse
+ * au-dessus de son épaule. Seule exception au châssis incolore — à l'encre,
+ * la France et l'Italie seraient le même drapeau — il garde donc ses vraies
+ * couleurs, et reste petit pour ne pas voler la place de la teinte du jour.
+ *
+ * Il se dessine à plat (33 × 22, la hampe à gauche), puis se pose en haut du
+ * mât, dans l'axe, et se retourne pour flotter vers la tête : la hampe reste
+ * contre le mât, comme sur un vrai drapeau vu de dos.
+ */
+const FLAG_W = 33;
+const FLAG_H = 22;
+/** Le mât : du pied, caché derrière le corps, au sommet, au-dessus de l'épaule. */
+const MAST = { x1: 156, y1: 186, x2: 184, y2: 10 };
+const MAST_ANGLE = r2((Math.atan2(MAST.x2 - MAST.x1, MAST.y1 - MAST.y2) * 180) / Math.PI);
+const FLAG_TF = `translate(${MAST.x2},${MAST.y2}) rotate(${MAST_ANGLE}) scale(-1,1)`;
+
+type Stripe = [x: number, y: number, w: number, h: number, color: `#${string}`];
+
+const rect = (x: number, y: number, w: number, h: number) => `M${x},${y} H${x + w} V${y + h} H${x} Z`;
+const vertical = (a: `#${string}`, b: `#${string}`, c: `#${string}`): Stripe[] => [
+  [0, 0, 11, FLAG_H, a],
+  [11, 0, 11, FLAG_H, b],
+  [22, 0, 11, FLAG_H, c],
+];
+
+function flag(stripes: Stripe[], extra: Piece[] = []): Piece[] {
+  return [
+    { d: `M${MAST.x1},${MAST.y1} L${MAST.x2 + 0.8},${MAST.y2 - 5}`, sw: 3.5 },
+    ...stripes.map(([x, y, w, h, color]): Piece => ({ d: rect(x, y, w, h), fill: color, stroke: false, tf: FLAG_TF })),
+    ...extra.map((p): Piece => ({ ...p, tf: FLAG_TF })),
+    { d: rect(0, 0, FLAG_W, FLAG_H), sw: 2.6, tf: FLAG_TF },
+    { d: circlePath(MAST.x2 + 0.8, MAST.y2 - 5, 3), fill: 'ink', stroke: false },
+  ];
+}
+
+const WHITE = '#FFFFFF';
+
+export const FLAG_PIECES: Record<(typeof FLAGS)[number], Piece[]> = {
+  france: flag(vertical('#0055A4', WHITE, '#EF4135')),
+  // L'aigle se réduit à un médaillon : à cette taille, un dessin ne serait qu'une tache.
+  mexico: flag(vertical('#006847', WHITE, '#CE1126'), [{ d: circlePath(16.5, 11, 3.6), fill: '#8C5A2B', stroke: false }]),
+  // Rouge, jaune deux fois plus haut, rouge.
+  spain: flag([
+    [0, 0, FLAG_W, 5.5, '#AA151B'],
+    [0, 5.5, FLAG_W, 11, '#F1BF00'],
+    [0, 16.5, FLAG_W, 5.5, '#AA151B'],
+  ]),
+  italy: flag(vertical('#009246', WHITE, '#CE2B37')),
+  brazil: flag(
+    [[0, 0, FLAG_W, FLAG_H, '#009C3B']],
+    [
+      { d: 'M3,11 L16.5,2.6 L30,11 L16.5,19.4 Z', fill: '#FFDF00', stroke: false },
+      { d: circlePath(16.5, 11, 5.2), fill: '#002776', stroke: false },
+    ],
+  ),
+};
+
 /** Les accessoires qui passent derrière le corps plutôt que devant. */
 export const BEHIND_BODY: readonly AccessoryKey[] = ['cape'];
 
 /**
- * Les pièces d'une tenue, rangées par plan : derrière le corps, sur le corps
- * (après les bras), sur le visage (après les yeux), sur la tête (en dernier).
+ * Les pièces d'une tenue, rangées par plan : le drapeau (derrière tout, et
+ * le seul qui reste quand le personnage est couché), derrière le corps, sur
+ * le corps (après les bras), sur le visage (après les yeux), sur la tête (en
+ * dernier).
  */
-export function outfitLayers(outfit: Outfit): { behind: Piece[]; body: Piece[]; face: Piece[]; head: Piece[] } {
+export function outfitLayers(outfit: Outfit): { flag: Piece[]; behind: Piece[]; body: Piece[]; face: Piece[]; head: Piece[] } {
   const body = outfit.body ? ACCESSORY_PIECES[outfit.body] : [];
   const behind = outfit.body && BEHIND_BODY.includes(outfit.body);
   return {
+    flag: outfit.flag ? FLAG_PIECES[outfit.flag] : [],
     behind: behind ? body : [],
     body: behind ? [] : body,
     face: outfit.face ? ACCESSORY_PIECES[outfit.face] : [],

@@ -174,6 +174,7 @@ export const es: Translation = {
       body: 'Cuerpo',
       face: 'Cara',
       motif: 'Estampado',
+      flag: 'Bandera',
     },
     items: {
       beanie: 'Gorro',
@@ -198,6 +199,11 @@ export const es: Translation = {
       dots: 'Topos',
       checks: 'Cuadros',
       stars: 'Estrellas',
+      france: 'Francia',
+      mexico: 'México',
+      spain: 'España',
+      italy: 'Italia',
+      brazil: 'Brasil',
     },
   },
   settings: {

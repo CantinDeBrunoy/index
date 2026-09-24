@@ -181,6 +181,7 @@ export const fr = {
       body: 'Corps',
       face: 'Visage',
       motif: 'Motif',
+      flag: 'Drapeau',
     },
     items: {
       beanie: 'Bonnet',
@@ -205,6 +206,11 @@ export const fr = {
       dots: 'Pois',
       checks: 'Carreaux',
       stars: 'Étoiles',
+      france: 'France',
+      mexico: 'Mexique',
+      spain: 'Espagne',
+      italy: 'Italie',
+      brazil: 'Brésil',
     },
   },
   settings: {

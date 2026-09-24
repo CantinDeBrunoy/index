@@ -118,7 +118,7 @@ create table if not exists public.profiles (
   streak_symbol text not null default 'flame'
     check (streak_symbol in ('flame', 'cherry', 'heart', 'star', 'leaf', 'sun')),
   -- La tenue du personnage : un accessoire au plus par catégorie, `null` pour
-  -- rien. Elle vit au profil et le binôme la voit (voir 0011).
+  -- rien. Elle vit au profil et le binôme la voit (voir 0011 et 0012).
   character_head  text
     check (character_head in ('beanie', 'flower', 'ears', 'lock', 'cap', 'bow', 'antennae')),
   character_body  text
@@ -127,6 +127,8 @@ create table if not exists public.profiles (
     check (character_face in ('glasses', 'freckles', 'blush', 'lashes', 'mole', 'bandage')),
   character_motif text
     check (character_motif in ('stripes', 'dots', 'checks', 'stars')),
+  character_flag  text
+    check (character_flag in ('france', 'mexico', 'spain', 'italy', 'brazil')),
   created_at   timestamptz not null default now()
 );
 
