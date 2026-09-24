@@ -47,6 +47,7 @@ import {
 import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
 import { BODY_PATH, LOGO_SIZE, MASKABLE_FIT, faviconSvg, logoGeometry, type LogoVariant } from '../src/lib/logo.ts';
 import {
+  ACCESSORY_PIECES,
   BODY_ACCESSORIES,
   FACE_ACCESSORIES,
   HEAD_ACCESSORIES,
@@ -1036,6 +1037,11 @@ console.log('\nPersonnage');
       );
     }
   }
+
+  // Chaque accessoire de la liste fermée a son dessin, et aucun dessin n'est orphelin.
+  const drawn = Object.keys(ACCESSORY_PIECES).sort().join(',');
+  const listed = [...HEAD_ACCESSORIES, ...BODY_ACCESSORIES, ...FACE_ACCESSORIES].sort().join(',');
+  check('chaque accessoire a son dessin', drawn === listed, drawn);
 
   // Une clé inconnue ne casse pas le dessin : elle vaut « rien ».
   const read = outfitOf({ character_head: 'cap', character_body: 'jetpack', character_face: null });
