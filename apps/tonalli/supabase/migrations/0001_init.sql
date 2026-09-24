@@ -117,6 +117,16 @@ create table if not exists public.profiles (
   -- caractère : changer un glyphe ne doit obliger à réécrire aucun profil.
   streak_symbol text not null default 'flame'
     check (streak_symbol in ('flame', 'cherry', 'heart', 'star', 'leaf', 'sun')),
+  -- La tenue du personnage : un accessoire au plus par catégorie, `null` pour
+  -- rien. Elle vit au profil et le binôme la voit (voir 0011).
+  character_head  text
+    check (character_head in ('beanie', 'flower', 'ears', 'lock', 'cap', 'bow', 'antennae')),
+  character_body  text
+    check (character_body in ('scarf', 'satchel', 'cape', 'bowtie', 'necklace')),
+  character_face  text
+    check (character_face in ('glasses', 'freckles', 'blush', 'lashes', 'mole', 'bandage')),
+  character_motif text
+    check (character_motif in ('stripes', 'dots', 'checks', 'stars')),
   created_at   timestamptz not null default now()
 );
 

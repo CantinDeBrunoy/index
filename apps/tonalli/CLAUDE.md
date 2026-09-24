@@ -112,12 +112,14 @@ src/
     I18nProvider       langue courante et `t()`
     AuthProvider       session, profil, binôme, liaison, suppression
     EntriesProvider    entrées, jour local, file d'attente hors ligne
+    look.ts            mon personnage tel qu'il se montre aujourd'hui (teinte, tenue)
   routes/
     AuthScreens        connexion et inscription
     LinkPartner        code d'invitation, écran bloquant sans binôme
     Today              les deux panneaux (ma journée / sa journée) + composeur
     CalendarScreens    mois, mosaïque année, répartition — mien et du binôme
     Settings           binôme, langue, rappel, compte, données
+    CharacterScreen    « Mon personnage » : la tenue, une rangée par catégorie
   components/          grilles, caméra, cellules, feuilles, réactions, états,
                        encre (InkCanvas, SaveBloom, InkReveal), logo, personnage
   locales/             fr.ts fait foi ; es.ts est typé d'après lui
@@ -305,6 +307,22 @@ une pose par émotion, les deux règles des bras, et que chaque mouvement
 nommé dans `POSES` existe bien dans `app.css` — une faute de frappe le
 laisserait figé sans rien dire.
 
+**La tenue traverse le binôme, le symbole de la série non.** Un accessoire
+au plus par catégorie (tête, corps, visage, motif), dans une liste fermée :
+quatre colonnes de `profiles`, chacune derrière une contrainte `check`, et
+`null` pour rien. Le binôme voit la tenue de l'autre — son personnage paraît
+dans « Sa journée » — et la policy de lecture de `profiles` le permettait
+déjà. `npm run checks` compare la liste de chaque contrainte, dans `0001` et
+`0011`, à celle de `character.ts`.
+
+**La tenue vit au profil, pas dans la journée.** Changer de chapeau change
+aussi l'apparence des jours passés : le personnage, c'est la personne
+maintenant, pas un témoignage du jour. Rien n'est recopié dans `entries`.
+
+Elle s'enregistre au toucher, comme le symbole de la série. Chaque vignette
+montre la tenue entière avec l'accessoire à l'essai, et reste immobile :
+vingt-six personnages animés à la fois coûteraient cher à un petit téléphone.
+
 ### La photo se prend dans l'app, et elle est double
 
 `getUserMedia` uniquement, jamais de sélection depuis la galerie — c'est ce qui
@@ -398,7 +416,7 @@ pour un binôme.
 | --- | --- |
 | `emotions` | les 12 émotions et leur couleur d'origine, figées |
 | `emotion_shades` | les 36 couples (émotion, cran, couleur) — c'est **eux** que référence `entries` |
-| `profiles` | nom, langue, **fuseau**, `partner_id` (unique), code d'invitation, jeton push, réglages de rappel, symbole de la série |
+| `profiles` | nom, langue, **fuseau**, `partner_id` (unique), code d'invitation, jeton push, réglages de rappel, symbole de la série, tenue du personnage |
 | `entries` | une ligne par personne et par jour : `unique (user_id, date)`, deux chemins de photo (`photo_path`, `selfie_path`) |
 | `reaction_emojis` | les 6 couples (clé, emoji) de l'action rapide, figés, référencés par clé étrangère |
 | `reactions` | un emoji posé sur la journée du binôme : clé primaire `(entry_id, author_id)` |
@@ -443,8 +461,9 @@ les rejouer ne casse rien.
 | `0008_reaction_webhook.sql` | le trigger qui notifie une réaction, calqué sur celui de la journée |
 | `0009_streak_symbol.sql` | colonne `streak_symbol` et sa palette fermée |
 | `0010_emotion_intensity.sql` | `emotion_shades` et la clé étrangère de `entries` qui s'y déplace |
+| `0011_character_outfit.sql` | les quatre colonnes de la tenue du personnage et leurs listes fermées |
 
-Les migrations 0003 à 0007, 0009 et 0010 sont des **rattrapages** : leur
+Les migrations 0003 à 0007 et 0009 à 0011 sont des **rattrapages** : leur
 contenu est déjà intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
 
 `0008` est à part : elle ne crée pas de schéma mais le **trigger de

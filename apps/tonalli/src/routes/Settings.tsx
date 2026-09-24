@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
+import { Character } from '@/components/Character';
 import { ConfirmSheet } from '@/components/ConfirmSheet';
 import { Segmented } from '@/components/Segmented';
 import { ErrorBanner } from '@/components/States';
 import { Switch } from '@/components/Switch';
 import { clockInTimeZone, formatInstant, formatOffset, formatTime, offsetBetween } from '@/lib/dates';
+import { OUTFIT_CATEGORIES } from '@/lib/character';
 import { DEFAULT_STREAK_SYMBOL, STREAK_SYMBOLS } from '@/lib/streak';
 import {
   isIosWithoutStandalone,
@@ -17,6 +20,7 @@ import type { Locale } from '@/lib/types';
 import { useAuth } from '@/state/AuthProvider';
 import { useEntries } from '@/state/EntriesProvider';
 import { useI18n } from '@/state/I18nProvider';
+import { useMyLook } from '@/state/look';
 
 const STEP_MINUTES = 30;
 
@@ -27,6 +31,7 @@ export function SettingsScreen() {
   const buildDate = formatInstant(__BUILD_AT__, locale);
   const { user, profile, partner, updateProfile, unlinkPartner, signOut } = useAuth();
   const { refresh } = useEntries();
+  const look = useMyLook();
 
   const [confirm, setConfirm] = useState<'unlink' | null>(null);
   const [busy, setBusy] = useState(false);
@@ -104,6 +109,21 @@ export function SettingsScreen() {
     <div className="stack">
       <h1>{t('settings.title')}</h1>
       {error ? <ErrorBanner message={error} /> : null}
+
+      {/* ---------------- personnage ---------------- */}
+      <Link to="/character" className="card card-link">
+        <Character emotion={look.emotion} color={look.color} state={look.state} outfit={look.outfit} size={48} still />
+        <span className="grow stack-sm">
+          <strong>{t('character.title')}</strong>
+          <span className="faint small">
+            {OUTFIT_CATEGORIES.map((category) => look.outfit[category.key])
+              .filter((item) => item != null)
+              .map((item) => t(`character.items.${item}`))
+              .join(' · ') || t('character.none')}
+          </span>
+        </span>
+        <span aria-hidden>›</span>
+      </Link>
 
       {/* ---------------- binôme ---------------- */}
       <span className="section-title">{t('settings.partnerSection')}</span>

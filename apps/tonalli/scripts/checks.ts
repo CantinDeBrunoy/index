@@ -51,9 +51,11 @@ import {
   FACE_ACCESSORIES,
   HEAD_ACCESSORIES,
   MOTIFS,
+  OUTFIT_CATEGORIES,
   POSES,
   isLying,
   mouthPath,
+  outfitOf,
   poseOf,
 } from '../src/lib/character.ts';
 import { fr } from '../src/locales/fr.ts';
@@ -1014,6 +1016,31 @@ console.log('\nPersonnage');
   for (const [name, list] of Object.entries(lists)) {
     check(`accessoires (${name}) : clés uniques`, new Set(list).size === list.length);
   }
+
+  // La base tient la même liste fermée que le code, catégorie par catégorie :
+  // un accessoire ajouté d'un seul côté serait refusé à l'écriture, et on ne
+  // le découvrirait qu'en production. On compare la liste exacte de chaque
+  // contrainte, pas seulement la présence des clés.
+  const migrations = {
+    '0001': readFileSync(new URL('../supabase/migrations/0001_init.sql', import.meta.url), 'utf8'),
+    '0011': readFileSync(new URL('../supabase/migrations/0011_character_outfit.sql', import.meta.url), 'utf8'),
+  };
+  for (const [file, sql] of Object.entries(migrations)) {
+    for (const category of OUTFIT_CATEGORIES) {
+      const match = new RegExp(`check \\(${category.column} in \\(([^)]*)\\)\\)`).exec(sql);
+      const inBase = match ? [...match[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
+      check(
+        `${file} : la liste de ${category.column} est celle du code`,
+        inBase.join(',') === category.items.join(','),
+        inBase.join(','),
+      );
+    }
+  }
+
+  // Une clé inconnue ne casse pas le dessin : elle vaut « rien ».
+  const read = outfitOf({ character_head: 'cap', character_body: 'jetpack', character_face: null });
+  check('tenue : clé connue gardée, inconnue ignorée', read.head === 'cap' && read.body === null && read.face === null && read.motif === null);
+  check('tenue : pas de profil, pas de tenue', Object.keys(outfitOf(null)).length === 0);
 }
 
 console.log('\nLogo');
