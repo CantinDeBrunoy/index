@@ -66,8 +66,23 @@ s'applique même à quelqu'un qui bricole les requêtes depuis la console du
 navigateur. Dans du code de page, elle serait contournable en trente secondes.
 
 Pas de framework CSS : un fichier `src/styles/app.css` avec des variables. Le
-châssis est volontairement incolore (gris, blancs, noirs) pour que les seules
-couleurs de l'écran soient les émotions et les photos.
+châssis est volontairement incolore — du papier (`#FAF7F0`, la nuit
+`#241A14`) et de l'encre (`#2A2019`) — pour que les seules couleurs de l'écran
+soient les émotions et les photos. Trois règles en découlent :
+
+- **Pas d'accent.** Un état d'interface (bouton principal, onglet actif,
+  aujourd'hui dans le calendrier, choix, interrupteur, focus) se dit à
+  l'encre. L'ancien accent terracotta tombait entre Gratitude et Fierté : un
+  jour cerclé passait pour une journée remplie, et son texte blanc ne tenait
+  pas le contraste.
+- **Le gris le plus pâle ne descend jamais sous 4,5** de contraste sur le
+  papier : c'est lui qui porte les plus petits textes (onglets, mentions).
+- **L'erreur est voisine de Colère** : elle reste en texte, jamais en aplat,
+  et toujours avec des mots qui la disent.
+
+Polices : Shantell Sans pour les titres, écrite à la main comme le trait du
+personnage, et Karla pour le texte courant. Les deux viennent de Google Fonts
+et sont variables : un seul fichier par famille, toutes graisses comprises.
 
 ---
 
