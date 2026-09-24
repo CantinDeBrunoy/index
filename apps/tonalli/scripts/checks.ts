@@ -45,6 +45,7 @@ import {
   revealPlan,
 } from '../src/lib/ink.ts';
 import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
+import { BODY_PATH, LOGO_SIZE, MASKABLE_FIT, faviconSvg, logoGeometry, type LogoVariant } from '../src/lib/logo.ts';
 import { fr } from '../src/locales/fr.ts';
 import { es } from '../src/locales/es.ts';
 import {
@@ -979,6 +980,58 @@ console.log('Gestes des émotions');
     const second = inkFrame(plan, PHASES.impact + 0.07 + 0.02);
     check('Joie : un rond à chaque touche', second.rings[1].opacity > 0, JSON.stringify(second.rings[1]));
   }
+}
+
+console.log('\nLogo');
+{
+  // Le corps du personnage, échantillonné le long de ses courbes (M puis des C).
+  const numbers = (BODY_PATH.match(/-?\d*\.?\d+/g) ?? []).map(Number);
+  const body: [number, number][] = [];
+  let start: [number, number] = [numbers[0], numbers[1]];
+  for (let i = 2; i + 5 < numbers.length; i += 6) {
+    const [c1x, c1y, c2x, c2y, ex, ey] = numbers.slice(i, i + 6);
+    for (let s = 0; s <= 64; s += 1) {
+      const t = s / 64;
+      const u = 1 - t;
+      body.push([
+        u * u * u * start[0] + 3 * u * u * t * c1x + 3 * u * t * t * c2x + t * t * t * ex,
+        u * u * u * start[1] + 3 * u * u * t * c1y + 3 * u * t * t * c2y + t * t * t * ey,
+      ]);
+    }
+    start = [ex, ey];
+  }
+
+  for (const variant of ['full', 'small'] as LogoVariant[]) {
+    const g = logoGeometry(variant);
+    const center = LOGO_SIZE / 2;
+    check(`${variant} : un rayon par émotion`, g.rays.length === EMOTIONS.length);
+    check(`${variant} : les rayons suivent la palette`, g.rays.every((ray, i) => ray.color === EMOTIONS[i].color));
+    check(`${variant} : Joie à midi`, g.rays[0].x1 === center && g.rays[0].y2 < g.rays[0].y1);
+    // Le quatrième rayon (Gratitude) est à 3 h : on tourne bien dans le sens des aiguilles d'une montre.
+    check(`${variant} : sens des aiguilles d'une montre`, g.rays[3].x2 > g.rays[3].x1 && g.rays[3].y1 === center);
+
+    // Rien ne sort du carré, bouts arrondis compris.
+    const reach = Math.max(...g.rays.map((ray) => Math.hypot(ray.x2 - center, ray.y2 - center))) + g.rayWidth / 2;
+    check(`${variant} : les rayons restent dans le carré`, reach <= center, reach.toFixed(2));
+
+    // Les rayons ne mordent pas sur le personnage : son contour, trait compris,
+    // reste en deçà du départ des rayons.
+    const { scale, tx, ty, strokeWidth } = g.body;
+    const bodyReach = Math.max(...body.map(([x, y]) => Math.hypot(tx + scale * x - center, ty + scale * y - center))) + strokeWidth / 2;
+    const rayStart = Math.min(...g.rays.map((ray) => Math.hypot(ray.x1 - center, ray.y1 - center))) - g.rayWidth / 2;
+    check(`${variant} : les rayons ne touchent pas le personnage`, bodyReach + 1 <= rayStart, `${bodyReach.toFixed(2)} / ${rayStart.toFixed(2)}`);
+
+    if (variant === 'full') {
+      // L'icône « maskable » peut être découpée en cercle : tout doit tenir dans
+      // la zone de sécurité, 40 % du côté en rayon.
+      check('l\'icône maskable tient dans la zone de sécurité', reach * MASKABLE_FIT <= 0.4 * LOGO_SIZE, (reach * MASKABLE_FIT).toFixed(2));
+    }
+  }
+
+  // Le favicon est écrit par `npm run icons` : une géométrie retouchée ici et
+  // pas régénérée laisserait l'ancien logo dans l'onglet sans que rien ne le dise.
+  const favicon = readFileSync(new URL('../public/favicon.svg', import.meta.url), 'utf8');
+  check('public/favicon.svg est à jour (npm run icons)', favicon === faviconSvg());
 }
 
 if (failures > 0) {

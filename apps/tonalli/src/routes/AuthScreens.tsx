@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { Logo } from '@/components/Logo';
 import { LOCALES } from '@/lib/i18n';
 import type { Locale } from '@/lib/types';
 import { useAuth } from '@/state/AuthProvider';
@@ -63,6 +64,7 @@ export function SignInScreen() {
   return (
     <div className="app app--plain stack">
       <div className="stack-sm center" style={{ marginTop: 40, marginBottom: 12 }}>
+        <Logo />
         <h1>{t('common.appName')}</h1>
         <p className="muted small">{t('common.tagline')}</p>
       </div>
@@ -139,6 +141,7 @@ export function SignUpScreen() {
   if (confirmation) {
     return (
       <div className="app app--plain stack center" style={{ marginTop: 60 }}>
+        <Logo />
         <h1>{t('auth.confirmEmailTitle')}</h1>
         <p className="muted">{t('auth.confirmEmailBody')}</p>
         <Link to="/sign-in" className="btn btn--block">
@@ -151,6 +154,7 @@ export function SignUpScreen() {
   return (
     <div className="app app--plain stack">
       <div className="stack-sm center" style={{ marginTop: 40, marginBottom: 12 }}>
+        <Logo />
         <h1>{t('auth.signUpTitle')}</h1>
         <p className="muted small">{t('common.tagline')}</p>
       </div>

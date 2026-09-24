@@ -45,7 +45,8 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run dev` | serveur de développement |
 | `npm run build` | `tsc -b && vite build` — c'est le build de production |
 | `npm run typecheck` | typage seul |
-| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions et nuances, réactions, vignette, encre et dévoilement, choix de l'objectif) |
+| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions et nuances, réactions, vignette, encre et dévoilement, choix de l'objectif, logo) |
+| `npm run icons` | régénère le favicon et les icônes PNG depuis `src/lib/logo.ts` |
 | `npm run lint` | oxlint |
 
 **La caméra exige HTTPS** — elle fonctionne sur `localhost`, sinon il faut un
@@ -65,8 +66,23 @@ s'applique même à quelqu'un qui bricole les requêtes depuis la console du
 navigateur. Dans du code de page, elle serait contournable en trente secondes.
 
 Pas de framework CSS : un fichier `src/styles/app.css` avec des variables. Le
-châssis est volontairement incolore (gris, blancs, noirs) pour que les seules
-couleurs de l'écran soient les émotions et les photos.
+châssis est volontairement incolore — du papier (`#FAF7F0`, la nuit
+`#241A14`) et de l'encre (`#2A2019`) — pour que les seules couleurs de l'écran
+soient les émotions et les photos. Trois règles en découlent :
+
+- **Pas d'accent.** Un état d'interface (bouton principal, onglet actif,
+  aujourd'hui dans le calendrier, choix, interrupteur, focus) se dit à
+  l'encre. L'ancien accent terracotta tombait entre Gratitude et Fierté : un
+  jour cerclé passait pour une journée remplie, et son texte blanc ne tenait
+  pas le contraste.
+- **Le gris le plus pâle ne descend jamais sous 4,5** de contraste sur le
+  papier : c'est lui qui porte les plus petits textes (onglets, mentions).
+- **L'erreur est voisine de Colère** : elle reste en texte, jamais en aplat,
+  et toujours avec des mots qui la disent.
+
+Polices : Shantell Sans pour les titres, écrite à la main comme le trait du
+personnage, et Karla pour le texte courant. Les deux viennent de Google Fonts
+et sont variables : un seul fichier par famille, toutes graisses comprises.
 
 ---
 
@@ -83,6 +99,7 @@ src/
     streak.ts          les 6 symboles de la série (le calcul est dans dates.ts)
     inset.ts           géométrie de la vignette : bornes et collage aux coins
     ink.ts             l'encre : validation, dévoilement, et le geste de chaque émotion
+    logo.ts            le soleil de Tonalli : une géométrie pour le composant, le favicon et les icônes
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -101,14 +118,14 @@ src/
     CalendarScreens    mois, mosaïque année, répartition — mien et du binôme
     Settings           binôme, langue, rappel, compte, données
   components/          grilles, caméra, cellules, feuilles, réactions, états,
-                       encre (InkCanvas, SaveBloom, InkReveal)
+                       encre (InkCanvas, SaveBloom, InkReveal), logo
   locales/             fr.ts fait foi ; es.ts est typé d'après lui
 supabase/
   migrations/          0001 → 0005, à jouer dans l'ordre
   functions/           deux Edge Functions autonomes (Deno)
 scripts/
   checks.ts            vérifications des fonctions pures
-  make-icons.mjs       génère public/icon-*.png (encodeur PNG sans dépendance)
+  make-icons.ts        génère favicon, icônes et badge depuis logo.ts (rasteriseur et PNG sans dépendance)
 ```
 
 **`src/locales/fr.ts` fait autorité** : son type est dérivé en `Translation`, et
@@ -530,7 +547,7 @@ cher :
 
 **1. `npm run checks`** — fonctions pures, exécutées par Node avec
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
-(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `ink.ts`, `camera.ts`) ne doivent contenir **aucun import**
+(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `ink.ts`, `camera.ts`, `logo.ts`) ne doivent contenir **aucun import**
 vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
 n'existe pas là-bas. Les garder sans dépendances. Le choix de l'objectif s'y
 vérifie contre un faux `navigator.mediaDevices` qui rejoue les manies d'un
@@ -794,6 +811,23 @@ il sert l'app depuis le cache. Un simple retour sur l'onglet peut donc montrer
 la version d'avant alors que le déploiement est passé. Fermer complètement
 l'onglet (ou l'icône de l'écran d'accueil) et rouvrir, ou forcer le
 rechargement. Avant de conclure qu'un déploiement a échoué, vérifier ça.
+
+**Une icône qui change reste en cache.** Le service worker sert en cache
+d'abord tout ce qui n'est pas une navigation — y compris le favicon et les
+icônes, dont le nom ne change pas d'une version à l'autre (seuls le JS et le
+CSS de Vite sont versionnés). Sans rien faire, un appareil qui a déjà ouvert
+le site garde l'ancienne icône pour toujours. Quand une ressource non
+versionnée change, changer le nom du cache (`CACHE` dans `public/sw.js`) :
+l'activation efface les anciens. Et ça ne suffit pas pour l'écran d'accueil :
+iOS fige l'icône au moment de l'ajout (il faut retirer le site et l'ajouter
+de nouveau), Android la met à jour de lui-même, avec un jour ou plus de
+retard.
+
+**Le logo n'a qu'une source.** `src/lib/logo.ts` donne la géométrie du
+soleil ; le composant `Logo` la dessine, `npm run icons` en tire le favicon et
+les PNG. Retoucher un fichier de `public/` à la main le désynchronise, et
+`npm run checks` le refuse pour le favicon. Les rayons suivent l'ordre de
+`EMOTIONS` : une émotion ajoutée ou déplacée là change le logo, et c'est voulu.
 
 **Confirmation d'e-mail.** Laisser « Confirm email » activé avec le serveur
 d'envoi intégré de Supabase donne un `email rate limit exceeded` au bout de

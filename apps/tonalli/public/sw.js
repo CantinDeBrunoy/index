@@ -1,7 +1,10 @@
 /* Service worker de Tonalli : réception des notifications push et cache des
    ressources pour que le site s'ouvre hors ligne. */
 
-const CACHE = 'tonalli-v1';
+/* À changer quand une ressource non versionnée change (icônes, favicon) : le
+   cache d'abord la servirait sinon pour toujours. L'activation efface les
+   caches qui ne portent pas ce nom. */
+const CACHE = 'tonalli-v2';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -62,7 +65,8 @@ self.addEventListener('push', (event) => {
   const options = {
     body: payload.body || '',
     icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    // Android ne garde que l'alpha du badge : une silhouette, pas l'icône en couleur.
+    badge: '/badge-96.png',
     tag: payload.tag || 'tonalli',
     data: { url: payload.url || '/' },
   };

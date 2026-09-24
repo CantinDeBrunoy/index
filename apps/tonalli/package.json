@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "checks": "node --experimental-strip-types scripts/checks.ts",
+    "icons": "node --experimental-strip-types scripts/make-icons.ts",
     "typecheck": "tsc -b"
   },
   "dependencies": {

@@ -1,27 +1,37 @@
 /* Tonalli — un carnet qu'on tient à deux, pas un tableau de bord.
-   Fond de papier chaud, accent terracotta, second accent olive. Les seules
-   couleurs "franches" de l'écran restent les émotions et les photos — le
-   châssis, lui, est chaud mais neutre : jamais de gris ni de bleu froids. */
+   Du papier et de l'encre, rien d'autre : le châssis ne porte aucune couleur
+   à lui. Les seules couleurs de l'écran sont les émotions et les photos.
+
+   Un état d'interface (bouton principal, onglet actif, aujourd'hui, choix,
+   interrupteur, focus) se dit donc à l'encre. L'ancien accent terracotta
+   tombait entre Gratitude et Fierté : un jour cerclé ou une réaction choisie
+   passaient pour une journée remplie. Et son texte blanc ne tenait pas le
+   contraste (3,4 en clair, 2,4 la nuit). */
 
 :root {
-  --bg: #f5ead8;
-  --surface: #fdf7ea;
-  --surface-2: #efe0c4;
-  --border: #e0d0b5;
-  --empty: #ece0c8;
+  --bg: #faf7f0;
+  --surface: #ffffff;
+  --surface-2: #f2e8d5;
+  --border: #e7e0d4;
+  --empty: #ede6d8;
   --text: #2a2019;
-  --text-muted: #6b5847;
-  --text-faint: #8a7768;
-  --danger: #a3402c;
-  --accent: #c67139;
-  --accent-2: #7a8a5e;
-  --link: #8c491a;
-  --shadow: 0 10px 26px rgba(94, 58, 26, 0.14);
-  --shadow-sm: 0 6px 16px rgba(94, 58, 26, 0.12);
-  --tooth: rgba(107, 74, 40, 0.05);
+  --text-muted: #6b6259;
+  /* Le gris le plus pâle sert aux plus petits textes (onglets, mentions) :
+     il ne descend jamais sous 4,5 de contraste sur le papier. */
+  --text-faint: #7a7066;
+  /* Voisine de Colère : en texte seulement, jamais en aplat, et toujours avec
+     des mots qui disent l'erreur — la couleur ne porte jamais seule le sens. */
+  --danger: #a5322a;
+  /* Ce qui se pose sur l'encre : le libellé du bouton principal. */
+  --on-ink: #faf7f0;
+  --shadow: 0 10px 26px rgba(42, 32, 25, 0.12);
+  --shadow-sm: 0 6px 16px rgba(42, 32, 25, 0.08);
+  --tooth: rgba(42, 32, 25, 0.04);
 
-  --font-heading: 'Caprasimo', 'Instrument Serif', Georgia, serif;
-  --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* Le titre est écrit à la main, du même geste que le personnage ; le texte
+     courant reste une linéale chaleureuse, lisible petit. */
+  --font-heading: 'Shantell Sans', 'Karla', system-ui, sans-serif;
+  --font-body: 'Karla', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
   --radius: 22px;
   --radius-sm: 14px;
@@ -35,21 +45,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #191110;
-    --surface: #251a15;
-    --surface-2: #2c1f18;
-    --border: #3b2b22;
-    --empty: #241a15;
-    --text: #f3e7d6;
-    --text-muted: #b7a18b;
-    --text-faint: #a08b78;
-    --danger: #e2917f;
-    --accent: #e08b4f;
-    --accent-2: #a3b585;
-    --link: #e0a165;
+    --bg: #241a14;
+    --surface: #2e2119;
+    --surface-2: #3a2c22;
+    --border: #4a3b30;
+    --empty: #2a1f18;
+    --text: #ede3d3;
+    --text-muted: #b8aa98;
+    --text-faint: #a39684;
+    --danger: #f08a7e;
+    --on-ink: #241a14;
     --shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
     --shadow-sm: 0 8px 18px rgba(0, 0, 0, 0.4);
-    --tooth: rgba(255, 224, 190, 0.035);
+    --tooth: rgba(237, 227, 211, 0.03);
   }
 }
 
@@ -71,12 +79,13 @@ body {
 
 button, input, textarea, select { font: inherit; color: inherit; }
 
-::selection { background: var(--accent); color: var(--surface); }
+::selection { background: var(--text); color: var(--bg); }
 
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 4px; }
 
-a { color: var(--link); text-decoration: none; }
-a:hover { color: var(--accent); }
+/* Sans couleur pour le distinguer, un lien se souligne. */
+a { color: var(--text); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
 
 .app {
   min-height: 100%;
@@ -90,19 +99,22 @@ a:hover { color: var(--accent); }
 /* --- typographie ------------------------------------------------------- */
 h1 {
   font-family: var(--font-heading);
-  font-weight: 400;
+  font-weight: 700;
   font-size: 30px;
   line-height: 1.08;
   letter-spacing: 0;
   margin: 0;
 }
-h2 { font-family: var(--font-heading); font-weight: 400; font-size: 21px; line-height: 1.15; margin: 0; }
+h2 { font-family: var(--font-heading); font-weight: 600; font-size: 21px; line-height: 1.15; margin: 0; }
 p { margin: 0; }
 
 .muted { color: var(--text-muted); }
 .faint { color: var(--text-faint); }
 .small { font-size: 13px; }
 .center { text-align: center; }
+
+/* Le logo se centre de lui-même : il est posé seul au-dessus d'un titre. */
+.logo { display: block; flex: none; margin: 0 auto 6px; }
 .capitalize::first-letter { text-transform: uppercase; }
 
 .section-title {
@@ -152,19 +164,19 @@ p { margin: 0; }
   cursor: pointer;
   transition: opacity 0.15s var(--ease), transform 0.15s var(--ease), background 0.15s var(--ease), border-color 0.15s var(--ease);
 }
-.btn:hover { border-color: var(--accent); }
+.btn:hover { border-color: var(--text); }
 .btn:active { transform: scale(0.985); }
 .btn:disabled { opacity: 0.45; cursor: default; }
 .btn--primary {
-  background: var(--accent);
-  color: #fff5e8;
+  background: var(--text);
+  color: var(--on-ink);
   border-color: transparent;
-  box-shadow: 0 10px 22px rgba(140, 73, 26, 0.28);
+  box-shadow: var(--shadow-sm);
 }
-.btn--primary:hover { background: color-mix(in srgb, var(--accent) 88%, #2a2019 12%); }
+.btn--primary:hover { background: color-mix(in srgb, var(--text) 88%, var(--bg) 12%); }
 .btn--block { width: 100%; text-align: center; justify-content: center; }
 .btn--ghost { background: transparent; border-color: transparent; color: var(--text-muted); padding: 8px 4px; box-shadow: none; }
-.btn--ghost:hover { color: var(--accent); border-color: transparent; }
+.btn--ghost:hover { color: var(--text); border-color: transparent; }
 a.btn { text-decoration: none; display: block; text-align: center; }
 .btn--danger { color: var(--danger); }
 .btn--icon { width: 42px; height: 42px; padding: 0; display: grid; place-items: center; font-size: 16px; }
@@ -180,7 +192,7 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   outline: none;
   transition: border-color 0.15s var(--ease);
 }
-.input:focus { border-color: var(--accent); }
+.input:focus { border-color: var(--text); }
 .input--code {
   text-transform: uppercase;
   letter-spacing: 6px;
@@ -200,7 +212,7 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   transition: background 0.18s var(--ease), border-color 0.18s var(--ease);
   flex: none;
 }
-.switch[aria-checked='true'] { background: var(--accent); border-color: var(--accent); }
+.switch[aria-checked='true'] { background: var(--text); border-color: var(--text); }
 .switch::after {
   content: '';
   position: absolute;
@@ -296,15 +308,17 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 }
 .emotion[aria-checked='true'] .emotion-dot {
   transform: scale(1.1);
-  box-shadow: inset 0 0 0 1.5px rgba(64, 35, 16, 0.28), 0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent), 0 8px 18px rgba(94, 58, 26, 0.2);
+  /* Un cerne d'encre, séparé de la pastille par un filet de papier : le choix
+     se voit sans ajouter de couleur à côté de celle qu'on vient de choisir. */
+  box-shadow: inset 0 0 0 1.5px rgba(64, 35, 16, 0.28), 0 0 0 3px var(--bg), 0 0 0 5px var(--text), 0 8px 18px rgba(42, 32, 25, 0.2);
 }
 .emotion-name { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
 .emotion[aria-checked='true'] .emotion-name { color: var(--text); font-weight: 600; }
 
 /* --- réactions rapides ----------------------------------------------------- */
 /* Une rangée de pastilles sous la journée de l'autre. Les emoji sont les
-   seules couleurs franches ici, comme les émotions : le châssis reste crème,
-   et c'est la pastille choisie qui prend le cerne terracotta. */
+   seules couleurs franches ici, comme les émotions : le châssis reste papier,
+   et la pastille choisie se cerne d'encre. */
 .reactions {
   display: flex;
   gap: 8px;
@@ -327,11 +341,14 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   place-items: center;
   transition: transform 0.18s var(--ease), border-color 0.18s var(--ease), background 0.18s var(--ease);
 }
-.reaction:hover { border-color: var(--accent); }
+.reaction:hover { border-color: var(--text); }
 .reaction:active { transform: scale(0.92); }
-.reaction[aria-pressed='true'] {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+/* Réaction posée (bouton bascule) ou symbole de la série choisi (bouton radio) :
+   le même cerne d'encre. */
+.reaction[aria-pressed='true'],
+.reaction[aria-checked='true'] {
+  border: 2px solid var(--text);
+  background: color-mix(in srgb, var(--text) 8%, var(--surface));
   transform: scale(1.06);
 }
 .reaction:disabled { opacity: 0.45; cursor: default; transform: none; }
@@ -428,6 +445,7 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   margin: 0;
   padding: 0 32px;
   font-family: var(--font-heading);
+  font-weight: 700;
   font-size: clamp(28px, 8.5vw, 44px);
   line-height: 1.15;
   text-align: center;
@@ -472,6 +490,7 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   position: relative;
   max-width: 16ch;
   font-family: var(--font-heading);
+  font-weight: 600;
   font-size: clamp(22px, 6.5vw, 30px);
   line-height: 1.2;
   text-align: center;
@@ -541,7 +560,7 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 .reaction-burst__emoji { font-size: 84px; line-height: 1; }
 .reaction-burst__title {
   font-family: var(--font-heading);
-  font-weight: 400;
+  font-weight: 700;
   font-size: 34px;
   line-height: 1.1;
 }
@@ -584,7 +603,8 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 .intensity[aria-checked='true'] {
   box-shadow:
     inset 0 0 0 1px rgba(64, 35, 16, 0.12),
-    0 0 0 3px color-mix(in srgb, var(--accent) 60%, transparent),
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--text),
     var(--shadow-sm);
 }
 
@@ -758,7 +778,7 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 }
 .cell:active { transform: scale(0.94); }
 .cell:disabled { cursor: default; }
-.cell--today { box-shadow: inset 0 0 0 2px var(--accent); }
+.cell--today { box-shadow: inset 0 0 0 2px var(--text); }
 .cell--future { opacity: 0.4; }
 .cell--hidden {
   background: repeating-linear-gradient(
@@ -817,7 +837,7 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   color: var(--text-faint);
   text-decoration: none;
 }
-.tab[aria-current='page'] { color: var(--accent); }
+.tab[aria-current='page'] { color: var(--text); }
 .tab-glyph { width: 21px; height: 21px; display: grid; place-items: center; }
 
 /* --- divers --------------------------------------------------------------- */
@@ -865,7 +885,7 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   height: 18px;
   border-radius: 50%;
   border: 2.5px solid var(--border);
-  border-top-color: var(--accent);
+  border-top-color: var(--text);
   animation: spin 0.7s linear infinite;
 }
 
@@ -892,7 +912,7 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   gap: 12px;
   margin-top: 4px;
 }
-.switcher > strong { font-family: var(--font-heading); font-weight: 400; font-size: 19px; }
+.switcher > strong { font-family: var(--font-heading); font-weight: 700; font-size: 19px; }
 
 .dots { display: flex; justify-content: center; gap: 7px; margin-top: -4px; }
 .dot-nav {
@@ -902,7 +922,7 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   background: var(--border);
   transition: background 0.2s var(--ease);
 }
-.dot-nav[data-active='true'] { background: var(--accent); }
+.dot-nav[data-active='true'] { background: var(--text); }
 
 /* La clé de rendu change à chaque bascule : l'animation rejoue, ce qui donne
    le sentiment d'un panneau qui arrive plutôt que d'un contenu qui saute. */
