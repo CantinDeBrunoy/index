@@ -37,7 +37,7 @@ export type DuoActor = {
 /** Ce que chacun apporte à la scène : sa teinte du jour et sa tenue. */
 export type DuoPerson = {
   tint?: string;
-  layers?: { behind?: Piece[]; body?: Piece[]; face?: Piece[]; head?: Piece[] };
+  layers?: { flag?: Piece[]; behind?: Piece[]; body?: Piece[]; face?: Piece[]; head?: Piece[] };
   motif?: string | null;
   /** Relus quand le personnage est couché : la mèche et les taches restent visibles. */
   head?: string | null;

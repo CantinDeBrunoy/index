@@ -18,6 +18,7 @@ export type Profile = {
   character_body: string | null;
   character_face: string | null;
   character_motif: string | null;
+  character_flag: string | null;
 };
 
 export type Entry = {

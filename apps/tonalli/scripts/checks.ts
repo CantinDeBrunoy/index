@@ -53,6 +53,8 @@ import {
   ACCESSORY_PIECES,
   BODY_ACCESSORIES,
   FACE_ACCESSORIES,
+  FLAGS,
+  FLAG_PIECES,
   HEAD_ACCESSORIES,
   MOTIFS,
   OUTFIT_CATEGORIES,
@@ -1016,7 +1018,7 @@ console.log('\nPersonnage');
   for (const [key, pose] of Object.entries(POSES)) {
     check(`« ${key} » a son mouvement dans app.css`, css.includes(`.${pose.motion}{`), pose.motion);
   }
-  const lists = { tête: HEAD_ACCESSORIES, corps: BODY_ACCESSORIES, visage: FACE_ACCESSORIES, motif: MOTIFS };
+  const lists = { tête: HEAD_ACCESSORIES, corps: BODY_ACCESSORIES, visage: FACE_ACCESSORIES, motif: MOTIFS, drapeau: FLAGS };
   for (const [name, list] of Object.entries(lists)) {
     check(`accessoires (${name}) : clés uniques`, new Set(list).size === list.length);
   }
@@ -1028,9 +1030,12 @@ console.log('\nPersonnage');
   const migrations = {
     '0001': readFileSync(new URL('../supabase/migrations/0001_init.sql', import.meta.url), 'utf8'),
     '0011': readFileSync(new URL('../supabase/migrations/0011_character_outfit.sql', import.meta.url), 'utf8'),
+    '0012': readFileSync(new URL('../supabase/migrations/0012_character_flag.sql', import.meta.url), 'utf8'),
   };
   for (const [file, sql] of Object.entries(migrations)) {
-    for (const category of OUTFIT_CATEGORIES) {
+    // 0011 a posé les quatre premières catégories, 0012 le drapeau ; 0001 les tient toutes.
+    const categories = OUTFIT_CATEGORIES.filter((c) => file === '0001' || (file === '0012') === (c.key === 'flag'));
+    for (const category of categories) {
       const match = new RegExp(`check \\(${category.column} in \\(([^)]*)\\)\\)`).exec(sql);
       const inBase = match ? [...match[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
       check(
@@ -1045,10 +1050,33 @@ console.log('\nPersonnage');
   const drawn = Object.keys(ACCESSORY_PIECES).sort().join(',');
   const listed = [...HEAD_ACCESSORIES, ...BODY_ACCESSORIES, ...FACE_ACCESSORIES].sort().join(',');
   check('chaque accessoire a son dessin', drawn === listed, drawn);
+  check('chaque drapeau a son dessin', Object.keys(FLAG_PIECES).sort().join(',') === [...FLAGS].sort().join(','));
+
+  // Le drapeau tient dans le cadre du personnage (200 × 220) : un fanion
+  // coupé au bord ressemblerait à un bug. On suit ses quatre coins à travers
+  // la transformation qui le pose en haut du mât.
+  for (const [key, pieces] of Object.entries(FLAG_PIECES)) {
+    const outline = [...pieces].reverse().find((p) => p.tf && p.sw);
+    const m = /translate\(([\d.]+),([\d.]+)\) rotate\(([-\d.]+)\) scale\(-1,1\)/.exec(outline?.tf ?? '');
+    const corners = /M([\d.]+),([\d.]+) H([\d.]+) V([\d.]+)/.exec(outline?.d ?? '');
+    if (!m || !corners) {
+      check(`drapeau ${key} : forme lisible`, false);
+      continue;
+    }
+    const [tx, ty, deg] = [Number(m[1]), Number(m[2]), (Number(m[3]) * Math.PI) / 180];
+    const [x0, y0, x1, y1] = corners.slice(1).map(Number);
+    const inside = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].every(([x, y]) => {
+      const [fx, fy] = [-x, y];
+      const px = tx + fx * Math.cos(deg) - fy * Math.sin(deg);
+      const py = ty + fx * Math.sin(deg) + fy * Math.cos(deg);
+      return px >= 2 && px <= 198 && py >= 2 && py <= 218;
+    });
+    check(`drapeau ${key} : tient dans le cadre`, inside);
+  }
 
   // Une clé inconnue ne casse pas le dessin : elle vaut « rien ».
   const read = outfitOf({ character_head: 'cap', character_body: 'jetpack', character_face: null });
-  check('tenue : clé connue gardée, inconnue ignorée', read.head === 'cap' && read.body === null && read.face === null && read.motif === null);
+  check('tenue : clé connue gardée, inconnue ignorée', read.head === 'cap' && read.body === null && read.face === null && read.motif === null && read.flag === null);
   check('tenue : pas de profil, pas de tenue', Object.keys(outfitOf(null)).length === 0);
 }
 

@@ -103,6 +103,8 @@ export function Character({ emotion, color, state = 'scene', outfit = {}, size =
 
       {lying ? (
         <g>
+          {/* Couché, il garde son drapeau planté derrière lui. */}
+          <Pieces pieces={layers.flag} tint={tint} held={held} />
           <rect x="14" y="184" width="54" height="24" rx="12" {...heldProps} stroke={INK} strokeWidth="3.5" />
           <path
             d="M40,206 C28,158 56,128 104,130 C154,132 176,162 166,206 C166,214 40,214 40,206 Z"
@@ -125,6 +127,7 @@ export function Character({ emotion, color, state = 'scene', outfit = {}, size =
       ) : (
         <g>
           <g style={{ transform: bodyTransform, transformOrigin: '100px 190px' }}>
+            <Pieces pieces={layers.flag} tint={tint} held={held} />
             {pose.leg === 'stand' ? (
               <g fill={tint} stroke={INK} strokeWidth="4">
                 <ellipse cx="70" cy="194" rx="15" ry="9" />
