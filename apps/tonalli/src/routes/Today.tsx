@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Camera } from '@/components/Camera';
+import { Character } from '@/components/Character';
 import { EmotionGrid } from '@/components/EmotionGrid';
 import { EntryPhotos, PhotoPair } from '@/components/PhotoPair';
 import { InkReveal } from '@/components/InkReveal';
@@ -15,9 +16,9 @@ import {
   DEFAULT_INTENSITY,
   INTENSITIES,
   intensityOf,
+  isEmotionKey,
   readableTextOn,
   shadeOf,
-  veilOpacity,
   washGradient,
 } from '@/lib/emotions';
 import { gestureOf } from '@/lib/ink';
@@ -295,17 +296,13 @@ function Composer({
       {emotion ? (
         <div className="card row-between">
           <span className="row">
-            <span
-              className="emotion-dot"
-              style={{ background: shadeOf(emotion, intensity) ?? undefined, width: 26, height: 26 }}
-              aria-hidden
-            >
-              <span
-                className="emotion-dot__veil"
-                style={{ '--veil': veilOpacity(emotion) } as React.CSSProperties}
-              />
-              <span className="emotion-dot__sheen" />
-            </span>
+            {/* Le personnage répond au choix : il prend l'émotion, et le cran
+                d'intensité change sa teinte sous les yeux. */}
+            <Character
+              emotion={isEmotionKey(emotion) ? emotion : null}
+              color={shadeOf(emotion, intensity)}
+              size={72}
+            />
             <span>{t(`emotions.${emotion}`)}</span>
           </span>
           <button type="button" className="btn" onClick={() => onEmotion(null)}>
@@ -314,7 +311,9 @@ function Composer({
         </div>
       ) : (
         <>
-          <p className="muted">{t('today.chooseEmotion')}</p>
+          {/* Pas encore de teinte : le personnage attend, incolore. */}
+          <Character emotion={null} state="waiting" size={96} className="character--centered" />
+          <p className="muted center">{t('today.chooseEmotion')}</p>
           <EmotionGrid value={emotion} onChange={onEmotion} />
         </>
       )}
@@ -431,7 +430,8 @@ function MyDay({ entry, isPending, pendingColor, pendingEmotion, pendingNote, on
 
   return (
     <div className="stack">
-      <div className="hero" style={{ background: color, color: readableTextOn(color) }}>
+      <div className="hero hero--character" style={{ background: color, color: readableTextOn(color) }}>
+        <Character emotion={isEmotionKey(emotion) ? emotion : null} color={color} size={96} />
         <div className="stack-sm">
           <strong style={{ fontSize: 22 }}>{emotion ? t(`emotions.${emotion}`) : ''}</strong>
           <span className="small">{t('today.lockedTitle')}</span>
@@ -471,7 +471,17 @@ function TheirDay({
   if (!unlocked) return <div className="hero hero--empty">{t('today.partnerHidden')}</div>;
 
   const entry = entries[todayInTimeZone(partner.timezone)] ?? null;
-  if (!entry) return <div className="hero hero--empty">{t('today.partnerWaiting', { name })}</div>;
+  if (!entry) {
+    return (
+      <div className="hero hero--empty">
+        <div className="stack-sm center">
+          {/* Sa journée n'a pas encore de teinte : son personnage attend. */}
+          <Character emotion={null} state="waiting" size={80} className="character--centered" />
+          <span>{t('today.partnerWaiting', { name })}</span>
+        </div>
+      </div>
+    );
+  }
 
   // Une journée du binôme ne se découvre qu'une fois : revenir sur son
   // panneau, ou le voir se rafraîchir, ne rejoue pas la cérémonie. Le
@@ -497,9 +507,10 @@ function TheirDay({
     >
       <div className="stack">
         <div
-          className="hero"
-          style={{ background: entry.color, color: readableTextOn(entry.color), minHeight: 96 }}
+          className="hero hero--character"
+          style={{ background: entry.color, color: readableTextOn(entry.color) }}
         >
+          <Character emotion={isEmotionKey(entry.emotion) ? entry.emotion : null} color={entry.color} size={96} />
           <strong style={{ fontSize: 20 }}>{t(`emotions.${entry.emotion}`)}</strong>
         </div>
         <p className="faint small capitalize">{formatLongDate(entry.date, locale)}</p>

@@ -100,6 +100,7 @@ src/
     inset.ts           géométrie de la vignette : bornes et collage aux coins
     ink.ts             l'encre : validation, dévoilement, et le geste de chaque émotion
     logo.ts            le soleil de Tonalli : une géométrie pour le composant, le favicon et les icônes
+    character.ts       le personnage : une pose par émotion, les états sans couleur, les accessoires
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -118,7 +119,7 @@ src/
     CalendarScreens    mois, mosaïque année, répartition — mien et du binôme
     Settings           binôme, langue, rappel, compte, données
   components/          grilles, caméra, cellules, feuilles, réactions, états,
-                       encre (InkCanvas, SaveBloom, InkReveal), logo
+                       encre (InkCanvas, SaveBloom, InkReveal), logo, personnage
   locales/             fr.ts fait foi ; es.ts est typé d'après lui
 supabase/
   migrations/          0001 → 0005, à jouer dans l'ordre
@@ -279,6 +280,30 @@ serait refusé à l'écriture.
 Rien ne s'affiche tant qu'il n'y a pas de série. Un « 0 » en haut de l'écran
 ne serait pas une information, seulement un reproche — et le premier jour de
 quelqu'un n'a pas à commencer par un reproche.
+
+### Le personnage joue, il ne parle pas
+
+Une goutte à la silhouette fixe, dessinée à l'encre et teinte de la journée
+(`components/Character.tsx`, règles dans `lib/character.ts`). Elle prend la
+pose de son émotion ; sans teinte, elle attend, incolore. Quatre règles :
+
+- **La silhouette ne change jamais.** Les poses bougent les bras et le corps
+  sur place, les accessoires se posent dessus ; la forme reste la même que
+  celle du logo.
+- **La Joie et la Colère n'ont pas de bras.** L'une rebondit, l'autre se
+  gonfle : tout le corps fait le geste.
+- **La Tristesse ne pleure jamais.** Elle se frotte l'œil. Une larme serait
+  un symbole, et le personnage ne parle que par gestes.
+- **Il est décoratif.** Le nom de l'émotion est toujours écrit à côté ; le
+  personnage est muet pour les lecteurs d'écran, et s'immobilise sous
+  `prefers-reduced-motion`.
+
+Son trait suit `currentColor` : sur un bandeau teinté, il prend la couleur
+lisible calculée pour ce bandeau (`readableTextOn`), l'encre sur les teintes
+claires, le trait clair sur les foncées. `npm run checks` vérifie qu'il y a
+une pose par émotion, les deux règles des bras, et que chaque mouvement
+nommé dans `POSES` existe bien dans `app.css` — une faute de frappe le
+laisserait figé sans rien dire.
 
 ### La photo se prend dans l'app, et elle est double
 
@@ -547,7 +572,7 @@ cher :
 
 **1. `npm run checks`** — fonctions pures, exécutées par Node avec
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
-(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `ink.ts`, `camera.ts`, `logo.ts`) ne doivent contenir **aucun import**
+(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `ink.ts`, `camera.ts`, `logo.ts`, `character.ts`) ne doivent contenir **aucun import**
 vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
 n'existe pas là-bas. Les garder sans dépendances. Le choix de l'objectif s'y
 vérifie contre un faux `navigator.mediaDevices` qui rejoue les manies d'un

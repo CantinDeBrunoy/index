@@ -46,6 +46,16 @@ import {
 } from '../src/lib/ink.ts';
 import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
 import { BODY_PATH, LOGO_SIZE, MASKABLE_FIT, faviconSvg, logoGeometry, type LogoVariant } from '../src/lib/logo.ts';
+import {
+  BODY_ACCESSORIES,
+  FACE_ACCESSORIES,
+  HEAD_ACCESSORIES,
+  MOTIFS,
+  POSES,
+  isLying,
+  mouthPath,
+  poseOf,
+} from '../src/lib/character.ts';
 import { fr } from '../src/locales/fr.ts';
 import { es } from '../src/locales/es.ts';
 import {
@@ -979,6 +989,30 @@ console.log('Gestes des émotions');
     check('Joie : l\'eau claire attend la seconde touche', up.blobs[0].width === 0 && up.swirl === 0);
     const second = inkFrame(plan, PHASES.impact + 0.07 + 0.02);
     check('Joie : un rond à chaque touche', second.rings[1].opacity > 0, JSON.stringify(second.rings[1]));
+  }
+}
+
+console.log('\nPersonnage');
+{
+  check('une pose par émotion', EMOTIONS.every((e) => POSES[e.key] !== undefined) && Object.keys(POSES).length === EMOTIONS.length);
+  // La Joie rebondit, la Colère se gonfle : tout le corps fait le geste, des
+  // bras en ajouteraient un second.
+  check('la Joie n\'a pas de bras', POSES.joy.arm === 'none');
+  check('la Colère n\'a pas de bras', POSES.anger.arm === 'none');
+  // Elle se frotte l'œil : la Tristesse ne pleure jamais.
+  check('la Tristesse se frotte l\'œil', POSES.sadness.arm === 'rubEyes');
+  check('sans émotion, il attend', poseOf('scene', null).motion === 'tc-idle' && poseOf('waiting', 'joy').motion === 'tc-idle');
+  check('la Fatigue dort allongée', isLying('scene', 'tiredness') && isLying('sleeping', null) && !isLying('scene', 'joy'));
+  check('la bouche sourit vers le bas du repère', mouthPath(1) === 'M86,138 Q100,154 114,138' && mouthPath(-0.5) === 'M86,138 Q100,130 114,138');
+  // Chaque pose nomme une animation qui existe dans la feuille de style : une
+  // faute de frappe laisserait le personnage figé sans rien dire.
+  const css = readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8');
+  for (const [key, pose] of Object.entries(POSES)) {
+    check(`« ${key} » a son mouvement dans app.css`, css.includes(`.${pose.motion}{`), pose.motion);
+  }
+  const lists = { tête: HEAD_ACCESSORIES, corps: BODY_ACCESSORIES, visage: FACE_ACCESSORIES, motif: MOTIFS };
+  for (const [name, list] of Object.entries(lists)) {
+    check(`accessoires (${name}) : clés uniques`, new Set(list).size === list.length);
   }
 }
 
