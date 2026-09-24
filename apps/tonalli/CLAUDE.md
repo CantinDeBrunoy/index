@@ -45,7 +45,8 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run dev` | serveur de développement |
 | `npm run build` | `tsc -b && vite build` — c'est le build de production |
 | `npm run typecheck` | typage seul |
-| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions et nuances, réactions, vignette, encre et dévoilement, choix de l'objectif) |
+| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions et nuances, réactions, vignette, encre et dévoilement, choix de l'objectif, logo) |
+| `npm run icons` | régénère le favicon et les icônes PNG depuis `src/lib/logo.ts` |
 | `npm run lint` | oxlint |
 
 **La caméra exige HTTPS** — elle fonctionne sur `localhost`, sinon il faut un
@@ -83,6 +84,7 @@ src/
     streak.ts          les 6 symboles de la série (le calcul est dans dates.ts)
     inset.ts           géométrie de la vignette : bornes et collage aux coins
     ink.ts             l'encre : validation, dévoilement, et le geste de chaque émotion
+    logo.ts            le soleil de Tonalli : une géométrie pour le composant, le favicon et les icônes
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -101,14 +103,14 @@ src/
     CalendarScreens    mois, mosaïque année, répartition — mien et du binôme
     Settings           binôme, langue, rappel, compte, données
   components/          grilles, caméra, cellules, feuilles, réactions, états,
-                       encre (InkCanvas, SaveBloom, InkReveal)
+                       encre (InkCanvas, SaveBloom, InkReveal), logo
   locales/             fr.ts fait foi ; es.ts est typé d'après lui
 supabase/
   migrations/          0001 → 0005, à jouer dans l'ordre
   functions/           deux Edge Functions autonomes (Deno)
 scripts/
   checks.ts            vérifications des fonctions pures
-  make-icons.mjs       génère public/icon-*.png (encodeur PNG sans dépendance)
+  make-icons.ts        génère favicon, icônes et badge depuis logo.ts (rasteriseur et PNG sans dépendance)
 ```
 
 **`src/locales/fr.ts` fait autorité** : son type est dérivé en `Translation`, et
@@ -530,7 +532,7 @@ cher :
 
 **1. `npm run checks`** — fonctions pures, exécutées par Node avec
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
-(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `ink.ts`, `camera.ts`) ne doivent contenir **aucun import**
+(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `ink.ts`, `camera.ts`, `logo.ts`) ne doivent contenir **aucun import**
 vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
 n'existe pas là-bas. Les garder sans dépendances. Le choix de l'objectif s'y
 vérifie contre un faux `navigator.mediaDevices` qui rejoue les manies d'un
@@ -794,6 +796,23 @@ il sert l'app depuis le cache. Un simple retour sur l'onglet peut donc montrer
 la version d'avant alors que le déploiement est passé. Fermer complètement
 l'onglet (ou l'icône de l'écran d'accueil) et rouvrir, ou forcer le
 rechargement. Avant de conclure qu'un déploiement a échoué, vérifier ça.
+
+**Une icône qui change reste en cache.** Le service worker sert en cache
+d'abord tout ce qui n'est pas une navigation — y compris le favicon et les
+icônes, dont le nom ne change pas d'une version à l'autre (seuls le JS et le
+CSS de Vite sont versionnés). Sans rien faire, un appareil qui a déjà ouvert
+le site garde l'ancienne icône pour toujours. Quand une ressource non
+versionnée change, changer le nom du cache (`CACHE` dans `public/sw.js`) :
+l'activation efface les anciens. Et ça ne suffit pas pour l'écran d'accueil :
+iOS fige l'icône au moment de l'ajout (il faut retirer le site et l'ajouter
+de nouveau), Android la met à jour de lui-même, avec un jour ou plus de
+retard.
+
+**Le logo n'a qu'une source.** `src/lib/logo.ts` donne la géométrie du
+soleil ; le composant `Logo` la dessine, `npm run icons` en tire le favicon et
+les PNG. Retoucher un fichier de `public/` à la main le désynchronise, et
+`npm run checks` le refuse pour le favicon. Les rayons suivent l'ordre de
+`EMOTIONS` : une émotion ajoutée ou déplacée là change le logo, et c'est voulu.
 
 **Confirmation d'e-mail.** Laisser « Confirm email » activé avec le serveur
 d'envoi intégré de Supabase donne un `email rate limit exceeded` au bout de

@@ -103,6 +103,9 @@ p { margin: 0; }
 .faint { color: var(--text-faint); }
 .small { font-size: 13px; }
 .center { text-align: center; }
+
+/* Le logo se centre de lui-même : il est posé seul au-dessus d'un titre. */
+.logo { display: block; flex: none; margin: 0 auto 6px; }
 .capitalize::first-letter { text-transform: uppercase; }
 
 .section-title {
