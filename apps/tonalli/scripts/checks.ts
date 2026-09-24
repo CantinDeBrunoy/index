@@ -5,7 +5,9 @@
  * Le cas France / Mexique est testé explicitement : c'est là que se cachent
  * les bugs de « jour » dans une app à deux bouts du monde.
  */
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import {
   clockInTimeZone,
@@ -1090,6 +1092,13 @@ console.log('\nScènes à deux');
   }
   // Neutre ne joue avec personne : 11 × 11 paires écrites.
   check('121 paires scénarisées', scripted === 121, String(scripted));
+
+  // Les feuilles sont écrites par `npm run duo` depuis les livres de
+  // scripts/duo/scenes : un livre retouché sans régénérer, ou une feuille
+  // retouchée à la main, et l'app ne jouerait pas ce que dit le livre.
+  const build = fileURLToPath(new URL('./duo/build.ts', import.meta.url));
+  const duo = spawnSync(process.execPath, ['--experimental-strip-types', build, '--check'], { encoding: 'utf8' });
+  check('les feuilles sont à jour (npm run duo)', duo.status === 0, (duo.stderr || duo.stdout).trim().split('\n').at(-1));
 }
 
 console.log('\nLogo');
