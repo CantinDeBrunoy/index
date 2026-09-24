@@ -131,7 +131,7 @@ export function logoSvg({ variant = 'full', ink, paper, tile, scale: fit = 1 }: 
 
 /** Les couleurs du châssis sur lesquelles le logo est posé en icône. */
 export const ICON_INK = '#2A2019';
-export const ICON_PAPER = '#F5EAD8';
+export const ICON_PAPER = '#FAF7F0';
 
 /**
  * Place du logo dans une icône carrée. Les icônes « any » gardent une marge
