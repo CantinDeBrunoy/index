@@ -160,6 +160,10 @@ export const es: Translation = {
       sun: 'Sol',
     },
   },
+  duo: {
+    together: 'Tú en {{mine}}, {{name}} en {{theirs}}: juegan la escena juntos.',
+    apart: 'Tú en {{mine}}, {{name}} en {{theirs}}, cada quien en su emoción.',
+  },
   character: {
     title: 'Mi personaje',
     hint: 'Conserva su silueta; lo que lleva toma el matiz del día. {{name}} también lo ve.',

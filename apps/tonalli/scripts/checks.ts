@@ -5,7 +5,9 @@
  * Le cas France / Mexique est testé explicitement : c'est là que se cachent
  * les bugs de « jour » dans une app à deux bouts du monde.
  */
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import {
   clockInTimeZone,
@@ -46,7 +48,9 @@ import {
 } from '../src/lib/ink.ts';
 import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
 import { BODY_PATH, LOGO_SIZE, MASKABLE_FIT, faviconSvg, logoGeometry, type LogoVariant } from '../src/lib/logo.ts';
+import { sceneFor, sheetsOf } from '../src/lib/duo/index.ts';
 import {
+  ACCESSORY_PIECES,
   BODY_ACCESSORIES,
   FACE_ACCESSORIES,
   HEAD_ACCESSORIES,
@@ -1037,10 +1041,64 @@ console.log('\nPersonnage');
     }
   }
 
+  // Chaque accessoire de la liste fermée a son dessin, et aucun dessin n'est orphelin.
+  const drawn = Object.keys(ACCESSORY_PIECES).sort().join(',');
+  const listed = [...HEAD_ACCESSORIES, ...BODY_ACCESSORIES, ...FACE_ACCESSORIES].sort().join(',');
+  check('chaque accessoire a son dessin', drawn === listed, drawn);
+
   // Une clé inconnue ne casse pas le dessin : elle vaut « rien ».
   const read = outfitOf({ character_head: 'cap', character_body: 'jetpack', character_face: null });
   check('tenue : clé connue gardée, inconnue ignorée', read.head === 'cap' && read.body === null && read.face === null && read.motif === null);
   check('tenue : pas de profil, pas de tenue', Object.keys(outfitOf(null)).length === 0);
+}
+
+console.log('\nScènes à deux');
+{
+  // Chaque paire d'émotions trouve ses feuilles d'animation : une classe
+  // nommée par le livre de scènes sans sa feuille laisserait des pièces
+  // cachées s'afficher toutes à la fois.
+  const sheetDir = new URL('../src/lib/duo/scenes/', import.meta.url);
+  const exists = (name: string) => {
+    try {
+      readFileSync(new URL(`${name}.css`, sheetDir));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const base = readFileSync(new URL('base.css', sheetDir), 'utf8');
+  let scripted = 0;
+  for (const a of EMOTIONS) {
+    for (const b of EMOTIONS) {
+      const me = { emotion: a.key, color: a.color, outfit: {} };
+      const partner = { emotion: b.key, color: b.color, outfit: { head: 'flower' as const, motif: 'dots' as const } };
+      const scene = sceneFor(me, partner);
+      if (scene.scripted) scripted += 1;
+      const missing = sheetsOf(scene).filter((name) => !exists(name));
+      check(`${a.key} + ${b.key} : feuilles présentes`, missing.length === 0, missing.join(','));
+      // Toutes les classes du socle qu'elle nomme existent dans base.css.
+      const baseClasses = new Set<string>();
+      for (const actor of scene.actors) {
+        for (const cls of [actor.c1, actor.c2, actor.c3, ...actor.parts.map((p) => p.c)]) {
+          for (const c of cls.split(' ')) if (c && (c.split('-').length <= 2 || c === 'du-motion-only')) baseClasses.add(c);
+        }
+      }
+      const absent = [...baseClasses].filter((c) => !base.includes(`.${c}{`) && !base.includes(`.${c} `) && !base.includes(`.${c},`));
+      check(`${a.key} + ${b.key} : classes du socle présentes`, absent.length === 0, absent.join(','));
+      // Moi à gauche, le binôme à droite : chacun garde sa teinte.
+      const fills = new Set(scene.actors.flatMap((actor) => actor.parts.map((p) => p.fill)));
+      check(`${a.key} + ${b.key} : ma teinte est dans la scène`, fills.has(a.color), a.color);
+    }
+  }
+  // Neutre ne joue avec personne : 11 × 11 paires écrites.
+  check('121 paires scénarisées', scripted === 121, String(scripted));
+
+  // Les feuilles sont écrites par `npm run duo` depuis les livres de
+  // scripts/duo/scenes : un livre retouché sans régénérer, ou une feuille
+  // retouchée à la main, et l'app ne jouerait pas ce que dit le livre.
+  const build = fileURLToPath(new URL('./duo/build.ts', import.meta.url));
+  const duo = spawnSync(process.execPath, ['--experimental-strip-types', build, '--check'], { encoding: 'utf8' });
+  check('les feuilles sont à jour (npm run duo)', duo.status === 0, (duo.stderr || duo.stdout).trim().split('\n').at(-1));
 }
 
 console.log('\nLogo');

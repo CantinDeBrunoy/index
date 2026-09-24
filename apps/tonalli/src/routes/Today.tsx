@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Camera } from '@/components/Camera';
 import { Character } from '@/components/Character';
+import { DuoScene } from '@/components/DuoScene';
 import { EmotionGrid } from '@/components/EmotionGrid';
 import { EntryPhotos, PhotoPair } from '@/components/PhotoPair';
 import { InkReveal } from '@/components/InkReveal';
@@ -12,6 +13,7 @@ import { StreakBadge } from '@/components/Streak';
 import { ErrorBanner, OfflineBanner } from '@/components/States';
 import { readCache, writeCache } from '@/lib/cache';
 import { outfitOf } from '@/lib/character';
+import type { Outfit } from '@/lib/character';
 import { formatLongDate, todayInTimeZone } from '@/lib/dates';
 import {
   DEFAULT_INTENSITY,
@@ -470,7 +472,8 @@ function TheirDay({
   name: string;
 }) {
   const { t, locale } = useI18n();
-  const { partner, user } = useAuth();
+  const { partner, user, profile } = useAuth();
+  const { mine, pending, today } = useEntries();
 
   if (!partner) return <div className="hero hero--empty">{t('today.partnerNoLink')}</div>;
   if (!unlocked) return <div className="hero hero--empty">{t('today.partnerHidden')}</div>;
@@ -511,17 +514,13 @@ function TheirDay({
       onReveal={remember}
     >
       <div className="stack">
+        <PairScene mine={mine[today] ?? null} pending={pending} theirs={entry} name={name} profileOutfit={outfitOf(profile)} partnerOutfit={outfitOf(partner)} />
         <div
           className="hero hero--character"
           style={{ background: entry.color, color: readableTextOn(entry.color) }}
         >
-          {/* Le binôme voit la tenue de l'autre : le personnage traverse le binôme. */}
-          <Character
-            emotion={isEmotionKey(entry.emotion) ? entry.emotion : null}
-            color={entry.color}
-            outfit={outfitOf(partner)}
-            size={96}
-          />
+          {/* Son personnage joue déjà dans la scène à deux, juste au-dessus :
+              le bandeau garde le nom de l'émotion, sans le redessiner. */}
           <strong style={{ fontSize: 20 }}>{t(`emotions.${entry.emotion}`)}</strong>
         </div>
         <p className="faint small capitalize">{formatLongDate(entry.date, locale)}</p>
@@ -532,3 +531,41 @@ function TheirDay({
     </InkReveal>
   );
 }
+
+/**
+ * Nos deux personnages dans la même scène. Elle vit sous la nappe de couleur
+ * de sa journée : elle montre son émotion, donc elle se découvre avec elle,
+ * au toucher, jamais avant.
+ */
+function PairScene({
+  mine,
+  pending,
+  theirs,
+  name,
+  profileOutfit,
+  partnerOutfit,
+}: {
+  mine: Entry | null;
+  pending: { emotion: string; color: string } | null;
+  theirs: Entry;
+  name: string;
+  profileOutfit: Outfit;
+  partnerOutfit: Outfit;
+}) {
+  const { t } = useI18n();
+  const myEmotion = mine?.emotion ?? pending?.emotion ?? null;
+  const myColor = mine?.color ?? pending?.color ?? null;
+  if (!isEmotionKey(myEmotion) || !myColor || !isEmotionKey(theirs.emotion)) return null;
+  const sides = {
+    me: { emotion: myEmotion, color: myColor, outfit: profileOutfit },
+    partner: { emotion: theirs.emotion, color: theirs.color, outfit: partnerOutfit },
+  };
+  const scripted = sides.me.emotion !== 'neutral' && sides.partner.emotion !== 'neutral';
+  const label = t(scripted ? 'duo.together' : 'duo.apart', {
+    mine: t(`emotions.${sides.me.emotion}`),
+    theirs: t(`emotions.${sides.partner.emotion}`),
+    name,
+  });
+  return <DuoScene me={sides.me} partner={sides.partner} label={label} />;
+}
+

@@ -140,3 +140,135 @@ export function outfitOf(profile: OutfitColumns | null | undefined): Outfit {
     motif: pick(MOTIFS, profile.character_motif),
   };
 }
+
+/**
+ * Ce qui peint une pièce : l'encre (le trait), la teinte du jour, le cran
+ * léger de l'émotion (ce qu'on tient, ce qu'on porte), le papier, ou une
+ * couleur fixe quand l'objet a la sienne (le pansement).
+ */
+export type Paint = 'none' | 'ink' | 'tint' | 'held' | 'paper' | `#${string}`;
+
+/**
+ * Une pièce de dessin, dans le repère du personnage (200 × 220). Le trait est
+ * à l'encre et arrondi ; `stroke: false` pour une tache sans contour.
+ */
+export type Piece = { d: string; fill?: Paint; stroke?: boolean; sw?: number; op?: number; tf?: string };
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Une ellipse en tracé : deux demi-arcs, pour que tout ne soit que des `path`. */
+export function ellipsePath(cx: number, cy: number, rx: number, ry: number): string {
+  return `M${r2(cx - rx)},${r2(cy)} A${rx},${ry} 0 1,0 ${r2(cx + rx)},${r2(cy)} A${rx},${ry} 0 1,0 ${r2(cx - rx)},${r2(cy)} Z`;
+}
+
+export function circlePath(cx: number, cy: number, r: number): string {
+  return ellipsePath(cx, cy, r, r);
+}
+
+function roundedRect(x: number, y: number, w: number, h: number, r: number): string {
+  return `M${x + r},${y} H${x + w - r} Q${x + w},${y} ${x + w},${y + r} V${y + h - r} Q${x + w},${y + h} ${x + w - r},${y + h} H${x + r} Q${x},${y + h} ${x},${y + h - r} V${y + r} Q${x},${y} ${x + r},${y} Z`;
+}
+
+export type AccessoryKey =
+  | (typeof HEAD_ACCESSORIES)[number]
+  | (typeof BODY_ACCESSORIES)[number]
+  | (typeof FACE_ACCESSORIES)[number];
+
+/**
+ * Le dessin de chaque accessoire, une seule fois pour tout l'app : le
+ * personnage seul (`Character`) et les scènes à deux (`lib/duo`) le lisent
+ * ici. Ils ne touchent jamais la silhouette : ils se posent sur le corps.
+ */
+export const ACCESSORY_PIECES: Record<AccessoryKey, Piece[]> = {
+  beanie: [
+    { d: 'M58,62 Q100,18 142,62 L138,74 Q100,50 62,74 Z', fill: 'tint', sw: 4 },
+    { d: circlePath(100, 18, 7), fill: 'tint', sw: 3.5 },
+  ],
+  flower: [
+    { d: 'M62,66 Q58,50 66,40', sw: 3 },
+    ...[[0, -8], [7, -3], [4, 6], [-7, -3], [-4, 6]].map(([x, y]) => ({ d: circlePath(66 + x, 36 + y, 6), fill: 'tint' as const, sw: 2.5 })),
+    { d: circlePath(66, 36, 4), fill: 'ink', stroke: false, op: 0.7 },
+  ],
+  ears: [
+    { d: ellipsePath(72, 46, 10, 16), fill: 'tint', sw: 4, tf: 'rotate(-18 72 46)' },
+    { d: ellipsePath(128, 46, 10, 16), fill: 'tint', sw: 4, tf: 'rotate(18 128 46)' },
+  ],
+  lock: [{ d: 'M96,50 Q92,28 106,22 Q98,32 100,50', sw: 4.5 }],
+  cap: [
+    { d: 'M62,68 Q60,32 100,30 Q140,32 138,68 Q100,58 62,68 Z', fill: 'tint', sw: 4 },
+    { d: 'M134,64 Q160,58 176,68 Q156,76 136,72 Z', fill: 'held', sw: 3.5 },
+    { d: circlePath(100, 30, 3.5), fill: 'ink', stroke: false },
+  ],
+  bow: [
+    { d: 'M122,52 L104,40 L106,62 Z M122,52 L140,40 L138,62 Z', fill: 'held', sw: 3.2 },
+    { d: circlePath(122, 51, 5), fill: 'held', sw: 3 },
+  ],
+  antennae: [
+    { d: 'M84,52 Q76,34 66,26 M116,52 Q124,34 134,26', sw: 3.5 },
+    { d: circlePath(65, 24, 6), fill: 'held', sw: 3 },
+    { d: circlePath(135, 24, 6), fill: 'held', sw: 3 },
+  ],
+  // La cape se dessine derrière le corps (voir `BEHIND_BODY`).
+  cape: [
+    { d: 'M58,92 Q20,140 26,196 Q48,204 70,190 Q46,160 60,100 Z', fill: 'held', sw: 3.5 },
+    { d: 'M142,92 Q180,140 174,196 Q152,204 130,190 Q154,160 140,100 Z', fill: 'held', sw: 3.5 },
+  ],
+  // Sous la bouche, là où serait le cou : un tour d'écharpe et un pan qui pend.
+  scarf: [
+    { d: 'M46,145 Q100,166 154,145 L150,160 Q100,182 50,160 Z', fill: 'held', sw: 4 },
+    { d: 'M118,163 Q126,180 120,200 L134,196 Q138,180 132,159 Z', fill: 'held', sw: 3.5 },
+  ],
+  bowtie: [
+    { d: 'M100,154 L82,145 L82,163 Z M100,154 L118,145 L118,163 Z', fill: 'held', sw: 3.2 },
+    { d: circlePath(100, 154, 4.5), fill: 'held', sw: 3 },
+  ],
+  necklace: [
+    { d: 'M56,146 Q100,172 144,146', sw: 2.6 },
+    { d: 'M100,159 L107,168 L100,177 L93,168 Z', fill: 'held', sw: 2.8 },
+  ],
+  // La bandoulière passe sous le menton, jamais sur le visage.
+  satchel: [
+    { d: 'M40,138 Q76,166 120,168', sw: 4 },
+    { d: roundedRect(112, 156, 36, 28, 6), fill: 'held', sw: 4 },
+    { d: 'M112,166 L148,166', sw: 2.5, op: 0.6 },
+  ],
+  glasses: [
+    { d: circlePath(80, 112, 13), sw: 3.5 },
+    { d: circlePath(120, 112, 13), sw: 3.5 },
+    { d: 'M93,112 L107,112', sw: 3.5 },
+  ],
+  freckles: [[70, 124], [77, 128], [123, 128], [130, 124]].map(([x, y]) => ({
+    d: circlePath(x, y, 2),
+    fill: 'ink' as const,
+    stroke: false,
+    op: 0.6,
+  })),
+  lashes: [{ d: 'M71,104 L67,99 M77,101 L76,95 M83,102 L86,97 M117,102 L114,97 M123,101 L124,95 M129,104 L133,99', sw: 2.6 }],
+  mole: [{ d: circlePath(116, 131, 2.6), fill: 'ink', stroke: false }],
+  bandage: [
+    { d: roundedRect(121, 119, 26, 10, 5), fill: '#F3E3C8', sw: 2.4, tf: 'rotate(-24 134 124)' },
+    { d: 'M130,119 H138 V129 H130 Z', fill: 'ink', stroke: false, op: 0.12, tf: 'rotate(-24 134 124)' },
+  ],
+  blush: [
+    { d: ellipsePath(68, 126, 9, 6), fill: 'tint', stroke: false, op: 0.65 },
+    { d: ellipsePath(132, 126, 9, 6), fill: 'tint', stroke: false, op: 0.65 },
+  ],
+};
+
+/** Les accessoires qui passent derrière le corps plutôt que devant. */
+export const BEHIND_BODY: readonly AccessoryKey[] = ['cape'];
+
+/**
+ * Les pièces d'une tenue, rangées par plan : derrière le corps, sur le corps
+ * (après les bras), sur le visage (après les yeux), sur la tête (en dernier).
+ */
+export function outfitLayers(outfit: Outfit): { behind: Piece[]; body: Piece[]; face: Piece[]; head: Piece[] } {
+  const body = outfit.body ? ACCESSORY_PIECES[outfit.body] : [];
+  const behind = outfit.body && BEHIND_BODY.includes(outfit.body);
+  return {
+    behind: behind ? body : [],
+    body: behind ? [] : body,
+    face: outfit.face ? ACCESSORY_PIECES[outfit.face] : [],
+    head: outfit.head ? ACCESSORY_PIECES[outfit.head] : [],
+  };
+}

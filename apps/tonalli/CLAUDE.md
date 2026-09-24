@@ -47,6 +47,7 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run typecheck` | typage seul |
 | `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions et nuances, réactions, vignette, encre et dévoilement, choix de l'objectif, logo) |
 | `npm run icons` | régénère le favicon et les icônes PNG depuis `src/lib/logo.ts` |
+| `npm run duo` | régénère les feuilles des scènes à deux depuis `scripts/duo/scenes/` |
 | `npm run lint` | oxlint |
 
 **La caméra exige HTTPS** — elle fonctionne sur `localhost`, sinon il faut un
@@ -101,6 +102,8 @@ src/
     ink.ts             l'encre : validation, dévoilement, et le geste de chaque émotion
     logo.ts            le soleil de Tonalli : une géométrie pour le composant, le favicon et les icônes
     character.ts       le personnage : une pose par émotion, les états sans couleur, les accessoires
+    duo/               nos deux personnages dans la même scène : le livre (model.js),
+                       la traduction depuis l'app (index.ts), les feuilles générées (scenes/)
     supabase.ts        client, et `isSupabaseConfigured`
     types.ts           Profile, Entry, EntryMap
     i18n.ts            i18n-js, détection de langue, langue mémorisée
@@ -121,7 +124,7 @@ src/
     Settings           binôme, langue, rappel, compte, données
     CharacterScreen    « Mon personnage » : la tenue, une rangée par catégorie
   components/          grilles, caméra, cellules, feuilles, réactions, états,
-                       encre (InkCanvas, SaveBloom, InkReveal), logo, personnage
+                       encre (InkCanvas, SaveBloom, InkReveal), logo, personnage, scène à deux
   locales/             fr.ts fait foi ; es.ts est typé d'après lui
 supabase/
   migrations/          0001 → 0005, à jouer dans l'ordre
@@ -129,6 +132,8 @@ supabase/
 scripts/
   checks.ts            vérifications des fonctions pures
   make-icons.ts        génère favicon, icônes et badge depuis logo.ts (rasteriseur et PNG sans dépendance)
+  duo/                 la chorégraphie des scènes à deux : un livre par émotion (scenes/),
+                       leur petit langage (lib.ts), et build.ts qui écrit les feuilles
 ```
 
 **`src/locales/fr.ts` fait autorité** : son type est dérivé en `Translation`, et
@@ -322,6 +327,65 @@ maintenant, pas un témoignage du jour. Rien n'est recopié dans `entries`.
 Elle s'enregistre au toucher, comme le symbole de la série. Chaque vignette
 montre la tenue entière avec l'accessoire à l'essai, et reste immobile :
 vingt-six personnages animés à la fois coûteraient cher à un petit téléphone.
+
+### Nos deux personnages jouent la même scène
+
+Dans « Sa journée », mon personnage et celui du binôme partagent un décor et
+une horloge — c'est ce qui permet à un ballon de passer vraiment de l'un à
+l'autre. La scène vit **sous la nappe du dévoilement**, avec les photos,
+parce qu'elle montre l'émotion du binôme : la réciprocité la couvre comme le
+reste de sa journée. Moi à gauche, toujours ; chacun porte sa teinte et sa
+tenue. Pour un lecteur d'écran, c'est une image dont le nom dit les deux
+émotions (`duo.together` / `duo.apart`).
+
+Douze émotions font 144 couples. **121 sont écrits** (11 × 11) : Neutre ne
+joue avec personne, les deux se tiennent côte à côte, chacun dans son
+émotion. Une scène s'écrit une fois par paire sans ordre — 66 scènes — et se
+joue en miroir quand je suis l'autre moitié du couple.
+
+Trois étages, et un seul se retouche à la main :
+
+- `src/lib/duo/model.js` — **le livre** : qui se tient où, quelles pièces
+  (bras, yeux, ballon, couronne…), quelle classe anime chacune. Repris tel
+  quel du canevas de direction artistique, donc en JavaScript, typé par
+  `model.d.ts`, avec les noms d'émotion du canevas ; `index.ts` traduit depuis
+  les clés de l'app.
+- `scripts/duo/scenes/*.ts` — **la chorégraphie** : les images clés de chaque
+  classe. Un fichier par émotion, avec celles qui la suivent : `joie.ts`
+  tient Joie + les onze, `serenite.ts` Sérénité + les dix suivantes… jusqu'à
+  `colere.ts`, Colère + Colère. Une scène se retrouve par son titre
+  (`——— Amour + Nostalgie`) ; son préfixe de deux lettres (`du-an-…`) est
+  celui des classes du livre.
+- `src/lib/duo/scenes/*.css` — **ce qui est servi**, écrit par `npm run duo` :
+  une feuille par scène plus `base.css`, et `DuoScene` ne charge que celles
+  du couple affiché. **Ne jamais les retoucher à la main** : `npm run checks`
+  refuse une feuille qui ne correspond plus à ses livres.
+
+Retoucher une scène : changer ses images clés dans son livre, `npm run duo`,
+regarder le résultat dans le bac à sable (section 9). Une pièce nouvelle se
+déclare d'abord dans `model.js` avec sa classe, puis s'anime dans le livre.
+
+Les chiffres ne sont pas choisis à l'œil partout. Le ballon (`Ball`, dans
+`lib.ts`) vole en paraboles à gravité constante, calculées pour qu'il
+retombe pile sur une tête ou dans des bras à l'instant voulu ;
+`npm run duo -- --report` imprime chaque vol. Les objets libres (cœurs,
+montre, nuage) sont **échantillonnés** par `path` : on calcule la position à
+chaque instant, le navigateur relie les points. Et chaque classe porte une
+image fixe, prise au moment où la scène se lit le mieux, que
+`prefers-reduced-motion` montre à la place du mouvement.
+
+**La chorégraphie a d'abord été écrite en Python**, pendant la direction
+artistique, puis traduite, et la traduction vérifiée **à l'octet près**
+contre les feuilles d'origine. `scripts/duo/py.ts` garde les quelques calculs
+où les deux langages ne tombent pas pareil : l'arrondi des égalités exactes
+(Python arrondit 0,125 au pair, `toFixed` vers le haut), le modulo des
+négatifs, le hasard de `random.seed(7)` qui place les confettis. Ne pas les
+remplacer par leurs équivalents JavaScript : la moitié des feuilles
+bougeraient d'un centième, et plus rien ne distinguerait ce qu'une retouche
+déplace de ce que le calcul aurait déplacé.
+
+Les livres ne sont pas typés — comme tout `scripts/`, ils restent hors de
+`tsc`, qui ne vérifie que `src/` — mais `oxlint` les lit.
 
 ### La photo se prend dans l'app, et elle est double
 
@@ -593,7 +657,9 @@ cher :
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
 (`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `ink.ts`, `camera.ts`, `logo.ts`, `character.ts`) ne doivent contenir **aucun import**
 vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
-n'existe pas là-bas. Les garder sans dépendances. Le choix de l'objectif s'y
+n'existe pas là-bas. Les garder sans dépendances. Les checks régénèrent
+aussi les scènes à deux à blanc, et échouent si une feuille de
+`src/lib/duo/scenes/` ne correspond plus à ses livres. Le choix de l'objectif s'y
 vérifie contre un faux `navigator.mediaDevices` qui rejoue les manies d'un
 Android d'entrée de gamme : `facingMode` exact refusé, souhait ignoré, caméra
 encore occupée.

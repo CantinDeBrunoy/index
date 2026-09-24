@@ -165,6 +165,12 @@ export const fr = {
       sun: 'Soleil',
     },
   },
+  duo: {
+    // Ce que dit la scène à deux à qui ne la voit pas : les deux émotions, et
+    // si elles jouent ensemble.
+    together: 'Toi en {{mine}}, {{name}} en {{theirs}} : vous jouez la scène ensemble.',
+    apart: 'Toi en {{mine}}, {{name}} en {{theirs}}, chacun dans son émotion.',
+  },
   character: {
     title: 'Mon personnage',
     hint: "Il garde sa silhouette ; ce qu'il porte prend la teinte du jour. {{name}} le voit aussi.",
