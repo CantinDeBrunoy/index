@@ -1,0 +1,20 @@
+.du-jx-A{animation:kDuJxA 6s ease-in-out infinite}
+.du-jx-aOpen{opacity:0;animation:kDuJxAopen 6s linear infinite}
+.du-jx-aClosed{animation:kDuJxAclosed 6s linear infinite}
+.du-jx-B{animation:kDuJxB 6s ease-in-out infinite}
+.du-jx-arm{transform:rotate(150deg);animation:kDuJxArm 6s ease-in-out infinite}
+.du-jx-bWatch{opacity:0;animation:kDuJxBwatch 6s linear infinite}
+.du-jx-bLook{animation:kDuJxBlook 6s linear infinite}
+.du-jx-bClosed{animation:kDuJxBclosed 6s linear infinite}
+.du-jx-mTense{opacity:0;animation:kDuJxMtense 6s linear infinite}
+.du-jx-mCalm{opacity:1;animation:kDuJxMcalm 6s linear infinite}
+@keyframes kDuJxA{0%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}22%{transform:translate(0px,-3px) rotate(0deg) scale(1.1,1.1)}28%{transform:translate(0px,-3px) rotate(0deg) scale(1.1,1.1)}45%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}60%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}72%{transform:translate(0px,-3px) rotate(0deg) scale(1.1,1.1)}78%{transform:translate(0px,-3px) rotate(0deg) scale(1.1,1.1)}94%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}100%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}}
+@keyframes kDuJxAopen{0%{opacity:1}5%{opacity:1}7%{opacity:0}93%{opacity:0}95%{opacity:1}100%{opacity:1}}
+@keyframes kDuJxAclosed{0%{opacity:0}5%{opacity:0}7%{opacity:1}93%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes kDuJxB{0%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}1.7%{transform:translate(0px,0px) rotate(-4deg) scale(1,1)}5.1%{transform:translate(0px,0px) rotate(1.5deg) scale(1,1)}8.5%{transform:translate(0px,0px) rotate(-4deg) scale(1,1)}11.9%{transform:translate(0px,0px) rotate(1.5deg) scale(1,1)}15.3%{transform:translate(0px,0px) rotate(-4deg) scale(1,1)}18.7%{transform:translate(0px,0px) rotate(1.5deg) scale(1,1)}22.1%{transform:translate(0px,0px) rotate(-4deg) scale(1,1)}25.5%{transform:translate(0px,0px) rotate(1.5deg) scale(1,1)}28.9%{transform:translate(0px,0px) rotate(-4deg) scale(1,1)}32.3%{transform:translate(0px,0px) rotate(1.5deg) scale(1,1)}36%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}50%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}72%{transform:translate(0px,-3px) rotate(0deg) scale(1.08,1.08)}78%{transform:translate(0px,-3px) rotate(0deg) scale(1.08,1.08)}94%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}100%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}}
+@keyframes kDuJxArm{0%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}36%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}46%{transform:translate(0px,0px) rotate(150deg) scale(1,1)}90%{transform:translate(0px,0px) rotate(150deg) scale(1,1)}98%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}100%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}}
+@keyframes kDuJxBwatch{0%{opacity:1}37%{opacity:1}38.5%{opacity:0}92%{opacity:0}93.5%{opacity:1}100%{opacity:1}}
+@keyframes kDuJxBlook{0%{opacity:0}37%{opacity:0}38.5%{opacity:1}45.5%{opacity:1}47%{opacity:0}100%{opacity:0}}
+@keyframes kDuJxBclosed{0%{opacity:0}45.5%{opacity:0}47%{opacity:1}90.5%{opacity:1}92%{opacity:0}100%{opacity:0}}
+@keyframes kDuJxMtense{0%{opacity:1}49%{opacity:1}50.5%{opacity:0}91%{opacity:0}92.5%{opacity:1}100%{opacity:1}}
+@keyframes kDuJxMcalm{0%{opacity:0}49%{opacity:0}50.5%{opacity:1}91%{opacity:1}92.5%{opacity:0}100%{opacity:0}}

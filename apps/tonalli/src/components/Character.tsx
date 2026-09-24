@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import type { CSSProperties } from 'react';
 
+import { MotifPattern } from '@/components/MotifPattern';
 import { isLying, mouthPath, outfitLayers, poseOf } from '@/lib/character';
 import type { CharacterState, Outfit, Paint, Piece } from '@/lib/character';
 import { colorOf, shadeOf } from '@/lib/emotions';
@@ -85,29 +86,7 @@ export function Character({ emotion, color, state = 'scene', outfit = {}, size =
         <clipPath id={clip}>
           <path d={BODY} />
         </clipPath>
-        {outfit.motif === 'stripes' ? (
-          <pattern id={motif!} width="14" height="14" patternTransform="rotate(18)" patternUnits="userSpaceOnUse">
-            <rect width="6" height="14" fill={INK} opacity="0.28" />
-          </pattern>
-        ) : null}
-        {outfit.motif === 'dots' ? (
-          <pattern id={motif!} width="18" height="18" patternUnits="userSpaceOnUse">
-            <circle cx="5" cy="5" r="2.6" fill={INK} opacity="0.3" />
-            <circle cx="14" cy="13" r="2.6" fill={INK} opacity="0.3" />
-          </pattern>
-        ) : null}
-        {outfit.motif === 'checks' ? (
-          <pattern id={motif!} width="16" height="16" patternUnits="userSpaceOnUse">
-            <rect width="8" height="8" fill={INK} opacity="0.16" />
-            <rect x="8" y="8" width="8" height="8" fill={INK} opacity="0.16" />
-          </pattern>
-        ) : null}
-        {outfit.motif === 'stars' ? (
-          <pattern id={motif!} width="26" height="26" patternUnits="userSpaceOnUse">
-            <path d="M7,2 L8.6,5.6 L12.4,6 L9.5,8.5 L10.4,12.2 L7,10.3 L3.6,12.2 L4.5,8.5 L1.6,6 L5.4,5.6 Z" fill={INK} opacity="0.28" />
-            <path d="M20,15 L21.2,17.6 L24,17.9 L21.9,19.8 L22.5,22.5 L20,21.1 L17.5,22.5 L18.1,19.8 L16,17.9 L18.8,17.6 Z" fill={INK} opacity="0.28" />
-          </pattern>
-        ) : null}
+        {outfit.motif ? <MotifPattern id={motif!} motif={outfit.motif} /> : null}
       </defs>
 
       <ellipse cx="100" cy="204" rx="46" ry="8" fill={plain ?? INK} opacity={plain ? 0.28 : 0.1} />
