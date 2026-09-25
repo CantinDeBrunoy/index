@@ -123,7 +123,7 @@ src/
     scheme.ts          l'écran est-il sombre ? pour les couleurs qui passent par une prop
   routes/
     AuthScreens        accueil (le soleil qui passe par les douze émotions), connexion, inscription
-    LinkPartner        code d'invitation, écran bloquant sans binôme
+    LinkPartner        écran bloquant sans binôme : mon personnage et la place du sien, mon code en cases (copier, partager), le sien à saisir
     TodayOverview      la page Aujourd'hui : nos deux personnages, une phrase, les portes vers les journées
     Today              la journée en détail : ma journée en trois temps (/day), la sienne à découvrir (/day/theirs)
     CalendarScreens    le mois (l'année au titre), mien ou du binôme : bascule, cases, légende, répartition
