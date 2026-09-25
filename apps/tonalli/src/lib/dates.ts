@@ -129,6 +129,15 @@ export function formatOffset(minutes: number, sameLabel: string): string {
   return rest === 0 ? `${sign}${hours} h` : `${sign}${hours} h ${pad(rest)}`;
 }
 
+/** « 8 h », « 5 h 30 » : un écart sans signe, pour « 8 h de moins ». */
+export function formatGap(minutes: number): string {
+  const absolute = Math.abs(minutes);
+  const hours = Math.floor(absolute / 60);
+  const rest = absolute % 60;
+  if (hours === 0) return `${rest} min`;
+  return rest === 0 ? `${hours} h` : `${hours} h ${pad(rest)}`;
+}
+
 /** Vraie clé de calendrier : bien formée *et* correspondant à un jour réel. */
 export function isValidKey(value: unknown): value is string {
   if (typeof value !== 'string' || !KEY_RE.test(value)) return false;

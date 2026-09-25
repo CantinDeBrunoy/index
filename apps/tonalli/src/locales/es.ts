@@ -369,7 +369,9 @@ export const es: Translation = {
     partnerTimezone: 'Su zona horaria',
     partnerLocalTime: 'Donde está {{name}} son las',
     sameTime: 'misma hora',
-    offsetLabel: 'Diferencia',
+    partnerAhead: '{{gap}} más',
+    partnerBehind: '{{gap}} menos',
+    characterHint: 'Accesorios, cara, estampado, bandera',
     build: 'Versión {{id}} — {{date}}',
   },
   emotions: {

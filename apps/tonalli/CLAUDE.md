@@ -124,7 +124,7 @@ src/
     TodayOverview      la page Aujourd'hui : nos deux personnages, une phrase, les portes vers les journées
     Today              la journée en détail : ma journée en trois temps (/day), la sienne à découvrir (/day/theirs)
     CalendarScreens    le mois (l'année au titre), mien ou du binôme : bascule, cases, légende, répartition
-    Settings           binôme, langue, rappel, compte, données
+    Settings           personnage, binôme (son heure, l'écart), rappel, symbole de la série, langue, compte
     CharacterScreen    « Mon personnage » : la tenue, une rangée par catégorie
   components/          grilles, caméra, cellules, feuilles, réactions, états, bulle du personnage (Tip),
                        encre (InkCanvas en WebGL ou SVG, SaveBloom, InkReveal), logo, personnage, scène à deux

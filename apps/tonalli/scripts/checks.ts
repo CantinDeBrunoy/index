@@ -17,6 +17,7 @@ import {
   formatDayLabel,
   formatInstant,
   formatLongDate,
+  formatGap,
   formatOffset,
   formatTimeIn,
   isValidKey,
@@ -114,6 +115,7 @@ console.log('Fuseaux — France / Mexique');
   check('libellé de décalage', formatOffset(summer, 'même heure') === '+8 h', formatOffset(summer, 'x'));
   check('libellé décalage nul', formatOffset(0, 'même heure') === 'même heure');
   check('libellé décalage à minutes', formatOffset(-330, 'x') === '−5 h 30', formatOffset(-330, 'x'));
+  check('écart sans signe', formatGap(-480) === '8 h' && formatGap(330) === '5 h 30' && formatGap(-45) === '45 min', `${formatGap(-480)} / ${formatGap(330)} / ${formatGap(-45)}`);
 
   // Minuit pile : le moment où un `toISOString()` se tromperait de jour.
   const midnightParis = new Date('2026-08-27T22:00:00Z');
