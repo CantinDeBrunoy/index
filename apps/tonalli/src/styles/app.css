@@ -124,26 +124,26 @@ p { margin: 0; }
 .welcome__tagline { margin: 0; font-size: 14.5px; line-height: 1.5; }
 .welcome__actions { display: flex; flex-direction: column; gap: 12px; padding: 0 8px; }
 
-.welcome-sun { width: min(300px, 100%); }
-.welcome-sun__disc { position: relative; aspect-ratio: 1; }
-.welcome-sun__rays { position: absolute; inset: 0; width: 100%; height: 100%; }
+.welcome-sun { display: flex; flex-direction: column; align-items: center; max-width: 100%; }
+/* Le soleil : un carré dont la taille vient du composant, jamais plus large que l'écran. */
+.sun { position: relative; aspect-ratio: 1; max-width: 100%; flex: none; }
+.sun__rays { position: absolute; inset: 0; width: 100%; height: 100%; }
 /* Les onze rayons éteints pâlissent sans disparaître : le soleil reste entier. */
-.welcome-sun__ray {
+.sun__ray {
   fill: none;
-  stroke-width: 9;
   stroke-linecap: round;
   opacity: 0.26;
   transform-box: view-box;
   transform-origin: 150px 150px;
   transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
 }
-.welcome-sun__ray.is-lit { opacity: 1; transform: scale(1.1); }
+.sun__ray.is-lit { opacity: 1; transform: scale(1.1); }
 /* Le personnage au cœur des rayons : 168 × 190 dans un soleil de 300. */
-.welcome-sun__stage { position: absolute; left: 22%; top: 16%; width: 56%; aspect-ratio: 168 / 190; }
-.welcome-sun__slot { position: absolute; inset: 0; }
-.welcome-sun__slot svg { display: block; width: 100%; height: auto; }
-.welcome-sun__slot--in { animation: welcome-in 0.6s var(--ease) both; }
-.welcome-sun__slot--out { animation: welcome-out 0.6s var(--ease) both; }
+.sun__stage { position: absolute; left: 22%; top: 16%; width: 56%; aspect-ratio: 168 / 190; }
+.sun__slot { position: absolute; inset: 0; }
+.sun__stage svg { display: block; width: 100%; height: auto; }
+.sun__slot--in { animation: welcome-in 0.6s var(--ease) both; }
+.sun__slot--out { animation: welcome-out 0.6s var(--ease) both; }
 .welcome-sun__name {
   margin-top: -8px;
   min-height: 18px;
@@ -155,6 +155,53 @@ p { margin: 0; }
 }
 @keyframes welcome-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes welcome-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* --- formulaires de connexion et d'inscription ------------------------- */
+/* Le soleil en petit, le titre, les champs, et le lien vers l'autre porte tout en bas. */
+.auth { min-height: 100dvh; display: flex; flex-direction: column; }
+.auth-back { align-self: flex-start; }
+/* `a.btn` repasse les liens en bloc : le chevron doit rester centré dans son rond. */
+a.btn.auth-back { display: grid; place-items: center; }
+.auth-header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; margin-top: 4px; }
+.auth-header__title { font-size: 28px; margin: 6px 0 0; }
+.auth-header__subtitle { margin: 0; font-size: 14.5px; line-height: 1.5; }
+.auth-form { display: flex; flex-direction: column; gap: 16px; margin-top: 28px; }
+.auth-form--tight { gap: 14px; margin-top: 22px; }
+.auth-form .btn[type='submit'] { margin-top: 8px; }
+.auth .field { gap: 7px; }
+.auth .field > label { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.auth .input { height: 52px; padding: 0 20px; font-size: 16px; }
+/* L'erreur cercle le champ de sa couleur, sans jamais en faire un aplat. */
+.input.input--invalid, .input.input--invalid:focus { border-color: var(--danger); }
+.field__note { margin: 0; padding-left: 4px; font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+.field__note--error, .auth-form__error { color: var(--danger); font-weight: 600; }
+.auth-form__error { margin: -4px 0 0; padding-left: 4px; font-size: 13.5px; line-height: 1.4; }
+.password { position: relative; }
+.auth .password .input { padding-right: 96px; }
+.password__toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 44px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--pill);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.password__toggle:hover { color: var(--text); }
+.auth-switch { margin: auto 0 0; padding-top: 24px; text-align: center; font-size: 14px; color: var(--text-muted); }
+.auth-switch__link { display: inline-block; padding: 12px 2px; color: var(--text); font-weight: 600; text-decoration: none; }
+.auth-switch__link:hover { text-decoration: underline; }
+.auth-sent { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding-bottom: 40px; }
+.auth-sent__body { margin: 0; max-width: 300px; font-size: 15px; line-height: 1.55; }
+.auth-sent__email { color: var(--text); }
+.auth-sent .btn { margin-top: 22px; }
 
 /* Chaque langue dans la sienne ; la langue en cours à l'encre. */
 .language-picker { display: flex; justify-content: center; align-items: center; font-size: 12.5px; color: var(--text-muted); }
@@ -172,9 +219,9 @@ p { margin: 0; }
 .language-picker button[aria-pressed='true'] { color: var(--text); font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {
-  .welcome-sun__ray,
-  .welcome-sun__slot--in,
-  .welcome-sun__slot--out,
+  .sun__ray,
+  .sun__slot--in,
+  .sun__slot--out,
   .welcome-sun__name { transition: none; animation: none; }
 }
 .capitalize::first-letter { text-transform: uppercase; }

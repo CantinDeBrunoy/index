@@ -951,7 +951,10 @@ les PNG. Retoucher un fichier de `public/` à la main le désynchronise, et
 `EMOTIONS` : une émotion ajoutée ou déplacée là change le logo, et c'est voulu.
 Le grand soleil de l'écran d'accueil (`WelcomeSun`) tire ses rayons du même
 `sunRays()` : il allume celui de l'émotion que joue le personnage, et laisse
-les onze autres pâles plutôt qu'absents. Deux personnages au plus y sont
+les onze autres pâles plutôt qu'absents. Il revient en petit au-dessus des
+deux formulaires, et **tous les soleils lisent la même horloge**, partie au
+chargement de la page : de l'accueil au formulaire, le personnage poursuit
+son tour au lieu de repartir de Joie. Deux personnages au plus y sont
 montés, celui qui entre et celui qui sort ; sous `prefers-reduced-motion`,
 Joie reste seule, rayon allumé.
 
