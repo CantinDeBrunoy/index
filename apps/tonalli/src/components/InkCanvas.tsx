@@ -1,34 +1,15 @@
 import { useImperativeHandle, useRef, useState } from 'react';
 import type { Ref } from 'react';
 
+import { InkCanvasGl } from '@/components/InkCanvasGl';
+import { webglAvailable } from '@/lib/gpu';
 import { BLOB_SLOTS, RINGS } from '@/lib/ink';
 import type { Blob, InkFrame, Size } from '@/lib/ink';
 
 /** Ce que l'animation appelle à chaque frame : dessiner l'image de `inkFrame` ou `revealFrame`. */
 export type InkCanvasHandle = { paint: (image: InkFrame) => void };
 
-/**
- * La matière de l'encre : un SVG, une poignée de rectangles arrondis, et deux
- * filtres de turbulence qui partagent la même chaîne — `feTurbulence` →
- * `feDisplacementMap` → flou → seuil. Le premier dessine les taches telles
- * quelles : c'est l'encre. Le second les **retourne** : une nappe de couleur
- * (`feFlood`) dont on retire les taches (`feComposite out`), et ce sont les
- * trous de l'eau claire.
- *
- * Commun à l'encre de validation (tout l'écran) et au dévoilement de la
- * journée du binôme (une carte) : seule la géométrie change, calculée dans
- * `src/lib/ink.ts`. Ce composant ne fait que la dessiner, et il le fait en
- * écrivant droit dans le DOM (`paint`) — un rendu React par frame, sur un
- * téléphone d'entrée de gamme, se verrait.
- */
-export function InkCanvas({
-  id,
-  color,
-  frame,
-  covered = false,
-  className,
-  ref,
-}: {
+type InkCanvasProps = {
   /**
    * Préfixe des identifiants de filtres. Deux encres peuvent exister en même
    * temps — la validation se joue encore quand on glisse vers la journée de
@@ -46,7 +27,41 @@ export function InkCanvas({
   covered?: boolean;
   className?: string;
   ref?: Ref<InkCanvasHandle>;
-}) {
+};
+
+/**
+ * La matière de l'encre, commune à la validation et au dévoilement.
+ *
+ * Dessinée par le processeur graphique (`InkCanvasGl`) dès qu'il le permet :
+ * le filtre SVG, calculé par le navigateur sur chaque pixel à chaque image,
+ * faisait ramer un téléphone. Le SVG reste le repli — navigateur sans WebGL,
+ * contexte refusé ou perdu en route — et la référence de ce que l'encre doit
+ * être : les deux lisent la même image (`InkFrame`) et font le même calcul.
+ */
+export function InkCanvas({ id, ref, ...props }: InkCanvasProps) {
+  const [gpu, setGpu] = useState(webglAvailable);
+  return gpu ? (
+    <InkCanvasGl ref={ref} {...props} onFail={() => setGpu(false)} />
+  ) : (
+    <InkCanvasSvg ref={ref} id={id} {...props} />
+  );
+}
+
+/**
+ * La matière de l'encre en SVG : une poignée de rectangles arrondis, et deux
+ * filtres de turbulence qui partagent la même chaîne — `feTurbulence` →
+ * `feDisplacementMap` → flou → seuil. Le premier dessine les taches telles
+ * quelles : c'est l'encre. Le second les **retourne** : une nappe de couleur
+ * (`feFlood`) dont on retire les taches (`feComposite out`), et ce sont les
+ * trous de l'eau claire.
+ *
+ * Commun à l'encre de validation (tout l'écran) et au dévoilement de la
+ * journée du binôme (une carte) : seule la géométrie change, calculée dans
+ * `src/lib/ink.ts`. Ce composant ne fait que la dessiner, et il le fait en
+ * écrivant droit dans le DOM (`paint`) — un rendu React par frame, sur un
+ * téléphone d'entrée de gamme, se verrait.
+ */
+function InkCanvasSvg({ id, color, frame, covered = false, className, ref }: InkCanvasProps) {
   const inkId = `${id}-ink`;
   const clearId = `${id}-clear`;
   const group = useRef<SVGGElement>(null);

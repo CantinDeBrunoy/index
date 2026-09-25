@@ -46,6 +46,7 @@ import {
   revealFrame,
   revealPlan,
 } from '../src/lib/ink.ts';
+import { turbulenceField } from '../src/lib/turbulence.ts';
 import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
 import { BODY_PATH, LOGO_SIZE, MASKABLE_FIT, faviconSvg, logoGeometry, type LogoVariant } from '../src/lib/logo.ts';
 import { sceneFor, sceneNoteKey, sheetsOf } from '../src/lib/duo/index.ts';
@@ -998,6 +999,40 @@ console.log('Gestes des émotions');
     const second = inkFrame(plan, PHASES.impact + 0.07 + 0.02);
     check('Joie : un rond à chaque touche', second.rings[1].opacity > 0, JSON.stringify(second.rings[1]));
   }
+}
+
+console.log('\nTurbulence de l’encre (WebGL)');
+{
+  // Le bruit que lit l'encre en WebGL, calculé une fois au lieu d'être
+  // recalculé par le filtre SVG sur chaque pixel à chaque image.
+  const grid = { x: -24, y: -24, step: 4, columns: 60, rows: 90 };
+  const field = turbulenceField(123, [0.012, 0.008], 2, grid);
+  const again = turbulenceField(123, [0.012, 0.008], 2, grid);
+  const other = turbulenceField(124, [0.012, 0.008], 2, grid);
+  check('une texture RGBA de la taille de la grille', field.length === grid.columns * grid.rows * 4, String(field.length));
+  check('la même graine rend le même bruit', field.every((value, index) => value === again[index]));
+  check('une autre graine rend un autre bruit', field.some((value, index) => value !== other[index]));
+
+  // Rouge et vert déplacent l'encre : centrés sur la moitié, sinon elle
+  // glisserait d'un bloc au lieu de tourner sur place.
+  for (const [name, channel] of [['rouge', 0], ['vert', 1]] as const) {
+    const values = Array.from({ length: grid.columns * grid.rows }, (_, index) => field[index * 4 + channel]);
+    const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const spread = Math.sqrt(values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length);
+    check(`${name} : centré`, Math.abs(mean - 127.5) < 20, mean.toFixed(1));
+    check(`${name} : assez agité pour faire des volutes`, spread > 12, spread.toFixed(1));
+    // Basse fréquence : deux échantillons voisins restent proches, c'est ce
+    // qui permet de n'en calculer qu'un tous les quatre pixels.
+    let jump = 0;
+    for (let row = 0; row < grid.rows; row++) {
+      for (let column = 1; column < grid.columns; column++) {
+        const at = row * grid.columns + column;
+        jump = Math.max(jump, Math.abs(values[at] - values[at - 1]));
+      }
+    }
+    check(`${name} : lisse d'un échantillon à l'autre`, jump < 30, String(jump));
+  }
+  check('bleu vide, alpha plein', field.every((value, index) => (index % 4 === 2 ? value === 0 : index % 4 === 3 ? value === 255 : true)));
 }
 
 console.log('\nPersonnage');
