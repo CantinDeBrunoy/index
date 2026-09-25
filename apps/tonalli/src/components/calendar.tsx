@@ -1,13 +1,17 @@
-import { dayOfKey, formatMonthShort, makeKey, daysInMonth, monthGrid, weekdayInitials } from '@/lib/dates';
+import { dayOfKey, monthGrid, weekdayInitials } from '@/lib/dates';
 import type { YearMonth } from '@/lib/dates';
 import { readableTextOn } from '@/lib/emotions';
 import { useI18n } from '@/state/I18nProvider';
 
 /** Ce qu'il faut savoir pour peindre une case, sans en dire plus. */
 export type CellState =
-  | { kind: 'entry'; color: string }
+  /** Une journée lisible, et la réaction posée dessus s'il y en a une. */
+  | { kind: 'entry'; color: string; reaction: string | null }
   /** Le binôme a posté, mais je n'ai pas rempli ce jour-là : rien à montrer. */
   | { kind: 'hidden' }
+  /** Un jour passé que la personne n'a pas rempli. */
+  | { kind: 'missed' }
+  /** Rien à dire : avant la première journée, ou aujourd'hui pas encore rempli. */
   | { kind: 'empty' };
 
 type CellProps = {
@@ -15,18 +19,18 @@ type CellProps = {
   state: CellState;
   isToday: boolean;
   isFuture: boolean;
-  showNumber: boolean;
   label: string;
   onSelect: (date: string) => void;
 };
 
-function Cell({ date, state, isToday, isFuture, showNumber, label, onSelect }: CellProps) {
+function Cell({ date, state, isToday, isFuture, label, onSelect }: CellProps) {
   const classes = ['cell'];
   if (isToday) classes.push('cell--today');
   if (isFuture) classes.push('cell--future');
-  if (state.kind === 'hidden') classes.push('cell--hidden');
+  // Masquée chez l'autre, manquée chez moi : la même hachure, deux légendes.
+  if (state.kind === 'hidden' || state.kind === 'missed') classes.push('cell--hatched');
 
-  const interactive = state.kind !== 'empty';
+  const interactive = !isFuture && (state.kind === 'entry' || state.kind === 'hidden');
 
   return (
     <button
@@ -41,7 +45,12 @@ function Cell({ date, state, isToday, isFuture, showNumber, label, onSelect }: C
       aria-label={label}
       onClick={interactive ? () => onSelect(date) : undefined}
     >
-      {showNumber ? dayOfKey(date) : ''}
+      {dayOfKey(date)}
+      {state.kind === 'entry' && state.reaction ? (
+        <span className="cell__reaction" aria-hidden>
+          {state.reaction}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -66,68 +75,22 @@ export function MonthGrid({ month, today, getCell, labelFor, onSelect }: MonthPr
         ))}
       </div>
       <div className="month-grid">
-        {cells.map((date, index) =>
-          date ? (
+        {cells.map((date, index) => {
+          if (!date) return <span key={`blank-${index}`} className="cell cell--blank" />;
+          const state = getCell(date);
+          return (
             <Cell
               key={date}
               date={date}
-              state={getCell(date)}
+              state={state}
               isToday={date === today}
               isFuture={date > today}
-              showNumber
-              label={labelFor(date, getCell(date))}
+              label={labelFor(date, state)}
               onSelect={onSelect}
             />
-          ) : (
-            <span key={`empty-${index}`} className="cell cell--empty" />
-          ),
-        )}
+          );
+        })}
       </div>
-    </div>
-  );
-}
-
-type YearProps = {
-  year: number;
-  today: string;
-  getCell: (date: string) => CellState;
-  labelFor: (date: string, state: CellState) => string;
-  onSelect: (date: string) => void;
-};
-
-/** L'année entière : une ligne par mois, une case par jour. */
-export function YearMosaic({ year, today, getCell, labelFor, onSelect }: YearProps) {
-  const { locale } = useI18n();
-
-  return (
-    <div className="mosaic">
-      {Array.from({ length: 12 }, (_, month) => {
-        const total = daysInMonth(year, month);
-        return (
-          <div className="mosaic-row" key={month}>
-            <span className="mosaic-label">{formatMonthShort(month, locale)}</span>
-            <div className="mosaic-days">
-              {Array.from({ length: 31 }, (_, index) => {
-                if (index >= total) return <span key={index} className="cell cell--empty" />;
-                const date = makeKey(year, month, index + 1);
-                const state = getCell(date);
-                return (
-                  <Cell
-                    key={date}
-                    date={date}
-                    state={state}
-                    isToday={date === today}
-                    isFuture={date > today}
-                    showNumber={false}
-                    label={labelFor(date, state)}
-                    onSelect={onSelect}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }

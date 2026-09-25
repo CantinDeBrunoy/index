@@ -123,7 +123,7 @@ src/
     LinkPartner        code d'invitation, écran bloquant sans binôme
     TodayOverview      la page Aujourd'hui : nos deux personnages, une phrase, les portes vers les journées
     Today              la journée en détail : ma journée en trois temps (/day), la sienne sous sa couleur (/day/theirs)
-    CalendarScreens    mois, mosaïque année, répartition — mien et du binôme
+    CalendarScreens    le mois, mien ou du binôme : bascule, cases, légende, répartition
     Settings           binôme, langue, rappel, compte, données
     CharacterScreen    « Mon personnage » : la tenue, une rangée par catégorie
   components/          grilles, caméra, cellules, feuilles, réactions, états, bulle du personnage (Tip),
@@ -426,6 +426,30 @@ lui — il reste muet pour les lecteurs d'écran, comme partout.
 coché, et la photo gardée tant qu'on n'en reprend pas une autre :
 c'est l'UPDATE du jour permis par `0005`, rien de plus. Le bouton est plein,
 à l'encre : c'est la seule action de l'écran, il doit se voir.
+
+### Le calendrier ne montre qu'un mois
+
+La maquette a tranché : un mois à la fois, des flèches pour changer, et la
+bascule « Mon calendrier / Son calendrier » en tête. L'ancienne mosaïque de
+l'année a été retirée. Chaque case porte son numéro en bas à gauche et, en
+haut à droite, la réaction posée dessus — celle du binôme sur mes journées,
+la mienne sur les siennes — pour que la couleur garde le milieu.
+
+Trois règles pour les cases vides :
+
+- **Hachurée chez moi, c'est un jour manqué ; chez l'autre, un jour
+  masqué** (il l'a rempli, pas moi). Même hachure, légende différente. Chez
+  l'autre, un jour qu'il n'a pas rempli reste uni.
+- **Avant la toute première journée, rien n'est manqué.** Hachurer les mois
+  d'avant l'inscription ne serait qu'un reproche.
+- **Aujourd'hui pas encore rempli n'est pas manqué** : la journée n'est pas
+  finie, comme pour la série.
+
+Le compteur se mesure aux jours **écoulés** du mois (« 21 jours remplis sur
+25 »), et chez l'autre il compte aussi les jours masqués : la base en
+connaît la date, jamais le contenu. La répartition, elle, ne compte que ce
+qu'on peut lire. Une journée validée hors ligne prend sa couleur tout de
+suite, comme elle compte pour la série.
 
 ### La photo se prend dans l'app, et elle est double
 

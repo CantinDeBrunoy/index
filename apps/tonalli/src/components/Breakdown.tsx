@@ -2,7 +2,14 @@ import { EMOTIONS } from '@/lib/emotions';
 import type { Entry } from '@/lib/types';
 import { useI18n } from '@/state/I18nProvider';
 
-/** Répartition des émotions d'un mois, la plus fréquente en tête. */
+/**
+ * Répartition des émotions d'un mois : une seule barre partagée entre elles,
+ * la plus fréquente en tête, puis leurs noms et leurs comptes. Chaque émotion
+ * y prend sa couleur franche — les crans parleraient du jour, pas du mois.
+ *
+ * La barre est muette pour un lecteur d'écran : les pastilles en dessous
+ * disent la même chose avec des mots.
+ */
 export function Breakdown({ entries }: { entries: Entry[] }) {
   const { t } = useI18n();
 
@@ -19,24 +26,21 @@ export function Breakdown({ entries }: { entries: Entry[] }) {
     .map((emotion) => ({ ...emotion, count: counts.get(emotion.key) ?? 0 }))
     .sort((a, b) => b.count - a.count);
 
-  const max = Math.max(...rows.map((row) => row.count));
-
   return (
-    <div className="breakdown">
-      {rows.map((row) => (
-        <div className="breakdown-row" key={row.key}>
-          <span className="muted">{t(`emotions.${row.key}`)}</span>
-          <span className="breakdown-bar">
-            <span
-              className="breakdown-fill"
-              style={{ width: `${(row.count / max) * 100}%`, background: row.color }}
-            />
-          </span>
-          <span className="faint" style={{ textAlign: 'right' }}>
-            {row.count}
-          </span>
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="breakdown-bar" aria-hidden>
+        {rows.map((row) => (
+          <span key={row.key} style={{ flexGrow: row.count, background: row.color }} />
+        ))}
+      </div>
+      <ul className="breakdown-list">
+        {rows.map((row) => (
+          <li key={row.key}>
+            <span className="breakdown-dot" style={{ background: row.color }} aria-hidden />
+            {t(`emotions.${row.key}`)} <span className="faint">{row.count}</span>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
