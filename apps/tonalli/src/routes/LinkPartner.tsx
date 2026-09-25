@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+import { Character } from '@/components/Character';
+import { Tip } from '@/components/Tip';
+import { outfitOf } from '@/lib/character';
 import { useAuth } from '@/state/AuthProvider';
 import { useI18n } from '@/state/I18nProvider';
 
@@ -14,6 +17,11 @@ const KNOWN_ERRORS = new Set([
 /**
  * Écran d'attente : Tonalli n'a pas de sens seul, on ne va pas plus loin tant
  * que le binôme n'est pas lié.
+ *
+ * Il montre ce qui manque plutôt que de l'expliquer : mon personnage, et à
+ * côté la place vide du sien, qui attend. Puis mon code, à envoyer — par le
+ * partage du téléphone quand il existe, c'est le geste naturel sur un
+ * téléphone —, et le champ pour saisir le sien.
  */
 export function LinkPartnerScreen() {
   const { t } = useI18n();
@@ -23,14 +31,28 @@ export function LinkPartnerScreen() {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const invite = profile?.invite_code ?? '';
+  // Le partage natif n'existe pas partout (la plupart des ordinateurs) : sans
+  // lui, copier suffit.
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+
   const copy = async () => {
-    if (!profile) return;
+    if (!invite) return;
     try {
-      await navigator.clipboard.writeText(profile.invite_code);
+      await navigator.clipboard.writeText(invite);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       // Presse-papiers refusé : le code reste lisible à l'écran.
+    }
+  };
+
+  const share = async () => {
+    if (!invite) return;
+    try {
+      await navigator.share({ title: 'Tonalli', text: t('link.shareText', { code: invite }), url: window.location.origin });
+    } catch {
+      // Partage annulé ou refusé : rien à dire, le code est toujours là.
     }
   };
 
@@ -49,29 +71,54 @@ export function LinkPartnerScreen() {
   };
 
   return (
-    <div className="app app--plain stack">
-      <div className="stack-sm" style={{ marginTop: 32 }}>
-        <h1>{t('link.title')}</h1>
+    <div className="app app--plain stack link-screen">
+      {/* Mon personnage, et la place du sien : c'est lui qui manque. */}
+      <div className="link-pair" aria-hidden>
+        <figure className="link-pair__side">
+          <Character emotion={null} state="waiting" outfit={outfitOf(profile)} size={104} />
+          <figcaption>{t('link.me')}</figcaption>
+        </figure>
+        <span className="link-pair__thread" />
+        <figure className="link-pair__side link-pair__side--empty">
+          <Character emotion={null} state="waiting" size={104} still />
+          <figcaption>{t('link.partnerPlaceholder')}</figcaption>
+        </figure>
+      </div>
+
+      <div className="stack-sm center">
+        <h1 className="link-screen__title">{t('link.title')}</h1>
         <p className="muted small">{t('link.subtitle')}</p>
       </div>
 
-      <div className="card stack">
-        <span className="section-title" style={{ margin: 0 }}>
-          {t('link.yourCode')}
-        </span>
-        <strong style={{ fontSize: 34, letterSpacing: 8, textAlign: 'center' }}>
-          {profile?.invite_code ?? '······'}
-        </strong>
-        <button type="button" className="btn btn--block" onClick={() => void copy()}>
-          {copied ? t('link.copied') : t('link.copy')}
-        </button>
-      </div>
+      <section className="card link-card">
+        <h2 className="link-card__title">{t('link.yourCode')}</h2>
+        {/* Une case par caractère : un code se dicte et se recopie lettre par
+            lettre. Le lecteur d'écran l'épelle aussi. */}
+        <p className="invite-code" aria-label={t('link.codeAria', { letters: invite.split('').join(' ') })}>
+          {(invite || '······').split('').map((letter, index) => (
+            <span key={index} className="invite-code__letter" aria-hidden>
+              {letter}
+            </span>
+          ))}
+        </p>
+        <div className="link-card__actions">
+          <button type="button" className="btn" onClick={() => void copy()}>
+            {copied ? t('link.copied') : t('link.copy')}
+          </button>
+          {canShare ? (
+            <button type="button" className="btn btn--primary" onClick={() => void share()}>
+              {t('link.share')}
+            </button>
+          ) : null}
+        </div>
+      </section>
 
-      <form className="card stack" onSubmit={submit}>
-        <span className="section-title" style={{ margin: 0 }}>
-          {t('link.enterCode')}
-        </span>
+      <form className="card link-card" onSubmit={submit}>
+        <h2 className="link-card__title">
+          <label htmlFor="partner-code">{t('link.enterCode')}</label>
+        </h2>
         <input
+          id="partner-code"
           className="input input--code"
           value={code}
           onChange={(event) => setCode(event.target.value.toUpperCase().slice(0, 6))}
@@ -79,18 +126,18 @@ export function LinkPartnerScreen() {
           inputMode="text"
           autoCapitalize="characters"
           autoCorrect="off"
+          autoComplete="off"
           spellCheck={false}
-          aria-label={t('link.enterCode')}
         />
         {error ? <p className="banner banner--error">{error}</p> : null}
-        <button
-          type="submit"
-          className="btn btn--primary btn--block"
-          disabled={busy || code.length !== 6}
-        >
+        <button type="submit" className="btn btn--primary btn--block" disabled={busy || code.length !== 6}>
           {busy ? t('link.linking') : t('link.linkAction')}
         </button>
       </form>
+
+      <Tip speaker={<Character emotion={null} state="waiting" outfit={outfitOf(profile)} size={50} still />}>
+        {t('link.tip')}
+      </Tip>
 
       <button type="button" className="btn btn--ghost center" onClick={() => void signOut()}>
         {t('auth.signOut')}
