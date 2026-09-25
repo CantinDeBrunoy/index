@@ -118,6 +118,7 @@ src/
     AuthProvider       session, profil, binôme, liaison, suppression
     EntriesProvider    entrées, jour local, file d'attente hors ligne
     look.ts            mon personnage tel qu'il se montre aujourd'hui (teinte, tenue)
+    scheme.ts          l'écran est-il sombre ? pour les couleurs qui passent par une prop
   routes/
     AuthScreens        accueil (le soleil qui passe par les douze émotions), connexion, inscription
     LinkPartner        code d'invitation, écran bloquant sans binôme
@@ -338,8 +339,14 @@ aussi l'apparence des jours passés : le personnage, c'est la personne
 maintenant, pas un témoignage du jour. Rien n'est recopié dans `entries`.
 
 Elle s'enregistre au toucher, comme le symbole de la série. Chaque vignette
-montre la tenue entière avec l'accessoire à l'essai, et reste immobile :
-vingt-six personnages animés à la fois coûteraient cher à un petit téléphone.
+montre **l'accessoire seul, sur le personnage neutre** — c'est la pièce qu'on
+choisit, et à 52 px elle doit se lire du premier coup d'œil ; la tenue
+entière se voit en grand, en haut de l'écran, dans la couleur du jour. (Les
+vignettes ont d'abord montré la tenue entière à l'essai ; la maquette a
+tranché.) La nuit, elles prennent le cran dense de Neutre : le trait y est
+clair, et sur le gris pâle il effacerait les lunettes ou les taches. Elles
+restent immobiles : trente personnages animés à la fois coûteraient cher à
+un petit téléphone.
 
 ### Nos deux personnages jouent la même scène
 

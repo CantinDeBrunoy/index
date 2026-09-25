@@ -327,13 +327,16 @@ export const fr = {
   },
   character: {
     title: 'Mon personnage',
-    hint: "Il garde sa silhouette ; ce qu'il porte prend la teinte du jour. {{name}} le voit aussi.",
+    hintColor: 'Dans ta couleur du jour, {{emotion}} — tes accessoires te suivent dans chaque scène.',
+    hintWaiting: 'Sans couleur tant que ta journée attend — tes accessoires te suivent dans chaque scène.',
     back: 'Retour aux réglages',
-    none: 'Rien',
+    none: 'Aucun',
+    // Sans motif, le personnage est uni : « Aucun » y serait moins parlant.
+    plain: 'Uni',
     categories: {
-      head: 'Tête',
-      body: 'Corps',
-      face: 'Visage',
+      head: 'Accessoire de tête',
+      body: 'Accessoire de corps',
+      face: 'Détail du visage',
       motif: 'Motif',
       flag: 'Drapeau',
     },
