@@ -193,21 +193,3 @@ export function veilOpacity(key: string): number {
   return Math.round(VEIL_STRENGTH * k) / 100;
 }
 
-/**
- * Le lavis du jour : un dégradé radial posé en haut de l'écran uniquement,
- * jamais sur les cartes. Les teintes pâles montent en opacité (elles ont
- * besoin de plus de matière pour se sentir), les foncées redescendent ; le
- * mode sombre pousse tout d'un cran, pour que la nuit chaude tienne sa
- * braise.
- */
-export function washGradient(color: string, dark = false): string {
-  const l = luminance(color);
-  const base = dark ? 0.42 : 0.3;
-  const span = dark ? 0.16 : 0.2;
-  const opacity = Math.min(0.5, base + l * span);
-  const hex = color.replace('#', '');
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  return `radial-gradient(125% 62% at 50% 0%, rgba(${r},${g},${b},${opacity.toFixed(2)}), rgba(${r},${g},${b},0) 72%)`;
-}

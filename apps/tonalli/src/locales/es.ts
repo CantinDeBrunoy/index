@@ -72,6 +72,18 @@ export const es: Translation = {
   today: {
     title: 'Hoy',
     mine: 'Mi día',
+    feelTitle: '¿Cómo te sientes?',
+    continue: 'Continuar',
+    step: 'Paso {{current}} de 3: {{name}}',
+    stepNames: {
+      emotion: 'la emoción',
+      photo: 'la foto',
+      check: 'el repaso',
+    },
+    chosenLabel: '{{emotion}} · {{intensity}}',
+    backToEmotion: 'Volver a la emoción',
+    resume: 'Rehacer mi día',
+    resumeHint: 'Todavía puedes rehacerlo hasta medianoche.',
     overview: {
       me: 'Yo',
       back: 'Volver a Hoy',

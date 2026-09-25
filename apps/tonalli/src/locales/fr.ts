@@ -72,6 +72,19 @@ export const fr = {
   today: {
     title: "Aujourd'hui",
     mine: 'Ma journée',
+    // Le parcours de ma journée, en trois étapes : l'émotion, la photo, la validation.
+    feelTitle: 'Comment te sens-tu ?',
+    continue: 'Continuer',
+    step: 'Étape {{current}} sur 3 : {{name}}',
+    stepNames: {
+      emotion: "l'émotion",
+      photo: 'la photo',
+      check: 'la relecture',
+    },
+    chosenLabel: '{{emotion}} · {{intensity}}',
+    backToEmotion: "Revenir à l'émotion",
+    resume: 'Reprendre ma journée',
+    resumeHint: "Tu peux encore la reprendre jusqu'à minuit.",
     // La page d'accueil du jour : les deux personnages, une phrase, et les portes.
     overview: {
       me: 'Moi',

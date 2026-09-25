@@ -120,11 +120,11 @@ src/
     AuthScreens        accueil (le soleil qui passe par les douze émotions), connexion, inscription
     LinkPartner        code d'invitation, écran bloquant sans binôme
     TodayOverview      la page Aujourd'hui : nos deux personnages, une phrase, les portes vers les journées
-    Today              la journée en détail (/day, /day/theirs) : composeur, ma journée, la sienne sous sa couleur
+    Today              la journée en détail : ma journée en trois temps (/day), la sienne sous sa couleur (/day/theirs)
     CalendarScreens    mois, mosaïque année, répartition — mien et du binôme
     Settings           binôme, langue, rappel, compte, données
     CharacterScreen    « Mon personnage » : la tenue, une rangée par catégorie
-  components/          grilles, caméra, cellules, feuilles, réactions, états,
+  components/          grilles, caméra, cellules, feuilles, réactions, états, bulle du personnage (Tip),
                        encre (InkCanvas, SaveBloom, InkReveal), logo, personnage, scène à deux
   locales/             fr.ts fait foi ; es.ts est typé d'après lui
 supabase/
@@ -410,6 +410,21 @@ déplace de ce que le calcul aurait déplacé.
 Les livres ne sont pas typés — comme tout `scripts/`, ils restent hors de
 `tsc`, qui ne vérifie que `src/` — mais `oxlint` les lit.
 
+### Ma journée se remplit en trois temps
+
+`MyDayScreen` (`/day`) suit la maquette : **l'émotion** (la grille et le cran),
+**la photo** (le viseur, puis l'aperçu avec la note), et **la journée validée**.
+La barre d'étapes en tête de la photo peint les étapes faites dans la teinte
+choisie et l'étape en cours à l'encre — pas d'accent, même là. Le personnage
+prend la pose dès qu'une émotion est touchée. Les conseils (`Tip`) sont une
+bulle posée à côté d'un petit personnage : c'est l'interface qui parle, pas
+lui — il reste muet pour les lecteurs d'écran, comme partout.
+
+« Reprendre ma journée » ramène à la première étape avec le choix déjà fait
+coché, et la photo gardée tant qu'on n'en reprend pas une autre :
+c'est l'UPDATE du jour permis par `0005`, rien de plus. Le bouton est plein,
+à l'encre : c'est la seule action de l'écran, il doit se voir.
+
 ### La photo se prend dans l'app, et elle est double
 
 `getUserMedia` uniquement, jamais de sélection depuis la galerie — c'est ce qui
@@ -475,11 +490,6 @@ voudraient plus rien dire. Un appui sec continue d'intervertir les deux photos,
 sans déplacer la vignette : c'est le mouvement qui distingue les deux gestes,
 au-delà de `DRAG_THRESHOLD`. Les flèches du clavier déplacent d'un pas
 (`NUDGE`), un axe à la fois.
-
-Corollaire de code : la vignette **coupe la propagation des événements
-tactiles**. L'écran « Aujourd'hui » change de panneau sur un glissement
-horizontal ; sans cette coupure, déplacer la vignette vers la droite ferait
-aussi basculer sur la journée du binôme.
 
 **Demander la caméra frontale ne suffit pas à l'obtenir.** `facingMode: 'user'`
 n'est qu'un souhait : le navigateur note chaque objectif sur l'ensemble des
@@ -802,15 +812,13 @@ chercher une classe CSS dedans ne rend rien. De quoi conclure à tort qu'une
 modification n'a pas été prise.
 
 **Une règle `parent > *` écrase le `position: fixed` d'un enfant direct.**
-`.today-screen > *:not(.wash)` pose `position: relative` sur ses enfants pour
-qu'ils passent au-dessus du lavis. Un plein écran ajouté comme enfant direct
-hérite donc de `relative` — même spécificité, la règle écrite plus bas gagne —
-et retombe dans le flux : plus de plein écran, plus de hauteur, rien de
-visible. C'est ce qui est arrivé à l'épanouissement de la couleur, qui
-s'affichait en croissant sur le bord droit. Les superpositions de l'écran
-« Aujourd'hui » doivent être exclues nommément de cette règle, ou rendues plus
-profond dans l'arbre (c'est ce qui sauve la fête des réactions, petite-fille
-et non fille).
+L'ancien écran « Aujourd'hui » posait `position: relative` sur tous ses
+enfants pour les faire passer au-dessus d'un lavis de couleur. Un plein écran
+ajouté comme enfant direct en héritait — même spécificité, la règle écrite
+plus bas gagne — et retombait dans le flux : l'épanouissement de la couleur
+s'affichait en croissant sur le bord droit. Le lavis est parti avec le
+passage aux étapes, mais le piège reste : une superposition plein écran ne
+doit jamais être la cible d'une règle générique de son parent.
 
 **La position d'un bouton ne se relève plus après qu'il a disparu.**
 L'encre de validation part du bouton « Valider ma journée » — mais ce bouton
