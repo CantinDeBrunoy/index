@@ -15,6 +15,7 @@ export const fr = {
     unknownError: "Quelque chose s'est mal passé.",
   },
   auth: {
+    back: 'Retour à l\'accueil',
     signInTitle: 'Se connecter',
     signUpTitle: 'Créer un compte',
     email: 'E-mail',

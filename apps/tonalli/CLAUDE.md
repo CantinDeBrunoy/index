@@ -117,7 +117,7 @@ src/
     EntriesProvider    entrées, jour local, file d'attente hors ligne
     look.ts            mon personnage tel qu'il se montre aujourd'hui (teinte, tenue)
   routes/
-    AuthScreens        connexion et inscription
+    AuthScreens        accueil (le soleil qui passe par les douze émotions), connexion, inscription
     LinkPartner        code d'invitation, écran bloquant sans binôme
     Today              les deux panneaux (ma journée / sa journée) + composeur
     CalendarScreens    mois, mosaïque année, répartition — mien et du binôme
@@ -949,6 +949,11 @@ soleil ; le composant `Logo` la dessine, `npm run icons` en tire le favicon et
 les PNG. Retoucher un fichier de `public/` à la main le désynchronise, et
 `npm run checks` le refuse pour le favicon. Les rayons suivent l'ordre de
 `EMOTIONS` : une émotion ajoutée ou déplacée là change le logo, et c'est voulu.
+Le grand soleil de l'écran d'accueil (`WelcomeSun`) tire ses rayons du même
+`sunRays()` : il allume celui de l'émotion que joue le personnage, et laisse
+les onze autres pâles plutôt qu'absents. Deux personnages au plus y sont
+montés, celui qui entre et celui qui sort ; sous `prefers-reduced-motion`,
+Joie reste seule, rayon allumé.
 
 **Confirmation d'e-mail.** Laisser « Confirm email » activé avec le serveur
 d'envoi intégré de Supabase donne un `email rate limit exceeded` au bout de

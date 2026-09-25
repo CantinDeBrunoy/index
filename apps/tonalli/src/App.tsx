@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom
 import { ErrorBanner, Loading } from '@/components/States';
 import { Tabs } from '@/components/Tabs';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { SignInScreen, SignUpScreen } from '@/routes/AuthScreens';
+import { SignInScreen, SignUpScreen, WelcomeScreen } from '@/routes/AuthScreens';
 import { MyCalendarScreen, PartnerCalendarScreen } from '@/routes/CalendarScreens';
 import { CharacterScreen } from '@/routes/CharacterScreen';
 import { LinkPartnerScreen } from '@/routes/LinkPartner';
@@ -27,7 +27,7 @@ function RequireAuth() {
   const { status, profile, profileError, reload } = useAuth();
 
   if (status === 'loading') return <Splash />;
-  if (status === 'signed-out') return <Navigate to="/sign-in" replace />;
+  if (status === 'signed-out') return <Navigate to="/welcome" replace />;
   if (!profile) {
     if (profileError) {
       return (
@@ -94,6 +94,7 @@ export function App() {
           <EntriesProvider>
             <Routes>
               <Route element={<PublicOnly />}>
+                <Route path="/welcome" element={<WelcomeScreen />} />
                 <Route path="/sign-in" element={<SignInScreen />} />
                 <Route path="/sign-up" element={<SignUpScreen />} />
               </Route>

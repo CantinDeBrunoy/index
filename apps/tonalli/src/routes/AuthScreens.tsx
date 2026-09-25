@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { Logo } from '@/components/Logo';
+import { WelcomeSun } from '@/components/WelcomeSun';
 import { LOCALES } from '@/lib/i18n';
 import type { Locale } from '@/lib/types';
 import { useAuth } from '@/state/AuthProvider';
@@ -19,21 +20,66 @@ function authError(message: string, t: (key: string) => string): string {
   return message;
 }
 
+/**
+ * Chaque langue écrite dans la sienne : quelqu'un qui ne lit pas le
+ * français doit pouvoir trouver « español » sur un écran en français.
+ */
+const LOCALE_NAMES: Record<Locale, string> = { fr: 'français', es: 'español' };
+
 function LanguagePicker() {
-  const { locale, setLocale, t } = useI18n();
+  const { locale, setLocale } = useI18n();
   return (
-    <div className="row center" style={{ justifyContent: 'center', gap: 8 }}>
-      {LOCALES.map((option: Locale) => (
-        <button
-          key={option}
-          type="button"
-          className="btn btn--ghost small"
-          style={{ color: option === locale ? 'var(--text)' : 'var(--text-faint)' }}
-          onClick={() => setLocale(option)}
-        >
-          {option === 'fr' ? t('settings.french') : t('settings.spanish')}
-        </button>
+    <div className="language-picker">
+      {LOCALES.map((option: Locale, index) => (
+        <span key={option} className="language-picker__item">
+          {index > 0 ? <span aria-hidden="true">·</span> : null}
+          <button
+            type="button"
+            lang={option}
+            aria-pressed={option === locale}
+            onClick={() => setLocale(option)}
+          >
+            {LOCALE_NAMES[option]}
+          </button>
+        </span>
       ))}
+    </div>
+  );
+}
+
+/** Retour à l'accueil, en haut à gauche des formulaires. */
+function BackToWelcome() {
+  const { t } = useI18n();
+  return (
+    <Link to="/welcome" className="btn btn--icon" aria-label={t('auth.back')}>
+      ‹
+    </Link>
+  );
+}
+
+/**
+ * L'accueil : le soleil de Tonalli, le personnage qui passe par les douze
+ * émotions, et les deux portes — se connecter, créer un compte. C'est le
+ * premier écran d'une personne qui n'est pas connectée.
+ */
+export function WelcomeScreen() {
+  const { t } = useI18n();
+  return (
+    <div className="app app--plain welcome">
+      <div className="welcome__hero">
+        <WelcomeSun />
+        <h1 className="welcome__title">{t('common.appName')}</h1>
+        <p className="muted welcome__tagline">{t('common.tagline')}</p>
+      </div>
+      <div className="welcome__actions">
+        <Link to="/sign-in" className="btn btn--primary btn--block btn--tall">
+          {t('auth.signIn')}
+        </Link>
+        <Link to="/sign-up" className="btn btn--outline btn--block btn--tall">
+          {t('auth.signUpTitle')}
+        </Link>
+        <LanguagePicker />
+      </div>
     </div>
   );
 }
@@ -63,7 +109,8 @@ export function SignInScreen() {
 
   return (
     <div className="app app--plain stack">
-      <div className="stack-sm center" style={{ marginTop: 40, marginBottom: 12 }}>
+      <BackToWelcome />
+      <div className="stack-sm center" style={{ marginTop: 8, marginBottom: 12 }}>
         <Logo />
         <h1>{t('common.appName')}</h1>
         <p className="muted small">{t('common.tagline')}</p>
@@ -153,7 +200,8 @@ export function SignUpScreen() {
 
   return (
     <div className="app app--plain stack">
-      <div className="stack-sm center" style={{ marginTop: 40, marginBottom: 12 }}>
+      <BackToWelcome />
+      <div className="stack-sm center" style={{ marginTop: 8, marginBottom: 12 }}>
         <Logo />
         <h1>{t('auth.signUpTitle')}</h1>
         <p className="muted small">{t('common.tagline')}</p>

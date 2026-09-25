@@ -12,6 +12,7 @@
  * pas d'alias `@/`, pas de `window`.
  */
 import { EMOTIONS } from './emotions.ts';
+import type { EmotionKey } from './emotions.ts';
 
 /** Le logo se dessine dans un carré de 100 × 100. */
 export const LOGO_SIZE = 100;
@@ -42,6 +43,8 @@ export type LogoVariant = 'full' | 'small';
 export const SMALL_BELOW = 48;
 
 export interface LogoRay {
+  /** L'émotion du rayon. */
+  key: EmotionKey;
   x1: number;
   y1: number;
   x2: number;
@@ -61,15 +64,17 @@ export interface LogoGeometry {
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
-export function logoGeometry(variant: LogoVariant = 'full'): LogoGeometry {
-  const small = variant === 'small';
-  const inner = small ? 31 : 32;
-  const outer = small ? 45 : 43;
-  const center = LOGO_SIZE / 2;
-  const rays = EMOTIONS.map(({ color }, index) => {
+/**
+ * Les douze rayons autour d'un centre, entre deux rayons : un par émotion,
+ * dans l'ordre de la palette, Joie à midi puis dans le sens des aiguilles
+ * d'une montre. Le logo et le soleil de l'écran d'accueil les tirent d'ici.
+ */
+export function sunRays(center: number, inner: number, outer: number): LogoRay[] {
+  return EMOTIONS.map(({ key, color }, index) => {
     // On part du haut (−π/2) et on tourne dans le sens des aiguilles d'une montre.
     const angle = (index / EMOTIONS.length) * Math.PI * 2 - Math.PI / 2;
     return {
+      key,
       x1: round(center + Math.cos(angle) * inner),
       y1: round(center + Math.sin(angle) * inner),
       x2: round(center + Math.cos(angle) * outer),
@@ -77,6 +82,14 @@ export function logoGeometry(variant: LogoVariant = 'full'): LogoGeometry {
       color,
     };
   });
+}
+
+export function logoGeometry(variant: LogoVariant = 'full'): LogoGeometry {
+  const small = variant === 'small';
+  const inner = small ? 31 : 32;
+  const outer = small ? 45 : 43;
+  const center = LOGO_SIZE / 2;
+  const rays = sunRays(center, inner, outer);
   const scale = 0.3;
   return {
     rays,

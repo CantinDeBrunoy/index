@@ -17,6 +17,7 @@ export const es: Translation = {
     unknownError: 'Algo salió mal.',
   },
   auth: {
+    back: 'Volver al inicio',
     signInTitle: 'Iniciar sesión',
     signUpTitle: 'Crear una cuenta',
     email: 'Correo electrónico',
