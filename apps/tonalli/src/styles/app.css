@@ -559,8 +559,8 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 .bloom__ink {
   position: absolute;
   inset: 0;
-  /* Un SVG est un élément remplacé : `inset: 0` ne l'étire pas, il garderait
-     sa taille par défaut de 300 × 150 dans le coin. */
+  /* Une toile (ou le SVG de repli) est un élément remplacé : `inset: 0` ne
+     l'étire pas, elle garderait sa taille par défaut de 300 × 150 dans le coin. */
   width: 100%;
   height: 100%;
 }
@@ -608,8 +608,8 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 .reveal__ink {
   position: absolute;
   inset: 0;
-  /* Un SVG ne s'étire pas avec `inset: 0` : sans taille, il resterait à
-     300 × 150 dans le coin. */
+  /* Une toile (ou le SVG de repli) ne s'étire pas avec `inset: 0` : sans
+     taille, elle resterait à 300 × 150 dans le coin. */
   width: 100%;
   height: 100%;
 }

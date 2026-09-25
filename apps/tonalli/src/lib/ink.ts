@@ -209,7 +209,7 @@ const MESSAGE_BLUR = 8;
 const MESSAGE_RISE = 10;
 
 /** La turbulence ne dépasse jamais ça, même sur un grand écran : au-delà, l'encre se déchire. */
-const MAX_SWIRL = 150;
+export const MAX_SWIRL = 150;
 
 /** Densité du voile au plus fort. */
 const VEIL = 0.45;

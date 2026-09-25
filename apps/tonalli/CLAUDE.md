@@ -45,7 +45,7 @@ récent : `sb_publishable_…`. Les clés héritées en `eyJ…` fonctionnent au
 | `npm run dev` | serveur de développement |
 | `npm run build` | `tsc -b && vite build` — c'est le build de production |
 | `npm run typecheck` | typage seul |
-| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions et nuances, réactions, vignette, encre et dévoilement, choix de l'objectif, logo) |
+| `npm run checks` | vérifie les fonctions pures (dates, fuseaux, séries, émotions et nuances, réactions, vignette, encre et dévoilement, bruit de l'encre, choix de l'objectif, logo) |
 | `npm run icons` | régénère le favicon et les icônes PNG depuis `src/lib/logo.ts` |
 | `npm run duo` | régénère les feuilles des scènes à deux depuis `scripts/duo/scenes/` |
 | `npm run lint` | oxlint |
@@ -100,6 +100,8 @@ src/
     streak.ts          les 6 symboles de la série (le calcul est dans dates.ts)
     inset.ts           géométrie de la vignette : bornes et collage aux coins
     ink.ts             l'encre : validation, dévoilement, et le geste de chaque émotion
+    turbulence.ts      le bruit de feTurbulence, calculé une fois pour l'encre en WebGL
+    gpu.ts             le navigateur a-t-il WebGL ?
     logo.ts            le soleil de Tonalli : une géométrie pour le composant, le favicon et les icônes
     character.ts       le personnage : une pose par émotion, les états sans couleur, les accessoires
     duo/               nos deux personnages dans la même scène : le livre (model.js),
@@ -125,7 +127,7 @@ src/
     Settings           binôme, langue, rappel, compte, données
     CharacterScreen    « Mon personnage » : la tenue, une rangée par catégorie
   components/          grilles, caméra, cellules, feuilles, réactions, états, bulle du personnage (Tip),
-                       encre (InkCanvas, SaveBloom, InkReveal), logo, personnage, scène à deux
+                       encre (InkCanvas en WebGL ou SVG, SaveBloom, InkReveal), logo, personnage, scène à deux
   locales/             fr.ts fait foi ; es.ts est typé d'après lui
 supabase/
   migrations/          0001 → 0005, à jouer dans l'ordre
@@ -689,7 +691,7 @@ cher :
 
 **1. `npm run checks`** — fonctions pures, exécutées par Node avec
 `--experimental-strip-types`. Conséquence à connaître : les modules testés
-(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `ink.ts`, `camera.ts`, `logo.ts`, `character.ts`) ne doivent contenir **aucun import**
+(`dates.ts`, `emotions.ts`, `reactions.ts`, `streak.ts`, `inset.ts`, `ink.ts`, `turbulence.ts`, `camera.ts`, `logo.ts`, `character.ts`) ne doivent contenir **aucun import**
 vers un alias `@/`, que Node ne sait pas résoudre — ni toucher à `window`, qui
 n'existe pas là-bas. Les garder sans dépendances. Les checks régénèrent
 aussi les scènes à deux à blanc, et échouent si une feuille de
@@ -845,14 +847,43 @@ quatre panaches accrochés à son front, un voile dilué devant. Seul change ce
 qui se diffuse — l'encre elle-même, puis un trou dans l'encre. La goutte
 d'eau et les ronds sont des trous eux aussi : on voit l'app à travers.
 
-Le rendu est un SVG plein écran et deux filtres qui partagent la même chaîne,
-`feTurbulence` → `feDisplacementMap` → flou → seuil sur l'alpha. Le
-déplacement fait onduler le bord ; le flou et le seuil fondent les taches en
-une seule et lissent le contour poilu que le déplacement laisse seul. Le
-second filtre retourne le résultat : une nappe de couleur (`feFlood`) moins
-les taches (`feComposite out`). Les mêmes rectangles servent aux deux temps ;
-on change de filtre quand l'écran est plein, seul moment où le raccord ne
-peut pas se voir.
+La chaîne est celle d'un filtre SVG : turbulence → déplacement → flou →
+seuil sur l'alpha. Le déplacement fait onduler le bord ; le flou et le seuil
+fondent les taches en une seule et lissent le contour poilu que le
+déplacement laisse seul. Pour l'eau claire, on retourne le résultat : une
+nappe de couleur moins les taches. Les mêmes rectangles servent aux deux
+temps ; on retourne quand l'écran est plein, seul moment où le raccord ne peut
+pas se voir.
+
+**Elle est dessinée en WebGL, et le SVG n'est plus qu'un repli.** La première
+version était un vrai filtre SVG plein écran (`feTurbulence`,
+`feDisplacementMap`, `feGaussianBlur`, `feComponentTransfer`), et la
+validation ramait sur téléphone. Le navigateur recalcule un filtre sur
+**chaque pixel de l'écran à chaque image** — neuf fois plus de pixels à
+densité 3 — et le bruit de Perlin avec, alors qu'il ne change jamais pendant
+l'animation. Et aucun navigateur ne laisse baisser la résolution d'un filtre
+SVG : ni `filterRes` (retiré), ni une réduction CSS compensée par un
+`transform: scale`, essayée et sans effet. `InkCanvasGl` refait donc la même
+chaîne en quatre passes : le masque et le flou à **demi-résolution**, le
+seuil et la couleur à celle de l'écran (plafonnée à une densité de 2) — le
+seuil posé sur un masque agrandi redonne un bord net. Le bruit est calculé
+**une fois**, en JavaScript, par l'algorithme de référence de la
+spécification SVG (`src/lib/turbulence.ts`), sur une grille d'un point tous
+les quatre pixels ; au bac à sable, le motif tombe sur celui du navigateur.
+Les taches ne sont pas dessinées : le shader calcule à la volée s'il est
+dans un rectangle arrondi.
+
+`InkCanvas` choisit : WebGL si le navigateur l'a (`webglAvailable`, dans
+`src/lib/gpu.ts`), sinon le SVG, qui reprend aussi la main si le contexte est
+refusé ou perdu en route. Les deux lisent la même `InkFrame` : toute la
+géométrie reste dans `ink.ts`, et une retouche de l'encre ne se fait qu'à un
+endroit. Si on retouche la chaîne elle-même, la faire dans les deux rendus,
+et les comparer image par image au bac à sable (voir plus bas).
+
+Au bac à sable, Chromium n'a pas de carte graphique : il faut
+`--enable-unsafe-swiftshader` pour avoir WebGL, qui tourne alors **sur le
+processeur**. Ses temps n'y disent rien de ceux d'un téléphone — il sert à
+vérifier le rendu, pas la vitesse.
 
 Trois choses à savoir avant d'y toucher :
 
@@ -873,13 +904,19 @@ Trois choses à savoir avant d'y toucher :
 - **Les ronds dans l'eau ne descendent pas sous un tiers d'opacité.** Le
   seuil du filtre (`3a − 1`) efface tout ce qui passe en dessous : un rond
   qui s'éteindrait jusqu'à zéro disparaîtrait d'un coup à mi-course.
-- **Un groupe sans rien à peindre peut voir son filtre sauté.** Quand l'eau
-  claire tombe, ses taches ont une taille nulle ; sans l'ancre transparente
-  hors champ, la nappe de couleur disparaîtrait le temps d'une frame.
-- **`requestAnimationFrame`, pas Web Animations.** Les attributs d'un filtre
-  SVG ne s'animent pas autrement, et la forme comme la turbulence doivent lire
-  la même horloge. Les écritures vont droit dans le DOM, sans rendu React par
-  frame. Pour capturer l'animation image par image dans le bac à sable, figer
+- **Un groupe sans rien à peindre peut voir son filtre sauté** (repli SVG).
+  Quand l'eau claire tombe, ses taches ont une taille nulle ; sans l'ancre
+  transparente hors champ, la nappe de couleur disparaîtrait le temps d'une
+  frame.
+- **`half` est un mot réservé en GLSL.** Un shader qui ne compile pas ne
+  casse rien à l'écran : `InkCanvas` retombe en silence sur le SVG, et
+  l'encre continue de ramer sans que rien ne le signale. Après une retouche
+  d'un shader, vérifier au bac à sable que `.bloom` contient bien un
+  `canvas` et pas un `svg`.
+- **`requestAnimationFrame`, pas Web Animations.** Les uniformes d'un shader
+  comme les attributs d'un filtre SVG ne s'animent pas autrement, et la forme
+  comme la turbulence doivent lire la même horloge. Les écritures vont droit
+  au processeur graphique (ou au DOM), sans rendu React par frame. Pour capturer l'animation image par image dans le bac à sable, figer
   l'horloge (`page.clock.install()` puis `pauseAt`) : sans ça, le temps
   continue de courir pendant les captures.
 
@@ -913,7 +950,7 @@ Trois choses à savoir :
 
 La matière est commune : `InkCanvas` dessine l'encre et l'eau claire pour les
 deux, et `waterDrop()` dans `ink.ts` calcule la goutte, les ronds et l'eau
-claire pour les deux. Les identifiants de filtres sont préfixés par
+claire pour les deux. Pour le repli SVG, les identifiants de filtres sont préfixés par
 composant : la validation peut encore se jouer quand on glisse vers la
 journée de l'autre, et deux filtres homonymes se voleraient leurs réglages.
 
