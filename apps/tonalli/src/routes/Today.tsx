@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { BackButton } from '@/components/BackButton';
 import { Camera } from '@/components/Camera';
 import { Character } from '@/components/Character';
 import { DuoScene } from '@/components/DuoScene';
@@ -16,7 +15,7 @@ import { Tip } from '@/components/Tip';
 import { readCache, writeCache } from '@/lib/cache';
 import { outfitOf } from '@/lib/character';
 import type { Outfit } from '@/lib/character';
-import { formatLongDate, todayInTimeZone } from '@/lib/dates';
+import { formatDayLabel, formatTimeIn, offsetBetween, todayInTimeZone } from '@/lib/dates';
 import {
   DEFAULT_INTENSITY,
   INTENSITIES,
@@ -50,7 +49,19 @@ function ChosenPill({ emotion, intensity, color }: { emotion: string; intensity:
 }
 
 /** Le haut d'une étape : le retour, et le titre. */
-function StepHeader({ title, onBack, backLabel, aside }: { title: string; onBack: () => void; backLabel: string; aside?: React.ReactNode }) {
+function StepHeader({
+  title,
+  subtitle,
+  onBack,
+  backLabel,
+  aside,
+}: {
+  title: string;
+  subtitle?: string;
+  onBack: () => void;
+  backLabel: string;
+  aside?: React.ReactNode;
+}) {
   return (
     <div className="step-header">
       <button type="button" className="btn btn--icon back-button" onClick={onBack} aria-label={backLabel}>
@@ -58,8 +69,22 @@ function StepHeader({ title, onBack, backLabel, aside }: { title: string; onBack
           <path d="M15 5 L8 12 L15 19" />
         </svg>
       </button>
-      <h1 className="step-header__title">{title}</h1>
-      {aside}
+      {subtitle ? (
+        // Avec un sous-titre, la pastille passe sur sa ligne : le retour, le
+        // titre et la pastille ne tiennent pas côte à côte sur un téléphone.
+        <div className="step-header__text">
+          <h1 className="step-header__title">{title}</h1>
+          <div className="step-header__sub">
+            <p className="step-header__subtitle capitalize">{subtitle}</p>
+            {aside}
+          </div>
+        </div>
+      ) : (
+        <>
+          <h1 className="step-header__title">{title}</h1>
+          {aside}
+        </>
+      )}
     </div>
   );
 }
@@ -360,100 +385,130 @@ function ValidatedDay({ onResume }: { onResume: () => void }) {
 }
 
 /**
- * La journée du binôme, ouverte depuis la page Aujourd'hui. Sa maquette à elle
- * viendra ; en attendant, le dévoilement est celui d'avant.
+ * La journée du binôme, ouverte depuis la page Aujourd'hui, comme sur la
+ * maquette : son titre et l'heure de son fuseau, la carte de sa journée — photos,
+ * bandeau de sa couleur avec son personnage —, sa note, et les réactions.
+ *
+ * Réciprocité : elle n'apparaît qu'une fois ma journée validée, et elle est
+ * cherchée à SA date locale — si je suis à Paris et lui à Mexico, ce n'est
+ * pas le même jour au même instant, et c'est normal. Elle arrive sous sa
+ * couleur et se découvre au toucher (`InkReveal`) ; la pastille de son
+ * émotion, en tête, attend la découverte pour paraître.
  */
 export function TheirDayScreen() {
   const { t, locale } = useI18n();
-  const { partner } = useAuth();
+  const navigate = useNavigate();
+  const { partner, user, profile } = useAuth();
   const { today, mine, pending, partnerEntries, online } = useEntries();
   const name = partner?.display_name || t('calendar.partner');
   const done = Boolean(mine[today]) || Boolean(pending);
-  return (
-    <div className="stack">
-      <BackButton to="/" label={t('today.overview.back')} />
-      <div className="stack-sm">
-        <h1>{t('today.partnerTitle')}</h1>
-        <p className="faint small capitalize">{formatLongDate(today, locale)}</p>
-      </div>
-      {!online ? <OfflineBanner /> : null}
-      <TheirDay unlocked={done} entries={partnerEntries} name={name} />
-    </div>
-  );
-}
+  const theirToday = partner ? todayInTimeZone(partner.timezone) : today;
+  const entry = partner && done ? (partnerEntries[theirToday] ?? null) : null;
 
-/**
- * Réciprocité : la journée du binôme n'apparaît qu'une fois la mienne validée.
- * Elle est cherchée à SA date locale à lui — si je suis à Paris et lui à
- * Mexico, ce n'est pas le même jour au même instant, et c'est normal.
- */
-function TheirDay({
-  unlocked,
-  entries,
-  name,
-}: {
-  unlocked: boolean;
-  entries: Record<string, Entry>;
-  name: string;
-}) {
-  const { t, locale } = useI18n();
-  const { partner, user, profile } = useAuth();
-  const { mine, pending, today } = useEntries();
-
-  if (!partner) return <div className="hero hero--empty">{t('today.partnerNoLink')}</div>;
-  if (!unlocked) return <div className="hero hero--empty">{t('today.partnerHidden')}</div>;
-
-  const entry = entries[todayInTimeZone(partner.timezone)] ?? null;
-  if (!entry) {
-    return (
-      <div className="hero hero--empty">
-        <div className="stack-sm center">
-          {/* Sa journée n'a pas encore de teinte : son personnage attend. */}
-          <Character emotion={null} state="waiting" outfit={outfitOf(partner)} size={80} className="character--centered" />
-          <span>{t('today.partnerWaiting', { name })}</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Une journée du binôme ne se découvre qu'une fois : revenir sur son
-  // panneau, ou le voir se rafraîchir, ne rejoue pas la cérémonie. Le
-  // souvenir est gardé sur l'appareil, par journée — c'est un confort
-  // d'affichage, pas une vérité à partager, et la base n'a pas à le savoir.
-  const revealed = user ? readCache<string[]>('revealed', user.id, []) : [];
+  // Une journée du binôme ne se découvre qu'une fois : revenir sur l'écran,
+  // ou le voir se rafraîchir, ne rejoue pas la cérémonie. Le souvenir est
+  // gardé sur l'appareil, par journée — c'est un confort d'affichage, pas une
+  // vérité à partager, et la base n'a pas à le savoir.
+  const [revealedNow, setRevealedNow] = useState<string | null>(null);
+  const seen = entry && user ? readCache<string[]>('revealed', user.id, []).includes(entry.id) : false;
+  const shown = Boolean(entry) && (seen || revealedNow === entry?.id);
   const remember = () => {
-    if (!user) return;
+    if (!user || !entry) return;
     const kept = readCache<string[]>('revealed', user.id, []).filter((id) => id !== entry.id);
     // Deux semaines suffisent : on ne revient pas découvrir une journée
     // passée, et la liste ne doit pas grossir sans fin.
     writeCache('revealed', user.id, [entry.id, ...kept].slice(0, 14));
+    setRevealedNow(entry.id);
   };
 
+  // L'heure à laquelle sa journée a été posée, dans son fuseau, en coin de
+  // photo : elle ne se montre qu'une fois la journée découverte, avec le reste.
+  const time = shown && entry && partner ? formatTimeIn(entry.created_at, partner.timezone, locale) : null;
+  // « heure de Léa » seulement si son heure n'est pas la mienne.
+  const elsewhere = partner && profile ? offsetBetween(partner.timezone, profile.timezone) !== 0 : false;
+  const when = time ? (elsewhere ? t('today.theirTime', { time, name }) : time) : null;
+
   return (
-    <InkReveal
-      key={entry.id}
-      color={entry.color}
-      gesture={gestureOf(entry.emotion)}
-      label={t('today.reveal', { name })}
-      initiallyOpen={revealed.includes(entry.id)}
-      onReveal={remember}
-    >
-      <div className="stack">
-        <PairScene mine={mine[today] ?? null} pending={pending} theirs={entry} name={name} profileOutfit={outfitOf(profile)} partnerOutfit={outfitOf(partner)} />
-        <div
-          className="hero hero--character"
-          style={{ background: entry.color, color: readableTextOn(entry.color) }}
-        >
-          {/* Son personnage joue déjà dans la scène à deux, juste au-dessus :
-              le bandeau garde le nom de l'émotion, sans le redessiner. */}
-          <strong style={{ fontSize: 20 }}>{t(`emotions.${entry.emotion}`)}</strong>
+    <div className="stack their-day">
+      <StepHeader
+        title={t('today.theirDayTitle', { name })}
+        subtitle={formatDayLabel(theirToday, locale)}
+        backLabel={t('today.overview.back')}
+        onBack={() => navigate('/')}
+        aside={
+          shown && entry ? (
+            <ChosenPill emotion={entry.emotion} intensity={intensityOf(entry.emotion, entry.color)} color={entry.color} />
+          ) : null
+        }
+      />
+      {!online ? <OfflineBanner /> : null}
+
+      {!partner ? (
+        <div className="hero hero--empty">{t('today.partnerNoLink')}</div>
+      ) : !done ? (
+        <div className="hero hero--empty">{t('today.partnerHidden')}</div>
+      ) : !entry ? (
+        <div className="hero hero--empty">
+          <div className="stack-sm center">
+            {/* Sa journée n'a pas encore de teinte : son personnage attend. */}
+            <Character emotion={null} state="waiting" outfit={outfitOf(partner)} size={80} className="character--centered" />
+            <span>{t('today.partnerWaiting', { name })}</span>
+          </div>
         </div>
-        <p className="faint small capitalize">{formatLongDate(entry.date, locale)}</p>
-        <EntryPhotos entry={entry} alt={t(`emotions.${entry.emotion}`)} />
-        {entry.note ? <p>{entry.note}</p> : null}
-        <QuickReactions entry={entry} />
+      ) : (
+        <InkReveal
+          key={entry.id}
+          color={entry.color}
+          gesture={gestureOf(entry.emotion)}
+          label={t('today.reveal', { name })}
+          hint={t('today.revealHint')}
+          initiallyOpen={seen}
+          onReveal={remember}
+        >
+          <TheirDay entry={entry} when={when} />
+        </InkReveal>
+      )}
+    </div>
+  );
+}
+
+/** Sa journée découverte : la carte (photos et bandeau), sa note, les réactions. */
+function TheirDay({ entry, when }: { entry: Entry; when: string | null }) {
+  const { t } = useI18n();
+  const { partner } = useAuth();
+  const { myReactions } = useEntries();
+  const mine = myReactions[entry.id];
+  const ink = readableTextOn(entry.color);
+
+  return (
+    <div className="stack their-day__body">
+      <div className="their-card">
+        <div className="their-card__photo">
+          <EntryPhotos entry={entry} alt={t(`emotions.${entry.emotion}`)} />
+          {when ? <span className="their-card__time">{when}</span> : null}
+        </div>
+        {/* Sa couleur, son personnage et ce qu'il fait. Le bandeau était sous
+            la nappe avec le reste : il garde sa couleur une fois découvert. */}
+        <div className="their-band" style={{ background: entry.color, color: ink }}>
+          {isEmotionKey(entry.emotion) ? (
+            <Character emotion={entry.emotion} color={entry.color} outfit={outfitOf(partner)} size={66} className="their-band__character" />
+          ) : null}
+          <span className="their-band__text">
+            <strong className="their-band__emotion">{t(`emotions.${entry.emotion}`)}</strong>
+            {isEmotionKey(entry.emotion) ? <span className="their-band__gesture">{t(`today.gestures.${entry.emotion}`)}</span> : null}
+          </span>
+          {/* Ma réaction, rappelée sur sa carte. Les boutons plus bas disent
+              déjà laquelle est choisie : ici, elle est muette. */}
+          {mine ? (
+            <span className="their-band__reaction" aria-hidden>
+              {mine.emoji}
+            </span>
+          ) : null}
+        </div>
       </div>
-    </InkReveal>
+      {entry.note ? <p className="note-quote">« {entry.note} »</p> : null}
+      <QuickReactions entry={entry} tint={shadeOf(entry.emotion, 'light')} />
+    </div>
   );
 }
 

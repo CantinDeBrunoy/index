@@ -122,7 +122,7 @@ src/
     AuthScreens        accueil (le soleil qui passe par les douze émotions), connexion, inscription
     LinkPartner        code d'invitation, écran bloquant sans binôme
     TodayOverview      la page Aujourd'hui : nos deux personnages, une phrase, les portes vers les journées
-    Today              la journée en détail : ma journée en trois temps (/day), la sienne sous sa couleur (/day/theirs)
+    Today              la journée en détail : ma journée en trois temps (/day), la sienne à découvrir (/day/theirs)
     CalendarScreens    le mois (l'année au titre), mien ou du binôme : bascule, cases, légende, répartition
     Settings           binôme, langue, rappel, compte, données
     CharacterScreen    « Mon personnage » : la tenue, une rangée par catégorie
@@ -343,11 +343,12 @@ vingt-six personnages animés à la fois coûteraient cher à un petit télépho
 
 ### Nos deux personnages jouent la même scène
 
-Dans « Sa journée », mon personnage et celui du binôme partagent un décor et
-une horloge — c'est ce qui permet à un ballon de passer vraiment de l'un à
-l'autre. La scène vit **sous la nappe du dévoilement**, avec les photos,
-parce qu'elle montre l'émotion du binôme : la réciprocité la couvre comme le
-reste de sa journée.
+Sur la page Aujourd'hui, mon personnage et celui du binôme partagent un
+décor et une horloge — c'est ce qui permet à un ballon de passer vraiment de
+l'un à l'autre. La scène montre l'émotion du binôme : elle ne paraît donc
+qu'**une fois sa journée découverte**, comme le reste. (Elle a d'abord vécu
+dans « Sa journée », sous la nappe du dévoilement ; la maquette de cet écran
+n'y met que le personnage du binôme, dans le bandeau de sa carte.)
 
 **La page Aujourd'hui garde la surprise.** Elle montre nos deux personnages
 côte à côte ; tant que sa journée n'est pas découverte, le sien porte sa
@@ -426,6 +427,26 @@ lui — il reste muet pour les lecteurs d'écran, comme partout.
 coché, et la photo gardée tant qu'on n'en reprend pas une autre :
 c'est l'UPDATE du jour permis par `0005`, rien de plus. Le bouton est plein,
 à l'encre : c'est la seule action de l'écran, il doit se voir.
+
+### Sa journée, telle qu'on la découvre
+
+`TheirDayScreen` (`/day/theirs`) suit la maquette : « La journée de Léa », sa
+date dans son fuseau, et la pastille de son émotion qui n'arrive qu'avec la
+découverte. Dessous, sa carte : les photos, puis un bandeau de sa couleur où
+son personnage déborde sur la photo, avec le nom de l'émotion et ce que fait
+le personnage (`today.gestures`, **sans pronom** : l'app ne sait pas qui est
+de l'autre côté), et ma réaction si j'en ai posé une. Puis sa note, et les
+réactions, dont la choisie prend le cran léger de sa couleur.
+
+- **Le bandeau est sous la photo, pas dessus** : posé sur l'image, il en
+  cacherait le bas — ce que la vignette déplaçable existe justement pour
+  éviter.
+- **L'heure est la sienne** (`formatTimeIn`, dans son fuseau), en étiquette
+  sur la photo, et « heure de Léa » seulement si elle n'est pas la mienne.
+  `npm run checks` le vérifie sur Paris et Mexico.
+- **Avec un sous-titre, la pastille passe sur la ligne de la date** : le
+  retour, le titre et la pastille ne tiennent pas côte à côte sur un
+  téléphone.
 
 ### Le calendrier montre un mois, l'année est à un appui
 

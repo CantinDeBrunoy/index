@@ -32,6 +32,7 @@ export function InkReveal({
   color,
   gesture,
   label,
+  hint,
   initiallyOpen,
   onReveal,
   children,
@@ -42,6 +43,8 @@ export function InkReveal({
   gesture: Gesture;
   /** L'invitation, qui est aussi le nom du bouton. */
   label: string;
+  /** Ce qu'il faut faire, en petit sous l'invitation : « appuie pour révéler ». */
+  hint?: string;
   initiallyOpen: boolean;
   onReveal: () => void;
   children: ReactNode;
@@ -122,7 +125,16 @@ export function InkReveal({
           onAnimationEnd={() => setState('open')}
           disabled={state === 'fading'}
         >
+          {/* Une goutte d'eau : c'est elle qui tombera là où le doigt se pose. */}
+          <svg className="reveal__drop" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+            <path d="M12,3 C15,8 18,11 18,15 A6,6 0 0 1 6,15 C6,11 9,8 12,3 Z" />
+          </svg>
           <span className="reveal__words">{label}</span>
+          {hint ? (
+            <span className="reveal__hint" aria-hidden>
+              {hint}
+            </span>
+          ) : null}
         </button>
       ) : null}
       {state === 'revealing' && run ? (

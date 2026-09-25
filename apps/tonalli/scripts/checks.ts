@@ -14,9 +14,11 @@ import {
   dateKeyInTimeZone,
   daysInMonth,
   daysInYear,
+  formatDayLabel,
   formatInstant,
   formatLongDate,
   formatOffset,
+  formatTimeIn,
   isValidKey,
   monthGrid,
   offsetBetween,
@@ -999,6 +1001,17 @@ console.log('Gestes des émotions');
     const second = inkFrame(plan, PHASES.impact + 0.07 + 0.02);
     check('Joie : un rond à chaque touche', second.rings[1].opacity > 0, JSON.stringify(second.rings[1]));
   }
+}
+
+console.log('\nHeure du binôme');
+{
+  // 16 h 42 UTC : 18 h 42 à Paris (heure d'été), 10 h 42 à Mexico (plus
+  // d'heure d'été depuis 2022). L'heure affichée est celle de l'auteur.
+  const instant = '2026-09-23T16:42:00Z';
+  check('Paris lit 18:42', formatTimeIn(instant, PARIS, 'fr-FR') === '18:42', formatTimeIn(instant, PARIS, 'fr-FR'));
+  check('Mexico lit 10:42', formatTimeIn(instant, MEXICO, 'fr-FR') === '10:42', formatTimeIn(instant, MEXICO, 'fr-FR'));
+  check('un instant illisible ne rend rien', formatTimeIn('', PARIS, 'fr-FR') === null);
+  check('la date sans année', formatDayLabel('2026-09-23', 'fr-FR') === 'mercredi 23 septembre', formatDayLabel('2026-09-23', 'fr-FR'));
 }
 
 console.log('\nTurbulence de l’encre (WebGL)');
