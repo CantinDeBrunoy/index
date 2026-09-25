@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 
 import { Breakdown } from '@/components/Breakdown';
-import { MonthGrid } from '@/components/calendar';
+import { MonthGrid, YearMosaic } from '@/components/calendar';
 import type { CellState } from '@/components/calendar';
 import { DayDetail } from '@/components/DayDetail';
 import { ErrorBanner, Loading, OfflineBanner } from '@/components/States';
@@ -43,14 +43,37 @@ function CalendarView({ entries, reactions, hiddenDates, today, partnerName }: V
   const partner = partnerName !== undefined;
 
   const [month, setMonth] = useState<YearMonth>(() => yearMonthOfKey(today));
+  // L'année n'est pas sur la maquette, mais elle reste à un appui : le titre
+  // du mois ouvre la mosaïque, le nom d'un mois y ramène.
+  const [yearView, setYearView] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
 
   const limit = yearMonthOfKey(today);
-  const atLimit = month.year === limit.year && month.month === limit.month;
+  const atLimit = yearView
+    ? month.year >= limit.year
+    : month.year === limit.year && month.month === limit.month;
+  // En année, les flèches sautent d'un an et gardent le mois : revenir au
+  // mois retombe là où on en était.
+  const step = (delta: number) => {
+    const next = shiftMonth(month, yearView ? 12 * delta : delta);
+    // Un an plus tard peut dépasser aujourd'hui : on s'arrête au mois en cours.
+    setMonth(next.year > limit.year || (next.year === limit.year && next.month > limit.month) ? limit : next);
+  };
 
-  // Les jours écoulés du mois : un mois en cours ne se juge pas sur ses jours
-  // à venir.
-  const elapsed = useMemo(() => monthDays(month.year, month.month).filter((date) => date <= today), [month, today]);
+  // Avant la toute première journée, un jour vide n'est pas un jour manqué :
+  // hachurer les mois d'avant l'inscription ne serait qu'un reproche.
+  const first = useMemo(() => {
+    const dates = [...Object.keys(entries), ...(hiddenDates ?? [])].sort();
+    return dates[0] ?? today;
+  }, [entries, hiddenDates, today]);
+
+  // Les jours comptés de la période : ni ses jours à venir, ni ceux d'avant
+  // la première journée. « 39 jours sur 268 » pour qui a commencé en août
+  // serait le même reproche que les hachures.
+  const elapsed = useMemo(() => {
+    const months = yearView ? Array.from({ length: 12 }, (_, index) => index) : [month.month];
+    return months.flatMap((index) => monthDays(month.year, index)).filter((date) => date >= first && date <= today);
+  }, [month, today, yearView, first]);
   const monthEntries = useMemo(
     () => elapsed.map((date) => entries[date]).filter((entry): entry is Entry => Boolean(entry)),
     [entries, elapsed],
@@ -59,13 +82,6 @@ function CalendarView({ entries, reactions, hiddenDates, today, partnerName }: V
   // jamais le contenu.
   const filled = elapsed.filter((date) => entries[date] || hiddenDates?.has(date)).length;
   const hasHidden = elapsed.some((date) => hiddenDates?.has(date) && !entries[date]);
-
-  // Avant la toute première journée, un jour vide n'est pas un jour manqué :
-  // hachurer les mois d'avant l'inscription ne serait qu'un reproche.
-  const first = useMemo(() => {
-    const dates = [...Object.keys(entries), ...(hiddenDates ?? [])].sort();
-    return dates[0] ?? today;
-  }, [entries, hiddenDates, today]);
 
   const getCell = (date: string): CellState => {
     const entry = entries[date];
@@ -106,18 +122,26 @@ function CalendarView({ entries, reactions, hiddenDates, today, partnerName }: V
         <button
           type="button"
           className="calendar__arrow"
-          aria-label={t('calendar.previous')}
-          onClick={() => setMonth(shiftMonth(month, -1))}
+          aria-label={t(yearView ? 'calendar.previousYear' : 'calendar.previous')}
+          onClick={() => step(-1)}
         >
           <Chevron direction="left" />
         </button>
-        <h1 className="calendar__month capitalize">{formatMonthLabel(month, locale)}</h1>
+        <h1 className="calendar__month">
+          <button type="button" className="calendar__title" onClick={() => setYearView(!yearView)}>
+            <span className="capitalize">{yearView ? month.year : formatMonthLabel(month, locale)}</span>
+            <span className="visually-hidden">, {t(yearView ? 'calendar.showMonth' : 'calendar.showYear')}</span>
+            <svg className="calendar__caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden data-open={yearView}>
+              <path d="M6,9 L12,15 L18,9" />
+            </svg>
+          </button>
+        </h1>
         <button
           type="button"
           className="calendar__arrow"
-          aria-label={t('calendar.next')}
+          aria-label={t(yearView ? 'calendar.nextYear' : 'calendar.next')}
           disabled={atLimit}
-          onClick={() => setMonth(shiftMonth(month, 1))}
+          onClick={() => step(1)}
         >
           <Chevron direction="right" />
         </button>
@@ -128,19 +152,31 @@ function CalendarView({ entries, reactions, hiddenDates, today, partnerName }: V
       {!online ? <OfflineBanner /> : null}
       {error ? <ErrorBanner message={t('common.networkError')} onRetry={() => void refresh()} /> : null}
 
-      <p className="calendar__count">{t(counterKey, counter)}</p>
+      {elapsed.length > 0 ? <p className="calendar__count">{t(counterKey, counter)}</p> : null}
 
       {loading && Object.keys(entries).length === 0 ? (
         <Loading />
+      ) : yearView ? (
+        <YearMosaic
+          year={month.year}
+          today={today}
+          getCell={getCell}
+          labelFor={labelFor}
+          onSelect={setSelected}
+          onOpenMonth={(index) => {
+            setMonth({ year: month.year, month: index });
+            setYearView(false);
+          }}
+        />
       ) : (
         <MonthGrid month={month} today={today} getCell={getCell} labelFor={labelFor} onSelect={setSelected} />
       )}
 
-      <Legend partner={partner} />
+      <Legend partner={partner} reactions={!yearView} />
       {partner && hasHidden ? <p className="calendar__hint">{t('calendar.hiddenHintMonth')}</p> : null}
 
       <section className="card breakdown-card">
-        <h2 className="breakdown-card__title">{t('calendar.breakdown')}</h2>
+        <h2 className="breakdown-card__title">{t(yearView ? 'calendar.breakdownYear' : 'calendar.breakdown')}</h2>
         <Breakdown entries={monthEntries} />
       </section>
 
@@ -169,7 +205,7 @@ function Chevron({ direction }: { direction: 'left' | 'right' }) {
 const SAMPLE = EMOTIONS.find((emotion) => emotion.key === 'serenity') ?? EMOTIONS[0];
 
 /** Ce que veulent dire les cases : les crans, les hachures, la réaction. */
-function Legend({ partner }: { partner: boolean }) {
+function Legend({ partner, reactions }: { partner: boolean; reactions: boolean }) {
   const { t } = useI18n();
   return (
     <ul className="calendar-legend">
@@ -191,10 +227,13 @@ function Legend({ partner }: { partner: boolean }) {
           {t('calendar.legendMissed')}
         </li>
       ) : null}
-      <li>
-        <span aria-hidden>{REACTIONS[1].emoji}</span>
-        {partner ? t('calendar.legendMyReaction') : t('calendar.legendReceived')}
-      </li>
+      {/* La mosaïque de l'année n'a pas la place d'une réaction par case. */}
+      {reactions ? (
+        <li>
+          <span aria-hidden>{REACTIONS[1].emoji}</span>
+          {partner ? t('calendar.legendMyReaction') : t('calendar.legendReceived')}
+        </li>
+      ) : null}
     </ul>
   );
 }

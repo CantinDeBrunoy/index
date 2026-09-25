@@ -1,4 +1,4 @@
-import { dayOfKey, monthGrid, weekdayInitials } from '@/lib/dates';
+import { dayOfKey, daysInMonth, formatMonthShort, makeKey, monthGrid, weekdayInitials } from '@/lib/dates';
 import type { YearMonth } from '@/lib/dates';
 import { readableTextOn } from '@/lib/emotions';
 import { useI18n } from '@/state/I18nProvider';
@@ -19,11 +19,13 @@ type CellProps = {
   state: CellState;
   isToday: boolean;
   isFuture: boolean;
+  /** Dans la mosaïque de l'année, une case n'a la place ni d'un numéro ni d'une réaction. */
+  compact?: boolean;
   label: string;
   onSelect: (date: string) => void;
 };
 
-function Cell({ date, state, isToday, isFuture, label, onSelect }: CellProps) {
+function Cell({ date, state, isToday, isFuture, compact = false, label, onSelect }: CellProps) {
   const classes = ['cell'];
   if (isToday) classes.push('cell--today');
   if (isFuture) classes.push('cell--future');
@@ -45,8 +47,8 @@ function Cell({ date, state, isToday, isFuture, label, onSelect }: CellProps) {
       aria-label={label}
       onClick={interactive ? () => onSelect(date) : undefined}
     >
-      {dayOfKey(date)}
-      {state.kind === 'entry' && state.reaction ? (
+      {compact ? null : dayOfKey(date)}
+      {!compact && state.kind === 'entry' && state.reaction ? (
         <span className="cell__reaction" aria-hidden>
           {state.reaction}
         </span>
@@ -91,6 +93,55 @@ export function MonthGrid({ month, today, getCell, labelFor, onSelect }: MonthPr
           );
         })}
       </div>
+    </div>
+  );
+}
+
+type YearProps = {
+  year: number;
+  today: string;
+  getCell: (date: string) => CellState;
+  labelFor: (date: string, state: CellState) => string;
+  onSelect: (date: string) => void;
+  /** Le nom d'un mois ramène à ce mois. */
+  onOpenMonth: (month: number) => void;
+};
+
+/** L'année entière : une ligne par mois, une case par jour. */
+export function YearMosaic({ year, today, getCell, labelFor, onSelect, onOpenMonth }: YearProps) {
+  const { locale } = useI18n();
+
+  return (
+    <div className="mosaic">
+      {Array.from({ length: 12 }, (_, month) => {
+        const total = daysInMonth(year, month);
+        return (
+          <div className="mosaic-row" key={month}>
+            <button type="button" className="mosaic-label" onClick={() => onOpenMonth(month)}>
+              {formatMonthShort(month, locale)}
+            </button>
+            <div className="mosaic-days">
+              {Array.from({ length: 31 }, (_, index) => {
+                if (index >= total) return <span key={index} className="cell cell--blank" />;
+                const date = makeKey(year, month, index + 1);
+                const state = getCell(date);
+                return (
+                  <Cell
+                    key={date}
+                    date={date}
+                    state={state}
+                    isToday={date === today}
+                    isFuture={date > today}
+                    compact
+                    label={labelFor(date, state)}
+                    onSelect={onSelect}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

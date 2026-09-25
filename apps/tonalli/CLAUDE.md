@@ -123,7 +123,7 @@ src/
     LinkPartner        code d'invitation, écran bloquant sans binôme
     TodayOverview      la page Aujourd'hui : nos deux personnages, une phrase, les portes vers les journées
     Today              la journée en détail : ma journée en trois temps (/day), la sienne sous sa couleur (/day/theirs)
-    CalendarScreens    le mois, mien ou du binôme : bascule, cases, légende, répartition
+    CalendarScreens    le mois (l'année au titre), mien ou du binôme : bascule, cases, légende, répartition
     Settings           binôme, langue, rappel, compte, données
     CharacterScreen    « Mon personnage » : la tenue, une rangée par catégorie
   components/          grilles, caméra, cellules, feuilles, réactions, états, bulle du personnage (Tip),
@@ -427,11 +427,13 @@ coché, et la photo gardée tant qu'on n'en reprend pas une autre :
 c'est l'UPDATE du jour permis par `0005`, rien de plus. Le bouton est plein,
 à l'encre : c'est la seule action de l'écran, il doit se voir.
 
-### Le calendrier ne montre qu'un mois
+### Le calendrier montre un mois, l'année est à un appui
 
-La maquette a tranché : un mois à la fois, des flèches pour changer, et la
-bascule « Mon calendrier / Son calendrier » en tête. L'ancienne mosaïque de
-l'année a été retirée. Chaque case porte son numéro en bas à gauche et, en
+La maquette : un mois à la fois, des flèches pour changer, et la bascule
+« Mon calendrier / Son calendrier » en tête. L'année n'y est pas, mais elle
+n'a pas disparu : **le titre du mois** ouvre la mosaïque de l'année (une
+ligne par mois, une case par jour, sans numéro ni réaction), où les flèches
+sautent d'un an, et **le nom d'un mois** y ramène. Chaque case porte son numéro en bas à gauche et, en
 haut à droite, la réaction posée dessus — celle du binôme sur mes journées,
 la mienne sur les siennes — pour que la couleur garde le milieu.
 
@@ -445,8 +447,10 @@ Trois règles pour les cases vides :
 - **Aujourd'hui pas encore rempli n'est pas manqué** : la journée n'est pas
   finie, comme pour la série.
 
-Le compteur se mesure aux jours **écoulés** du mois (« 21 jours remplis sur
-25 »), et chez l'autre il compte aussi les jours masqués : la base en
+Le compteur se mesure aux jours **écoulés** de la période, et seulement
+depuis la première journée (« 21 jours remplis sur 25 ») : « 39 sur 268 »
+pour qui a commencé en août serait le même reproche que les hachures. Une
+période tout entière d'avant n'a pas de compteur. Chez l'autre, il compte aussi les jours masqués : la base en
 connaît la date, jamais le contenu. La répartition, elle, ne compte que ce
 qu'on peut lire. Une journée validée hors ligne prend sa couleur tout de
 suite, comme elle compte pour la série.

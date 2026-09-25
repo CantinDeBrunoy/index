@@ -260,6 +260,12 @@ export function formatMonthLabel({ year, month }: YearMonth, locale: string): st
   );
 }
 
+export function formatMonthShort(month: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(2021, month, 12)),
+  );
+}
+
 /** Initiales de la semaine, lundi en premier, dans la langue demandée. */
 export function weekdayInitials(locale: string): string[] {
   const formatter = new Intl.DateTimeFormat(locale, { weekday: 'narrow', timeZone: 'UTC' });

@@ -1074,6 +1074,22 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   font-weight: 700;
   text-align: center;
 }
+.calendar__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+/* `::first-letter` ne prend que sur un bloc : sans ça, « septembre » resterait en minuscule. */
+.calendar__title .capitalize { display: inline-block; }
+.calendar__caret { transition: transform 0.2s var(--ease); }
+.calendar__caret[data-open='true'] { transform: rotate(180deg); }
 .calendar__arrow {
   display: grid;
   place-items: center;
@@ -1141,6 +1157,25 @@ a.btn { text-decoration: none; display: block; text-align: center; }
 }
 .cell--blank { background: none; cursor: default; }
 .cell__reaction { position: absolute; top: 2px; right: 3px; font-size: 11px; line-height: 1; }
+
+/* L'année : une ligne par mois, une case par jour, sans numéro ni réaction. */
+.mosaic { display: flex; flex-direction: column; gap: 3px; }
+.mosaic-row { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 6px; }
+.mosaic-label {
+  padding: 2px 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: right;
+  cursor: pointer;
+}
+.mosaic-days { display: grid; grid-template-columns: repeat(31, minmax(0, 1fr)); gap: 2px; }
+.mosaic-days .cell { padding: 0; border-radius: 3px; }
+/* À cette taille, un pointillé ferait du bruit, et l'anneau décollé mangerait la case voisine. */
+.mosaic-days .cell--future { border: none; background: var(--empty); opacity: 0.45; }
+.mosaic-days .cell--today { box-shadow: 0 0 0 1.5px var(--text); }
 
 .calendar-legend {
   display: flex;
