@@ -1,0 +1,37 @@
+{
+  "name": "gym-picker",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Mes salles de sport classées par temps de trajet en voiture, trafic compris.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite build && vite preview",
+    "deploy": "npm run build && wrangler deploy",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "lint": "oxlint",
+    "cf-typegen": "wrangler types",
+    "postinstall": "wrangler types"
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.60.2",
+    "@types/node": "^24.19.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.85.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.1",
+    "wrangler": "^4.141.0"
+  }
+}

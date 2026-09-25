@@ -1,0 +1,3 @@
+# Copie ce fichier en .dev.vars (ignoré par git) et mets ta clé TomTom.
+# En production : npx wrangler secret put TOMTOM_API_KEY
+TOMTOM_API_KEY=ta-cle-tomtom
