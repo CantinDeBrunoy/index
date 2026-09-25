@@ -76,6 +76,11 @@ export const es: Translation = {
     },
   },
   today: {
+    photoOpen: 'Ver la foto en grande',
+    photoClose: 'Cerrar la foto',
+    photoViewer: 'Foto en grande',
+    photoScene: 'Escena',
+    photoFace: 'Cara',
     title: 'Hoy',
     mine: 'Mi día',
     feelTitle: '¿Cómo te sientes?',

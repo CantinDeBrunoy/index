@@ -76,6 +76,11 @@ export const fr = {
     },
   },
   today: {
+    photoOpen: 'Voir la photo en grand',
+    photoClose: 'Fermer la photo',
+    photoViewer: 'Photo en grand',
+    photoScene: 'Scène',
+    photoFace: 'Visage',
     title: "Aujourd'hui",
     mine: 'Ma journée',
     // Le parcours de ma journée, en trois étapes : l'émotion, la photo, la validation.

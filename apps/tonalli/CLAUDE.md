@@ -130,6 +130,7 @@ src/
     Settings           personnage, binôme (son heure, l'écart), rappel, symbole de la série, langue, compte
     CharacterScreen    « Mon personnage » : la tenue, une rangée par catégorie
   components/          grilles, caméra, cellules, feuilles, réactions, états, bulle du personnage (Tip),
+                       photos (PhotoPair, PhotoViewer pour les voir en grand),
                        encre (InkCanvas en WebGL ou SVG, SaveBloom, InkReveal), logo, personnage, scène à deux
   locales/             fr.ts fait foi ; es.ts est typé d'après lui
 supabase/
@@ -550,6 +551,18 @@ voudraient plus rien dire. Un appui sec continue d'intervertir les deux photos,
 sans déplacer la vignette : c'est le mouvement qui distingue les deux gestes,
 au-delà de `DRAG_THRESHOLD`. Les flèches du clavier déplacent d'un pas
 (`NUDGE`), un axe à la fois.
+
+**La grande photo s'ouvre en grand.** Sur une journée enregistrée — la
+mienne, la sienne, le détail d'un jour du calendrier —, un appui sur la
+grande photo l'ouvre en plein écran (`PhotoViewer`), sur un fond sombre de
+jour comme de nuit ; une bascule passe de la scène au visage. Les gestes ne se
+marchent pas dessus : la grande photo et la vignette sont deux éléments
+voisins, l'appui sur la vignette échange toujours les photos, son glissement
+la déplace toujours. C'est une vraie boîte de dialogue, à l'inverse de la
+réaction en grand : on la regarde aussi longtemps qu'on veut, et on la ferme
+soi-même (appui à côté, bouton, Échap). Elle est rendue dans `body`, sinon la
+nappe du dévoilement, `inert`, la piégerait. L'aperçu avant validation ne
+l'a pas : la photo y est déjà en grand.
 
 **Demander la caméra frontale ne suffit pas à l'obtenir.** `facingMode: 'user'`
 n'est qu'un souhait : le navigateur note chaque objectif sur l'ensemble des
