@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 
 import { countCameras, isDenial, openCamera, readSettings, wait } from '@/lib/camera';
 import type { Facing, Opened } from '@/lib/camera';
 import { captureFromVideo } from '@/lib/photo';
 import type { Shot } from '@/lib/photo';
+import { Tip } from '@/components/Tip';
 import { useI18n } from '@/state/I18nProvider';
 
 type State = 'starting' | 'ready' | 'denied' | 'unavailable';
@@ -74,7 +76,15 @@ async function waitForFrame(video: HTMLVideoElement): Promise<void> {
  * avec la caméra dont elle dispose. Renoncer à la moitié du rituel parce que
  * le matériel est capricieux serait le punir elle.
  */
-export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
+type CameraProps = {
+  onCapture: (shot: Shot) => void;
+  /** La teinte du jour : l'anneau du déclencheur la porte. */
+  color?: string | null;
+  /** Le petit personnage qui donne le conseil du moment, dans sa bulle. */
+  speaker?: ReactNode;
+};
+
+export function Camera({ onCapture, color, speaker }: CameraProps) {
   const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -336,8 +346,10 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
       ? t('today.cameraOneOnly')
       : t('today.dualHint');
 
+  const shutterLabel = busy ? t('today.capturing') : manual ? t('today.takeFace') : t('today.takePhoto');
+
   return (
-    <div className="stack">
+    <div className="stack camera-block">
       <div className="camera">
         {state === 'ready' || state === 'starting' ? (
           <video
@@ -374,32 +386,51 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
         {state === 'unavailable' ? <p className="camera-msg">{t('today.cameraUnavailable')}</p> : null}
       </div>
 
-      <div className="camera-actions">
+      {/* Le déclencheur au centre, dans la teinte du jour ; la bascule à côté. Le
+          texte du déclencheur est écrit dessous : un rond seul ne dit pas ce
+          qu'il va faire. */}
+      <div className="shutter-row">
+        <span className="shutter-row__spacer" aria-hidden />
         <button
           type="button"
-          className="btn btn--primary grow"
+          className="shutter"
+          data-busy={busy}
+          style={{ '--shutter-ring': color ?? 'var(--text)' } as React.CSSProperties}
           onClick={() => void (manual ? captureFace() : capture())}
           disabled={state !== 'ready' || busy}
+          aria-label={shutterLabel}
         >
-          {busy ? t('today.capturing') : manual ? t('today.takeFace') : t('today.takePhoto')}
+          <span className="shutter__disc" aria-hidden />
         </button>
         <button
           type="button"
-          className="btn"
+          className="shutter-switch"
           onClick={() => setFacing(opposite(shown))}
           disabled={state === 'denied' || busy || oneCameraOnly}
+          aria-label={t('today.switchCamera')}
+          title={t('today.switchCamera')}
         >
-          {t('today.switchCamera')}
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M5,9 A7.5,7.5 0 0 1 18.5,7" />
+            <path d="M19,3.5 L18.7,7.3 L14.9,7" />
+            <path d="M19,15 A7.5,7.5 0 0 1 5.5,17" />
+            <path d="M5,20.5 L5.3,16.7 L9.1,17" />
+          </svg>
         </button>
       </div>
+      <p className="shutter-caption" aria-hidden>
+        {shutterLabel}
+      </p>
 
-      {/* Le repli manuel, moins appuyé que la prise : avant, c'est le choix de
-          cadrer soi-même ; pendant, c'est le droit de s'en passer. */}
-      <div className="camera-actions camera-actions--second">
+      {/* Le conseil du moment, dit par le personnage, avec le repli manuel moins
+          appuyé que la prise : avant, c'est le choix de cadrer soi-même ;
+          pendant, c'est le droit de s'en passer. */}
+      <Tip speaker={speaker}>
+        <span>{hint}</span>
         {manual ? (
           <button
             type="button"
-            className="btn grow"
+            className="btn btn--small"
             onClick={() => {
               const main = pendingRef.current;
               if (main) finish(main, null);
@@ -411,16 +442,14 @@ export function Camera({ onCapture }: { onCapture: (shot: Shot) => void }) {
         ) : (
           <button
             type="button"
-            className="btn grow"
+            className="btn btn--small"
             onClick={() => void captureThenHandOver()}
             disabled={state !== 'ready' || busy}
           >
             {t('today.faceMyself')}
           </button>
         )}
-      </div>
-
-      <p className="faint small">{hint}</p>
+      </Tip>
     </div>
   );
 }

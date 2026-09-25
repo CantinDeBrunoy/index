@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { BackButton } from '@/components/BackButton';
 import { Camera } from '@/components/Camera';
@@ -10,8 +11,8 @@ import { InkReveal } from '@/components/InkReveal';
 import { QuickReactions, ReceivedReaction } from '@/components/Reactions';
 import { SaveBloom } from '@/components/SaveBloom';
 import type { Origin } from '@/components/SaveBloom';
-import { StreakBadge } from '@/components/Streak';
 import { ErrorBanner, OfflineBanner } from '@/components/States';
+import { Tip } from '@/components/Tip';
 import { readCache, writeCache } from '@/lib/cache';
 import { outfitOf } from '@/lib/character';
 import type { Outfit } from '@/lib/character';
@@ -23,7 +24,6 @@ import {
   isEmotionKey,
   readableTextOn,
   shadeOf,
-  washGradient,
 } from '@/lib/emotions';
 import { gestureOf } from '@/lib/ink';
 import type { Intensity } from '@/lib/emotions';
@@ -34,20 +34,50 @@ import { useAuth } from '@/state/AuthProvider';
 import { useEntries } from '@/state/EntriesProvider';
 import { useI18n } from '@/state/I18nProvider';
 
-export type Panel = 'mine' | 'theirs';
+type Step = 'emotion' | 'photo';
+
+/** « Gratitude · franche » : l'émotion et son cran, sur sa propre couleur. */
+function ChosenPill({ emotion, intensity, color }: { emotion: string; intensity: Intensity | null; color: string }) {
+  const { t } = useI18n();
+  return (
+    <span className="chosen-pill" style={{ background: color, color: readableTextOn(color) }}>
+      {t('today.chosenLabel', {
+        emotion: t(`emotions.${emotion}`),
+        intensity: intensity ? t(`today.intensities.${intensity}`).toLowerCase() : '',
+      })}
+    </span>
+  );
+}
+
+/** Le haut d'une étape : le retour, et le titre. */
+function StepHeader({ title, onBack, backLabel, aside }: { title: string; onBack: () => void; backLabel: string; aside?: React.ReactNode }) {
+  return (
+    <div className="step-header">
+      <button type="button" className="btn btn--icon back-button" onClick={onBack} aria-label={backLabel}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M15 5 L8 12 L15 19" />
+        </svg>
+      </button>
+      <h1 className="step-header__title">{title}</h1>
+      {aside}
+    </div>
+  );
+}
 
 /**
- * La journée en détail, ouverte depuis la page Aujourd'hui : ma journée (le
- * composeur tant qu'elle n'est pas faite) ou la sienne (sous sa couleur
- * jusqu'à ce qu'on la découvre). On passe de l'une à l'autre aux flèches ou
- * d'un glissement, comme avant ; la page Aujourd'hui ne fait qu'y mener.
+ * Ma journée, ouverte depuis la page Aujourd'hui, en trois temps comme sur
+ * les maquettes : l'émotion (et son cran), la photo, puis la journée
+ * enregistrée. Une fois validée, on peut encore la reprendre jusqu'à minuit
+ * — le passé, lui, ne se réécrit pas (voir la policy UPDATE de `entries`).
  */
-export function DayScreen({ initialPanel = 'mine' }: { initialPanel?: Panel }) {
-  const { t, locale } = useI18n();
-  const { partner } = useAuth();
-  const { today, mine, partnerEntries, submitToday, pending, online } = useEntries();
+export function MyDayScreen() {
+  const { t } = useI18n();
+  const navigate = useNavigate();
+  const { today, mine, submitToday, pending, online } = useEntries();
+  const { profile } = useAuth();
+  const outfit = outfitOf(profile);
 
-  const [panel, setPanel] = useState<Panel>(initialPanel);
+  const [step, setStep] = useState<Step>('emotion');
   const [editing, setEditing] = useState(false);
   const [emotion, setEmotion] = useState<string | null>(null);
   const [intensity, setIntensity] = useState<Intensity>(DEFAULT_INTENSITY);
@@ -55,6 +85,9 @@ export function DayScreen({ initialPanel = 'mine' }: { initialPanel?: Panel }) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // En correction, la photo déjà enregistrée fait foi tant qu'on n'en reprend
+  // pas une autre : on n'oblige pas à tout refaire pour changer une émotion.
+  const [retaking, setRetaking] = useState(false);
   /** Couleur et point de départ de l'encre, après une validation. */
   const [bloom, setBloom] = useState<{ color: string; from: Origin; gesture: Gesture } | null>(null);
   // Référence stable : un nouveau rendu du parent relancerait sinon le
@@ -64,6 +97,7 @@ export function DayScreen({ initialPanel = 'mine' }: { initialPanel?: Panel }) {
   const myEntry = mine[today] ?? null;
   const done = Boolean(myEntry) || Boolean(pending);
   const composing = !done || editing;
+  const keepsExistingPhoto = editing && !shot && !retaking && Boolean(myEntry?.photo_path);
 
   const previewUrls = useMemo(
     () => ({
@@ -79,9 +113,10 @@ export function DayScreen({ initialPanel = 'mine' }: { initialPanel?: Panel }) {
     };
   }, [previewUrls]);
 
-  // Une nouvelle journée : le composeur repart de zéro.
+  // Une nouvelle journée : le parcours repart de zéro.
   useEffect(() => {
     setEditing(false);
+    setStep('emotion');
     setEmotion(null);
     setIntensity(DEFAULT_INTENSITY);
     setShot(null);
@@ -94,11 +129,11 @@ export function DayScreen({ initialPanel = 'mine' }: { initialPanel?: Panel }) {
     setEmotion(previous?.emotion ?? null);
     // Le cran se relit de la couleur enregistrée : une correction repart de ce
     // qui avait été choisi, pas du cran par défaut.
-    setIntensity(
-      (previous ? intensityOf(previous.emotion, previous.color) : null) ?? DEFAULT_INTENSITY,
-    );
+    setIntensity((previous ? intensityOf(previous.emotion, previous.color) : null) ?? DEFAULT_INTENSITY);
     setNote(myEntry?.note ?? pending?.note ?? '');
     setShot(null);
+    setRetaking(false);
+    setStep('emotion');
     setEditing(true);
     setError(null);
   };
@@ -110,7 +145,7 @@ export function DayScreen({ initialPanel = 'mine' }: { initialPanel?: Panel }) {
   };
 
   // Le point de départ est relevé **au moment de l'appui** : le bouton
-  // disparaît avec le composeur dès que la journée est enregistrée, et sa
+  // disparaît avec le parcours dès que la journée est enregistrée, et sa
   // position ne serait plus lisible après.
   const submit = async (origin: Origin) => {
     if (!emotion) return;
@@ -134,333 +169,215 @@ export function DayScreen({ initialPanel = 'mine' }: { initialPanel?: Panel }) {
     }
   };
 
-  // Un glissement horizontal fait la même chose que les flèches : sur un
-  // téléphone, c'est le geste qu'on tente d'instinct.
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const onTouchStart = (event: React.TouchEvent) => {
-    const touch = event.touches[0];
-    touchStart.current = { x: touch.clientX, y: touch.clientY };
-  };
-  const onTouchEnd = (event: React.TouchEvent) => {
-    const start = touchStart.current;
-    touchStart.current = null;
-    if (!start) return;
-    const touch = event.changedTouches[0];
-    const dx = touch.clientX - start.x;
-    // On ignore les gestes trop verticaux : ce sont des défilements.
-    if (Math.abs(dx) < 60 || Math.abs(touch.clientY - start.y) > Math.abs(dx)) return;
-    setPanel(dx < 0 ? 'theirs' : 'mine');
-  };
-
-  const other: Panel = panel === 'mine' ? 'theirs' : 'mine';
-  const partnerName = partner?.display_name || t('calendar.partner');
-
-  // Le lavis du jour : la couleur choisie ne reste pas une pastille, elle
-  // teint le haut de l'écran. Avant tout choix, le papier reste nu.
-  const myColor = !composing
-    ? (myEntry?.color ?? pending?.color ?? null)
-    : emotion
-      ? shadeOf(emotion, intensity)
-      : null;
-  const theirEntry = partner ? (partnerEntries[todayInTimeZone(partner.timezone)] ?? null) : null;
-  const theirColor = done && theirEntry ? theirEntry.color : null;
-  const washColor = panel === 'mine' ? myColor : theirColor;
+  const color = emotion ? shadeOf(emotion, intensity) : null;
+  // Le personnage qui parle dans les bulles : moi, dans l'émotion choisie.
+  const speaker =
+    emotion && isEmotionKey(emotion) ? <Character emotion={emotion} color={color} outfit={outfit} size={50} still /> : null;
 
   return (
-    <div className="stack today-screen">
+    <div className="stack day-flow">
       {bloom ? (
-        <SaveBloom
-          color={bloom.color}
-          from={bloom.from}
-          gesture={bloom.gesture}
-          message={t('today.sealed')}
-          onDone={endBloom}
-        />
+        <SaveBloom color={bloom.color} from={bloom.from} gesture={bloom.gesture} message={t('today.sealed')} onDone={endBloom} />
       ) : null}
-      {washColor ? (
-        <div
-          className="wash"
-          aria-hidden
-          style={
-            {
-              '--wash-light': washGradient(washColor, false),
-              '--wash-dark': washGradient(washColor, true),
-            } as React.CSSProperties
-          }
-        />
-      ) : null}
-      <BackButton to="/" label={t('today.overview.back')} />
-      <div className="row-between">
-        <div className="stack-sm">
-          <h1>{t('today.title')}</h1>
-          <p className="faint small capitalize">{formatLongDate(today, locale)}</p>
-        </div>
-        <StreakBadge />
-      </div>
-
       {!online ? <OfflineBanner /> : null}
       {error ? <ErrorBanner message={error} /> : null}
 
-      <div className="switcher">
-        <button
-          type="button"
-          className="btn btn--icon"
-          aria-label={t('calendar.previous')}
-          onClick={() => setPanel(other)}
-        >
-          ‹
-        </button>
-        <strong>{panel === 'mine' ? t('today.mine') : t('today.partnerTitle')}</strong>
-        <button
-          type="button"
-          className="btn btn--icon"
-          aria-label={t('calendar.next')}
-          onClick={() => setPanel(other)}
-        >
-          ›
-        </button>
-      </div>
-
-      <div className="dots" aria-hidden>
-        <span className="dot-nav" data-active={panel === 'mine'} />
-        <span className="dot-nav" data-active={panel === 'theirs'} />
-      </div>
-
-      <div className="panel" key={panel} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        {panel === 'mine' ? (
-          composing ? (
-            <Composer
-              editing={editing}
-              entry={myEntry}
-              emotion={emotion}
-              onEmotion={setEmotion}
-              intensity={intensity}
-              onIntensity={setIntensity}
-              shot={shot}
-              previewUrls={previewUrls}
-              onShot={setShot}
-              note={note}
-              onNote={setNote}
-              busy={busy}
-              onSubmit={(origin) => void submit(origin)}
-              onCancel={cancelEditing}
-            />
-          ) : (
-            <MyDay
-              entry={myEntry}
-              pendingColor={pending?.color ?? null}
-              pendingEmotion={pending?.emotion ?? null}
-              pendingNote={pending?.note ?? null}
-              isPending={Boolean(pending)}
-              onEdit={startEditing}
-            />
-          )
-        ) : (
-          <TheirDay unlocked={done} entries={partnerEntries} name={partnerName} />
-        )}
-      </div>
-    </div>
-  );
-}
-
-type ComposerProps = {
-  editing: boolean;
-  entry: Entry | null;
-  emotion: string | null;
-  onEmotion: (value: string | null) => void;
-  intensity: Intensity;
-  onIntensity: (value: Intensity) => void;
-  shot: Shot | null;
-  previewUrls: { main: string | null; selfie: string | null };
-  onShot: (value: Shot | null) => void;
-  note: string;
-  onNote: (value: string) => void;
-  busy: boolean;
-  onSubmit: (origin: Origin) => void;
-  onCancel: () => void;
-};
-
-function Composer({
-  editing,
-  entry,
-  emotion,
-  onEmotion,
-  intensity,
-  onIntensity,
-  shot,
-  previewUrls,
-  onShot,
-  note,
-  onNote,
-  busy,
-  onSubmit,
-  onCancel,
-}: ComposerProps) {
-  const { t } = useI18n();
-  const { profile } = useAuth();
-  const outfit = outfitOf(profile);
-  // En correction, la photo déjà enregistrée fait foi tant qu'on n'en reprend
-  // pas une autre : on n'oblige pas à tout refaire pour changer une émotion.
-  const [retaking, setRetaking] = useState(false);
-  const keepsExistingPhoto = editing && !shot && !retaking && Boolean(entry?.photo_path);
-
-  return (
-    <div className="stack">
-      {emotion ? (
-        <div className="card row-between">
-          <span className="row">
-            {/* Le personnage répond au choix : il prend l'émotion, et le cran
-                d'intensité change sa teinte sous les yeux. */}
-            <Character
-              emotion={isEmotionKey(emotion) ? emotion : null}
-              color={shadeOf(emotion, intensity)}
-              outfit={outfit}
-              size={72}
-            />
-            <span>{t(`emotions.${emotion}`)}</span>
-          </span>
-          <button type="button" className="btn" onClick={() => onEmotion(null)}>
-            {t('today.change')}
-          </button>
-        </div>
-      ) : (
+      {!composing ? (
+        <ValidatedDay onResume={startEditing} />
+      ) : step === 'emotion' || !emotion ? (
         <>
-          {/* Pas encore de teinte : le personnage attend, incolore. */}
-          <Character emotion={null} state="waiting" outfit={outfit} size={96} className="character--centered" />
-          <p className="muted center">{t('today.chooseEmotion')}</p>
-          <EmotionGrid value={emotion} onChange={onEmotion} />
-        </>
-      )}
-
-      {emotion ? (
-        <>
+          <StepHeader
+            title={t('today.feelTitle')}
+            backLabel={t('today.overview.back')}
+            onBack={() => (editing ? cancelEditing() : navigate('/'))}
+          />
+          {/* Le personnage répond au choix : il prend l'émotion, et le cran change sa teinte sous les yeux. */}
+          <div className="day-flow__character">
+            {emotion && isEmotionKey(emotion) ? (
+              <Character emotion={emotion} color={color} outfit={outfit} size={132} />
+            ) : (
+              <Character emotion={null} state="waiting" outfit={outfit} size={132} />
+            )}
+          </div>
+          <EmotionGrid value={emotion} onChange={setEmotion} />
           <div className="stack-sm">
-            <span className="section-title" style={{ marginBottom: 0 }}>
+            <span className="day-flow__label" id="intensity-label">
               {t('today.intensityStep')}
             </span>
-            <div className="intensities" role="radiogroup" aria-label={t('today.intensityStep')}>
-              {INTENSITIES.map((level) => {
-                const color = shadeOf(emotion, level) ?? undefined;
-                return (
-                  <button
-                    key={level}
-                    type="button"
-                    role="radio"
-                    className="intensity"
-                    aria-checked={intensity === level}
-                    onClick={() => onIntensity(level)}
-                    style={{ background: color, color: color ? readableTextOn(color) : undefined }}
-                  >
-                    {t(`today.intensities.${level}`)}
-                  </button>
-                );
-              })}
+            <div className="intensities" role="radiogroup" aria-labelledby="intensity-label">
+              {INTENSITIES.map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  role="radio"
+                  className="intensity"
+                  aria-checked={intensity === level}
+                  onClick={() => setIntensity(level)}
+                >
+                  {t(`today.intensities.${level}`)}
+                </button>
+              ))}
             </div>
           </div>
-
-          <div className="stack-sm">
-            <span className="section-title" style={{ marginBottom: 0 }}>
-              {t('today.photoStep')}
-            </span>
-            <p className="faint small">
-              {keepsExistingPhoto ? t('today.keptPhoto') : t('today.photoHint')}
-            </p>
-          </div>
-
-          {previewUrls.main ? (
-            <div className="stack">
-              <PhotoPair
-                main={<img className="photo" src={previewUrls.main} alt={t('today.photoStep')} />}
-                inset={
-                  previewUrls.selfie ? (
-                    <img className="photo" src={previewUrls.selfie} alt={t('today.selfieStep')} />
-                  ) : null
-                }
-              />
-              <button type="button" className="btn" onClick={() => onShot(null)}>
-                {t('today.retake')}
-              </button>
-            </div>
-          ) : keepsExistingPhoto ? (
-            <div className="stack">
-              <EntryPhotos entry={entry} />
-              <button type="button" className="btn" onClick={() => setRetaking(true)}>
-                {t('today.retakePhoto')}
-              </button>
-            </div>
-          ) : (
-            <Camera onCapture={onShot} />
-          )}
-
-          <div className="field">
-            <label htmlFor="note">{t('today.noteLabel')}</label>
-            <input
-              id="note"
-              className="input"
-              maxLength={140}
-              placeholder={t('today.notePlaceholder')}
-              value={note}
-              onChange={(event) => onNote(event.target.value)}
-            />
-          </div>
-
           <button
             type="button"
-            className="btn btn--primary btn--block"
-            onClick={(event) => {
-              const rect = event.currentTarget.getBoundingClientRect();
-              onSubmit({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
-            }}
-            disabled={busy || (!shot && !keepsExistingPhoto)}
+            className="btn btn--primary btn--block btn--tall day-flow__next"
+            disabled={!emotion}
+            onClick={() => setStep('photo')}
           >
-            {busy ? t('today.submitting') : editing ? t('today.save') : t('today.submit')}
+            {t('today.continue')}
           </button>
+        </>
+      ) : (
+        <>
+          <StepHeader title={t('today.photoStep')} backLabel={t('today.backToEmotion')} onBack={() => setStep('emotion')} />
+          <StepProgress current={shot || keepsExistingPhoto ? 3 : 2} color={color ?? 'var(--text)'}>
+            <ChosenPill emotion={emotion} intensity={intensity} color={color ?? '#D8D8D8'} />
+          </StepProgress>
 
-          {editing ? (
-            <button type="button" className="btn btn--block btn--ghost" onClick={onCancel} disabled={busy}>
-              {t('today.cancel')}
-            </button>
+          {previewUrls.main ? (
+            <PhotoPair
+              main={<img className="photo" src={previewUrls.main} alt={t('today.photoStep')} />}
+              inset={previewUrls.selfie ? <img className="photo" src={previewUrls.selfie} alt={t('today.selfieStep')} /> : null}
+            />
+          ) : keepsExistingPhoto ? (
+            <EntryPhotos entry={myEntry} />
+          ) : (
+            <Camera onCapture={setShot} color={color} speaker={speaker} />
+          )}
+
+          {previewUrls.main || keepsExistingPhoto ? (
+            <>
+              <div className="note-card">
+                <label htmlFor="note">{t('today.noteLabel')}</label>
+                <input
+                  id="note"
+                  maxLength={140}
+                  placeholder={t('today.notePlaceholder')}
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                />
+              </div>
+              <div className="day-flow__actions">
+                <button
+                  type="button"
+                  className="btn btn--outline btn--tall"
+                  onClick={() => (keepsExistingPhoto ? setRetaking(true) : setShot(null))}
+                  disabled={busy}
+                >
+                  {keepsExistingPhoto ? t('today.retakePhoto') : t('today.retake')}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--primary btn--tall grow"
+                  disabled={busy}
+                  onClick={(event) => {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    void submit({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+                  }}
+                >
+                  {busy ? t('today.submitting') : editing ? t('today.save') : t('today.submit')}
+                </button>
+              </div>
+              <Tip speaker={speaker}>
+                <span>{keepsExistingPhoto ? t('today.keptPhoto') : t('today.insetHint')}</span>
+              </Tip>
+            </>
           ) : null}
         </>
-      ) : null}
+      )}
     </div>
   );
 }
 
-type MyDayProps = {
-  entry: Entry | null;
-  isPending: boolean;
-  pendingColor: string | null;
-  pendingEmotion: string | null;
-  pendingNote: string | null;
-  onEdit: () => void;
-};
-
-function MyDay({ entry, isPending, pendingColor, pendingEmotion, pendingNote, onEdit }: MyDayProps) {
+/** Les trois étapes en trois traits : faites dans la teinte du jour, en cours à l'encre. */
+function StepProgress({ current, color, children }: { current: 1 | 2 | 3; color: string; children?: React.ReactNode }) {
   const { t } = useI18n();
+  const names = ['emotion', 'photo', 'check'] as const;
+  return (
+    <div className="step-progress">
+      <div
+        className="step-progress__bars"
+        role="img"
+        aria-label={t('today.step', { current, name: t(`today.stepNames.${names[current - 1]}`) })}
+      >
+        {[1, 2, 3].map((n) => (
+          <span
+            key={n}
+            className="step-progress__bar"
+            data-state={n < current ? 'done' : n === current ? 'current' : 'todo'}
+            style={n < current ? { background: color } : undefined}
+          />
+        ))}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** Ma journée enregistrée : l'émotion, les photos, la note, et de quoi la reprendre. */
+function ValidatedDay({ onResume }: { onResume: () => void }) {
+  const { t } = useI18n();
+  const navigate = useNavigate();
   const { profile } = useAuth();
-  const color = entry?.color ?? pendingColor ?? '#D8D8D8';
-  const emotion = entry?.emotion ?? pendingEmotion;
-  const note = entry?.note ?? pendingNote;
+  const { today, mine, pending } = useEntries();
+  const entry = mine[today] ?? null;
+  const color = entry?.color ?? pending?.color ?? '#D8D8D8';
+  const emotion = entry?.emotion ?? pending?.emotion ?? null;
+  const note = entry?.note ?? pending?.note ?? null;
+  const isPending = Boolean(pending) && !entry;
 
   return (
-    <div className="stack">
-      <div className="hero hero--character" style={{ background: color, color: readableTextOn(color) }}>
-        <Character emotion={isEmotionKey(emotion) ? emotion : null} color={color} outfit={outfitOf(profile)} size={96} />
-        <div className="stack-sm">
-          <strong style={{ fontSize: 22 }}>{emotion ? t(`emotions.${emotion}`) : ''}</strong>
-          <span className="small">{t('today.lockedTitle')}</span>
-        </div>
+    <>
+      <StepHeader
+        title={t('today.mine')}
+        backLabel={t('today.overview.back')}
+        onBack={() => navigate('/')}
+        aside={emotion ? <ChosenPill emotion={emotion} intensity={intensityOf(emotion, color)} color={color} /> : null}
+      />
+      <div className="day-flow__character day-flow__character--small">
+        <Character emotion={isEmotionKey(emotion) ? emotion : null} color={color} outfit={outfitOf(profile)} size={84} />
       </div>
-      {entry?.photo_path ? <EntryPhotos entry={entry} /> : null}
-      <ReceivedReaction entry={entry} />
-      {note ? <p>{note}</p> : null}
-      <p className="faint small">{isPending ? t('today.pending') : t('today.lockedHint')}</p>
-      {isPending ? null : (
-        <button type="button" className="btn btn--block" onClick={onEdit}>
-          {t('today.edit')}
-        </button>
+      {entry?.photo_path ? (
+        <div className="photo-with-pill">
+          <EntryPhotos entry={entry} />
+          <ReceivedReaction entry={entry} />
+        </div>
+      ) : null}
+      {note ? <p className="note-quote">« {note} »</p> : null}
+      {isPending ? (
+        <p className="faint small">{t('today.pending')}</p>
+      ) : (
+        <div className="resume-row">
+          <span className="faint small">{t('today.resumeHint')}</span>
+          <button type="button" className="btn btn--primary" onClick={onResume}>
+            {t('today.resume')}
+          </button>
+        </div>
       )}
+    </>
+  );
+}
+
+/**
+ * La journée du binôme, ouverte depuis la page Aujourd'hui. Sa maquette à elle
+ * viendra ; en attendant, le dévoilement est celui d'avant.
+ */
+export function TheirDayScreen() {
+  const { t, locale } = useI18n();
+  const { partner } = useAuth();
+  const { today, mine, pending, partnerEntries, online } = useEntries();
+  const name = partner?.display_name || t('calendar.partner');
+  const done = Boolean(mine[today]) || Boolean(pending);
+  return (
+    <div className="stack">
+      <BackButton to="/" label={t('today.overview.back')} />
+      <div className="stack-sm">
+        <h1>{t('today.partnerTitle')}</h1>
+        <p className="faint small capitalize">{formatLongDate(today, locale)}</p>
+      </div>
+      {!online ? <OfflineBanner /> : null}
+      <TheirDay unlocked={done} entries={partnerEntries} name={name} />
     </div>
   );
 }

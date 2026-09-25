@@ -164,11 +164,6 @@ export function PhotoPair({ main, inset }: { main: ReactNode; inset: ReactNode |
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onKeyDown={onKeyDown}
-        // L'écran « Aujourd'hui » change de panneau au glissement horizontal.
-        // Sans cette coupure, déplacer la vignette vers la droite ferait aussi
-        // basculer sur la journée du binôme.
-        onTouchStart={(event) => event.stopPropagation()}
-        onTouchEnd={(event) => event.stopPropagation()}
         onClick={() => {
           if (draggedRef.current) {
             draggedRef.current = false;
