@@ -1,7 +1,9 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { PhotoImage } from '@/components/PhotoImage';
+import { PhotoViewer } from '@/components/PhotoViewer';
+import type { ViewerPhoto } from '@/components/PhotoViewer';
 import { DRAG_THRESHOLD, asFraction, clampToFrame, nudgeOffset } from '@/lib/inset';
 import type { Box, Direction, Frame, Spot } from '@/lib/inset';
 import type { Entry } from '@/lib/types';
@@ -41,7 +43,19 @@ type Drag = {
  * caméra, n'a pas de vignette : on affiche alors la photo seule, sans cadre
  * vide qui ferait croire à une image manquante.
  */
-export function PhotoPair({ main, inset }: { main: ReactNode; inset: ReactNode | null }) {
+export function PhotoPair({
+  main,
+  inset,
+  onOpen,
+}: {
+  main: ReactNode;
+  inset: ReactNode | null;
+  /**
+   * Ouvre en grand la photo affichée en grand : `main` ou `inset`, selon
+   * l'échange en cours. Sans lui, la grande photo ne réagit pas au toucher.
+   */
+  onOpen?: (shown: 'main' | 'inset') => void;
+}) {
   const { t } = useI18n();
   const [swapped, setSwapped] = useState(false);
   /** Position choisie, en fraction du cadre. `null` = la place de départ. */
@@ -56,9 +70,21 @@ export function PhotoPair({ main, inset }: { main: ReactNode; inset: ReactNode |
   // vignette dans un coin interchangerait les photos par-dessus le marché.
   const draggedRef = useRef(false);
 
-  if (!inset) return <>{main}</>;
+  // La grande photo s'ouvre d'un appui ; la vignette, elle, garde ses gestes
+  // (échanger, déplacer). Ce sont deux éléments voisins : un appui sur l'une
+  // n'atteint jamais l'autre.
+  const opener = (content: ReactNode, shown: 'main' | 'inset') =>
+    onOpen ? (
+      <button type="button" className="photo-pair__open" onClick={() => onOpen(shown)} aria-label={t('today.photoOpen')}>
+        {content}
+      </button>
+    ) : (
+      content
+    );
 
-  const large = swapped ? inset : main;
+  if (!inset) return <>{opener(main, 'main')}</>;
+
+  const large = opener(swapped ? inset : main, swapped ? 'inset' : 'main');
   const small = swapped ? main : inset;
 
   const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -180,14 +206,27 @@ export function PhotoPair({ main, inset }: { main: ReactNode; inset: ReactNode |
   );
 }
 
-/** Les deux photos d'une entrée enregistrée — une seule si elle n'en a qu'une. */
+/**
+ * Les deux photos d'une entrée enregistrée — une seule si elle n'en a qu'une.
+ * Un appui sur la grande les ouvre en grand (`PhotoViewer`).
+ */
 export function EntryPhotos({ entry, alt }: { entry: Entry | null; alt?: string }) {
   const { t } = useI18n();
+  const [open, setOpen] = useState<number | null>(null);
+  // Référence stable : la visionneuse range ses écouteurs à chaque nouvelle
+  // fonction, et le sondage des entrées fait un rendu toutes les 60 s.
+  const close = useCallback(() => setOpen(null), []);
   const label = alt ?? t('today.photoStep');
+  const photos: ViewerPhoto[] = [{ path: entry?.photo_path ?? null, alt: label, name: t('today.photoScene') }];
+  if (entry?.selfie_path) photos.push({ path: entry.selfie_path, alt: t('today.selfieStep'), name: t('today.photoFace') });
   return (
-    <PhotoPair
-      main={<PhotoImage path={entry?.photo_path ?? null} alt={label} />}
-      inset={entry?.selfie_path ? <PhotoImage path={entry.selfie_path} alt={t('today.selfieStep')} /> : null}
-    />
+    <>
+      <PhotoPair
+        main={<PhotoImage path={entry?.photo_path ?? null} alt={label} />}
+        inset={entry?.selfie_path ? <PhotoImage path={entry.selfie_path} alt={t('today.selfieStep')} /> : null}
+        onOpen={entry?.photo_path ? (shown) => setOpen(shown === 'main' ? 0 : 1) : undefined}
+      />
+      {open !== null ? <PhotoViewer photos={photos} start={open} onClose={close} /> : null}
+    </>
   );
 }
