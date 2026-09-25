@@ -8,16 +8,30 @@ export type Gym = LatLng & {
 };
 
 /**
- * Les salles comparées. Le point GPS sert de point d'arrivée au calcul et à
- * Waze : mieux vaut le poser sur l'entrée ou le parking qu'au milieu du
- * bâtiment. (Dans Google Maps, un appui long sur le lieu affiche ses
+ * Les salles comparées : quatre Fitness Park. Le point GPS sert d'arrivée au
+ * calcul et à Waze : mieux vaut le poser sur l'entrée ou le parking qu'au
+ * milieu du bâtiment. (Dans Google Maps, un appui long sur le lieu affiche ses
  * coordonnées.)
  *
- * TODO: remplacer ces exemples par les 4 vraies salles.
+ * Noms courts : sur un iPhone, le nom partage sa ligne avec le temps de
+ * trajet. Adresses tirées de fitnesspark.fr, points GPS d'OpenStreetMap et de
+ * la Base Adresse Nationale (septembre 2026).
  */
 export const GYMS: readonly Gym[] = [
-  { id: 'a', name: 'Salle A', address: 'Exemple — République, Paris', lat: 48.8674, lng: 2.3636 },
-  { id: 'b', name: 'Salle B', address: 'Exemple — Bastille, Paris', lat: 48.8532, lng: 2.3691 },
-  { id: 'c', name: 'Salle C', address: 'Exemple — Nation, Paris', lat: 48.8484, lng: 2.3959 },
-  { id: 'd', name: 'Salle D', address: 'Exemple — Gare de Lyon, Paris', lat: 48.8443, lng: 2.3743 },
+  // Bâtiment « Fitness Park » cartographié dans OpenStreetMap.
+  { id: 'montgeron', name: 'Montgeron', address: 'ZA Maurice Garin, Montgeron', lat: 48.71721, lng: 2.4418 },
+  // Officiellement « Quincy-sous-Sénart », à côté du Cora Val d'Yerres de
+  // Boussy. Le bâtiment n'est pas cartographié : point de la Base Adresse
+  // Nationale au milieu de la rue (300 m de long).
+  {
+    id: 'boussy',
+    name: 'Boussy',
+    address: '52 rue de la Marnière, Quincy-sous-Sénart',
+    lat: 48.68335,
+    lng: 2.53725,
+  },
+  // Bâtiment « Fitness Park » cartographié dans OpenStreetMap, ZAC de la Haie Passart.
+  { id: 'brie', name: 'Brie', address: '14 bis rue Gustave Eiffel, Brie-Comte-Robert', lat: 48.70345, lng: 2.59859 },
+  // Adresse officielle du centre commercial, dont la salle fait partie.
+  { id: 'lieusaint', name: 'Lieusaint', address: 'Westfield Carré Sénart, Lieusaint', lat: 48.61318, lng: 2.54853 },
 ];
