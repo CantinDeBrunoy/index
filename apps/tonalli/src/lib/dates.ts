@@ -254,6 +254,26 @@ export function formatLongDate(key: string, locale: string): string {
   }).format(keyToNeutralDate(key));
 }
 
+/** « mercredi 23 septembre » : la date sans l'année, pour un en-tête du jour. */
+export function formatDayLabel(key: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  }).format(keyToNeutralDate(key));
+}
+
+/**
+ * L'heure d'un instant **dans le fuseau d'une personne** : l'heure à laquelle
+ * le binôme a posé sa journée, telle qu'elle était chez lui — pas chez moi.
+ */
+export function formatTimeIn(instant: string, timeZone: string, locale: string): string | null {
+  const at = new Date(instant);
+  if (Number.isNaN(at.getTime())) return null;
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone }).format(at);
+}
+
 export function formatMonthLabel({ year, month }: YearMonth, locale: string): string {
   return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
     new Date(Date.UTC(year, month, 12)),

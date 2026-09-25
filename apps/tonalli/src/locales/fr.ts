@@ -148,6 +148,25 @@ export const fr = {
     lockedHint: 'Tu peux encore la corriger jusqu’à minuit.',
     pending: 'En attente de connexion — ta journée partira dès le retour du réseau.',
     partnerTitle: 'Sa journée',
+    theirDayTitle: 'La journée de {{name}}',
+    theirTime: '{{time}}, heure de {{name}}',
+    revealHint: 'appuie pour révéler',
+    // Ce que fait son personnage, en quelques mots, sous le nom de l'émotion.
+    // Sans pronom : l'app ne sait pas qui est de l'autre côté.
+    gestures: {
+      joy: 'rebondit sur place',
+      serenity: 'médite, en tailleur',
+      love: 'se berce doucement',
+      gratitude: 'tend un cadeau, à deux mains',
+      pride: 'les poings sur les hanches',
+      excitement: 'saute sur place',
+      nostalgia: 'serre un souvenir contre soi',
+      tiredness: 'dort sur son coussin',
+      sadness: "se frotte l'œil",
+      anxiety: 'regarde sa montre sans arrêt',
+      anger: 'se gonfle de colère',
+      neutral: 'marche tranquillement',
+    },
     partnerWaiting: "{{name}} n'a pas encore rempli sa journée.",
     partnerHidden: 'Valide ta journée pour voir la sienne.',
     // Sur la carte couverte de la couleur du binôme : c'est à la fois
@@ -195,6 +214,7 @@ export const fr = {
     label: 'Réagir à sa journée',
     hint: 'Un appui suffit pour lui répondre.',
     remove: 'Appuie sur le même pour retirer ta réaction.',
+    chosen: '{{name}} — le même pour retirer',
     failed: "La réaction n'est pas partie. Réessaie.",
     offline: 'Hors ligne : impossible de réagir pour le moment.',
     received: '{{name}} a réagi',

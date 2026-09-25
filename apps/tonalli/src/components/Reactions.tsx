@@ -18,7 +18,7 @@ import { useI18n } from '@/state/I18nProvider';
  * Ne s'affiche que sur la journée du binôme — on ne réagit pas à la sienne,
  * et la base le refuserait de toute façon.
  */
-export function QuickReactions({ entry }: { entry: Entry | null }) {
+export function QuickReactions({ entry, tint }: { entry: Entry | null; tint?: string | null }) {
   const { t } = useI18n();
   const { profile } = useAuth();
   const { myReactions, react, online } = useEntries();
@@ -44,9 +44,21 @@ export function QuickReactions({ entry }: { entry: Entry | null }) {
     }
   };
 
+  const hint = !online
+    ? t('reactions.offline')
+    : failed
+      ? t('reactions.failed')
+      : current
+        ? t('reactions.chosen', { name: t(`reactions.names.${current}`) })
+        : t('reactions.hint');
+
   return (
-    <div className="stack-sm">
-      <div className="reactions" role="group" aria-label={t('reactions.label')}>
+    <div className="quick-reactions">
+      <div className="quick-reactions__head">
+        <span className="quick-reactions__title">{t('reactions.label')}</span>
+        <span className="quick-reactions__hint" aria-live="polite">{hint}</span>
+      </div>
+      <div className="reactions reactions--quick" role="group" aria-label={t('reactions.label')}>
         {REACTIONS.map((reaction) => (
           <button
             key={reaction.key}
@@ -56,21 +68,15 @@ export function QuickReactions({ entry }: { entry: Entry | null }) {
             aria-label={t(`reactions.names.${reaction.key}`)}
             title={t(`reactions.names.${reaction.key}`)}
             disabled={!online || busy !== null}
+            // La réaction choisie prend le cran léger de la couleur du binôme :
+            // un geste posé sur sa journée, pas un état d'interface.
+            style={current === reaction.key && tint ? { background: tint } : undefined}
             onClick={() => void pick(reaction.key)}
           >
             <span aria-hidden>{reaction.emoji}</span>
           </button>
         ))}
       </div>
-      <p className="faint small">
-        {!online
-          ? t('reactions.offline')
-          : failed
-            ? t('reactions.failed')
-            : current
-              ? t('reactions.remove')
-              : t('reactions.hint')}
-      </p>
     </div>
   );
 }
