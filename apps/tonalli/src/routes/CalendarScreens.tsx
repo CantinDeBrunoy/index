@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { NavLink } from 'react-router-dom';
 
 import { Breakdown } from '@/components/Breakdown';
 import { MonthGrid, YearMosaic } from '@/components/calendar';
@@ -81,6 +82,7 @@ function CalendarView({ title, entries, hiddenDates, today }: ViewProps) {
 
   return (
     <div className="stack">
+      <CalendarSwitch />
       <h1>{title}</h1>
 
       {!online ? <OfflineBanner /> : null}
@@ -162,6 +164,24 @@ function CalendarView({ title, entries, hiddenDates, today }: ViewProps) {
   );
 }
 
+/**
+ * Mon calendrier ou le sien : une bascule en tête d'écran, puisque la barre
+ * du bas n'a plus qu'un onglet « Calendrier ».
+ */
+function CalendarSwitch() {
+  const { t } = useI18n();
+  return (
+    <nav className="segmented" aria-label={t('calendar.title')}>
+      <NavLink to="/me" className="segmented__link">
+        {t('calendar.mine')}
+      </NavLink>
+      <NavLink to="/partner" className="segmented__link">
+        {t('calendar.partner')}
+      </NavLink>
+    </nav>
+  );
+}
+
 export function MyCalendarScreen() {
   const { t } = useI18n();
   const { mine, today } = useEntries();
@@ -176,6 +196,7 @@ export function PartnerCalendarScreen() {
   if (!partner) {
     return (
       <div className="stack">
+        <CalendarSwitch />
         <h1>{t('calendar.partner')}</h1>
         <p className="muted">{t('calendar.noPartner')}</p>
       </div>

@@ -21,7 +21,7 @@ import { useI18n } from '@/state/I18nProvider';
  * Quand la journée du jour n'est pas encore remplie, le badge reste là mais
  * pâlit : la série n'est pas perdue, elle attend.
  */
-export function StreakBadge() {
+export function StreakBadge({ captioned = false }: { captioned?: boolean }) {
   const { t } = useI18n();
   const { profile } = useAuth();
   const { mine, pending, today } = useEntries();
@@ -39,7 +39,7 @@ export function StreakBadge() {
   const symbol = symbolOf(profile?.streak_symbol);
   const label = t(streak.length > 1 ? 'streak.daysPlural' : 'streak.days', { count: streak.length });
 
-  return (
+  const badge = (
     <span
       className="streak"
       data-waiting={!streak.todayDone}
@@ -47,7 +47,22 @@ export function StreakBadge() {
     >
       <span aria-hidden>{symbol}</span>
       <strong>{streak.length}</strong>
-      <span className="visually-hidden">{label}</span>
+      <span className="visually-hidden">{streak.todayDone ? label : `${label}, ${t('streak.waiting')}`}</span>
+    </span>
+  );
+  if (!captioned) return badge;
+
+  // Sur la page Aujourd'hui, une ligne sous le badge dit ce qu'il compte —
+  // ou, tant que la journée n'est pas remplie, qu'elle attend (sans reproche :
+  // la série n'est pas perdue).
+  return (
+    <span className="streak-captioned">
+      {badge}
+      <span className="streak-caption" aria-hidden>
+        {streak.todayDone
+          ? t(streak.length > 1 ? 'streak.captionMany' : 'streak.captionOne')
+          : t('streak.captionWaiting')}
+      </span>
     </span>
   );
 }

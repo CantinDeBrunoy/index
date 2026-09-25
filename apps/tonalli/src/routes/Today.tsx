@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { BackButton } from '@/components/BackButton';
 import { Camera } from '@/components/Camera';
 import { Character } from '@/components/Character';
 import { DuoScene } from '@/components/DuoScene';
@@ -33,14 +34,20 @@ import { useAuth } from '@/state/AuthProvider';
 import { useEntries } from '@/state/EntriesProvider';
 import { useI18n } from '@/state/I18nProvider';
 
-type Panel = 'mine' | 'theirs';
+export type Panel = 'mine' | 'theirs';
 
-export function TodayScreen() {
+/**
+ * La journée en détail, ouverte depuis la page Aujourd'hui : ma journée (le
+ * composeur tant qu'elle n'est pas faite) ou la sienne (sous sa couleur
+ * jusqu'à ce qu'on la découvre). On passe de l'une à l'autre aux flèches ou
+ * d'un glissement, comme avant ; la page Aujourd'hui ne fait qu'y mener.
+ */
+export function DayScreen({ initialPanel = 'mine' }: { initialPanel?: Panel }) {
   const { t, locale } = useI18n();
   const { partner } = useAuth();
   const { today, mine, partnerEntries, submitToday, pending, online } = useEntries();
 
-  const [panel, setPanel] = useState<Panel>('mine');
+  const [panel, setPanel] = useState<Panel>(initialPanel);
   const [editing, setEditing] = useState(false);
   const [emotion, setEmotion] = useState<string | null>(null);
   const [intensity, setIntensity] = useState<Intensity>(DEFAULT_INTENSITY);
@@ -182,6 +189,7 @@ export function TodayScreen() {
           }
         />
       ) : null}
+      <BackButton to="/" label={t('today.overview.back')} />
       <div className="row-between">
         <div className="stack-sm">
           <h1>{t('today.title')}</h1>
@@ -537,7 +545,7 @@ function TheirDay({
  * de sa journée : elle montre son émotion, donc elle se découvre avec elle,
  * au toucher, jamais avant.
  */
-function PairScene({
+export function PairScene({
   mine,
   pending,
   theirs,

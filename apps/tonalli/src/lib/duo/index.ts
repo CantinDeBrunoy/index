@@ -61,3 +61,16 @@ export function sheetsOf(scene: DuoSceneModel): string[] {
   }
   return [...names].sort();
 }
+
+/**
+ * La clé de traduction de la phrase qui raconte la scène (`duo.scenes.*`).
+ * Une phrase par paire sans ordre : c'est l'émotion qui vient d'abord dans
+ * la palette qui mène, comme dans les livres de scènes. Neutre ne joue avec
+ * personne, et a sa propre phrase.
+ */
+export function sceneNoteKey(a: EmotionKey, b: EmotionKey): string {
+  if (a === 'neutral' || b === 'neutral') return 'duo.scenes.neutral';
+  const order = Object.keys(CANVAS_KEY);
+  const [lead, other] = order.indexOf(a) <= order.indexOf(b) ? [a, b] : [b, a];
+  return `duo.scenes.${lead}_${other}`;
+}

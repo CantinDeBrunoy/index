@@ -8,7 +8,8 @@ import { MyCalendarScreen, PartnerCalendarScreen } from '@/routes/CalendarScreen
 import { CharacterScreen } from '@/routes/CharacterScreen';
 import { LinkPartnerScreen } from '@/routes/LinkPartner';
 import { SettingsScreen } from '@/routes/Settings';
-import { TodayScreen } from '@/routes/Today';
+import { DayScreen } from '@/routes/Today';
+import { TodayOverview } from '@/routes/TodayOverview';
 import { AuthProvider, useAuth } from '@/state/AuthProvider';
 import { EntriesProvider } from '@/state/EntriesProvider';
 import { I18nProvider, useI18n } from '@/state/I18nProvider';
@@ -103,7 +104,9 @@ export function App() {
                 <Route path="/link" element={<LinkRoute />} />
                 <Route element={<RequirePartner />}>
                   <Route element={<AppShell />}>
-                    <Route path="/" element={<TodayScreen />} />
+                    <Route path="/" element={<TodayOverview />} />
+                    <Route path="/day" element={<DayScreen key="mine" />} />
+                    <Route path="/day/theirs" element={<DayScreen key="theirs" initialPanel="theirs" />} />
                     <Route path="/me" element={<MyCalendarScreen />} />
                     <Route path="/partner" element={<PartnerCalendarScreen />} />
                     <Route path="/settings" element={<SettingsScreen />} />

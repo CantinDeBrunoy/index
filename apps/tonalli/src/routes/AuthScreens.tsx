@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { BackButton } from '@/components/BackButton';
 import { Character } from '@/components/Character';
 import { Sun, WelcomeSun } from '@/components/WelcomeSun';
 import { LOCALES } from '@/lib/i18n';
@@ -55,13 +56,7 @@ function LanguagePicker() {
 /** Retour à l'accueil, en haut à gauche des formulaires. */
 function BackToWelcome() {
   const { t } = useI18n();
-  return (
-    <Link to="/welcome" className="btn btn--icon auth-back" aria-label={t('auth.back')}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M15 5 L8 12 L15 19" />
-      </svg>
-    </Link>
-  );
+  return <BackButton to="/welcome" label={t('auth.back')} />;
 }
 
 /**

@@ -119,7 +119,8 @@ src/
   routes/
     AuthScreens        accueil (le soleil qui passe par les douze émotions), connexion, inscription
     LinkPartner        code d'invitation, écran bloquant sans binôme
-    Today              les deux panneaux (ma journée / sa journée) + composeur
+    TodayOverview      la page Aujourd'hui : nos deux personnages, une phrase, les portes vers les journées
+    Today              la journée en détail (/day, /day/theirs) : composeur, ma journée, la sienne sous sa couleur
     CalendarScreens    mois, mosaïque année, répartition — mien et du binôme
     Settings           binôme, langue, rappel, compte, données
     CharacterScreen    « Mon personnage » : la tenue, une rangée par catégorie
@@ -344,7 +345,19 @@ Dans « Sa journée », mon personnage et celui du binôme partagent un décor e
 une horloge — c'est ce qui permet à un ballon de passer vraiment de l'un à
 l'autre. La scène vit **sous la nappe du dévoilement**, avec les photos,
 parce qu'elle montre l'émotion du binôme : la réciprocité la couvre comme le
-reste de sa journée. Moi à gauche, toujours ; chacun porte sa teinte et sa
+reste de sa journée.
+
+**La page Aujourd'hui garde la surprise.** Elle montre nos deux personnages
+côte à côte ; tant que sa journée n'est pas découverte, le sien porte sa
+teinte mais se tient dans la pose neutre, immobile — sa couleur, pas encore
+son geste — et sa carte invite à la découvrir. Ce n'est qu'une fois la
+journée découverte (le souvenir `revealed` du cache, écrit par `TheirDay`)
+que la page montre la scène à deux, avec la phrase qui la raconte
+(`duo.scenes.*`, une par paire sans ordre, clé donnée par `sceneNoteKey`).
+`npm run checks` vérifie que chaque paire a sa phrase, en français et en
+espagnol, et la même dans les deux sens. Avant que j'aie rempli la mienne, la
+page peut dire que la sienne est faite : `partner_entry_dates()` rend la date,
+jamais le contenu. Moi à gauche, toujours ; chacun porte sa teinte et sa
 tenue. Pour un lecteur d'écran, c'est une image dont le nom dit les deux
 émotions (`duo.together` / `duo.apart`).
 
