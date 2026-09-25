@@ -1068,7 +1068,11 @@ icônes, dont le nom ne change pas d'une version à l'autre (seuls le JS et le
 CSS de Vite sont versionnés). Sans rien faire, un appareil qui a déjà ouvert
 le site garde l'ancienne icône pour toujours. Quand une ressource non
 versionnée change, changer le nom du cache (`CACHE` dans `public/sw.js`) :
-l'activation efface les anciens. Et ça ne suffit pas pour l'écran d'accueil :
+l'activation efface les anciens. Et incrémenter en même temps le `?v=` des
+icônes, dans `index.html`, le manifeste et la notification de `sw.js` : une
+adresse neuve, aucun cache ne la connaît, navigateur compris. (Oublié une
+fois : les icônes du papier `#FAF7F0` sont parties sans nouveau nom de cache,
+et un téléphone a gardé l'ancien logo.) Et ça ne suffit pas pour l'écran d'accueil :
 iOS fige l'icône au moment de l'ajout (il faut retirer le site et l'ajouter
 de nouveau), Android la met à jour de lui-même, avec un jour ou plus de
 retard.
