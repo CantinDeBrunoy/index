@@ -48,7 +48,7 @@ import {
 } from '../src/lib/ink.ts';
 import { INSET_MARGIN, NUDGE, asFraction, clampToFrame, nudgeOffset } from '../src/lib/inset.ts';
 import { BODY_PATH, LOGO_SIZE, MASKABLE_FIT, faviconSvg, logoGeometry, type LogoVariant } from '../src/lib/logo.ts';
-import { sceneFor, sheetsOf } from '../src/lib/duo/index.ts';
+import { sceneFor, sceneNoteKey, sheetsOf } from '../src/lib/duo/index.ts';
 import {
   ACCESSORY_PIECES,
   BODY_ACCESSORIES,
@@ -1120,6 +1120,23 @@ console.log('\nScènes à deux');
   }
   // Neutre ne joue avec personne : 11 × 11 paires écrites.
   check('121 paires scénarisées', scripted === 121, String(scripted));
+
+  // Chaque paire a sa phrase, dans les deux langues, et la même pour les deux
+  // ordres : la page Aujourd'hui la montre sous la scène, de mon côté comme du sien.
+  const lookup = (tree: unknown, key: string) =>
+    key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], tree);
+  const notes = new Set<string>();
+  for (const a of EMOTIONS) {
+    for (const b of EMOTIONS) {
+      const key = sceneNoteKey(a.key, b.key);
+      notes.add(key);
+      check(`${a.key} + ${b.key} : même phrase dans les deux sens`, key === sceneNoteKey(b.key, a.key), key);
+      for (const [lang, tree] of [['fr', fr], ['es', es]] as const) {
+        check(`${a.key} + ${b.key} : phrase ${lang}`, typeof lookup(tree, key) === 'string', key);
+      }
+    }
+  }
+  check('67 phrases de scène (66 paires + Neutre)', notes.size === 67, String(notes.size));
 
   // Les feuilles sont écrites par `npm run duo` depuis les livres de
   // scripts/duo/scenes : un livre retouché sans régénérer, ou une feuille

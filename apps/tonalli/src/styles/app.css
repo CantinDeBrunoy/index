@@ -159,9 +159,8 @@ p { margin: 0; }
 /* --- formulaires de connexion et d'inscription ------------------------- */
 /* Le soleil en petit, le titre, les champs, et le lien vers l'autre porte tout en bas. */
 .auth { min-height: 100dvh; display: flex; flex-direction: column; }
-.auth-back { align-self: flex-start; }
 /* `a.btn` repasse les liens en bloc : le chevron doit rester centré dans son rond. */
-a.btn.auth-back { display: grid; place-items: center; }
+a.btn.back-button { display: grid; place-items: center; align-self: flex-start; flex: none; }
 .auth-header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; margin-top: 4px; }
 .auth-header__title { font-size: 28px; margin: 6px 0 0; }
 .auth-header__subtitle { margin: 0; font-size: 14.5px; line-height: 1.5; }
@@ -358,6 +357,18 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   cursor: pointer;
   transition: background 0.15s var(--ease), color 0.15s var(--ease);
 }
+/* La bascule Mon calendrier / Son calendrier : des liens, et le choix à l'encre. */
+.segmented__link {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: var(--pill);
+  padding: 8px 0;
+}
+.segmented__link[aria-current='page'] { background: var(--text); color: var(--on-ink); }
 .segmented > button[aria-selected='true'] {
   background: var(--surface);
   color: var(--text);
@@ -508,6 +519,12 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   transition: opacity 0.2s var(--ease);
 }
 .streak > strong { font-variant-numeric: tabular-nums; }
+/* Sur la page Aujourd'hui : le badge à l'encre, et ce qu'il compte écrit dessous. */
+.streak-captioned { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.streak-captioned .streak { border: 1.5px solid var(--text); box-shadow: none; padding: 5px 12px 5px 10px; }
+.streak-captioned .streak > strong { font-family: var(--font-heading); font-size: 17px; }
+.streak-captioned .streak[data-waiting='true'] { border-style: dashed; opacity: 0.55; }
+.streak-caption { font-size: 10.5px; color: var(--text-faint); white-space: nowrap; }
 /* La journée du jour n'est pas encore remplie : la série n'est pas perdue,
    elle attend. Le badge pâlit au lieu de disparaître. */
 .streak[data-waiting='true'] { opacity: 0.5; }
@@ -1073,7 +1090,51 @@ a.btn { text-decoration: none; display: block; text-align: center; }
   text-decoration: none;
 }
 .tab[aria-current='page'] { color: var(--text); }
-.tab-glyph { width: 21px; height: 21px; display: grid; place-items: center; }
+.tab-glyph { width: 24px; height: 24px; display: grid; place-items: center; }
+
+/* --- page Aujourd'hui ------------------------------------------------------ */
+.overview__head { align-items: flex-start; }
+.overview__stage { display: flex; flex-direction: column; gap: 8px; }
+.overview__pair { display: flex; justify-content: center; align-items: flex-end; gap: 14px; }
+.overview__side { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(146px, 40%); }
+.overview__side svg { display: block; width: 100%; height: auto; }
+.overview__side figcaption { font-size: 13px; font-weight: 600; }
+.overview__divider { width: 1px; align-self: stretch; margin: 18px 0 30px; background: var(--border); }
+.overview__note { margin: 0; line-height: 1.45; padding: 0 8px; }
+.overview__legend { display: flex; justify-content: space-between; gap: 12px; padding: 0 18px; font-size: 13px; font-weight: 600; }
+.overview__who { display: inline-flex; align-items: center; gap: 7px; }
+.overview__dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--text); flex: none; }
+.overview__cards { display: flex; flex-direction: column; gap: 12px; }
+.overview__prompt { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 26px 22px; border-radius: 22px; }
+.overview__prompt p { margin: 0; line-height: 1.5; }
+.overview__prompt-title { font-size: 19px; margin: 0; }
+.overview__prompt .btn { padding: 12px 26px; margin-top: 4px; }
+
+/* Une carte qu'on touche pour ouvrir une journée. */
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+a.tile:active { transform: scale(0.99); }
+.tile__dot { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--text); flex: none; }
+.tile__text { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tile__title { font-family: var(--font-heading); font-weight: 600; font-size: 16px; }
+.tile__detail { font-size: 12.5px; color: var(--text-muted); }
+.tile__chevron { flex: none; color: var(--text-muted); }
+.tile--waiting { background: var(--surface-2); border-style: dashed; padding: 18px; }
+.tile--waiting svg { flex: none; width: 46px; height: auto; opacity: 0.8; }
+.tile--waiting span { line-height: 1.5; }
+/* La carte de sa journée porte sa couleur ; le texte suit le contraste calculé (`readableTextOn`). */
+.tile--partner { border: none; }
+.tile--partner .tile__detail, .tile--partner .tile__chevron { color: inherit; opacity: 0.92; }
+.tile__drop { flex: none; }
 
 /* --- divers --------------------------------------------------------------- */
 .banner {
