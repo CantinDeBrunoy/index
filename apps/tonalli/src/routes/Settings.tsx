@@ -5,9 +5,9 @@ import { Character } from '@/components/Character';
 import { ConfirmSheet } from '@/components/ConfirmSheet';
 import { Segmented } from '@/components/Segmented';
 import { ErrorBanner } from '@/components/States';
+import { StreakBadge } from '@/components/Streak';
 import { Switch } from '@/components/Switch';
-import { clockInTimeZone, formatInstant, formatOffset, formatTime, offsetBetween } from '@/lib/dates';
-import { OUTFIT_CATEGORIES } from '@/lib/character';
+import { clockInTimeZone, formatGap, formatInstant, formatTime, offsetBetween } from '@/lib/dates';
 import { DEFAULT_STREAK_SYMBOL, STREAK_SYMBOLS } from '@/lib/streak';
 import {
   isIosWithoutStandalone,
@@ -37,17 +37,13 @@ export function SettingsScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pushState, setPushState] = useState(() => permissionState());
-  const [clock, setClock] = useState(() => (partner ? clockInTimeZone(partner.timezone) : ''));
-
-  // L'heure du binôme avance en direct : c'est tout l'intérêt quand il est à
-  // l'autre bout du monde.
+  // Les deux horloges avancent en direct : c'est tout l'intérêt quand le
+  // binôme est à l'autre bout du monde.
+  const [, setTick] = useState(0);
   useEffect(() => {
-    if (!partner) return;
-    const update = () => setClock(clockInTimeZone(partner.timezone));
-    update();
-    const interval = window.setInterval(update, 10_000);
+    const interval = window.setInterval(() => setTick((tick) => tick + 1), 10_000);
     return () => window.clearInterval(interval);
-  }, [partner]);
+  }, []);
 
   if (!profile) return null;
 
@@ -104,51 +100,47 @@ export function SettingsScreen() {
 
   const offset = partner ? offsetBetween(partner.timezone, profile.timezone) : 0;
   const partnerName = partner?.display_name || '—';
+  const gap =
+    offset === 0
+      ? t('settings.sameTime')
+      : t(offset > 0 ? 'settings.partnerAhead' : 'settings.partnerBehind', { gap: formatGap(offset) });
+  const remindersOn = profile.reminders_enabled && Boolean(profile.push_token);
 
   return (
-    <div className="stack">
+    <div className="stack settings">
       <h1>{t('settings.title')}</h1>
       {error ? <ErrorBanner message={error} /> : null}
 
       {/* ---------------- personnage ---------------- */}
-      <Link to="/character" className="card card-link">
-        <Character emotion={look.emotion} color={look.color} state={look.state} outfit={look.outfit} size={48} still />
-        <span className="grow stack-sm">
+      <Link to="/character" className="card card-link settings__character">
+        <Character emotion={look.emotion} color={look.color} state={look.state} outfit={look.outfit} size={46} still />
+        <span className="grow settings__row-text">
           <strong>{t('character.title')}</strong>
-          <span className="faint small">
-            {OUTFIT_CATEGORIES.map((category) => look.outfit[category.key])
-              .filter((item) => item != null)
-              .map((item) => t(`character.items.${item}`))
-              .join(' · ') || t('character.none')}
-          </span>
+          <span className="settings__hint">{t('settings.characterHint')}</span>
         </span>
-        <span aria-hidden>›</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="settings__chevron" aria-hidden>
+          <path d="M9,5 L16,12 L9,19" />
+        </svg>
       </Link>
 
       {/* ---------------- binôme ---------------- */}
-      <span className="section-title">{t('settings.partnerSection')}</span>
+      <h2 className="section-title">{t('settings.partnerSection')}</h2>
       {partner ? (
         <div className="card card--flush">
           <div className="card-row">
             <span className="muted">{t('link.linkedWith', { name: partnerName })}</span>
           </div>
           <div className="card-row">
-            <span className="grow stack-sm">
+            <span className="grow settings__row-text">
               <span>{t('settings.partnerLocalTime', { name: partnerName })}</span>
-              <span className="faint small">{partner.timezone}</span>
+              <span className="settings__hint">
+                {partner.timezone} · {gap}
+              </span>
             </span>
-            <strong style={{ fontVariantNumeric: 'tabular-nums', fontSize: 20 }}>{clock}</strong>
+            <strong className="settings__clock settings__clock--large">{clockInTimeZone(partner.timezone)}</strong>
           </div>
           <div className="card-row">
-            <span className="muted">{t('settings.offsetLabel')}</span>
-            <span>{formatOffset(offset, t('settings.sameTime'))}</span>
-          </div>
-          <div className="card-row">
-            <button
-              type="button"
-              className="btn btn--ghost btn--danger"
-              onClick={() => setConfirm('unlink')}
-            >
+            <button type="button" className="settings__action settings__action--danger" onClick={() => setConfirm('unlink')}>
               {t('link.unlink')}
             </button>
           </div>
@@ -158,56 +150,50 @@ export function SettingsScreen() {
       )}
 
       {/* ---------------- rappel ---------------- */}
-      <span className="section-title">{t('settings.reminderSection')}</span>
+      <h2 className="section-title">{t('settings.reminderSection')}</h2>
       <div className="card card--flush">
         <div className="card-row">
-          <span className="grow stack-sm">
+          <span className="grow settings__row-text">
             <span>{t('settings.reminderEnabled')}</span>
-            <span className="faint small">{t('settings.reminderHint')}</span>
+            <span className="settings__hint">{t('settings.reminderHint')}</span>
           </span>
           <Switch
-            checked={profile.reminders_enabled && Boolean(profile.push_token)}
+            checked={remindersOn}
             onChange={(value) => void toggleReminders(value)}
             label={t('settings.reminderEnabled')}
             disabled={!pushSupported()}
           />
         </div>
-        <div className="card-row">
+        {/* L'heure reste réglable rappel coupé : elle attend, pâlie, qu'on le rallume. */}
+        <div className="card-row" data-off={!remindersOn}>
           <span className="grow">{t('settings.reminderTime')}</span>
-          <span className="row">
-            <button
-              type="button"
-              className="btn btn--icon"
-              aria-label="-30"
-              onClick={() => void shiftReminder(-STEP_MINUTES)}
-            >
+          <span className="settings__stepper">
+            <button type="button" className="settings__step" aria-label="-30" onClick={() => void shiftReminder(-STEP_MINUTES)}>
               −
             </button>
-            <strong style={{ fontVariantNumeric: 'tabular-nums', minWidth: 52, textAlign: 'center' }}>
-              {formatTime(profile.reminder_hour, profile.reminder_minute)}
-            </strong>
-            <button
-              type="button"
-              className="btn btn--icon"
-              aria-label="+30"
-              onClick={() => void shiftReminder(STEP_MINUTES)}
-            >
+            <strong className="settings__clock">{formatTime(profile.reminder_hour, profile.reminder_minute)}</strong>
+            <button type="button" className="settings__step" aria-label="+30" onClick={() => void shiftReminder(STEP_MINUTES)}>
               +
             </button>
           </span>
         </div>
       </div>
       {pushState === 'unsupported' ? (
-        <p className="faint small">{t('settings.pushUnsupported')}</p>
+        <p className="settings__note">{t('settings.pushUnsupported')}</p>
       ) : pushState === 'denied' ? (
-        <p className="faint small">{t('settings.pushDenied')}</p>
+        <p className="settings__note">{t('settings.pushDenied')}</p>
       ) : isIosWithoutStandalone() ? (
-        <p className="faint small">{t('settings.pushIosHint')}</p>
+        <p className="settings__note">{t('settings.pushIosHint')}</p>
       ) : null}
 
-      {/* ---------------- série ---------------- */}
-      <span className="section-title">{t('streak.section')}</span>
-      <div className="reactions" role="radiogroup" aria-label={t('streak.section')}>
+      {/* ---------------- série ----------------
+          Le badge à droite du titre, tel qu'il se montre en haut de la page
+          Aujourd'hui : on voit le symbole changer en le touchant. */}
+      <div className="settings__title-row">
+        <h2 className="section-title">{t('streak.section')}</h2>
+        <StreakBadge />
+      </div>
+      <div className="reactions reactions--quick" role="radiogroup" aria-label={t('streak.section')}>
         {STREAK_SYMBOLS.map((item) => (
           <button
             key={item.key}
@@ -223,10 +209,10 @@ export function SettingsScreen() {
           </button>
         ))}
       </div>
-      <p className="faint small">{t('streak.hint')}</p>
+      <p className="settings__note">{t('streak.hint')}</p>
 
       {/* ---------------- langue ---------------- */}
-      <span className="section-title">{t('settings.languageSection')}</span>
+      <h2 className="section-title">{t('settings.languageSection')}</h2>
       <Segmented<Locale>
         label={t('settings.languageSection')}
         value={locale}
@@ -238,22 +224,19 @@ export function SettingsScreen() {
       />
 
       {/* ---------------- compte ---------------- */}
-      <span className="section-title">{t('settings.account')}</span>
+      <h2 className="section-title">{t('settings.account')}</h2>
       <div className="card card--flush">
         <div className="card-row">
-          <span className="muted">{user?.email}</span>
+          <span className="grow settings__row-text">
+            <span className="muted">{user?.email}</span>
+            <span className="settings__hint">
+              {t('settings.timezone')} · {profile.timezone}
+            </span>
+          </span>
+          <span className="settings__clock">{clockInTimeZone(profile.timezone)}</span>
         </div>
         <div className="card-row">
-          <span className="grow stack-sm">
-            <span className="muted">{t('settings.timezone')}</span>
-            <span className="faint small">{profile.timezone}</span>
-          </span>
-          <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-            {clockInTimeZone(profile.timezone)}
-          </span>
-        </div>
-        <div className="card-row">
-          <button type="button" className="btn btn--ghost" onClick={() => void signOut()}>
+          <button type="button" className="settings__action" onClick={() => void signOut()}>
             {t('auth.signOut')}
           </button>
         </div>

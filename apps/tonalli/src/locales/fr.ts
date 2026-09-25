@@ -387,7 +387,9 @@ export const fr = {
     partnerTimezone: 'Son fuseau',
     partnerLocalTime: 'Chez {{name}}, il est',
     sameTime: 'même heure',
-    offsetLabel: 'Décalage',
+    partnerAhead: '{{gap}} de plus',
+    partnerBehind: '{{gap}} de moins',
+    characterHint: 'Accessoires, visage, motif, drapeau',
     build: 'Version {{id}} — {{date}}',
   },
   emotions: {
