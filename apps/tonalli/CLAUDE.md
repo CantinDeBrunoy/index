@@ -69,7 +69,9 @@ navigateur. Dans du code de page, elle serait contournable en trente secondes.
 Pas de framework CSS : un fichier `src/styles/app.css` avec des variables. Le
 châssis est volontairement incolore — du papier (`#FAF7F0`, la nuit
 `#241A14`) et de l'encre (`#2A2019`) — pour que les seules couleurs de l'écran
-soient les émotions et les photos. Trois règles en découlent :
+soient les émotions et les photos. Le papier est **uni** : une grille de
+points en fond a été essayée, et se lisait sur téléphone comme du papier
+millimétré. Trois règles en découlent :
 
 - **Pas d'accent.** Un état d'interface (bouton principal, onglet actif,
   aujourd'hui dans le calendrier, choix, interrupteur, focus) se dit à

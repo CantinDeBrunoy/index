@@ -26,7 +26,6 @@
   --on-ink: #faf7f0;
   --shadow: 0 10px 26px rgba(42, 32, 25, 0.12);
   --shadow-sm: 0 6px 16px rgba(42, 32, 25, 0.08);
-  --tooth: rgba(42, 32, 25, 0.04);
 
   /* Le titre est écrit à la main, du même geste que le personnage ; le texte
      courant reste une linéale chaleureuse, lisible petit. */
@@ -57,7 +56,6 @@
     --on-ink: #241a14;
     --shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
     --shadow-sm: 0 8px 18px rgba(0, 0, 0, 0.4);
-    --tooth: rgba(237, 227, 211, 0.03);
   }
 }
 
@@ -67,9 +65,10 @@ html, body, #root { height: 100%; }
 
 body {
   margin: 0;
+  /* Du papier uni, comme sur les maquettes. Une grille de points a été
+     essayée : sur un téléphone, elle se lisait comme du papier millimétré et
+     disputait l'œil aux couleurs des émotions. */
   background-color: var(--bg);
-  background-image: radial-gradient(var(--tooth) 1px, transparent 1px);
-  background-size: 7px 7px;
   color: var(--text);
   font-family: var(--font-body);
   font-size: 16px;
