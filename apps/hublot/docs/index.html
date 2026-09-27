@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>fare-radar · bons plans</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E✈️%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>✈️ fare-radar</h1>
+      <p id="updated" class="muted">Chargement…</p>
+    </div>
+    <button id="open-settings" class="icon-button" type="button" aria-label="Clé GitHub" title="Clé GitHub">⚙️</button>
+  </header>
+
+  <p id="banner" class="banner" role="status" aria-live="polite" hidden></p>
+
+  <main>
+    <section aria-labelledby="deals-title">
+      <h2 id="deals-title">Bons plans</h2>
+      <div id="deals" class="stack"></div>
+    </section>
+
+    <section aria-labelledby="watches-title">
+      <div class="section-head">
+        <h2 id="watches-title">Mes surveillances</h2>
+        <button id="add-watch" class="button primary" type="button">+ Ajouter</button>
+      </div>
+      <div id="watches" class="stack"></div>
+    </section>
+  </main>
+
+  <dialog id="watch-dialog" aria-labelledby="watch-dialog-title">
+    <form id="watch-form" method="dialog" novalidate>
+      <h2 id="watch-dialog-title">Nouvelle surveillance</h2>
+
+      <label class="field">
+        <span>Destination (départ de Paris)</span>
+        <input id="city-input" type="text" autocomplete="off" spellcheck="false" placeholder="Tokyo, Mexico, Lima…">
+      </label>
+      <ul id="city-suggestions" class="suggestions" hidden></ul>
+
+      <fieldset class="field">
+        <legend>Période de départ</legend>
+        <div class="row">
+          <label>Entre le <input id="depart-from" type="date"></label>
+          <label>et le <input id="depart-to" type="date"></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>Durée du séjour</legend>
+        <div class="row">
+          <label>De <input id="min-days" type="number" min="0" step="1" inputmode="numeric"></label>
+          <label>à <input id="max-days" type="number" min="0" step="1" inputmode="numeric"> jours</label>
+        </div>
+      </fieldset>
+
+      <label class="field">
+        <span>Prix maximum aller-retour (€)</span>
+        <input id="max-price" type="number" min="1" step="1" inputmode="numeric" placeholder="600">
+      </label>
+
+      <p id="watch-errors" class="errors" role="alert"></p>
+
+      <div class="actions">
+        <button class="button" type="submit" value="cancel" formnovalidate>Annuler</button>
+        <button id="watch-submit" class="button primary" type="submit" value="save">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <form id="settings-form" method="dialog" novalidate>
+      <h2 id="settings-title">Clé GitHub</h2>
+      <p id="settings-reason" class="notice" hidden></p>
+      <p>
+        Pour modifier tes surveillances, la page a besoin d'une clé GitHub limitée à ton dépôt
+        <strong id="repo-name"></strong>. Elle reste enregistrée uniquement sur cet appareil.
+      </p>
+      <ol class="steps">
+        <li><a id="token-link" target="_blank" rel="noopener">Ouvre le formulaire GitHub</a> (déjà pré-rempli).</li>
+        <li>Dans <em>Repository access</em>, choisis <em>Only select repositories</em>, puis ton dépôt.</li>
+        <li>Clique <em>Generate token</em>, copie la clé et colle-la ci-dessous.</li>
+      </ol>
+      <label class="field">
+        <span>Clé</span>
+        <input id="token-input" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+      </label>
+      <p id="settings-errors" class="errors" role="alert"></p>
+      <div class="actions">
+        <button id="token-remove" class="button link danger" type="button">Oublier la clé</button>
+        <button class="button" type="submit" value="cancel" formnovalidate>Fermer</button>
+        <button id="token-save" class="button primary" type="submit" value="save">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog">
+    <form method="dialog">
+      <p id="confirm-message"></p>
+      <div class="actions">
+        <button class="button" value="cancel">Annuler</button>
+        <button class="button danger" value="confirm">Supprimer</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

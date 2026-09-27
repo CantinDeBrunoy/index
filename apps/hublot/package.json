@@ -1,0 +1,22 @@
+{
+  "name": "fare-radar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Alertes de bons plans sur billets d'avion aller-retour depuis Paris (Travelpayouts → ntfy).",
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "dry-run": "npm run build && node dist/main.js --dry-run",
+    "typecheck": "tsc && tsc -p tsconfig.web.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  }
+}
