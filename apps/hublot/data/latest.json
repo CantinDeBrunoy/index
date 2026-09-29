@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-28T23:04:29.315Z",
+  "generatedAt": "2026-09-29T05:04:48.153Z",
   "currency": "eur",
   "origins": [
     "CDG",
@@ -205,7 +205,7 @@
             "returnTransfers": 1,
             "link": "https://www.aviasales.fr/search/PAR2812TYO11011?t=CA17984868001798573800000970CDGPEKHND17997012001799775600001720HNDPEKCDG_a5d9a680dca7b252b52193a5860f7098_79263&search_date=22092026&expected_price_uuid=01a0c902-460f-8030-efc6-3b2b3a24533c&static_fare_key=TY%7CP1%7CH1%7CL1_2_46%7CCH1%7CR0%7CTBC1&itinerary_key=g69vUgGdXOLpKCdLsLkpPg&expected_price_source=share&expected_price_currency=eur&expected_price=821"
           },
-          "offers": 4,
+          "offers": 6,
           "failed": false
         },
         {
