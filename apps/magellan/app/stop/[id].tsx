@@ -1,19 +1,8 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 
-import { flagEmoji } from '@/data/isoCodes';
-import {
-  BudgetBar,
-  Card,
-  Chips,
-  DetailPage,
-  Hero,
-  Muted,
-  Section,
-  StatRow,
-  TotalRow,
-  euros,
-} from '@/features/detail/DetailKit';
-import { budgetTotal, peopleLabel } from '@/features/trips/aggregates';
+import { CitySheet } from '@/features/detail/CitySheet';
+import { KraftLabel, WoodPage, euros, postitColor } from '@/features/detail/WoodKit';
+import { budgetTotal, peopleLabel, tripCountries } from '@/features/trips/aggregates';
 import { useTrips } from '@/features/trips/store';
 
 export default function StopDetail() {
@@ -26,73 +15,45 @@ export default function StopDetail() {
 
   if (!stop || !parent) {
     return (
-      <DetailPage>
-        <Hero title="Étape introuvable" />
-        <Section title="Oups">
-          <Card>
-            <Muted>Cette étape n’existe plus. Reviens en arrière pour choisir une autre étape.</Muted>
-          </Card>
-        </Section>
-      </DetailPage>
+      <WoodPage>
+        <KraftLabel
+          eyebrow="Oups"
+          title="Étape introuvable"
+          subtitle="Cette étape n’existe plus. Reviens en arrière pour en choisir une autre."
+        />
+      </WoodPage>
     );
   }
 
-  const color = parent.color || '#ffd166';
+  // Voyage à une seule ville : l'étape EST le voyage, sa fiche fait foi (drapeau du
+  // globe, lien direct…) plutôt qu'une « étape 1/1 ».
+  if (parent.stops.length === 1) return <Redirect href={`/trip/${parent.id}`} />;
+
   const rank = parent.stops.findIndex((s) => s.id === stop.id) + 1;
-  const budget = stop.budget;
-  const total = budgetTotal(budget);
-  const maxPost = budget
-    ? Math.max(budget.hotel, budget.food, budget.activities, budget.transport)
-    : 0;
+  const total = budgetTotal(stop.budget);
+  const names = (stop.people ?? []).map((p) => peopleLabel([p]));
+  // Même couleur de pays que sur le tableau d'itinéraire du voyage.
+  const countryIndex = tripCountries(parent).findIndex((c) => c.country === stop.country);
 
   const stats: { value: string; label: string }[] = [];
   if (stop.days) stats.push({ value: String(stop.days), label: stop.days > 1 ? 'jours' : 'jour' });
   if (total) stats.push({ value: euros(total), label: 'budget' });
-  if (stop.people?.length) stats.push({ value: String(stop.people.length), label: 'personnes' });
+  if (names.length) stats.push({ value: String(names.length), label: 'personnes' });
 
   return (
-    <DetailPage>
-      <Hero
-        color={color}
-        eyebrow={`${parent.name}  ·  étape ${rank}/${parent.stops.length}`}
+    <WoodPage>
+      <CitySheet
+        eyebrow={`${parent.name} · étape ${rank}/${parent.stops.length}`}
         title={stop.name}
         subtitle={stop.date}
-        chips={[`${flagEmoji(stop.alpha2)}  ${stop.countryName}`]}
+        stamps={[{ label: stop.countryName || stop.country, ink: postitColor(countryIndex).ink }]}
+        city={stop.name}
+        color={parent.color || '#ffd166'}
+        stats={stats}
+        budget={stop.budget}
+        names={names}
+        position={stop}
       />
-
-      {stats.length > 0 ? <StatRow items={stats} /> : null}
-
-      {budget && total > 0 ? (
-        <Section title="Budget">
-          <Card>
-            <BudgetBar label="Hôtel" value={budget.hotel} max={maxPost} color={color} />
-            <BudgetBar label="Nourriture" value={budget.food} max={maxPost} color={color} />
-            <BudgetBar label="Activités" value={budget.activities} max={maxPost} color={color} />
-            <BudgetBar label="Transport" value={budget.transport} max={maxPost} color={color} />
-            <TotalRow label="Total" value={total} />
-          </Card>
-        </Section>
-      ) : null}
-
-      {stop.people && stop.people.length > 0 ? (
-        <Section title="Avec qui">
-          <Chips items={stop.people.map((p) => peopleLabel([p]))} />
-        </Section>
-      ) : null}
-
-      <Section title="Position">
-        <Card>
-          <Muted>
-            📍  {stop.lat.toFixed(3)}, {stop.lng.toFixed(3)}
-          </Muted>
-        </Card>
-      </Section>
-
-      <Section title="Photos">
-        <Card>
-          <Muted>📷  Bientôt — les photos de l’étape s’afficheront ici.</Muted>
-        </Card>
-      </Section>
-    </DetailPage>
+    </WoodPage>
   );
 }
