@@ -1,4 +1,4 @@
-// Kit « table en noyer & post-it » de la fiche voyage.
+// Kit « table en noyer & post-it » des fiches voyage et étape.
 //
 // Le voyage est posé sur une table de travail : étiquette kraft pour le titre,
 // tampons encreurs pour les pays, un post-it punaisé par étape (sa couleur dit le
@@ -26,8 +26,6 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { euros } from './DetailKit';
 
 const WOOD = require('@/assets/images/wood-walnut.png');
 
@@ -68,6 +66,11 @@ const STAT_COLORS = [POSTITS[0], POSTITS[2], POSTITS[3], POSTITS[1]];
 
 /** Inclinaisons « à la main », reprises en boucle pour que rien ne soit droit. */
 const TILTS = [-2, 2.5, -1.5, 1.8, -2.5, 1.5, -1, 2.2];
+
+/** Montant formaté en euros (entier : les budgets saisis n'ont pas de centimes). */
+export function euros(n: number): string {
+  return `${Math.round(n)} €`;
+}
 
 /** Couleur de post-it n° i (en boucle sur la palette). */
 export function postitColor(i: number): PostitColor {
@@ -374,14 +377,14 @@ export function Notepad({
   );
 }
 
-/** Participants : un petit post-it au prénom de chacun. */
-export function NameTags({ title, names }: { title: string; names: string[] }) {
+/** Petites étiquettes post-it précédées d'un titre : participants, position… */
+export function TagRow({ title, items }: { title: string; items: string[] }) {
   return (
     <View style={styles.nameRow}>
       <TapeTitle align="left" style={styles.flush}>
         {title}
       </TapeTitle>
-      {names.map((n, i) => (
+      {items.map((n, i) => (
         <View
           key={n}
           style={[
@@ -397,7 +400,7 @@ export function NameTags({ title, names }: { title: string; names: string[] }) {
 }
 
 /**
- * Carte postale punaisée — remplace l'itinéraire d'un voyage à une seule ville.
+ * Carte postale punaisée de la ville — tient lieu d'itinéraire sur la fiche d'une ville.
  * Le recto prend la couleur du voyage (en attendant les photos) ; timbre et
  * cachet de la poste au nom de la ville (la date est déjà sur l'étiquette).
  */
@@ -405,24 +408,17 @@ export function Postcard({
   city,
   color,
   width,
-  onPress,
 }: {
   city: string;
   color: string;
   width: number;
-  onPress?: () => void;
 }) {
   const big = width >= 500;
   const seal = big ? 100 : 76;
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
+    <View
       accessibilityLabel={`Carte postale de ${city}`}
-      style={({ pressed }) => [
-        styles.postcard,
-        { width, padding: big ? 16 : 10, transform: [{ rotate: '1.6deg' }, { scale: pressed ? 0.98 : 1 }] },
-      ]}>
+      style={[styles.postcard, { width, padding: big ? 16 : 10, transform: [{ rotate: '1.6deg' }] }]}>
       <View style={[styles.postcardFace, { height: width * 0.6, backgroundColor: color }]}>
         <View style={[styles.postcardText, { left: big ? 34 : 16, right: seal + 40, bottom: big ? 30 : 16 }]}>
           <Text style={[styles.postcardHello, big && styles.postcardHelloBig]}>Bons baisers de</Text>
@@ -442,7 +438,7 @@ export function Postcard({
         </View>
       </View>
       <Pin left={width / 2} />
-    </Pressable>
+    </View>
   );
 }
 

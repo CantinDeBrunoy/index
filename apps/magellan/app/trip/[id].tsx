@@ -1,16 +1,16 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { euros } from '@/features/detail/DetailKit';
+import { CitySheet, budgetRows } from '@/features/detail/CitySheet';
 import {
   KraftLabel,
-  NameTags,
   Notepad,
-  Postcard,
   StatPostits,
   StopBoard,
+  TagRow,
   TapeTitle,
   WoodPage,
+  euros,
   postitColor,
   useWoodLayout,
   type BoardStop,
@@ -82,6 +82,27 @@ export default function TripDetail() {
   if (days) stats.push({ value: String(days), label: days > 1 ? 'jours' : 'jour' });
   if (total) stats.push({ value: euros(total), label: 'budget' });
 
+  // — Voyage à une seule ville : même fiche qu'une étape, cf. CitySheet —
+  if (solo) {
+    const stop = trip.stops[0];
+    return (
+      <WoodPage>
+        <CitySheet
+          eyebrow="Voyage · une ville"
+          title={trip.name}
+          subtitle={period}
+          stamps={stamps}
+          city={stop.name}
+          color={color}
+          stats={stats}
+          budget={budget}
+          names={names}
+          position={stop}
+        />
+      </WoodPage>
+    );
+  }
+
   const boardStops: BoardStop[] = trip.stops.map((s, i) => ({
     key: s.id,
     index: i + 1,
@@ -95,71 +116,13 @@ export default function TripDetail() {
   }));
 
   const header = (
-    <KraftLabel
-      big={wide}
-      eyebrow={solo ? 'Voyage · une ville' : 'Voyage'}
-      title={trip.name}
-      subtitle={period}
-      stamps={stamps}
-    />
+    <KraftLabel big={wide} eyebrow="Voyage" title={trip.name} subtitle={period} stamps={stamps} />
   );
   const statsBlock =
     stats.length > 0 ? <StatPostits items={stats} width={contentWidth} big={wide} /> : null;
   const budgetBlock =
-    total > 0 ? (
-      <Notepad
-        title="Budget"
-        total={total}
-        rows={[
-          { label: 'Hôtel', value: budget.hotel },
-          { label: 'Nourriture', value: budget.food },
-          { label: 'Activités', value: budget.activities },
-          { label: 'Transport', value: budget.transport },
-        ]}
-      />
-    ) : null;
-  const peopleBlock = names.length > 0 ? <NameTags title="Avec qui" names={names} /> : null;
-
-  // — Voyage à une seule ville —
-  if (solo) {
-    const stop = trip.stops[0];
-    const cardInline = wide && contentWidth - 520 - GAP >= 420;
-    const card = (
-      <Postcard
-        city={stop.name}
-        color={color}
-        width={cardInline ? Math.min(720, contentWidth - 520 - GAP) : Math.min(wide ? 720 : 360, contentWidth - 20)}
-        onPress={() => router.push(`/stop/${stop.id}`)}
-      />
-    );
-
-    if (!wide) {
-      return (
-        <WoodPage>
-          {header}
-          {card}
-          {statsBlock}
-          {budgetBlock}
-          {peopleBlock}
-        </WoodPage>
-      );
-    }
-    return (
-      <WoodPage>
-        <View style={[styles.row, !cardInline && styles.column]}>
-          <View style={styles.soloLeft}>
-            {header}
-            {statsBlock ? <View style={styles.statsBelow}>{statsBlock}</View> : null}
-            {budgetBlock ? <View style={styles.notepadNarrow}>{budgetBlock}</View> : null}
-          </View>
-          <View style={styles.flex}>
-            {card}
-            {peopleBlock}
-          </View>
-        </View>
-      </WoodPage>
-    );
-  }
+    total > 0 ? <Notepad title="Budget" total={total} rows={budgetRows(budget)} /> : null;
+  const peopleBlock = names.length > 0 ? <TagRow title="Avec qui" items={names} /> : null;
 
   // — Road trip, mise en page étroite —
   if (!wide) {
@@ -216,13 +179,10 @@ export default function TripDetail() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: GAP },
-  column: { flexDirection: 'column', gap: 0 },
   wrap: { flexWrap: 'wrap', rowGap: 28 },
   alignEnd: { alignItems: 'flex-end' },
   flex: { flex: 1 },
   board: { marginTop: 18 },
   side: { width: SIDE_W, paddingTop: 50 },
-  soloLeft: { width: 520 },
-  statsBelow: { marginTop: 40 },
   notepadNarrow: { maxWidth: 420 },
 });
