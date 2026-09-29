@@ -20,9 +20,13 @@ L'objet central est le **voyage (road trip)** : une suite ordonnée d'**étapes*
 Sur le globe, les étapes d'un même voyage sont reliées par un **arc** ; un pays devient
 vert dès qu'une étape s'y trouve. L'app récapitule la progression (voyages, villes, pays).
 
-Taper un voyage ouvre sa **fiche détail** : en-tête coloré, chiffres clés, itinéraire en
-**timeline** et budget en barres proportionnelles. La couleur d'accent d'une fiche est celle
-du tracé du voyage sur le globe — un voyage garde son identité d'un écran à l'autre.
+Taper un voyage ouvre sa **fiche détail**, posée sur une **table en noyer** : étiquette kraft
+pour le titre, pays en tampons encreurs, chiffres clés sur des post-it, un **post-it punaisé
+par étape** (sa couleur dit le pays) relié aux autres par un fil rouge, et le budget sur une
+feuille de bloc-notes. Un voyage à une seule ville remplace l'itinéraire par une **carte
+postale** à la couleur du tracé du voyage sur le globe. La mise en page suit la largeur
+d'écran : zigzag d'une étape par rangée sur téléphone, serpentin sur 2–3 colonnes sur écran
+large (web, tablette).
 
 ## La stack
 
@@ -55,7 +59,8 @@ features/
     store.ts               # état des voyages + persistance
     types.ts               # VisitedCountry (ISO3), VisitedCity {name,country,lat,lng}
   detail/
-    DetailKit.tsx          # primitives des fiches détail (hero, stats, timeline, budget)
+    DetailKit.tsx          # primitives de la fiche étape (hero, stats, budget)
+    WoodKit.tsx            # fiche voyage « bois & post-it » (étiquette, post-it, fil rouge, carte postale)
 data/
   countries.geo.json       # frontières des pays (Natural Earth, simplifié)
   countries.ts             # ISO3 → { nom, drapeau, centroïde }

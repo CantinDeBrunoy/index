@@ -1,4 +1,4 @@
-// Kit d'interface des fiches détail (voyage, étape).
+// Kit d'interface de la fiche étape (la fiche voyage a son propre kit : WoodKit.tsx).
 //
 // Thème sombre aligné sur le globe (#0b1026) : la fiche prolonge la planète plutôt
 // que de casser l'ambiance. L'accent est la couleur du voyage, reprise du tracé sur
@@ -119,51 +119,6 @@ export function Card({ children }: { children: ReactNode }) {
   return <View style={styles.card}>{children}</View>;
 }
 
-/**
- * Étape d'itinéraire : pastille numérotée reliée à la suivante par un trait.
- * `last` coupe le trait sur la dernière étape.
- */
-export function TimelineStop({
-  index,
-  color = FALLBACK_ACCENT,
-  title,
-  meta,
-  right,
-  last,
-  onPress,
-}: {
-  index: number;
-  color?: string;
-  title: string;
-  meta?: string;
-  right?: string;
-  last?: boolean;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.tlRow, pressed && onPress ? styles.tlRowPressed : null]}>
-      <View style={styles.tlGutter}>
-        <View style={[styles.tlDot, { borderColor: color }]}>
-          <Text style={[styles.tlDotText, { color }]}>{index}</Text>
-        </View>
-        {!last ? <View style={[styles.tlLine, { backgroundColor: color + '44' }]} /> : null}
-      </View>
-      <View style={styles.tlBody}>
-        <View style={styles.tlHead}>
-          <Text style={styles.tlTitle} numberOfLines={1}>
-            {title}
-          </Text>
-          {right ? <Text style={styles.tlRight}>{right}</Text> : null}
-        </View>
-        {meta ? <Text style={styles.tlMeta}>{meta}</Text> : null}
-      </View>
-      {onPress ? <Text style={styles.tlChevron}>›</Text> : null}
-    </Pressable>
-  );
-}
-
 /** Ligne de budget : libellé, barre proportionnelle au plus gros poste, montant. */
 export function BudgetBar({
   label,
@@ -273,26 +228,6 @@ const styles = StyleSheet.create({
     padding: 14,
   },
 
-  tlRow: { flexDirection: 'row', alignItems: 'flex-start', borderRadius: 12 },
-  tlRowPressed: { backgroundColor: 'rgba(255,255,255,0.05)' },
-  tlGutter: { width: 34, alignItems: 'center' },
-  tlDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
-    backgroundColor: COLORS.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tlDotText: { fontSize: 12, fontWeight: '800' },
-  tlLine: { width: 2, flex: 1, minHeight: 26, marginTop: 2 },
-  tlBody: { flex: 1, paddingBottom: 18, paddingLeft: 6, paddingTop: 2 },
-  tlHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  tlTitle: { color: COLORS.text, fontSize: 16, fontWeight: '700', flexShrink: 1 },
-  tlRight: { color: COLORS.muted, fontSize: 12 },
-  tlMeta: { color: COLORS.muted, fontSize: 13, marginTop: 3 },
-  tlChevron: { color: COLORS.muted, fontSize: 20, paddingLeft: 4, paddingTop: 2 },
 
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   barLabel: { color: COLORS.muted, fontSize: 13, width: 88 },
