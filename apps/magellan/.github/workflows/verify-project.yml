@@ -12,8 +12,10 @@ jobs:
         with:
           pattern: '^(feat|fix|style|ci|docs|chore|refactor|test)(\(.*\))?: .+'
           error: 'Le message de commit ne respecte pas la norme (ex: "feat: add login" ou "fix(api): bug checkout").'
-          excludeDescription: 'true' 
-          checkAllCommitMessages: 'true' 
+          excludeDescription: 'true'
+          checkAllCommitMessages: 'true'
+          # Sur une PR, la liste des commits vient de l'API GitHub : il faut un jeton.
+          accessToken: ${{ github.token }}
 
   verify:
     runs-on: ubuntu-latest
