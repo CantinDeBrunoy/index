@@ -54,14 +54,16 @@ function inPeriod(c: Candidate, time: number): boolean {
 /**
  * Parmi les étapes dont la période (avec marge) contient la date, la plus plausible :
  * d'abord celles dont la date exacte la contient (« février 2025 » bat « mars 2025 »
- * pour une photo du 20 février), puis la période la plus précise.
+ * pour une photo du 20 février), puis la période la plus précise. À égalité, l'ordre
+ * reçu départage (tri stable) : la plus proche d'abord pour une photo géolocalisée,
+ * l'ordre des voyages sinon.
  */
 function bestByDate(candidates: Candidate[], time: number): Candidate | undefined {
   const exactly = (c: Candidate) => !!c.exact && time >= c.exact.start && time < c.exact.end;
   const span = (c: Candidate) => (c.exact ? c.exact.end - c.exact.start : Infinity);
   return candidates
     .filter((c) => inPeriod(c, time))
-    .sort((a, b) => Number(exactly(b)) - Number(exactly(a)) || span(a) - span(b) || a.order - b.order)[0];
+    .sort((a, b) => Number(exactly(b)) - Number(exactly(a)) || span(a) - span(b))[0];
 }
 
 /**
