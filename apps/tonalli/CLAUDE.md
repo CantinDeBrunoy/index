@@ -257,6 +257,12 @@ avoir modifiées il faut redéployer, recharger la page ne suffit pas.
 Le développement se fait sur `claude/nuancier-mobile-app-7buvk1`, fusionnée dans
 `main` par un merge sans avance rapide. Vercel déploie `main`.
 
+**Mot de passe oublié.** Le lien envoyé par Supabase ramène sur
+`/reset-password`, qui doit figurer dans Authentication → URL Configuration →
+Redirect URLs (production et `http://localhost:5173/reset-password`). S'il en
+manque, Supabase renvoie vers la Site URL : `openedFromRecoveryLink` dans
+`src/lib/supabase.ts` détecte le jeton et réaiguille quand même.
+
 ---
 
 ## 9. Vérifier son travail

@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { clearCache } from '@/lib/cache';
 import { detectTimeZone } from '@/lib/dates';
 import { deletePhotos } from '@/lib/photo';
-import { errorCode, supabase } from '@/lib/supabase';
+import { errorCode, openedFromRecoveryLink, supabase } from '@/lib/supabase';
 import type { Locale, Profile } from '@/lib/types';
 import { useI18n } from '@/state/I18nProvider';
 
@@ -22,6 +22,10 @@ type AuthValue = {
   /** `true` si Supabase attend une confirmation par e-mail. */
   signUp: (email: string, password: string, displayName: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  /** Vrai entre l'ouverture d'un lien de réinitialisation et le nouveau mot de passe. */
+  recovering: boolean;
+  requestPasswordReset: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   updateProfile: (patch: Partial<Profile>) => Promise<void>;
   linkPartner: (code: string) => Promise<void>;
   unlinkPartner: () => Promise<void>;
@@ -37,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [partner, setPartner] = useState<Profile | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [recovering, setRecovering] = useState(openedFromRecoveryLink);
   const localeSynced = useRef(false);
 
   const loadProfile = useCallback(async (userId: string) => {
@@ -94,12 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus(data.session ? 'signed-in' : 'signed-out');
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovering(true);
       setSession(nextSession);
       setStatus(nextSession ? 'signed-in' : 'signed-out');
       if (!nextSession) {
         setProfile(null);
         setPartner(null);
+        setRecovering(false);
         localeSynced.current = false;
       }
     });
@@ -156,6 +163,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     if (userId) clearCache(userId);
   }, [session?.user.id]);
+
+  const requestPasswordReset = useCallback(async (email: string) => {
+    // L'adresse de retour doit figurer dans Authentication → URL Configuration
+    // → Redirect URLs ; sinon Supabase renvoie vers la Site URL, ce que
+    // `openedFromRecoveryLink` rattrape.
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw new Error(error.message);
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw new Error(error.message);
+    setRecovering(false);
+  }, []);
 
   const updateProfile = useCallback(
     async (patch: Partial<Profile>) => {
@@ -222,6 +245,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
+      recovering,
+      requestPasswordReset,
+      updatePassword,
       updateProfile,
       linkPartner,
       unlinkPartner,
@@ -237,6 +263,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
+      recovering,
+      requestPasswordReset,
+      updatePassword,
       updateProfile,
       linkPartner,
       unlinkPartner,
