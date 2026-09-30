@@ -222,15 +222,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!profile) return;
     const { data: entries } = await supabase
       .from('entries')
-      .select('photo_path')
+      .select('photo_path, selfie_path')
       .eq('user_id', profile.id)
-      .returns<{ photo_path: string | null }[]>();
+      .returns<{ photo_path: string | null; selfie_path: string | null }[]>();
 
-    const paths = (entries ?? []).map((row) => row.photo_path).filter((path): path is string => Boolean(path));
+    const paths = (entries ?? [])
+      .flatMap((row) => [row.photo_path, row.selfie_path])
+      .filter((path): path is string => Boolean(path));
     await deletePhotos(paths);
 
     const { error } = await supabase.from('entries').delete().eq('user_id', profile.id);
     if (error) throw new Error(error.message);
+
+    // Les réactions reçues partent avec mes entrées (cascade), mais celles que
+    // j'ai posées chez le binôme vivent sur ses lignes à lui : elles ne
+    // disparaissent que si on les supprime explicitement.
+    const { error: reactionsError } = await supabase
+      .from('reactions')
+      .delete()
+      .eq('author_id', profile.id);
+    if (reactionsError) throw new Error(reactionsError.message);
     clearCache(profile.id);
   }, [profile]);
 

@@ -1,0 +1,196 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { BUBBLE_COUNT, BURST_MS, REACTIONS, bubbles } from '@/lib/reactions';
+import type { Entry } from '@/lib/types';
+import { useAuth } from '@/state/AuthProvider';
+import { useEntries } from '@/state/EntriesProvider';
+import { useI18n } from '@/state/I18nProvider';
+
+/**
+ * L'action rapide : six emoji sous la journée de l'autre, un appui suffit.
+ *
+ * Pas de champ de texte, pas de clavier — la palette est fermée comme celle
+ * des émotions. Une seule réaction à la fois : appuyer sur un autre emoji
+ * remplace, appuyer sur le même retire. C'est la seule chose qu'on puisse
+ * faire sur la journée de quelqu'un d'autre, et c'est voulu : ce n'est pas un
+ * fil de commentaires.
+ *
+ * Ne s'affiche que sur la journée du binôme — on ne réagit pas à la sienne,
+ * et la base le refuserait de toute façon.
+ */
+export function QuickReactions({ entry, tint }: { entry: Entry | null; tint?: string | null }) {
+  const { t } = useI18n();
+  const { profile } = useAuth();
+  const { myReactions, react, online } = useEntries();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  if (!entry || !profile || entry.user_id === profile.id) return null;
+
+  const current = myReactions[entry.id]?.key ?? null;
+
+  const pick = async (key: string) => {
+    // Le même emoji deux fois de suite retire la réaction : c'est le seul
+    // moyen de revenir en arrière sans deuxième commande à l'écran.
+    const next = current === key ? null : key;
+    setBusy(key);
+    setFailed(false);
+    try {
+      await react(entry.id, next);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const hint = !online
+    ? t('reactions.offline')
+    : failed
+      ? t('reactions.failed')
+      : current
+        ? t('reactions.chosen', { name: t(`reactions.names.${current}`) })
+        : t('reactions.hint');
+
+  return (
+    <div className="quick-reactions">
+      <div className="quick-reactions__head">
+        <span className="quick-reactions__title">{t('reactions.label')}</span>
+        <span className="quick-reactions__hint" aria-live="polite">{hint}</span>
+      </div>
+      <div className="reactions reactions--quick" role="group" aria-label={t('reactions.label')}>
+        {REACTIONS.map((reaction) => (
+          <button
+            key={reaction.key}
+            type="button"
+            className="reaction"
+            aria-pressed={current === reaction.key}
+            aria-label={t(`reactions.names.${reaction.key}`)}
+            title={t(`reactions.names.${reaction.key}`)}
+            disabled={!online || busy !== null}
+            // La réaction choisie prend le cran léger de la couleur du binôme :
+            // un geste posé sur sa journée, pas un état d'interface.
+            style={current === reaction.key && tint ? { background: tint } : undefined}
+            onClick={() => void pick(reaction.key)}
+          >
+            <span aria-hidden>{reaction.emoji}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Ce que le binôme a posé sur MA journée : une pastille ronde posée à cheval
+ * sur le bas de la photo, rien de plus. Une phrase entière à cet endroit
+ * pèserait plus lourd que la réaction elle-même.
+ *
+ * L'appui ouvre l'emoji en grand, avec le nom et une pluie de bulles : c'est
+ * là que la réaction prend sa place, quand on a décidé de la regarder. Et
+ * elle s'efface toute seule au bout de quelques secondes.
+ */
+export function ReceivedReaction({ entry }: { entry: Entry | null }) {
+  const { t } = useI18n();
+  const { profile, partner } = useAuth();
+  const { theirReactions } = useEntries();
+  const [open, setOpen] = useState(false);
+  // Référence stable : sans elle, le moindre nouveau rendu du parent (le
+  // sondage des entrées passe toutes les 60 s) relancerait le compte à rebours
+  // de la fête, qui ne s'effacerait jamais.
+  const close = useCallback(() => setOpen(false), []);
+
+  const mine = entry && profile ? entry.user_id === profile.id : false;
+  const reaction = mine && entry ? theirReactions[entry.id] : undefined;
+  if (!reaction) return null;
+
+  const name = partner?.display_name || t('calendar.partner');
+  const detail = t('reactions.receivedDetail', {
+    name,
+    reaction: t(`reactions.names.${reaction.key}`),
+  });
+
+  return (
+    <>
+      <button type="button" className="reaction-pill" onClick={() => setOpen(true)} aria-label={detail}>
+        <span aria-hidden>{reaction.emoji}</span>
+      </button>
+      {open ? (
+        <ReactionBurst emoji={reaction.emoji} title={t('reactions.received', { name })} onClose={close} />
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * La réaction en grand : le nom de la personne, et l'emoji qui monte du bas
+ * de l'écran en s'effaçant. Le tout dure `BURST_MS` et s'en va tout seul —
+ * un appui l'écourte, mais rien n'oblige à s'en occuper.
+ *
+ * Le champ de bulles est tiré **une seule fois** : un nouveau tirage à chaque
+ * rendu ferait sauter les emoji d'un endroit à l'autre au premier changement
+ * d'état venu.
+ *
+ * Ce n'est volontairement pas une boîte de dialogue : rien à fermer, rien à
+ * décider, donc pas de `role="dialog"` qui retiendrait le focus le temps
+ * d'une célébration de quatre secondes.
+ */
+function ReactionBurst({
+  emoji,
+  title,
+  onClose,
+}: {
+  emoji: string;
+  title: string;
+  onClose: () => void;
+}) {
+  const field = useMemo(() => bubbles(BUBBLE_COUNT, Math.random), []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(onClose, BURST_MS);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="reaction-burst"
+      role="status"
+      aria-live="polite"
+      style={{ '--burst': `${BURST_MS}ms` } as React.CSSProperties}
+      onClick={onClose}
+    >
+      <div className="reaction-burst__sky" aria-hidden>
+        {field.map((bubble, index) => (
+          <span
+            key={index}
+            className="reaction-bubble"
+            style={
+              {
+                '--left': `${bubble.left}%`,
+                '--delay': `${bubble.delay}s`,
+                '--duration': `${bubble.duration}s`,
+                '--size': `${bubble.size}px`,
+                '--drift': `${bubble.drift}px`,
+              } as React.CSSProperties
+            }
+          >
+            {emoji}
+          </span>
+        ))}
+      </div>
+      <div className="reaction-burst__card stack">
+        <span className="reaction-burst__emoji" aria-hidden>
+          {emoji}
+        </span>
+        <strong className="reaction-burst__title">{title}</strong>
+      </div>
+    </div>
+  );
+}

@@ -4,9 +4,11 @@
 chaleur du soleil.
 
 Deux personnes liées enregistrent chaque jour l'énergie de leur journée : une
-émotion, qui est une couleur, et une photo prise sur le moment. Chacun voit le
-calendrier de l'autre — mais seulement après avoir rempli le sien. C'est un
-rituel à deux, pas un réseau social.
+émotion, qui est une couleur, et deux photos prises sur le moment — la scène
+devant soi et son propre visage, au même appui. Chacun voit le
+calendrier de l'autre — mais seulement après avoir rempli le sien — et peut y
+poser un emoji d'une palette fermée, en un appui. C'est un rituel à deux, pas
+un réseau social.
 
 Site web (rien à installer), bilingue français / espagnol, mode sombre.
 
@@ -23,7 +25,7 @@ npm install
 cp .env.example .env      # puis renseigner les clés Supabase
 npm run dev               # http://localhost:5173
 npm run build             # tsc -b && vite build
-npm run checks            # vérifications des dates, fuseaux et émotions
+npm run checks            # vérifications des dates, fuseaux, émotions et réactions
 ```
 
 > La caméra n'est accessible qu'en **HTTPS** (ou sur `localhost`) : c'est une
@@ -33,7 +35,8 @@ npm run checks            # vérifications des dates, fuseaux et émotions
 
 1. Créer un projet sur [supabase.com](https://supabase.com).
 2. Exécuter les migrations dans l'ordre, depuis le SQL Editor ou la CLI :
-   `supabase/migrations/0001_init.sql` puis `0002_notifications.sql`.
+   `supabase/migrations/0001_init.sql` puis `0002_notifications.sql`
+   (une base déjà en service joue en plus les rattrapages `0003` à `0007`).
    Elles créent les tables, la RLS, les fonctions de liaison et le bucket privé.
 3. Copier `Project URL` et la clé `anon` dans `.env`
    (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
@@ -49,7 +52,9 @@ les données, jamais le secret de la clé.
 | --- | --- |
 | `emotions` | les 12 couples (clé, couleur), figés |
 | `profiles` | nom, langue, **fuseau**, `partner_id`, code d'invitation, réglages de rappel |
-| `entries` | une ligne par personne et par jour : `date`, `emotion`, `color`, `photo_path`, `note` |
+| `entries` | une ligne par personne et par jour : `date`, `emotion`, `color`, `photo_path`, `selfie_path`, `note` |
+| `reaction_emojis` | les 6 couples (clé, emoji) de l'action rapide, figés |
+| `reactions` | un emoji posé sur la journée du binôme, clé primaire `(entry_id, author_id)` |
 
 `entries` a une contrainte `unique (user_id, date)` — un seul choix par jour —
 et une clé étrangère `(emotion, color) → emotions (key, color)` : une couleur
@@ -67,6 +72,15 @@ Pour afficher malgré tout une case hachurée « il/elle a posté ce jour-là »
 fonction `partner_entry_dates()` ne renvoie que des **dates**, sans aucun
 contenu. Les photos suivent la même règle : la policy Storage n'autorise un
 objet que s'il existe une ligne `entries` visible qui pointe dessus.
+
+### Réactions rapides
+
+Sous la journée du binôme, six emoji : un appui pose la réaction, un autre
+emoji la remplace, le même la retire. C'est la seule action possible sur la
+journée de quelqu'un d'autre — pas de texte, pas de fil. La policy d'écriture
+de `reactions` exige que la ligne visée soit une entrée du binôme **et** qu'elle
+soit déjà lisible : réagir ne donne jamais accès à ce que la réciprocité
+masque.
 
 ### Liaison du binôme
 
@@ -114,9 +128,11 @@ serveur qui pousse. Deux Edge Functions s'en chargent.
    supabase functions deploy daily-reminders
    ```
 
-3. **`notify-partner`** : Database → Webhooks, un webhook sur `INSERT` dans
-   `entries` qui appelle la fonction, avec l'en-tête `x-webhook-secret`. Le
-   binôme est notifié dans **sa** langue quand l'autre poste.
+3. **`notify-partner`** : Database → Webhooks, **deux** webhooks sur `INSERT`
+   qui appellent la même fonction, avec l'en-tête `x-webhook-secret` — l'un sur
+   `entries`, l'autre sur `reactions`. L'autre est notifié dans **sa** langue
+   quand on poste sa journée, et quand on réagit à la sienne. Changer d'avis
+   sur une réaction est un UPDATE : personne n'est repingué.
 
 4. **`daily-reminders`** : un cron toutes les 15 minutes (Integrations → Cron,
    ou `pg_cron` + `pg_net`) appelant la fonction. Elle demande à la base
@@ -134,7 +150,7 @@ Textes : « Quelle est la couleur de ta journée ? » / « ¿De qué color es tu
 
 Le service worker met en cache l'application, et les entrées déjà chargées sont
 conservées en `localStorage` : le calendrier reste consultable sans réseau. Une
-journée validée hors ligne est mise en attente (photo comprise) et part au
+journée validée hors ligne est mise en attente (les deux photos comprises) et part au
 retour de la connexion — rien n'est envoyé à moitié.
 
 ## Déploiement

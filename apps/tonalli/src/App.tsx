@@ -8,11 +8,14 @@ import {
   ResetPasswordScreen,
   SignInScreen,
   SignUpScreen,
+  WelcomeScreen,
 } from '@/routes/AuthScreens';
 import { MyCalendarScreen, PartnerCalendarScreen } from '@/routes/CalendarScreens';
+import { CharacterScreen } from '@/routes/CharacterScreen';
 import { LinkPartnerScreen } from '@/routes/LinkPartner';
 import { SettingsScreen } from '@/routes/Settings';
-import { TodayScreen } from '@/routes/Today';
+import { MyDayScreen, TheirDayScreen } from '@/routes/Today';
+import { TodayOverview } from '@/routes/TodayOverview';
 import { AuthProvider, useAuth } from '@/state/AuthProvider';
 import { EntriesProvider } from '@/state/EntriesProvider';
 import { I18nProvider, useI18n } from '@/state/I18nProvider';
@@ -31,7 +34,7 @@ function RequireAuth() {
   const { status, profile, profileError, reload } = useAuth();
 
   if (status === 'loading') return <Splash />;
-  if (status === 'signed-out') return <Navigate to="/sign-in" replace />;
+  if (status === 'signed-out') return <Navigate to="/welcome" replace />;
   if (!profile) {
     if (profileError) {
       return (
@@ -110,6 +113,7 @@ export function App() {
             <Routes>
               <Route element={<RecoveryGate />}>
                 <Route element={<PublicOnly />}>
+                  <Route path="/welcome" element={<WelcomeScreen />} />
                   <Route path="/sign-in" element={<SignInScreen />} />
                   <Route path="/sign-up" element={<SignUpScreen />} />
                   <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
@@ -122,10 +126,13 @@ export function App() {
                   <Route path="/link" element={<LinkRoute />} />
                   <Route element={<RequirePartner />}>
                     <Route element={<AppShell />}>
-                      <Route path="/" element={<TodayScreen />} />
+                      <Route path="/" element={<TodayOverview />} />
+                      <Route path="/day" element={<MyDayScreen />} />
+                      <Route path="/day/theirs" element={<TheirDayScreen />} />
                       <Route path="/me" element={<MyCalendarScreen />} />
                       <Route path="/partner" element={<PartnerCalendarScreen />} />
                       <Route path="/settings" element={<SettingsScreen />} />
+                      <Route path="/character" element={<CharacterScreen />} />
                     </Route>
                   </Route>
                 </Route>

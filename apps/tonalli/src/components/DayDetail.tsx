@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
-import { PhotoImage } from '@/components/PhotoImage';
+import { EntryPhotos } from '@/components/PhotoPair';
+import { QuickReactions, ReceivedReaction } from '@/components/Reactions';
 import { formatLongDate } from '@/lib/dates';
 import { readableTextOn } from '@/lib/emotions';
 import type { Entry } from '@/lib/types';
@@ -45,8 +46,10 @@ export function DayDetail({ date, entry, hidden, onClose }: Props) {
             >
               <strong style={{ fontSize: 22 }}>{t(`emotions.${entry.emotion}`)}</strong>
             </div>
-            <PhotoImage path={entry.photo_path} alt={t(`emotions.${entry.emotion}`)} />
+            <EntryPhotos entry={entry} alt={t(`emotions.${entry.emotion}`)} />
+            <ReceivedReaction entry={entry} />
             {entry.note ? <p>{entry.note}</p> : null}
+            <QuickReactions entry={entry} />
           </>
         ) : hidden ? (
           <div className="hero hero--empty stack-sm">

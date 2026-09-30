@@ -36,6 +36,68 @@ create policy "emotions_readable" on public.emotions
   for select to authenticated using (true);
 
 -- ---------------------------------------------------------------------------
+-- Nuances
+-- Trois crans d'intensité par émotion : la même couleur, plus pâle ou plus
+-- dense. C'est cette table que référence `entries`, pas `emotions` : la
+-- palette grandit à 36 couples, elle reste fermée, et une couleur qui ne
+-- correspond pas à son émotion reste impossible à écrire.
+--
+-- Le cran « franc » vaut exactement la couleur d'origine de l'émotion, ce qui
+-- rend les nuances rétrocompatibles avec les journées déjà écrites.
+-- ---------------------------------------------------------------------------
+create table if not exists public.emotion_shades (
+  emotion   text not null references public.emotions(key) on delete cascade,
+  intensity text not null check (intensity in ('light', 'plain', 'deep')),
+  color     text not null,
+  primary key (emotion, intensity),
+  unique (emotion, color)
+);
+
+insert into public.emotion_shades (emotion, intensity, color) values
+  ('joy', 'light', '#FFE583'),
+  ('joy', 'plain', '#FFD93D'),
+  ('joy', 'deep', '#8A7329'),
+  ('serenity', 'light', '#CBE6E2'),
+  ('serenity', 'plain', '#A8DADC'),
+  ('serenity', 'deep', '#637471'),
+  ('love', 'light', '#FFA3BC'),
+  ('love', 'plain', '#FF6B9D'),
+  ('love', 'deep', '#8A4254'),
+  ('gratitude', 'light', '#F8C498'),
+  ('gratitude', 'plain', '#F4A261'),
+  ('gratitude', 'deep', '#855B39'),
+  ('pride', 'light', '#F1A58F'),
+  ('pride', 'plain', '#E76F51'),
+  ('pride', 'deep', '#7F4432'),
+  ('excitement', 'light', '#FF918C'),
+  ('excitement', 'plain', '#FF4D4D'),
+  ('excitement', 'deep', '#8A3430'),
+  ('nostalgia', 'light', '#D0B6CE'),
+  ('nostalgia', 'plain', '#B08BBB'),
+  ('nostalgia', 'deep', '#665062'),
+  ('tiredness', 'light', '#BBBFC6'),
+  ('tiredness', 'plain', '#8D99AE'),
+  ('tiredness', 'deep', '#57565C'),
+  ('sadness', 'light', '#8FADBC'),
+  ('sadness', 'plain', '#457B9D'),
+  ('sadness', 'deep', '#364954'),
+  ('anxiety', 'light', '#A690B6'),
+  ('anxiety', 'plain', '#6A4C93'),
+  ('anxiety', 'deep', '#473450'),
+  ('anger', 'light', '#C37775'),
+  ('anger', 'plain', '#9B2226'),
+  ('anger', 'deep', '#5D211F'),
+  ('neutral', 'light', '#E8E4E0'),
+  ('neutral', 'plain', '#D8D8D8'),
+  ('neutral', 'deep', '#78736F')
+on conflict (emotion, intensity) do update set color = excluded.color;
+
+alter table public.emotion_shades enable row level security;
+
+create policy "emotion_shades_readable" on public.emotion_shades
+  for select to authenticated using (true);
+
+-- ---------------------------------------------------------------------------
 -- Profils
 -- ---------------------------------------------------------------------------
 create table if not exists public.profiles (
@@ -51,6 +113,22 @@ create table if not exists public.profiles (
   reminder_hour   smallint not null default 21 check (reminder_hour between 0 and 23),
   reminder_minute smallint not null default 0  check (reminder_minute between 0 and 59),
   reminders_enabled boolean not null default true,
+  -- Symbole de la série, choisi dans les réglages. On garde la clé et non le
+  -- caractère : changer un glyphe ne doit obliger à réécrire aucun profil.
+  streak_symbol text not null default 'flame'
+    check (streak_symbol in ('flame', 'cherry', 'heart', 'star', 'leaf', 'sun')),
+  -- La tenue du personnage : un accessoire au plus par catégorie, `null` pour
+  -- rien. Elle vit au profil et le binôme la voit (voir 0011 et 0012).
+  character_head  text
+    check (character_head in ('beanie', 'flower', 'ears', 'lock', 'cap', 'bow', 'antennae')),
+  character_body  text
+    check (character_body in ('scarf', 'satchel', 'cape', 'bowtie', 'necklace')),
+  character_face  text
+    check (character_face in ('glasses', 'freckles', 'blush', 'lashes', 'mole', 'bandage')),
+  character_motif text
+    check (character_motif in ('stripes', 'dots', 'checks', 'stars')),
+  character_flag  text
+    check (character_flag in ('france', 'mexico', 'spain', 'italy', 'brazil')),
   created_at   timestamptz not null default now()
 );
 
@@ -66,13 +144,61 @@ create table if not exists public.entries (
   emotion    text not null,
   color      text not null,
   photo_path text,
+  -- Seconde photo, caméra frontale, prise dans la foulée de la première.
+  -- Facultative : tous les appareils n'ont pas deux caméras.
+  selfie_path text,
   note       text check (char_length(note) <= 140),
   created_at timestamptz not null default now(),
   unique (user_id, date),
-  foreign key (emotion, color) references public.emotions (key, color)
+  foreign key (emotion, color) references public.emotion_shades (emotion, color)
 );
 
 create index if not exists entries_user_date_idx on public.entries (user_id, date desc);
+
+-- ---------------------------------------------------------------------------
+-- Réactions rapides
+-- Un emoji posé sur la journée du binôme, en un appui. Palette fermée, comme
+-- les émotions : le couple (clé, emoji) est référencé par clé étrangère, une
+-- réaction hors palette ne peut pas être écrite.
+-- ---------------------------------------------------------------------------
+create table if not exists public.reaction_emojis (
+  key        text primary key,
+  emoji      text not null,
+  sort_order integer not null,
+  unique (key, emoji)
+);
+
+insert into public.reaction_emojis (key, emoji, sort_order) values
+  ('heart',    '❤️', 1),
+  ('hug',      '🤗', 2),
+  ('laugh',    '😂', 3),
+  ('wow',      '😮', 4),
+  ('tender',   '🥺', 5),
+  ('strength', '💪', 6)
+on conflict (key) do update
+  set emoji = excluded.emoji, sort_order = excluded.sort_order;
+
+alter table public.reaction_emojis enable row level security;
+
+drop policy if exists "reaction_emojis_readable" on public.reaction_emojis;
+create policy "reaction_emojis_readable" on public.reaction_emojis
+  for select to authenticated using (true);
+
+-- La clé primaire (entry_id, author_id) dit tout : une personne, une journée,
+-- une réaction. Changer d'avis écrase la précédente ; la retirer supprime la
+-- ligne. Rien n'est conservé de l'historique : ce n'est pas un témoignage,
+-- c'est un geste.
+create table if not exists public.reactions (
+  entry_id   uuid not null references public.entries(id) on delete cascade,
+  author_id  uuid not null references public.profiles(id) on delete cascade,
+  key        text not null,
+  emoji      text not null,
+  created_at timestamptz not null default now(),
+  primary key (entry_id, author_id),
+  foreign key (key, emoji) references public.reaction_emojis (key, emoji)
+);
+
+create index if not exists reactions_entry_idx on public.reactions (entry_id);
 
 -- ---------------------------------------------------------------------------
 -- Fonctions utilitaires
@@ -348,6 +474,53 @@ create policy "entries_delete_own" on public.entries
   for delete to authenticated
   using (user_id = auth.uid());
 
+-- Réactions : le droit de réagir hérite du droit de voir, il ne l'élargit pas.
+--
+-- Lecture : les réactions posées sur une entrée que j'ai le droit de lire. La
+-- sous-requête repasse par la RLS de `entries`, qui porte déjà la réciprocité.
+-- Pas de récursion à craindre : la policy de `reactions` n'interroge pas
+-- `reactions`.
+alter table public.reactions enable row level security;
+
+drop policy if exists "reactions_select" on public.reactions;
+create policy "reactions_select" on public.reactions
+  for select to authenticated
+  using (exists (select 1 from public.entries e where e.id = reactions.entry_id));
+
+-- Écriture : uniquement mes réactions, et uniquement sur une journée du
+-- binôme. Le `exists` filtre deux fois — par la RLS de `entries` (donc par la
+-- réciprocité) et par `partner_of`, qui interdit de réagir à sa propre
+-- journée.
+drop policy if exists "reactions_insert" on public.reactions;
+create policy "reactions_insert" on public.reactions
+  for insert to authenticated
+  with check (
+    author_id = auth.uid()
+    and exists (
+      select 1 from public.entries e
+       where e.id = reactions.entry_id
+         and e.user_id = public.partner_of(auth.uid())
+    )
+  );
+
+drop policy if exists "reactions_update_own" on public.reactions;
+create policy "reactions_update_own" on public.reactions
+  for update to authenticated
+  using (author_id = auth.uid())
+  with check (
+    author_id = auth.uid()
+    and exists (
+      select 1 from public.entries e
+       where e.id = reactions.entry_id
+         and e.user_id = public.partner_of(auth.uid())
+    )
+  );
+
+drop policy if exists "reactions_delete_own" on public.reactions;
+create policy "reactions_delete_own" on public.reactions
+  for delete to authenticated
+  using (author_id = auth.uid());
+
 -- ---------------------------------------------------------------------------
 -- Stockage des photos : bucket privé, URLs signées côté client.
 -- ---------------------------------------------------------------------------
@@ -390,7 +563,11 @@ create policy "entry_photos_select" on storage.objects
     bucket_id = 'entries'
     and (
       (storage.foldername(name))[1] = auth.uid()::text
-      or exists (select 1 from public.entries e where e.photo_path = storage.objects.name)
+      or exists (
+        select 1 from public.entries e
+         where e.photo_path = storage.objects.name
+            or e.selfie_path = storage.objects.name
+      )
     )
   );
 
