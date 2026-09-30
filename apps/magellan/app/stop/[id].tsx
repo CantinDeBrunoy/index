@@ -53,6 +53,7 @@ export default function StopDetail() {
         budget={stop.budget}
         names={names}
         position={stop}
+        photos={stop.photos}
       />
     </WoodPage>
   );

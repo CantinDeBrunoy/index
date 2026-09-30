@@ -10,11 +10,13 @@
 
 import { Caveat_500Medium, Caveat_700Bold } from '@expo-google-fonts/caveat';
 import { PermanentMarker_400Regular } from '@expo-google-fonts/permanent-marker';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import type { ReactNode } from 'react';
+import { useState, type ComponentProps, type ReactNode } from 'react';
 import {
+  FlatList,
   Image,
   Pressable,
   ScrollView,
@@ -25,11 +27,13 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { PhotoThumb } from '@/features/photos/PhotoThumb';
 
 const WOOD = require('@/assets/images/wood-walnut.png');
 
-const FONT = {
+export const FONT = {
   hand: 'Caveat_500Medium',
   handBold: 'Caveat_700Bold',
   marker: 'PermanentMarker_400Regular',
@@ -48,6 +52,8 @@ const PAPER_SHADOW = '0px 1px 1px rgba(0, 0, 0, 0.18), 0px 10px 14px -8px rgba(0
 /** Au-delà de cette largeur, la fiche passe en mise en page large (web, tablette). */
 const WIDE_BREAKPOINT = 900;
 const MAX_WIDTH = 1440;
+/** Écart entre le haut de l'écran (zone sûre) et l'étiquette « Retour » épinglée. */
+const BACK_TOP = 16;
 
 /** Couleur d'un post-it : le papier et l'encre lisible dessus. */
 export type PostitColor = { paper: string; ink: string };
@@ -90,14 +96,22 @@ export function useWoodLayout() {
   const wide = width >= WIDE_BREAKPOINT;
   const gutter = wide ? 56 : 20;
   const contentWidth = Math.min(width, MAX_WIDTH) - 2 * gutter;
-  return { wide, contentWidth };
+  return { wide, contentWidth, width };
 }
 
-/** Page d'une fiche : table en noyer, étiquette « Retour », contenu défilant. */
-export function WoodPage({ children }: { children: ReactNode }) {
+/**
+ * Page sur la table en noyer : contenu défilant et, sauf pour un onglet (`back={false}`),
+ * étiquette « Retour » épinglée en haut à gauche — toujours à portée, la fiche glisse
+ * dessous pendant le défilement.
+ */
+export function WoodPage({ children, back = true }: { children: ReactNode; back?: boolean }) {
   const router = useRouter();
-  const { wide } = useWoodLayout();
+  const insets = useSafeAreaInsets();
+  const { wide, width } = useWoodLayout();
   const [fontsLoaded] = useFonts({ Caveat_500Medium, Caveat_700Bold, PermanentMarker_400Regular });
+  const gutter = wide ? 56 : 20;
+  // Alignée sur le bord gauche du contenu (centré et plafonné en largeur sur grand écran).
+  const backLeft = (width - Math.min(width, MAX_WIDTH)) / 2 + gutter;
 
   return (
     <View style={styles.page}>
@@ -106,23 +120,62 @@ export function WoodPage({ children }: { children: ReactNode }) {
       <Image source={WOOD} resizeMode="repeat" style={styles.wood} />
       {/* Sans les polices manuscrites, la mise en page sauterait au chargement : on attend. */}
       {fontsLoaded ? (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <SafeAreaView edges={['top']}>
-            <View style={[styles.inner, { paddingHorizontal: wide ? 56 : 20 }]}>
-              <Pressable
-                onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel="Retour"
-                style={({ pressed }) => [styles.backTag, pressed && styles.pressed]}>
-                <Text style={styles.backText}>‹  Retour</Text>
-              </Pressable>
-              {children}
-            </View>
-          </SafeAreaView>
-        </ScrollView>
+        <>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <SafeAreaView edges={['top']}>
+              <View style={[styles.inner, { paddingHorizontal: gutter }, back && styles.innerUnderBack]}>
+                {children}
+              </View>
+            </SafeAreaView>
+          </ScrollView>
+          {back ? (
+            <Pressable
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Retour"
+              style={({ pressed }) => [
+                styles.backTag,
+                { top: insets.top + BACK_TOP, left: backLeft },
+                pressed && styles.pressed,
+              ]}>
+              <Text style={styles.backText}>‹  Retour</Text>
+            </Pressable>
+          ) : null}
+        </>
       ) : null}
     </View>
+  );
+}
+
+/** Bouton « étiquette kraft » ; `light` pour une action secondaire. */
+export function WoodButton({
+  label,
+  onPress,
+  icon,
+  light,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  icon?: ComponentProps<typeof Ionicons>['name'];
+  light?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.woodButton,
+        light && styles.woodButtonLight,
+        disabled && styles.woodButtonDisabled,
+        pressed && styles.pressed,
+      ]}>
+      {icon ? <Ionicons name={icon} size={18} color={DARK_INK} /> : null}
+      <Text style={[styles.woodButtonText, light && styles.woodButtonTextLight]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -442,15 +495,153 @@ export function Postcard({
   );
 }
 
+const POLAROID_W = 150;
+const POLAROID_GAP = 26;
+const SLOT = POLAROID_W + POLAROID_GAP;
+
+type LineItem = { path: string; caption?: string };
+
+/** Mélange déterministe (même graine, même ordre) : le premier tirage est stable d'un rendu à l'autre. */
+function seededShuffle<T>(xs: T[], seed: number): T[] {
+  let s = seed >>> 0;
+  const rand = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const a = [...xs];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function hash(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+/** Un polaroid suspendu par sa pince ; `twine` : porte son bout de ficelle. */
+function Polaroid({ item, index, width, twine }: { item: LineItem; index: number; width: number; twine?: boolean }) {
+  return (
+    <View style={[styles.lineSlot, { width }]}>
+      {twine ? <View style={styles.twine} /> : null}
+      <View style={[styles.polaroid, { transform: [{ rotate: tilt(index, 1.4) }] }]}>
+        <PhotoThumb path={item.path} width={POLAROID_W - 18} height={POLAROID_W - 18} />
+        <Text numberOfLines={1} style={styles.polaroidCaption}>
+          {item.caption ?? ''}
+        </Text>
+      </View>
+      <View style={[styles.peg, { left: width / 2 - 6, transform: [{ rotate: tilt(index, 1.4) }] }]} />
+    </View>
+  );
+}
+
+/**
+ * Photos sur une corde à linge : des polaroids suspendus par des pinces.
+ * - étroit (téléphone) : une corde qu'on fait glisser du doigt ; chaque emplacement porte
+ *   son bout de ficelle, pour une corde continue même si la liste ne dessine que les
+ *   photos visibles ;
+ * - large : une seule corde sur toute la largeur ; un clic y accroche une autre série
+ *   tirée au hasard, jamais celle affichée, et toutes les photos passent avant qu'une
+ *   ne revienne.
+ */
+export function Clothesline({ items }: { items: LineItem[] }) {
+  const { wide, contentWidth, width } = useWoodLayout();
+  // Tirage en cours : ordre mélangé des photos et position de la série affichée. Tant
+  // qu'on n'a pas cliqué (ou si la liste a changé), premier mélange stable de la liste.
+  const sig = `${items.length}:${items[0]?.path ?? ''}:${items[items.length - 1]?.path ?? ''}`;
+  const [draw, setDraw] = useState<{ sig: string; order: LineItem[]; pos: number } | null>(null);
+  if (items.length === 0) return null;
+
+  const title = (
+    <TapeTitle align="left" style={styles.flush}>
+      {`Photos · ${items.length}`}
+    </TapeTitle>
+  );
+
+  if (!wide) {
+    return (
+      <View style={styles.clothesline}>
+        {title}
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={items}
+          keyExtractor={(it) => it.path}
+          initialNumToRender={8}
+          windowSize={5}
+          getItemLayout={(_, index) => ({ length: SLOT, offset: SLOT * index, index })}
+          contentContainerStyle={styles.lineContent}
+          renderItem={({ item, index }) => <Polaroid item={item} index={index} width={SLOT} twine />}
+        />
+      </View>
+    );
+  }
+
+  // La corde sort de la colonne de contenu pour aller d'un bord à l'autre de la fenêtre.
+  const bleed = (width - contentWidth) / 2;
+  const perLine = Math.max(1, Math.floor(width / SLOT));
+  const slot = width / perLine;
+  const current = draw && draw.sig === sig ? draw : { sig, order: seededShuffle(items, hash(sig)), pos: 0 };
+  const shown = current.order.slice(current.pos, current.pos + perLine);
+  const canDraw = items.length > perLine;
+
+  // Série suivante : la suite du mélange ; en fin de mélange, on repart avec d'abord les
+  // photos pas encore vues, puis les autres, et la série actuelle en tout dernier.
+  const next = () => {
+    const { order, pos } = current;
+    if (pos + 2 * perLine <= order.length) {
+      setDraw({ sig, order, pos: pos + perLine });
+      return;
+    }
+    const unseen = order.slice(pos + perLine);
+    const seen = order.slice(0, pos);
+    const seed = hash(`${sig}:${Date.now()}`);
+    setDraw({
+      sig,
+      order: [...seededShuffle(unseen, seed), ...seededShuffle(seen, seed + 1), ...shown],
+      pos: 0,
+    });
+  };
+
+  return (
+    <View style={styles.clothesline}>
+      <View style={styles.lineHead}>
+        {title}
+        {canDraw ? <Text style={styles.lineHint}>Clique sur la corde pour en voir d’autres</Text> : null}
+      </View>
+      <Pressable
+        onPress={next}
+        disabled={!canDraw}
+        accessibilityRole="button"
+        accessibilityLabel="Voir d’autres photos"
+        style={({ pressed }) => [styles.line, { width, marginHorizontal: -bleed }, pressed && styles.pressed]}>
+        <View style={styles.twine} />
+        {shown.map((item, i) => (
+          <Polaroid key={item.path} item={item} index={current.pos + i} width={slot} />
+        ))}
+      </Pressable>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#5a341c' },
   // Taille explicite : sur web, sans elle, l'image garde la taille d'une seule tuile.
   wood: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   inner: { width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center', paddingTop: 12, paddingBottom: 56 },
+  // Laisse la place à l'étiquette « Retour » épinglée (16 + 44 px) au-dessus du contenu.
+  innerUnderBack: { paddingTop: BACK_TOP + 44 + 8 },
   pressed: { opacity: 0.8 },
 
   backTag: {
-    alignSelf: 'flex-start',
+    position: 'absolute',
+    zIndex: 10,
     backgroundColor: '#d9b88c',
     borderTopLeftRadius: 4,
     borderBottomLeftRadius: 4,
@@ -464,6 +655,22 @@ const styles = StyleSheet.create({
     boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.35)',
   },
   backText: { fontFamily: FONT.handBold, fontSize: 22, color: DARK_INK },
+
+  woodButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 18,
+    borderRadius: 22,
+    backgroundColor: '#d9b88c',
+    boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.35)',
+  },
+  woodButtonLight: { backgroundColor: 'rgba(245, 235, 205, 0.85)' },
+  woodButtonDisabled: { opacity: 0.5 },
+  woodButtonText: { fontFamily: FONT.handBold, fontSize: 22, color: DARK_INK },
+  woodButtonTextLight: { fontSize: 21 },
 
   postit: { boxShadow: PAPER_SHADOW },
   tape: {
@@ -594,6 +801,38 @@ const styles = StyleSheet.create({
   notepadTotalValue: { fontFamily: FONT.handBold, fontSize: 30, color: '#b3261e' },
 
   flush: { marginTop: 0 },
+
+  clothesline: { marginTop: 34 },
+  lineContent: { paddingTop: 12, paddingBottom: 18 },
+  lineSlot: { paddingTop: 30, alignItems: 'center' },
+  line: { flexDirection: 'row', marginTop: 6 },
+  lineHead: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 14 },
+  lineHint: { fontFamily: FONT.hand, fontSize: 20, color: '#f3e6c8' },
+  twine: { position: 'absolute', top: 22, left: 0, right: 0, height: 2, backgroundColor: '#e8d3a8' },
+  polaroid: {
+    width: POLAROID_W,
+    padding: 9,
+    paddingBottom: 0,
+    backgroundColor: '#fbfaf6',
+    boxShadow: '0px 1px 1px rgba(0, 0, 0, 0.2), 0px 12px 16px -8px rgba(0, 0, 0, 0.65)',
+  },
+  polaroidCaption: {
+    fontFamily: FONT.hand,
+    fontSize: 20,
+    lineHeight: 36,
+    height: 36,
+    textAlign: 'center',
+    color: INK,
+  },
+  peg: {
+    position: 'absolute',
+    top: 10,
+    width: 12,
+    height: 30,
+    borderRadius: 2,
+    backgroundColor: '#c89a5e',
+    boxShadow: '1px 2px 3px rgba(0, 0, 0, 0.45)',
+  },
   nameRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 34 },
   nameTag: { paddingVertical: 6, paddingHorizontal: 16 },
   nameText: { fontFamily: FONT.handBold, fontSize: 24, color: INK },

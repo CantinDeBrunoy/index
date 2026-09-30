@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { CitySheet, budgetRows } from '@/features/detail/CitySheet';
 import {
+  Clothesline,
   KraftLabel,
   Notepad,
   StatPostits,
@@ -98,6 +99,7 @@ export default function TripDetail() {
           budget={budget}
           names={names}
           position={stop}
+          photos={stop.photos}
         />
       </WoodPage>
     );
@@ -123,6 +125,10 @@ export default function TripDetail() {
   const budgetBlock =
     total > 0 ? <Notepad title="Budget" total={total} rows={budgetRows(budget)} /> : null;
   const peopleBlock = names.length > 0 ? <TagRow title="Avec qui" items={names} /> : null;
+  // Toutes les photos du voyage, étape par étape, légendées du nom de la ville.
+  const photoLine = (
+    <Clothesline items={trip.stops.flatMap((s) => (s.photos ?? []).map((p) => ({ path: p.path, caption: s.name })))} />
+  );
 
   // — Road trip, mise en page étroite —
   if (!wide) {
@@ -134,6 +140,7 @@ export default function TripDetail() {
         <View style={styles.board}>
           <StopBoard stops={boardStops} width={contentWidth} wide={false} />
         </View>
+        {photoLine}
         {budgetBlock}
         {peopleBlock}
       </WoodPage>
@@ -167,6 +174,7 @@ export default function TripDetail() {
           </View>
         ) : null}
       </View>
+      {photoLine}
       {hasSide && !sideInline ? (
         <View style={styles.notepadNarrow}>
           {budgetBlock}

@@ -15,6 +15,19 @@ export type Budget = {
   transport: number;
 };
 
+/**
+ * Photo d'une étape : une référence vers un fichier du dossier photos connecté
+ * (ex. « iCloud Photos » synchronisé sur le PC), pas une copie de l'image.
+ */
+export type PhotoRef = {
+  /** Chemin relatif dans le dossier connecté — sert aussi d'identifiant. */
+  path: string;
+  /** Date de prise de vue (ISO 8601), si on a pu la retrouver. */
+  takenAt?: string;
+  lat?: number;
+  lng?: number;
+};
+
 /** Une étape d'un voyage : une ville positionnée par ses coordonnées. */
 export type TripStop = {
   id: string;
@@ -28,7 +41,7 @@ export type TripStop = {
   days?: number; // durée en jours
   people?: string[]; // avec qui
   budget?: Budget; // dépenses par poste
-  photos?: string[]; // URIs de photos (à venir)
+  photos?: PhotoRef[]; // photos de l'étape (triées par date de prise de vue)
 };
 
 /** Un voyage : une suite ordonnée d'étapes, reliées par un tracé sur le globe. */

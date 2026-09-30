@@ -20,6 +20,13 @@ L'objet central est le **voyage (road trip)** : une suite ordonnée d'**étapes*
 Sur le globe, les étapes d'un même voyage sont reliées par un **arc** ; un pays devient
 vert dès qu'une étape s'y trouve. L'app récapitule la progression (voyages, villes, pays).
 
+L'onglet **Voyages** est une **boîte à fiches** sur la même table en noyer : une fiche bristol
+par voyage (bande à la couleur de son tracé, itinéraire manuscrit, tampons des pays, chiffres),
+classées par année, du plus récent au plus ancien, avec les voyages sans date à la fin ;
+filtres « Tous · Road trips · Une ville ». Toucher une fiche ouvre celle du voyage ; le crayon
+l'ouvre en édition (ajouter une étape par recherche de ville, en retirer, supprimer le voyage
+après confirmation). Un nouveau voyage apparaît en tête, « à compléter ».
+
 Taper un voyage ouvre sa **fiche détail**, posée sur une **table en noyer** : étiquette kraft
 pour le titre, pays en tampons encreurs, chiffres clés sur des post-it, un **post-it punaisé
 par étape** (sa couleur dit le pays) relié aux autres par un fil rouge, et le budget sur une
@@ -29,6 +36,15 @@ globe, ses chiffres, son budget, ses participants et sa position. Un voyage à u
 n'a qu'une fiche : son drapeau mène directement à celle du voyage. La mise en page suit la
 largeur d'écran : zigzag d'une étape par rangée sur téléphone, serpentin sur 2–3 colonnes sur
 écran large (web, tablette).
+
+Les **photos** s'importent en masse depuis la version web (Edge / Chrome), à partir du dossier
+où iCloud pour Windows synchronise la photothèque : l'app lit la date et le lieu (EXIF) de
+chaque photo et la range dans la bonne étape — d'office quand lieu et date concordent, « à
+vérifier » quand l'étape n'a pas de date ou que la photo n'a pas de lieu (photos WhatsApp :
+date lue dans le nom du fichier). On valide par paquets, puis les photos s'affichent sur une
+**corde à linge** de polaroids dans les fiches. Rien n'est copié : l'app garde une référence
+vers chaque fichier et une miniature dans le navigateur ; les photos restent propres à ce
+navigateur.
 
 ## La stack
 
@@ -60,9 +76,17 @@ features/
   trips/
     store.ts               # état des voyages + persistance
     types.ts               # VisitedCountry (ISO3), VisitedCity {name,country,lat,lng}
+    dates.ts               # dates d'étape en texte libre → période, année, libellé court
+  voyages/
+    TripCard.tsx           # fiche bristol d'un voyage (onglet Voyages) : consultation / édition
   detail/
     WoodKit.tsx            # kit « bois & post-it » (étiquette, post-it, fil rouge, carte postale)
     CitySheet.tsx          # fiche d'une ville : étape d'un road trip ou voyage à une ville
+  photos/
+    match-photos.ts        # rangement automatique (lieu + date → étape), 3 niveaux de confiance
+    web-folder.ts          # web : dossier du PC (File System Access), EXIF, miniatures (IndexedDB)
+    ImportScreen.web.tsx   # web : import groupé et vérification par paquets (.tsx : repli mobile)
+    PhotoThumb.web.tsx     # web : miniature d'une photo (.tsx : repli mobile)
 data/
   countries.geo.json       # frontières des pays (Natural Earth, simplifié)
   countries.ts             # ISO3 → { nom, drapeau, centroïde }
