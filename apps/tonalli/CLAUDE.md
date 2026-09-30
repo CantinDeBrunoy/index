@@ -753,6 +753,12 @@ la date du build. Il est calculé dans `vite.config.ts` (`define`), depuis
 local, avec `dev` en repli. Comparer ce qui s'affiche à `git log -1 main`
 répond en trois secondes à une question qui a déjà coûté deux allers-retours.
 
+**Mot de passe oublié.** Le lien envoyé par Supabase ramène sur
+`/reset-password`, qui doit figurer dans Authentication → URL Configuration →
+Redirect URLs (production et `http://localhost:5173/reset-password`). S'il en
+manque, Supabase renvoie vers la Site URL : `openedFromRecoveryLink` dans
+`src/lib/supabase.ts` détecte le jeton et réaiguille quand même.
+
 ---
 
 ## 9. Vérifier son travail

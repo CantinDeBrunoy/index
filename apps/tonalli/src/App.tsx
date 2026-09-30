@@ -1,9 +1,15 @@
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 
 import { ErrorBanner, Loading } from '@/components/States';
 import { Tabs } from '@/components/Tabs';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { SignInScreen, SignUpScreen, WelcomeScreen } from '@/routes/AuthScreens';
+import {
+  ForgotPasswordScreen,
+  ResetPasswordScreen,
+  SignInScreen,
+  SignUpScreen,
+  WelcomeScreen,
+} from '@/routes/AuthScreens';
 import { MyCalendarScreen, PartnerCalendarScreen } from '@/routes/CalendarScreens';
 import { CharacterScreen } from '@/routes/CharacterScreen';
 import { LinkPartnerScreen } from '@/routes/LinkPartner';
@@ -46,6 +52,17 @@ function RequireAuth() {
 function RequirePartner() {
   const { profile } = useAuth();
   if (!profile?.partner_id) return <Navigate to="/link" replace />;
+  return <Outlet />;
+}
+
+/**
+ * Un lien de réinitialisation ouvre une session : sans cet aiguillage, la
+ * personne entrerait dans l'app sans avoir choisi son nouveau mot de passe.
+ */
+function RecoveryGate() {
+  const { recovering } = useAuth();
+  const { pathname } = useLocation();
+  if (recovering && pathname !== '/reset-password') return <Navigate to="/reset-password" replace />;
   return <Outlet />;
 }
 
@@ -94,28 +111,34 @@ export function App() {
         <AuthProvider>
           <EntriesProvider>
             <Routes>
-              <Route element={<PublicOnly />}>
-                <Route path="/welcome" element={<WelcomeScreen />} />
-                <Route path="/sign-in" element={<SignInScreen />} />
-                <Route path="/sign-up" element={<SignUpScreen />} />
-              </Route>
+              <Route element={<RecoveryGate />}>
+                <Route element={<PublicOnly />}>
+                  <Route path="/welcome" element={<WelcomeScreen />} />
+                  <Route path="/sign-in" element={<SignInScreen />} />
+                  <Route path="/sign-up" element={<SignUpScreen />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
+                </Route>
 
-              <Route element={<RequireAuth />}>
-                <Route path="/link" element={<LinkRoute />} />
-                <Route element={<RequirePartner />}>
-                  <Route element={<AppShell />}>
-                    <Route path="/" element={<TodayOverview />} />
-                    <Route path="/day" element={<MyDayScreen />} />
-                    <Route path="/day/theirs" element={<TheirDayScreen />} />
-                    <Route path="/me" element={<MyCalendarScreen />} />
-                    <Route path="/partner" element={<PartnerCalendarScreen />} />
-                    <Route path="/settings" element={<SettingsScreen />} />
-                    <Route path="/character" element={<CharacterScreen />} />
+                {/* Ni publique ni protégée : on y arrive connecté par le lien, ou déconnecté s'il a expiré. */}
+                <Route path="/reset-password" element={<ResetPasswordScreen />} />
+
+                <Route element={<RequireAuth />}>
+                  <Route path="/link" element={<LinkRoute />} />
+                  <Route element={<RequirePartner />}>
+                    <Route element={<AppShell />}>
+                      <Route path="/" element={<TodayOverview />} />
+                      <Route path="/day" element={<MyDayScreen />} />
+                      <Route path="/day/theirs" element={<TheirDayScreen />} />
+                      <Route path="/me" element={<MyCalendarScreen />} />
+                      <Route path="/partner" element={<PartnerCalendarScreen />} />
+                      <Route path="/settings" element={<SettingsScreen />} />
+                      <Route path="/character" element={<CharacterScreen />} />
+                    </Route>
                   </Route>
                 </Route>
-              </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
             </Routes>
           </EntriesProvider>
         </AuthProvider>

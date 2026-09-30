@@ -1,9 +1,10 @@
 import { useId, useState } from 'react';
 import type { InputHTMLAttributes, ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { BackButton } from '@/components/BackButton';
 import { Character } from '@/components/Character';
+import { Loading } from '@/components/States';
 import { Sun, WelcomeSun } from '@/components/WelcomeSun';
 import { LOCALES } from '@/lib/i18n';
 import type { Locale } from '@/lib/types';
@@ -26,6 +27,11 @@ function authProblem(message: string, t: (key: string) => string): AuthProblem {
   if (lower.includes('already registered') || lower.includes('already been registered')) {
     return { field: null, message: t('auth.emailTaken') };
   }
+  if (lower.includes('rate limit') || lower.includes('security purposes')) {
+    return { field: null, message: t('auth.rateLimited') };
+  }
+  // Avant le test générique sur « password », qu'il contient aussi.
+  if (lower.includes('different from the old')) return { field: 'password', message: t('auth.samePassword') };
   if (lower.includes('password')) return { field: 'password', message: t('auth.passwordTooShort') };
   if (lower.includes('fetch') || lower.includes('network')) return { field: null, message: t('common.networkError') };
   return { field: null, message };
@@ -238,6 +244,9 @@ export function SignInScreen() {
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
+        <Link to="/forgot-password" state={{ email }} className="auth-forgot">
+          {t('auth.forgotPassword')}
+        </Link>
         {problem ? (
           <p className="auth-form__error" role="alert">
             {problem.message}
@@ -351,6 +360,183 @@ export function SignUpScreen() {
       </form>
 
       <SwitchLink prompt={t('auth.hasAccount')} to="/sign-in" label={t('auth.signIn')} />
+    </div>
+  );
+}
+
+export function ForgotPasswordScreen() {
+  const { t } = useI18n();
+  const { requestPasswordReset } = useAuth();
+  const location = useLocation();
+  // L'e-mail déjà tapé sur l'écran de connexion suit la personne jusqu'ici.
+  const [email, setEmail] = useState(() => (location.state as { email?: string } | null)?.email ?? '');
+  const [problem, setProblem] = useState<AuthProblem | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setProblem(null);
+    try {
+      await requestPasswordReset(email);
+      setSent(true);
+    } catch (caught) {
+      setProblem(authProblem((caught as Error).message, t));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Même message qu'il existe un compte ou non : l'écran ne doit pas servir à
+  // vérifier si une adresse est inscrite. Supabase répond d'ailleurs pareil.
+  if (sent) {
+    return (
+      <div className="app app--plain auth">
+        <BackButton to="/sign-in" label={t('auth.back')} />
+        <div className="auth-sent">
+          <Sun size={200} lit={null}>
+            <Character emotion={null} state="sleeping" size={168} />
+          </Sun>
+          <h1 className="auth-header__title">{t('auth.resetSentTitle')}</h1>
+          <p className="muted auth-sent__body">
+            {t('auth.resetSentTo')} <strong className="auth-sent__email">{email.trim()}</strong>, {t('auth.resetSentBody')}
+          </p>
+          <Link to="/sign-in" className="btn btn--outline btn--block btn--tall">
+            {t('auth.backToSignIn')}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app app--plain auth">
+      <BackButton to="/sign-in" label={t('auth.back')} />
+      <AuthHeader size={124} title={t('auth.forgotTitle')} subtitle={t('auth.forgotBody')} />
+
+      <form className="auth-form" onSubmit={submit}>
+        <Field
+          label={t('auth.email')}
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder={t('auth.emailPlaceholder')}
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+        {problem ? (
+          <p className="auth-form__error" role="alert">
+            {problem.message}
+          </p>
+        ) : null}
+        <button type="submit" className="btn btn--primary btn--block btn--tall" disabled={busy}>
+          {t('auth.sendResetLink')}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/**
+ * Destination du lien reçu par e-mail. Supabase a déjà ouvert une session à
+ * partir du jeton de l'URL : il ne reste qu'à écrire le nouveau mot de passe.
+ * Pas de bouton retour tant que ce n'est pas fait. Sans session, le lien a
+ * expiré ou a déjà servi.
+ */
+export function ResetPasswordScreen() {
+  const { t } = useI18n();
+  const { status, updatePassword } = useAuth();
+  const navigate = useNavigate();
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [problem, setProblem] = useState<AuthProblem | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  if (status === 'loading') {
+    return (
+      <div className="app app--plain">
+        <Loading />
+      </div>
+    );
+  }
+
+  if (status === 'signed-out') {
+    return (
+      <div className="app app--plain auth">
+        <BackToWelcome />
+        <div className="auth-sent">
+          <Sun size={200} lit={null}>
+            <Character emotion={null} state="sleeping" size={168} />
+          </Sun>
+          <h1 className="auth-header__title">{t('auth.resetLinkInvalidTitle')}</h1>
+          <p className="muted auth-sent__body">{t('auth.resetLinkInvalidBody')}</p>
+          <Link to="/forgot-password" className="btn btn--primary btn--block btn--tall">
+            {t('auth.requestNewLink')}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (password.length < MIN_PASSWORD) {
+      setProblem({ field: 'password', message: t('auth.passwordTooShort') });
+      return;
+    }
+    if (password !== confirm) {
+      setProblem({ field: 'credentials', message: t('auth.passwordMismatch') });
+      return;
+    }
+    setBusy(true);
+    setProblem(null);
+    try {
+      await updatePassword(password);
+      navigate('/', { replace: true });
+    } catch (caught) {
+      setProblem(authProblem((caught as Error).message, t));
+      setBusy(false);
+    }
+  };
+
+  // Le premier champ porte la règle et ses erreurs ; une différence entre les deux cercle le second.
+  const passwordProblem = problem?.field === 'password';
+  const mismatch = problem?.field === 'credentials';
+
+  return (
+    <div className="app app--plain auth">
+      <AuthHeader size={124} title={t('auth.resetTitle')} subtitle={t('auth.passwordHint')} />
+
+      <form className="auth-form auth-form--tight" onSubmit={submit}>
+        <PasswordField
+          label={t('auth.newPassword')}
+          autoComplete="new-password"
+          required
+          invalid={passwordProblem}
+          note={passwordProblem ? problem.message : undefined}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        <PasswordField
+          label={t('auth.confirmPassword')}
+          autoComplete="new-password"
+          required
+          invalid={mismatch}
+          note={mismatch ? problem.message : undefined}
+          value={confirm}
+          onChange={(event) => setConfirm(event.target.value)}
+        />
+        {problem && !passwordProblem && !mismatch ? (
+          <p className="auth-form__error" role="alert">
+            {problem.message}
+          </p>
+        ) : null}
+        <button type="submit" className="btn btn--primary btn--block btn--tall" disabled={busy}>
+          {t('auth.savePassword')}
+        </button>
+      </form>
     </div>
   );
 }
