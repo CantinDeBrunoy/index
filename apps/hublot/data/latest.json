@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-02T04:54:04.105Z",
+  "generatedAt": "2026-10-02T12:10:42.340Z",
   "currency": "eur",
   "origins": [
     "CDG",
@@ -143,18 +143,18 @@
         {
           "month": "2026-11",
           "best": {
-            "price": 624,
-            "departDate": "2026-11-12",
-            "returnDate": "2026-12-09",
-            "stayDays": 27,
+            "price": 636,
+            "departDate": "2026-11-05",
+            "returnDate": "2026-11-22",
+            "stayDays": 17,
             "originAirport": "CDG",
             "destinationAirport": "HND",
-            "airline": "CZ",
+            "airline": "AI",
             "transfers": 1,
             "returnTransfers": 1,
-            "link": "https://www.aviasales.fr/search/PAR1211TYO09121?t=CZ17944800001794600000001520CDGCANHND17968260001796884800001460NRTCANCDG_c95bec9b50b76438733a11487406e58e_60382&search_date=25092026&expected_price_uuid=01a0d75a-d8a7-8030-6cfa-a999a0d7f526&static_fare_key=TY%7CP0%7CH1%7CL1_1_23%7CCH1%7CR1%7CTBC1&itinerary_key=lM3SYmBTVcgsXnuTY8r46w&expected_price_source=share&expected_price_currency=eur&expected_price=624"
+            "link": "https://www.aviasales.fr/search/PAR0511TYO22111?t=AI17939109001794030900001520CDGDELHND17953434001795460700002435HNDDELCDG_893fb7da7a9e02eb565a0c8d03592c9a_60687&search_date=29092026&expected_price_uuid=01a0ed4a-49d9-8030-e167-5b94eb041927&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=F_4zOJQRe7D_baJkaYJEJw&expected_price_source=share&expected_price_currency=eur&expected_price=636"
           },
-          "offers": 6,
+          "offers": 5,
           "failed": false
         },
         {
@@ -194,7 +194,7 @@
             "returnTransfers": 1,
             "link": "https://www.aviasales.fr/search/PAR0302TYO24021?t=EY18016485001801741200001065CDGAUHNRT18034896001803537900001285NRTAUHCDG_9585db24a16d0d9787d37bf709d0818d_67481&search_date=26092026&expected_price_uuid=01a0dccb-c415-8040-259f-b0fea0064003&static_fare_key=TY%7CP0%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=e9BnUkRhyQKKncy3B8W4RQ&expected_price_source=share&expected_price_currency=eur&expected_price=702"
           },
-          "offers": 4,
+          "offers": 3,
           "failed": false
         },
         {
