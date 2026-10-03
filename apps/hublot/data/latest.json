@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-03T15:58:49.780Z",
+  "generatedAt": "2026-10-03T20:48:42.286Z",
   "currency": "eur",
   "origins": [
     "CDG",
@@ -95,8 +95,19 @@
         },
         {
           "month": "2027-05",
-          "best": null,
-          "offers": 0,
+          "best": {
+            "price": 775,
+            "departDate": "2027-05-15",
+            "returnDate": "2027-05-31",
+            "stayDays": 16,
+            "originAirport": "CDG",
+            "destinationAirport": "MEX",
+            "airline": "BA",
+            "transfers": 1,
+            "returnTransfers": 1,
+            "link": "https://www.aviasales.fr/search/PAR1505MEX31051?t=BA18104082001810496700001955CDGLHRMEX18118008001811941500001865MEXLHRCDG_a9df7d26946de0277ad2d4d64b793938_72932&search_date=03102026&expected_price_uuid=01a1037c-3f2a-8030-268c-2cf1860cbc8c&static_fare_key=TY%7CP1%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=mfi9LQ1bJt3ktBOPEsOVrA&expected_price_source=share&expected_price_currency=eur&expected_price=775"
+          },
+          "offers": 1,
           "failed": false
         }
       ]
