@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-04T05:08:28.164Z",
+  "generatedAt": "2026-10-04T12:02:27.692Z",
   "currency": "eur",
   "origins": [
     "CDG",
@@ -184,7 +184,7 @@
             "returnTransfers": 1,
             "link": "https://www.aviasales.fr/search/PAR0212TYO20121?t=CZ17962080001796304900001135CDGCANHND17977764001797835200001460NRTCANCDG_c3a3098a0a9f5320dc3311a3360d4d8b_70129&search_date=03102026&expected_price_uuid=01a1026e-31c2-8030-6ce9-2e4df4bdc712&static_fare_key=TY%7CP1%7CH1%7CL1_2_0%7CCH1%7CR1%7CTBC1&itinerary_key=Uplb6EuO5oHdipy-pJvXhA&expected_price_source=share&expected_price_currency=eur&expected_price=745"
           },
-          "offers": 8,
+          "offers": 10,
           "failed": false
         },
         {
@@ -196,7 +196,7 @@
         {
           "month": "2027-02",
           "best": {
-            "price": 952,
+            "price": 962,
             "departDate": "2027-02-13",
             "returnDate": "2027-02-27",
             "stayDays": 14,
@@ -205,7 +205,7 @@
             "airline": "DE",
             "transfers": 2,
             "returnTransfers": 2,
-            "link": "https://www.aviasales.fr/search/PAR1302TYO27021?t=CA18025038001802667300002245CDGFRABOMHND18037185001803836400002445NRTICNPEKCDG_13baff3fc388424ffcfafb290ce07a64_89148&search_date=01102026&expected_price_uuid=01a0f6ff-fffd-8030-a02f-4d0944cda5a3&static_fare_key=TY%7CP0%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=4__T-lOz4feAs-eulFfHbQ&expected_price_source=share&expected_price_currency=eur&expected_price=952"
+            "link": "https://www.aviasales.fr/search/PAR1302TYO27021?t=OM18025185001802757300003500CDGFRADELHND18037638001803915000003000NRTUBNISTSAWCDG_6e1af2353d1b3bdaca42f5fe33658f1e_90201&search_date=04102026&expected_price_uuid=01a10637-4d97-8030-2d2d-b657e5278242&static_fare_key=TY%7CP0%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=v0KeUCe2dKo6RsBZRt8exQ&expected_price_source=share&expected_price_currency=eur&expected_price=962"
           },
           "offers": 2,
           "failed": false
