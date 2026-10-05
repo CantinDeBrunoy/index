@@ -9,7 +9,7 @@
    cache d'abord la servirait sinon pour toujours. L'activation efface les
    caches qui ne portent pas ce nom. Les icônes portent aussi un `?v=` dans
    src/app/+html.tsx et le manifeste : à incrémenter en même temps. */
-const CACHE = 'cancionero-v1';
+const CACHE = 'cancionero-v2';
 
 self.addEventListener('install', (event) => {
   // L'accueil est mis en cache tout de suite : c'est lui qui sert de repli
