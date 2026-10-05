@@ -33,8 +33,8 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="theme-color" content="#1C1216" media="(prefers-color-scheme: dark)" />
         {/* ?v= : une adresse qu'aucun cache ne connaît. À incrémenter à chaque
             nouvelle icône, avec CACHE dans public/sw.js et le manifeste. */}
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1" />
-        <link rel="manifest" href="/manifest.webmanifest?v=1" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+        <link rel="manifest" href="/manifest.webmanifest?v=2" />
 
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: bodyStyle }} />
