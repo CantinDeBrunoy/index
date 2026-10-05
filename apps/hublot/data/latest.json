@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-05T14:05:29.760Z",
+  "generatedAt": "2026-10-05T23:53:45.887Z",
   "currency": "eur",
   "origins": [
     "CDG",
@@ -43,31 +43,42 @@
         },
         {
           "month": "2026-12",
-          "best": null,
-          "offers": 0,
+          "best": {
+            "price": 841,
+            "departDate": "2026-12-05",
+            "returnDate": "2027-01-10",
+            "stayDays": 36,
+            "originAirport": "CDG",
+            "destinationAirport": "MEX",
+            "airline": "BA",
+            "transfers": 2,
+            "returnTransfers": 2,
+            "link": "https://www.aviasales.fr/search/PAR0512MEX10011?t=AA17964693001796512560001141CDGLHRDFWMEX17995599001799649300001070MEXDFWJFKCDG_510a42c7293fc796e5b984b5e60e3c12_80104&search_date=05102026&expected_price_uuid=01a10d3a-188e-8030-a8c2-c7fcf51a91d6&static_fare_key=TY%7CP1%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=7DW70rlfwLZ77_TVChsFog&expected_price_source=share&expected_price_currency=eur&expected_price=841"
+          },
+          "offers": 2,
           "failed": false
         },
         {
           "month": "2027-01",
-          "best": null,
-          "offers": 0,
+          "best": {
+            "price": 877,
+            "departDate": "2027-01-10",
+            "returnDate": "2027-01-29",
+            "stayDays": 19,
+            "originAirport": "CDG",
+            "destinationAirport": "MEX",
+            "airline": "AA",
+            "transfers": 1,
+            "returnTransfers": 1,
+            "link": "https://www.aviasales.fr/search/PAR1001MEX29011?t=AA17995803001799667600001875CDGJFKMEX18012049801801299600001157MEXDFWCDG_2e7578dcf3c11cde22625d572a62b9fa_83521&search_date=05102026&expected_price_uuid=01a10e3c-ba44-8051-2fce-8b57ff10bfbe&static_fare_key=TY%7CP1%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=RALuAwSU1JzQPHe1lPux6A&expected_price_source=share&expected_price_currency=eur&expected_price=877"
+          },
+          "offers": 1,
           "failed": false
         },
         {
           "month": "2027-02",
-          "best": {
-            "price": 829,
-            "departDate": "2027-02-13",
-            "returnDate": "2027-02-27",
-            "stayDays": 14,
-            "originAirport": "CDG",
-            "destinationAirport": "MEX",
-            "airline": "IB",
-            "transfers": 1,
-            "returnTransfers": 1,
-            "link": "https://www.aviasales.fr/search/PAR1302MEX27021?t=BA18025167001802547480000933CDGDFWMEX18037620001803843900000945MEXLHRCDG_b9d0ecee7a286fcf751e3932784f857e_79621&search_date=28092026&expected_price_uuid=01a0e9ad-788e-8030-ac7b-d0f835d9ae15&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=HN9VFYf1dUsNmqXYZ4DOlg&expected_price_source=share&expected_price_currency=eur&expected_price=829"
-          },
-          "offers": 1,
+          "best": null,
+          "offers": 0,
           "failed": false
         },
         {
@@ -156,7 +167,7 @@
             "returnTransfers": 1,
             "link": "https://www.aviasales.fr/search/PAR2511TYO11121?t=CZ17956032001795700100001135CDGCANHND17969988001797057600001460NRTCANCDG_dc910493819136a49077a80e9ad9ce9c_55093&search_date=03102026&expected_price_uuid=01a101bc-662b-8030-22f6-bb2dd371fc0e&static_fare_key=TY%7CP0%7CH1%7CL1_2_0%7CCH1%7CR1%7CTBC1&itinerary_key=j1TCDriwOfEXuJ0Yl2k3UQ&expected_price_source=share&expected_price_currency=eur&expected_price=585"
           },
-          "offers": 6,
+          "offers": 5,
           "failed": false
         },
         {
@@ -224,7 +235,7 @@
             "returnTransfers": 1,
             "link": "https://www.aviasales.fr/search/PAR0203TYO16031?t=CA18040164001804177200002200CDGPEKHND18051858001805266800001830HNDPEKCDG_e1c697daf77b6d6bf75142efc908d1ba_61523&search_date=03102026&expected_price_uuid=01a1017c-369d-8030-2e7d-770e03fe1e6c&static_fare_key=TY%7CP0%7CH1%7CL1_2_0%7CCH1%7CR0%7CTBC1&itinerary_key=9z_2lmcf_vpRjjpXTng-GQ&expected_price_source=share&expected_price_currency=eur&expected_price=653"
           },
-          "offers": 9,
+          "offers": 6,
           "failed": false
         },
         {
