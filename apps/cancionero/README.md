@@ -1,56 +1,79 @@
-# Welcome to your Expo app 👋
+# 🎶 Cancionero — apprendre l'espagnol en chanson
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App mobile (iOS / Android / Web) pour **travailler une chanson** afin d'apprendre
+l'espagnol. On choisit une chanson dans la liste, puis on l'étudie sous 4 angles :
 
-## Get started
+- **📖 Paroles + traduction** — paroles espagnoles avec la traduction française
+  alignée ligne par ligne. Touche 🔊 pour **écouter** chaque ligne (synthèse vocale),
+  ou une ligne pour révéler/masquer sa traduction.
+- **✏️ Texte à trous** — mode karaoké : un mot est masqué par ligne, à compléter.
+- **🃏 Vocabulaire** — flashcards ES → FR des mots-clés, retournables.
+- **❓ Quiz** — questions de compréhension avec correction immédiate.
 
-1. Install dependencies
+L'app est livrée avec **3 chansons originales** (salutations, famille, marché) écrites
+pour l'apprentissage. Tu peux **ajouter tes propres chansons** : colle les paroles
+espagnoles (+ la traduction si tu veux), et les modes Paroles / Audio / Trous marchent
+aussitôt dessus.
 
-   ```bash
-   npm install
-   ```
+> Stack : Expo SDK 54 · React Native 0.81 · React 19 · TypeScript · expo-router.
+> Local-first : tes chansons sont stockées sur l'appareil (AsyncStorage), pas de serveur.
 
-2. Start the app
+---
 
+## ▶️ Lancer l'app sur ton iPhone (gratuit, via Expo Go)
+
+1. Sur ton iPhone, installe **Expo Go** depuis l'App Store.
+2. Sur l'ordinateur, dans ce dossier, lance le serveur de développement :
    ```bash
    npx expo start
    ```
+3. Un **QR code** s'affiche dans le terminal. Assure-toi que l'iPhone et l'ordinateur
+   sont sur le **même réseau Wi-Fi**.
+4. Ouvre l'app **Appareil photo** de l'iPhone, vise le QR code, puis touche la
+   notification qui apparaît → l'app s'ouvre dans Expo Go. 🎉
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+**Si le QR ne se connecte pas** (Wi-Fi d'entreprise, pare-feu, réseaux différents),
+utilise le mode tunnel :
 ```bash
-npm run reset-project
+npx expo start --tunnel
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+> ℹ️ Avec Expo Go, l'app tourne dans le conteneur Expo Go (pas d'icône dédiée sur
+> l'écran d'accueil). Pour une vraie app installée (icône + App Store), il faut un
+> compte développeur Apple et un build EAS — voir la doc Expo « EAS Build ».
 
-### Other setup steps
+### Autres cibles
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npx expo start --web        # ouvrir dans le navigateur
+npx expo start --android    # émulateur / appareil Android
+```
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🗂️ Structure
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```
+src/
+  app/                      # écrans (expo-router, file-based routing)
+    index.tsx               #   liste des chansons (accueil)
+    song/[id].tsx           #   détail d'une chanson + sélecteur de mode
+    add.tsx                 #   ajouter sa propre chanson
+    _layout.tsx             #   Stack + SongsProvider
+  components/
+    song/                   #   lyrics / fill-blanks / vocab / quiz / mode-switcher
+    primary-button.tsx
+    themed-text.tsx, themed-view.tsx
+  data/songs.ts             # chansons fournies (contenu original)
+  features/songs/
+    types.ts                # modèle de données (Song, SongLine, VocabItem, QuizQuestion)
+    store.tsx               # contexte : combine chansons fournies + utilisateur
+    storage.ts              # persistance AsyncStorage
+```
 
-## Join the community
+## 🧭 Idées pour la suite
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Vocabulaire / quiz **auto-générés** pour les chansons ajoutées par l'utilisateur.
+- **Traduction automatique** au collage (via une API) pour ne coller que l'espagnol.
+- Suivi de progression (chansons travaillées, scores).
+- Mode « écoute en boucle » d'une ligne pour la prononciation.

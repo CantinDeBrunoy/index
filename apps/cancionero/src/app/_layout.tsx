@@ -1,18 +1,36 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { SongsProvider } from '@/features/songs/store';
+import { TroublesomeProvider } from '@/features/vocab/troublesome';
+import { useTheme } from '@/hooks/use-theme';
 
-SplashScreen.preventAutoHideAsync();
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
+  const theme = useTheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SongsProvider>
+        <TroublesomeProvider>
+          <Stack
+            screenOptions={{
+              headerStyle: { backgroundColor: theme.background },
+              headerTintColor: theme.text,
+              headerTitleStyle: { fontWeight: '700' },
+              contentStyle: { backgroundColor: theme.background },
+            }}>
+            <Stack.Screen name="index" options={{ title: 'Cancionero' }} />
+            <Stack.Screen name="song/[id]" options={{ title: '' }} />
+            <Stack.Screen
+              name="add"
+              options={{ title: 'Ajouter une chanson', presentation: 'modal' }}
+            />
+            <Stack.Screen name="practice" options={{ title: 'Vocabulaire à réviser' }} />
+            <Stack.Screen name="karaoke" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+          </Stack>
+          <StatusBar style="auto" />
+        </TroublesomeProvider>
+      </SongsProvider>
+    </GestureHandlerRootView>
   );
 }
