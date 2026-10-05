@@ -13,4 +13,5 @@ La version web est hébergée sur Vercel, qui ne déploie que `main` (voir
 - Pousser sur `main`, c'est mettre en production : accord explicite à chaque fois.
 - Le service worker (`public/sw.js`) sert l'app en cache : si une nouvelle
   version « ne s'affiche pas », fermer et rouvrir l'app avant de soupçonner le
-  déploiement. Une icône modifiée demande un nouveau `?v=` et un nouveau `CACHE`.
+  déploiement. Les icônes sortent toutes de `scripts/make-icons.mjs` (`npm run icons`) :
+  une icône modifiée demande un nouveau `?v=` et un nouveau `CACHE`.
