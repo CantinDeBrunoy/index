@@ -53,12 +53,12 @@ puis servir le dossier `dist` avec n'importe quel serveur statique.
 - **Après un déploiement**, l'écran peut montrer l'ancienne version : le service
   worker sert l'app depuis le cache. Fermer complètement l'app (ou l'onglet) et la
   rouvrir. Vérifier ça avant de conclure qu'un déploiement a échoué.
-- **Une icône qui change reste en cache.** Remplacer `assets/images/icon.png`,
-  régénérer les PNG de `public/` (`apple-touch-icon` 180 px, `icon-192`, `icon-512`,
-  `icon-maskable-512`), puis incrémenter **en même temps** le `?v=` des icônes
-  (`src/app/+html.tsx` et `public/manifest.webmanifest`) et le nom `CACHE` de
-  `public/sw.js`. Sur iPhone, l'icône est figée à l'ajout : il faut retirer l'app
-  de l'écran d'accueil et l'ajouter de nouveau.
+- **Une icône qui change reste en cache.** Toutes les icônes (web, iOS, Android,
+  splash, favicon) sortent d'un seul dessin, dans `scripts/make-icons.mjs` :
+  le modifier, lancer `npm run icons`, puis incrémenter **en même temps** le `?v=`
+  des icônes (`src/app/+html.tsx` et `public/manifest.webmanifest`) et le nom
+  `CACHE` de `public/sw.js`. Sur iPhone, l'icône est figée à l'ajout : il faut
+  retirer l'app de l'écran d'accueil et l'ajouter de nouveau.
 
 ---
 
