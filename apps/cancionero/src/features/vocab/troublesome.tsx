@@ -2,7 +2,7 @@
 // bute (touchés en karaoké, ou ratés dans le texte à trous). Persistée localement.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { cleanWord } from '@/features/translate';
 
@@ -23,7 +23,6 @@ const norm = (w: string) => cleanWord(w).toLowerCase();
 type Ctx = {
   words: TroubleWord[];
   has: (word: string) => boolean;
-  /** Ajoute ou retire un mot ; renvoie true s'il est désormais marqué. */
   /** Ajoute un mot au vocabulaire (idempotent). Renvoie true si nouvellement ajouté. */
   add: (word: string, songTitle?: string) => boolean;
   remove: (word: string) => void;
@@ -34,18 +33,27 @@ const TroubleContext = createContext<Ctx | null>(null);
 
 export function TroublesomeProvider({ children }: { children: React.ReactNode }) {
   const [words, setWords] = useState<TroubleWord[]>([]);
+  // Copie toujours à jour de la liste : les fonctions ci-dessous sont souvent
+  // appelées plus tard (traduction qui arrive, « Annuler » d'un message) avec
+  // une liste capturée à un rendu précédent. Partir de la dernière évite
+  // qu'une traduction en retard efface le mot ajouté entre-temps.
+  const latest = useRef<TroubleWord[]>([]);
+
+  const save = useCallback((update: (prev: TroubleWord[]) => TroubleWord[]) => {
+    const next = update(latest.current);
+    latest.current = next;
+    setWords(next);
+    AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem(KEY)
       .then((raw) => {
-        if (raw) setWords(JSON.parse(raw));
+        if (!raw) return;
+        latest.current = JSON.parse(raw);
+        setWords(latest.current);
       })
       .catch(() => {});
-  }, []);
-
-  const save = useCallback((next: TroubleWord[]) => {
-    setWords(next);
-    AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
   }, []);
 
   const has = useCallback((word: string) => words.some((w) => w.es === norm(word)), [words]);
@@ -55,25 +63,27 @@ export function TroublesomeProvider({ children }: { children: React.ReactNode })
   const add = useCallback(
     (word: string, songTitle?: string) => {
       const es = norm(word);
-      if (!es) return false;
-      if (words.some((w) => w.es === es)) return false;
-      save([{ es, songTitle, addedAt: Date.now() }, ...words]);
+      if (!es || latest.current.some((w) => w.es === es)) return false;
+      save((prev) => [{ es, songTitle, addedAt: Date.now() }, ...prev]);
       return true;
     },
-    [words, save],
+    [save],
   );
 
   const remove = useCallback(
-    (word: string) => save(words.filter((w) => w.es !== norm(word))),
-    [words, save],
+    (word: string) => {
+      const es = norm(word);
+      save((prev) => prev.filter((w) => w.es !== es));
+    },
+    [save],
   );
 
   const setTranslation = useCallback(
     (word: string, fr: string) => {
       const es = norm(word);
-      save(words.map((w) => (w.es === es ? { ...w, fr } : w)));
+      save((prev) => prev.map((w) => (w.es === es ? { ...w, fr } : w)));
     },
-    [words, save],
+    [save],
   );
 
   const value = useMemo(

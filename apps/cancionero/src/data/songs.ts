@@ -11,6 +11,7 @@ export const BUILTIN_SONGS: Song[] = [
     artist: 'Original',
     level: 'debutant',
     emoji: '👋',
+    color: 'rosa',
     source: 'builtin',
     lines: [
       { es: 'Hola, hola, ¿cómo estás?', fr: 'Salut, salut, comment vas-tu ?' },
@@ -29,6 +30,7 @@ export const BUILTIN_SONGS: Song[] = [
     artist: 'Original',
     level: 'debutant',
     emoji: '👨‍👩‍👧‍👦',
+    color: 'amarillo',
     source: 'builtin',
     lines: [
       { es: 'Esta es mi familia, te la voy a presentar.', fr: 'Voici ma famille, je vais te la présenter.' },
@@ -45,6 +47,7 @@ export const BUILTIN_SONGS: Song[] = [
     artist: 'Original',
     level: 'intermediaire',
     emoji: '🧺',
+    color: 'turquesa',
     source: 'builtin',
     lines: [
       { es: 'Voy al mercado por la mañana,', fr: 'Je vais au marché le matin,' },

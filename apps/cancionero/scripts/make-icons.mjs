@@ -4,8 +4,8 @@
  *
  * Le dessin : un fanion de papel picado crème, une double croche découpée
  * dedans, accroché à la guirlande entre deux fanions turquoise et jaune, sur
- * un fond rosa mexicano → rouge. Les couleurs sont celles de `Fiesta` et
- * `Colors` (src/constants/theme.ts).
+ * un fond rosa mexicano → rouge. Les couleurs sont fixées ci-dessous (l'icône
+ * garde la palette d'origine, plus vive que celle de l'app).
  *
  * Aucune dépendance : un rasteriseur minimal (remplissage de polygones par
  * lignes de balayage, 16 sous-lignes par pixel pour l'anticrénelage) et un

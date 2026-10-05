@@ -1,201 +1,259 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
-import {
-  Animated,
-  FlatList,
-  Platform,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { useEffect } from 'react';
+import { FlatList, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PapelPicado } from '@/components/decor/papel-picado';
-import { PrimaryButton } from '@/components/primary-button';
+import { FlagGarland } from '@/components/decor/flag-garland';
+import { Icon } from '@/components/icon';
+import { PressableScale } from '@/components/pressable-scale';
 import { LevelBadge } from '@/components/song/level-badge';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Fiesta, FiestaCycle, Spacing } from '@/constants/theme';
+import { Fonts, MaxContentWidth } from '@/constants/theme';
+import { songColor } from '@/features/songs/palette';
 import { useSongs } from '@/features/songs/store';
 import type { Song } from '@/features/songs/types';
 import { useTroublesome } from '@/features/vocab/troublesome';
-import { useTheme } from '@/hooks/use-theme';
+import { useEnterStyle } from '@/hooks/use-enter-style';
+import { useIsDark, useTheme } from '@/hooks/use-theme';
 
-const USE_NATIVE = Platform.OS !== 'web';
+/** Les cartes arrivent en cascade, après la chute des drapeaux. */
+const CASCADE_START = 500;
+const CASCADE_STEP = 70;
 
-function SongCard({ song, index }: { song: Song; index: number }) {
+function SongCard({ song, index, isNew }: { song: Song; index: number; isNew: boolean }) {
   const theme = useTheme();
+  const dark = useIsDark();
   const router = useRouter();
-  const color = FiestaCycle[index % FiestaCycle.length];
+  const reduce = useReducedMotion();
+  const color = songColor(song);
+  const enter = useEnterStyle(CASCADE_START + (index + 2) * CASCADE_STEP);
 
-  // Entrée en cascade.
-  const enter = useRef(new Animated.Value(0)).current;
-  // Réduction au toucher.
-  const press = useRef(new Animated.Value(0)).current;
-
+  // Une chanson qu'on vient d'ajouter se pose avec un éclat de sa couleur.
+  const glow = useSharedValue(0);
   useEffect(() => {
-    Animated.timing(enter, {
-      toValue: 1,
-      duration: 420,
-      delay: index * 80,
-      useNativeDriver: USE_NATIVE,
-    }).start();
-  }, [enter, index]);
-
-  const scale = press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.96] });
-  const translateY = enter.interpolate({ inputRange: [0, 1], outputRange: [18, 0] });
+    if (!isNew || reduce) return;
+    glow.value = withDelay(350, withSequence(withTiming(1, { duration: 260 }), withTiming(0, { duration: 1100 })));
+  }, [isNew, reduce, glow]);
+  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
 
   return (
-    <Animated.View style={{ opacity: enter, transform: [{ translateY }, { scale }] }}>
-      <Pressable
+    <Animated.View style={enter}>
+      <PressableScale
         onPress={() => router.push(`/song/${song.id}`)}
-        onPressIn={() =>
-          Animated.spring(press, { toValue: 1, useNativeDriver: USE_NATIVE, speed: 40 }).start()
-        }
-        onPressOut={() =>
-          Animated.spring(press, { toValue: 0, useNativeDriver: USE_NATIVE, speed: 40 }).start()
-        }
-        style={[
-          styles.card,
-          { backgroundColor: theme.backgroundElement, borderColor: color },
-        ]}>
-        <View style={[styles.medallion, { backgroundColor: color + '26', borderColor: color + '66' }]}>
+        accessibilityRole="button"
+        accessibilityLabel={`${song.title}, ${song.artist}`}
+        style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }, !dark && styles.cardShadow]}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.glow, { borderColor: color.base, backgroundColor: color.base + '14' }, glowStyle]}
+        />
+        <View style={[styles.cover, { backgroundColor: dark ? color.tintDark : color.tint }]}>
           <ThemedText style={styles.emoji}>{song.emoji}</ThemedText>
         </View>
         <View style={styles.cardBody}>
-          <ThemedText type="default" style={styles.cardTitle} numberOfLines={1}>
+          <ThemedText type="lyric" style={styles.cardTitle} numberOfLines={1}>
             {song.title}
           </ThemedText>
-          <ThemedText type="small" style={{ color: theme.textSecondary }} numberOfLines={1}>
-            {song.artist} · {song.lines.length} lignes
-          </ThemedText>
-          <View style={styles.cardMeta}>
-            <LevelBadge level={song.level} />
-            {song.source === 'user' && (
-              <ThemedText type="small" style={{ color: Fiesta.rosa, fontWeight: '700' }}>
-                ✦ ma chanson
+          <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>
+            {song.artist} ·{' '}
+            {song.source === 'user' ? (
+              <ThemedText type="caption" style={{ color: theme.accentText, fontFamily: Fonts.bold }}>
+                Ma chanson
               </ThemedText>
+            ) : (
+              `${song.lines.length} lignes`
             )}
+          </ThemedText>
+          <View style={styles.badgeRow}>
+            <LevelBadge level={song.level} />
           </View>
         </View>
-        <ThemedText style={[styles.chevron, { color }]}>›</ThemedText>
-      </Pressable>
+        <Icon name="chevron-right" size={20} color={theme.textMuted} />
+      </PressableScale>
+    </Animated.View>
+  );
+}
+
+function Header({ width }: { width: number }) {
+  const theme = useTheme();
+  const router = useRouter();
+  const { words } = useTroublesome();
+  const { songs } = useSongs();
+  const titleStyle = useEnterStyle(350);
+  const reviewStyle = useEnterStyle(CASCADE_START);
+  const sectionStyle = useEnterStyle(CASCADE_START + CASCADE_STEP);
+  const n = words.length;
+
+  return (
+    <View>
+      <View style={styles.garland}>
+        <FlagGarland width={width} />
+      </View>
+
+      <Animated.View style={[styles.titleBlock, titleStyle]}>
+        <ThemedText type="wordmark" accessibilityRole="header">
+          Cancionero
+        </ThemedText>
+        <ThemedText type="default" themeColor="textSecondary">
+          Apprends l’espagnol en chantant
+        </ThemedText>
+      </Animated.View>
+
+      <Animated.View style={reviewStyle}>
+        <PressableScale
+          onPress={() => router.push('/practice')}
+          accessibilityRole="button"
+          style={[styles.review, { backgroundColor: theme.accent }]}>
+          <View style={styles.reviewIcon}>
+            <Icon name="layers" size={22} color="#FFFFFF" />
+          </View>
+          <View style={styles.reviewText}>
+            <ThemedText type="defaultBold" style={styles.onAccent}>
+              Vocabulaire à réviser
+            </ThemedText>
+            <ThemedText type="small" style={styles.onAccent}>
+              {n === 0
+                ? 'Touche des mots dans tes chansons'
+                : `${n} mot${n > 1 ? 's' : ''} t’attend${n > 1 ? 'ent' : ''}`}
+            </ThemedText>
+          </View>
+          <Icon name="chevron-right" size={22} color="#FFFFFF" />
+        </PressableScale>
+      </Animated.View>
+
+      <Animated.View style={[styles.sectionRow, sectionStyle]}>
+        <ThemedText type="title" accessibilityRole="header">
+          Tes chansons
+        </ThemedText>
+        <ThemedText type="caption" themeColor="textSecondary">
+          {songs.length} chanson{songs.length > 1 ? 's' : ''}
+        </ThemedText>
+      </Animated.View>
+    </View>
+  );
+}
+
+function AddButton({ index }: { index: number }) {
+  const theme = useTheme();
+  const router = useRouter();
+  const enter = useEnterStyle(CASCADE_START + (index + 2) * CASCADE_STEP);
+  return (
+    <Animated.View style={enter}>
+      <PressableScale
+        onPress={() => router.push('/add')}
+        accessibilityRole="button"
+        style={[styles.add, { borderColor: theme.dashed }]}>
+        <Icon name="plus" size={20} color={theme.accentText} />
+        <ThemedText type="defaultBold" style={{ color: theme.accentText, fontSize: 15 }}>
+          Ajouter une chanson
+        </ThemedText>
+      </PressableScale>
     </Animated.View>
   );
 }
 
 export default function HomeScreen() {
-  const { songs } = useSongs();
-  const { words } = useTroublesome();
+  const { songs, lastAddedId } = useSongs();
   const theme = useTheme();
-  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const contentWidth = Math.min(width, MaxContentWidth);
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
         data={songs}
         keyExtractor={(s) => s.id}
-        renderItem={({ item, index }) => <SongCard song={item} index={index} />}
-        contentContainerStyle={styles.list}
+        renderItem={({ item, index }) => (
+          <SongCard song={item} index={index} isNew={item.id === lastAddedId} />
+        )}
+        contentContainerStyle={[
+          styles.list,
+          { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32 },
+        ]}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <PapelPicado width={Math.min(width, 560) - Spacing.three * 2} />
-            <ThemedText type="title" style={styles.h1}>
-              Cancionero
-            </ThemedText>
-            <View style={styles.subtitleRow}>
-              <ThemedText style={styles.note}>🎶</ThemedText>
-              <ThemedText type="small" style={{ color: theme.textSecondary }}>
-                Apprends l&apos;espagnol en chantant
-              </ThemedText>
-              <ThemedText style={styles.note}>🪅</ThemedText>
-            </View>
-
-            <Pressable
-              onPress={() => router.push('/practice')}
-              style={[styles.practicePill, { borderColor: '#FF3B30', backgroundColor: '#FF3B3014' }]}>
-              <ThemedText type="smallBold" style={{ color: '#FF3B30' }}>
-                🗂️ Vocabulaire à réviser{words.length > 0 ? ` · ${words.length}` : ''}
-              </ThemedText>
-            </Pressable>
-          </View>
-        }
-        ListFooterComponent={
-          <PrimaryButton
-            title="＋ Ajouter ma chanson"
-            variant="secondary"
-            onPress={() => router.push('/add')}
-            style={styles.addBtn}
-          />
-        }
+        ListHeaderComponent={<Header width={contentWidth} />}
+        ListFooterComponent={<AddButton index={songs.length} />}
       />
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   list: {
-    padding: Spacing.three,
-    gap: Spacing.three,
-    maxWidth: 560,
+    paddingHorizontal: 20,
+    gap: 12,
+    maxWidth: MaxContentWidth,
     width: '100%',
     alignSelf: 'center',
   },
-  header: {
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginBottom: Spacing.three,
-  },
-  h1: {
-    fontSize: 40,
-    lineHeight: 46,
-    fontWeight: '800',
-    marginTop: Spacing.one,
-    letterSpacing: 0.5,
-  },
-  subtitleRow: {
+  garland: { marginHorizontal: -20 },
+  titleBlock: { alignItems: 'center', gap: 2, paddingTop: 10 },
+  review: {
+    marginTop: 22,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 20,
   },
-  note: { fontSize: 18 },
-  practicePill: {
-    marginTop: Spacing.two,
-    borderWidth: 1.5,
-    borderRadius: 999,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 8,
+  reviewIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewText: { flex: 1, gap: 1 },
+  onAccent: { color: '#FFFFFF' },
+  sectionRow: {
+    marginTop: 22,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    padding: Spacing.two + 2,
-    paddingRight: Spacing.three,
+    gap: 14,
+    padding: 12,
+    paddingRight: 14,
     borderRadius: 20,
-    borderWidth: 2,
-    borderLeftWidth: 7,
+    borderWidth: 1,
   },
-  medallion: {
+  cardShadow: { boxShadow: '0px 1px 0px #EFE0CB, 0px 8px 18px -12px rgba(42, 24, 16, 0.35)' },
+  glow: { ...StyleSheet.absoluteFillObject, borderRadius: 20, borderWidth: 2 },
+  cover: {
     width: 58,
     height: 58,
-    borderRadius: 18,
-    borderWidth: 2,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emoji: { fontSize: 30 },
-  cardBody: { flex: 1, gap: 4 },
-  cardTitle: { fontSize: 18, fontWeight: '800' },
-  cardMeta: {
+  emoji: { fontSize: 30, lineHeight: 38 },
+  cardBody: { flex: 1, gap: 2 },
+  cardTitle: { fontFamily: Fonts.display },
+  badgeRow: { marginTop: 4 },
+  add: {
+    marginTop: 4,
+    minHeight: 54,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-    marginTop: 2,
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderRadius: 18,
   },
-  chevron: { fontSize: 30, fontWeight: '400' },
-  addBtn: { marginTop: Spacing.three },
 });
