@@ -9,6 +9,8 @@ type SongsContextValue = {
   songs: Song[];
   userSongs: Song[];
   loading: boolean;
+  /** La chanson qu'on vient d'ajouter : l'accueil la met en valeur à son arrivée. */
+  lastAddedId: string | null;
   getSong: (id: string) => Song | undefined;
   addSong: (song: Song) => Promise<void>;
   deleteSong: (id: string) => Promise<void>;
@@ -19,6 +21,7 @@ const SongsContext = createContext<SongsContextValue | null>(null);
 export function SongsProvider({ children }: { children: React.ReactNode }) {
   const [userSongs, setUserSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUserSongs()
@@ -32,7 +35,10 @@ export function SongsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addSong = useCallback(
-    (song: Song) => persist([song, ...userSongs]),
+    (song: Song) => {
+      setLastAddedId(song.id);
+      return persist([song, ...userSongs]);
+    },
     [persist, userSongs],
   );
 
@@ -50,8 +56,8 @@ export function SongsProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ songs, userSongs, loading, getSong, addSong, deleteSong }),
-    [songs, userSongs, loading, getSong, addSong, deleteSong],
+    () => ({ songs, userSongs, loading, lastAddedId, getSong, addSong, deleteSong }),
+    [songs, userSongs, loading, lastAddedId, getSong, addSong, deleteSong],
   );
 
   return <SongsContext.Provider value={value}>{children}</SongsContext.Provider>;

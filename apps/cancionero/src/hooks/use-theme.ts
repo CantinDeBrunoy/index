@@ -1,13 +1,15 @@
 /**
- * Learn more about light and dark modes:
+ * Couleurs du thème courant (clair / sombre) :
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { Colors } from '@/constants/theme';
+import { Colors, type ThemeColors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-export function useTheme() {
-  const scheme = useColorScheme();
+export function useIsDark() {
+  return useColorScheme() === 'dark';
+}
 
-  return Colors[scheme === 'dark' ? 'dark' : 'light'];
+export function useTheme(): ThemeColors {
+  return Colors[useIsDark() ? 'dark' : 'light'];
 }

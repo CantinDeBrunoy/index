@@ -29,8 +29,8 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-title" content="Cancionero" />
         <meta name="mobile-web-app-capable" content="yes" />
         {/* La barre du système prend la couleur de l'en-tête (Colors.background). */}
-        <meta name="theme-color" content="#FFF6E9" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#1C1015" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#FFF7EC" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#1C1216" media="(prefers-color-scheme: dark)" />
         {/* ?v= : une adresse qu'aucun cache ne connaît. À incrémenter à chaque
             nouvelle icône, avec CACHE dans public/sw.js et le manifeste. */}
         <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1" />
@@ -46,8 +46,8 @@ export default function Root({ children }: PropsWithChildren) {
 
 // Fond crème dès le chargement (évite un flash blanc avant que React monte).
 const bodyStyle = `
-body { background-color: #FFF6E9; }
+body { background-color: #FFF7EC; }
 @media (prefers-color-scheme: dark) {
-  body { background-color: #1C1015; }
+  body { background-color: #1C1216; }
 }
 `;

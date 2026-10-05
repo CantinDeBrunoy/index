@@ -93,24 +93,41 @@ npx expo start --android    # émulateur / appareil Android
 
 ---
 
+## 🎨 Design « Papel »
+
+- **Couleurs, polices, durées** : tout est dans `src/constants/theme.ts`. Fond crème,
+  encre brune, un seul accent rosa mexicano, et **une couleur par chanson**
+  (`SongPalette` ; `features/songs/palette.ts` la choisit) : claire pour la vignette,
+  foncée pour l'en-tête, le karaoké et les cartes de révision.
+- **Polices** : Fraunces (titres, paroles) et Figtree (interface), chargées dans
+  `src/app/_layout.tsx`. Avec une police chargée, la graisse est dans le nom de
+  famille (`Fonts.bold`…) : ne pas ajouter `fontWeight`.
+- **Icônes** : `components/icon.tsx` (tracés Lucide). Les emojis ne servent qu'à
+  illustrer les chansons.
+- **Animations** : Reanimated. La guirlande de drapeaux (`components/decor/`) tire
+  au hasard, à chaque lancement, des pays hispanophones d'Amérique latine. Tout
+  respecte le réglage « Réduire les animations » du téléphone.
+
 ## 🗂️ Structure
 
 ```
 src/
   app/                      # écrans (expo-router, file-based routing)
-    index.tsx               #   liste des chansons (accueil)
-    song/[id].tsx           #   détail d'une chanson + sélecteur de mode
-    add.tsx                 #   ajouter sa propre chanson
-    _layout.tsx             #   Stack + SongsProvider
+    index.tsx               #   accueil : guirlande, chansons, vocabulaire à réviser
+    song/[id].tsx           #   une chanson : paroles touchables + traduction
+    karaoke.tsx             #   karaoké plein écran
+    practice.tsx            #   révision du vocabulaire en cartes
+    add.tsx                 #   ajouter une chanson (recherche LRCLIB ou collage)
+    _layout.tsx             #   polices, providers, Stack
   components/
-    song/                   #   lyrics / fill-blanks / vocab / quiz / mode-switcher
-    primary-button.tsx
-    themed-text.tsx, themed-view.tsx
+    decor/                  #   drapeaux, guirlande, confettis, bord festonné
+    song/                   #   ligne touchable, bouton « écouter », niveau
+    icon.tsx, primary-button.tsx, pressable-scale.tsx, switch.tsx…
   data/songs.ts             # chansons fournies (contenu original)
-  features/songs/
-    types.ts                # modèle de données (Song, SongLine, VocabItem, QuizQuestion)
-    store.tsx               # contexte : combine chansons fournies + utilisateur
-    storage.ts              # persistance AsyncStorage
+  features/
+    songs/                  # modèle, store, stockage, LRCLIB, couleurs
+    vocab/troublesome.tsx   # vocabulaire à réviser
+    ui/                     # messages (toast), vibrations, lecture à voix haute
 ```
 
 ## 🧭 Idées pour la suite

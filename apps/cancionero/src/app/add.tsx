@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,12 +8,31 @@ import {
   StyleSheet,
   TextInput,
   View,
+  type TextInputProps,
+  type TextStyle,
 } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+  ZoomIn,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PrimaryButton, ACCENT } from '@/components/primary-button';
+import { Icon, type IconName } from '@/components/icon';
+import { IconButton } from '@/components/icon-button';
+import { PressableScale } from '@/components/pressable-scale';
+import { PrimaryButton } from '@/components/primary-button';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Fiesta, Spacing } from '@/constants/theme';
+import { Fonts, MaxContentWidth } from '@/constants/theme';
 import {
   cleanTrackName,
   resultToSong,
@@ -23,9 +41,16 @@ import {
 } from '@/features/songs/lrclib';
 import { useSongs } from '@/features/songs/store';
 import { LEVEL_LABELS, type Level, type Song, type SongLine } from '@/features/songs/types';
-import { useTheme } from '@/hooks/use-theme';
+import { haptics } from '@/features/ui/haptics';
+import { useToast } from '@/features/ui/toast';
+import { useIsDark, useTheme } from '@/hooks/use-theme';
 
 const LEVELS: Level[] = ['debutant', 'intermediaire', 'avance'];
+
+// Le halo rosa remplace l'anneau de focus du navigateur. Chrome le dessine en
+// `outline-style: auto`, que `outlineWidth: 0` n'efface pas ; « none » manque
+// aux types de React Native.
+const noOutline = Platform.select({ web: { outlineStyle: 'none' } as unknown as TextStyle, default: {} });
 
 /** Assemble les paroles ES et la traduction FR ligne par ligne. */
 function buildLines(esText: string, frText: string): SongLine[] {
@@ -55,82 +80,153 @@ const fmt = (s: number | null) => {
 export default function AddSongScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const toast = useToast();
   const { addSong } = useSongs();
   const [tab, setTab] = useState<'search' | 'paste'>('search');
 
-  const inputStyle = [
-    styles.input,
-    {
-      color: theme.text,
-      borderColor: theme.backgroundSelected,
-      backgroundColor: theme.backgroundElement,
-    },
-  ];
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  // La chanson ajoutée se pose sur l'accueil (voir lastAddedId) ; on le dit aussi.
+  const onAdded = (song: Song) => {
+    toast.show({ message: `« ${song.title} » ajoutée à tes chansons`, success: true });
+    close();
+  };
 
   return (
-    <ThemedView style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.tabs}>
-          {(['search', 'paste'] as const).map((t) => (
-            <Pressable
-              key={t}
-              onPress={() => setTab(t)}
-              style={[
-                styles.tab,
-                { borderColor: tab === t ? ACCENT : theme.backgroundSelected },
-                tab === t && { backgroundColor: ACCENT + '18' },
-              ]}>
-              <ThemedText type="smallBold" style={{ color: tab === t ? ACCENT : theme.textSecondary }}>
-                {t === 'search' ? '🔎 Rechercher' : '✍️ Coller à la main'}
-              </ThemedText>
-            </Pressable>
-          ))}
-        </View>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.inner}>
+          <View style={[styles.grabber, { backgroundColor: theme.dashed }]} />
+          <View style={[styles.header, Platform.OS !== 'ios' && { paddingTop: insets.top + 8 }]}>
+            <ThemedText type="title" accessibilityRole="header">
+              Ajouter une chanson
+            </ThemedText>
+            <IconButton icon="x" label="Fermer" onPress={close} color={theme.text} background={theme.chip} size={40} iconSize={18} />
+          </View>
 
-        {tab === 'search' ? (
-          <SearchTab inputStyle={inputStyle} onImported={() => router.back()} addSong={addSong} />
-        ) : (
-          <PasteTab inputStyle={inputStyle} onSaved={() => router.back()} addSong={addSong} />
-        )}
+          <Segmented
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: 'search', label: 'Rechercher', icon: 'search' },
+              { value: 'paste', label: 'Coller les paroles', icon: 'clipboard' },
+            ]}
+          />
+
+          <Animated.View key={tab} entering={FadeIn.duration(220)} style={styles.fill}>
+            {tab === 'search' ? (
+              <SearchTab addSong={addSong} onAdded={onAdded} />
+            ) : (
+              <PasteTab addSong={addSong} onAdded={onAdded} />
+            )}
+          </Animated.View>
+        </View>
       </KeyboardAvoidingView>
-    </ThemedView>
+    </View>
+  );
+}
+
+/** Deux onglets dans une gélule ; la pastille blanche glisse de l'un à l'autre. */
+function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string; icon: IconName }[];
+}) {
+  const theme = useTheme();
+  const dark = useIsDark();
+  const [width, setWidth] = useState(0);
+  const index = options.findIndex((o) => o.value === value);
+  const x = useSharedValue(0);
+  const segment = (width - 8 - 4 * (options.length - 1)) / options.length;
+
+  useEffect(() => {
+    x.value = withSpring(index * (segment + 4), { damping: 16, stiffness: 220, mass: 0.7 });
+  }, [index, segment, x]);
+  const indicator = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
+
+  return (
+    <View
+      accessibilityRole="tablist"
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      style={[styles.segmented, { backgroundColor: theme.chip }]}>
+      {width > 0 && (
+        <Animated.View
+          style={[styles.indicator, { width: segment, backgroundColor: dark ? theme.surface : '#FFFFFF' }, indicator]}
+        />
+      )}
+      {options.map((option) => {
+        const active = option.value === value;
+        const color = active ? theme.text : theme.textSecondary;
+        return (
+          <Pressable
+            key={option.value}
+            onPress={() => {
+              if (!active) haptics.tap();
+              onChange(option.value);
+            }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            style={styles.segment}>
+            <Icon name={option.icon} size={16} color={color} />
+            <ThemedText type="small" style={{ color, fontFamily: active ? Fonts.bold : Fonts.semi }}>
+              {option.label}
+            </ThemedText>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Champ de saisie : la bordure passe au rosa et un halo apparaît au focus. */
+function Input({ style, multiline, ...props }: TextInputProps) {
+  const theme = useTheme();
+  const [focused, setFocused] = useState(false);
+  return (
+    <TextInput
+      {...props}
+      multiline={multiline}
+      placeholderTextColor={theme.textMuted}
+      onFocus={(e) => {
+        setFocused(true);
+        props.onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        setFocused(false);
+        props.onBlur?.(e);
+      }}
+      style={[
+        styles.input,
+        multiline && styles.multiline,
+        {
+          color: theme.text,
+          backgroundColor: theme.input,
+          borderColor: focused ? theme.accent : theme.inputBorder,
+        },
+        focused && styles.focusRing,
+        style,
+      ]}
+    />
   );
 }
 
 /* --------------------------- Recherche en ligne --------------------------- */
 
-function SearchTab({
-  inputStyle,
-  onImported,
-  addSong,
-}: {
-  inputStyle: any;
-  onImported: () => void;
-  addSong: (s: Song) => Promise<void>;
-}) {
+type ImportState = { id: number; phase: 'loading' | 'done' } | null;
+
+function SearchTab({ addSong, onAdded }: { addSong: (s: Song) => Promise<void>; onAdded: (s: Song) => void }) {
   const theme = useTheme();
   const [query, setQuery] = useState('');
+  const [focused, setFocused] = useState(false);
   const [results, setResults] = useState<LrcResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
-
-  const doSearch = async (q: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const r = await searchLyrics(q);
-      setResults(r.slice(0, 25));
-    } catch {
-      setError('Recherche impossible. Vérifie ta connexion et réessaie.');
-      setResults([]);
-    } finally {
-      setLoading(false);
-      setSearched(true);
-    }
-  };
+  const [importing, setImporting] = useState<ImportState>(null);
 
   // Recherche instantanée : on lance dès 3 caractères, peu après l'arrêt de la
   // frappe, sans attendre de validation. Les réponses tardives sont ignorées.
@@ -168,90 +264,218 @@ function SearchTab({
     };
   }, [query]);
 
-  const run = () => {
-    if (query.trim().length >= 2) doSearch(query.trim());
+  const importResult = async (r: LrcResult) => {
+    if (importing) return;
+    setImporting({ id: r.id, phase: 'loading' });
+    const song = resultToSong(r);
+    await addSong(song);
+    setImporting({ id: r.id, phase: 'done' });
+    haptics.success();
+    setTimeout(() => onAdded(song), 550);
   };
 
-  const importResult = async (r: LrcResult) => {
-    await addSong(resultToSong(r));
-    onImported();
-  };
+  const n = query.trim().length;
 
   return (
     <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-      <ThemedText type="small" style={{ color: theme.textSecondary }}>
-        Les résultats s&apos;affichent au fur et à mesure que tu tapes — touche la chanson pour
-        l&apos;importer. Les paroles arrivent souvent déjà synchronisées pour le karaoké.
-      </ThemedText>
-
-      <View style={styles.searchRow}>
+      <View
+        style={[
+          styles.field,
+          { backgroundColor: theme.input, borderColor: focused ? theme.accent : theme.inputBorder },
+          focused && styles.focusRing,
+        ]}>
+        <Icon name="search" size={20} color={theme.textSecondary} />
         <TextInput
           value={query}
           onChangeText={setQuery}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder="Ex. Bailando Enrique Iglesias"
-          placeholderTextColor={theme.textSecondary}
-          style={[inputStyle, { flex: 1 }]}
+          placeholderTextColor={theme.textMuted}
+          accessibilityLabel="Rechercher une chanson ou un artiste"
           returnKeyType="search"
-          onSubmitEditing={run}
+          autoCorrect={false}
+          style={[styles.fieldInput, { color: theme.text }]}
         />
-        <PrimaryButton title="OK" onPress={run} style={styles.searchBtn} />
+        {n > 0 && (
+          <Animated.View entering={ZoomIn.springify().damping(14)}>
+            <IconButton
+              icon="x"
+              label="Effacer la recherche"
+              onPress={() => setQuery('')}
+              color={theme.textSecondary}
+              background={theme.chip}
+              size={36}
+              iconSize={14}
+            />
+          </Animated.View>
+        )}
       </View>
 
-      {loading && <ActivityIndicator color={ACCENT} style={{ marginTop: Spacing.four }} />}
-      {error && (
-        <ThemedText type="small" style={{ color: Fiesta.rojo, marginTop: Spacing.two }}>
+      {n === 0 && (
+        <ThemedText type="caption" themeColor="textSecondary">
+          Tape un titre ou un artiste : les résultats arrivent pendant que tu tapes. Les paroles sont
+          souvent déjà synchronisées pour le karaoké.
+        </ThemedText>
+      )}
+      {n > 0 && n < 3 && (
+        <ThemedText type="caption" themeColor="textSecondary">
+          Encore {3 - n} caractère{3 - n > 1 ? 's' : ''}…
+        </ThemedText>
+      )}
+      {loading && <Skeleton />}
+      {error && !loading && (
+        <ThemedText type="small" themeColor="dangerText">
           {error}
         </ThemedText>
       )}
       {!loading && searched && !error && results.length === 0 && (
-        <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.two }}>
-          Aucun résultat. Essaie avec l&apos;artiste, ou vérifie l&apos;orthographe.
-        </ThemedText>
-      )}
-      {!loading && !searched && query.trim().length > 0 && query.trim().length < 3 && (
-        <ThemedText type="small" style={{ color: theme.textSecondary, marginTop: Spacing.two }}>
-          Encore {3 - query.trim().length} caractère
-          {3 - query.trim().length > 1 ? 's' : ''}…
+        <ThemedText type="caption" themeColor="textSecondary">
+          Aucun résultat. Essaie avec l’artiste, ou vérifie l’orthographe.
         </ThemedText>
       )}
 
-      {results.map((r) => (
-        <Pressable
-          key={r.id}
-          onPress={() => importResult(r)}
-          style={[styles.resultCard, { backgroundColor: theme.backgroundElement }]}>
-          <View style={{ flex: 1, gap: 2 }}>
-            <ThemedText type="default" style={styles.resultTitle} numberOfLines={1}>
-              {cleanTrackName(r)}
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.textSecondary }} numberOfLines={1}>
-              {r.artistName}
-              {r.albumName ? ` · ${r.albumName}` : ''} {r.duration ? `· ${fmt(r.duration)}` : ''}
-            </ThemedText>
-            {r.syncedLyrics && (
-              <ThemedText type="small" style={{ color: Fiesta.verde, fontWeight: '700' }}>
-                ✓ synchronisé (karaoké)
-              </ThemedText>
-            )}
+      {!loading && results.length > 0 && (
+        <>
+          <ThemedText type="caption" themeColor="textSecondary">
+            Touche une chanson pour l’importer.
+          </ThemedText>
+          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            {results.map((r, i) => (
+              <ResultRow
+                key={r.id}
+                result={r}
+                index={i}
+                state={importing?.id === r.id ? importing.phase : null}
+                onPress={() => importResult(r)}
+              />
+            ))}
           </View>
-          <ThemedText style={[styles.importPlus, { color: ACCENT }]}>＋</ThemedText>
-        </Pressable>
-      ))}
+        </>
+      )}
+
+      <ThemedText type="caption" themeColor="textSecondary" style={styles.credit}>
+        Paroles fournies par LRCLIB
+      </ThemedText>
     </ScrollView>
+  );
+}
+
+function ResultRow({
+  result,
+  index,
+  state,
+  onPress,
+}: {
+  result: LrcResult;
+  index: number;
+  state: 'loading' | 'done' | null;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const reduce = useReducedMotion();
+  const title = cleanTrackName(result);
+  const meta = [result.artistName, result.albumName, fmt(result.duration)].filter(Boolean).join(' · ');
+
+  return (
+    <Animated.View entering={reduce ? undefined : FadeInDown.delay(Math.min(index, 8) * 70).duration(380)}>
+      <PressableScale
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`Importer ${title}, ${result.artistName}`}
+        accessibilityState={{ busy: state === 'loading' }}
+        style={[styles.result, index > 0 && { borderTopWidth: 1, borderTopColor: theme.line }]}>
+        <View style={[styles.resultCover, { backgroundColor: theme.chip }]}>
+          <Icon name="music" size={22} color={theme.textSecondary} />
+        </View>
+        <View style={styles.resultText}>
+          <ThemedText type="lyric" numberOfLines={1} style={styles.resultTitle}>
+            {title}
+          </ThemedText>
+          <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>
+            {meta}
+          </ThemedText>
+          {result.syncedLyrics && (
+            <View style={[styles.sync, { backgroundColor: theme.successTint }]}>
+              <Icon name="check" size={12} color={theme.successText} strokeWidth={3} />
+              <ThemedText type="smallBold" style={[styles.syncText, { color: theme.successText }]}>
+                Synchronisé
+              </ThemedText>
+            </View>
+          )}
+        </View>
+        <ImportBadge state={state} />
+      </PressableScale>
+    </Animated.View>
+  );
+}
+
+/** + → roue qui tourne → coche verte qui éclot. */
+function ImportBadge({ state }: { state: 'loading' | 'done' | null }) {
+  const theme = useTheme();
+  const spin = useSharedValue(0);
+  useEffect(() => {
+    if (state === 'loading') {
+      spin.value = 0;
+      spin.value = withRepeat(withTiming(360, { duration: 800, easing: Easing.linear }), -1, false);
+    } else {
+      cancelAnimation(spin);
+    }
+  }, [state, spin]);
+  const spinStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value}deg` }] }));
+
+  if (state === 'done') {
+    return (
+      <Animated.View entering={ZoomIn.springify().damping(9)} style={[styles.badge, { backgroundColor: theme.success }]}>
+        <Icon name="check" size={20} color="#FFFFFF" strokeWidth={2.6} />
+      </Animated.View>
+    );
+  }
+  return (
+    <View style={[styles.badge, { backgroundColor: theme.accentTint }]}>
+      {state === 'loading' ? (
+        <Animated.View style={spinStyle}>
+          <Icon name="loader" size={20} color={theme.accentText} />
+        </Animated.View>
+      ) : (
+        <Icon name="plus" size={20} color={theme.accentText} />
+      )}
+    </View>
+  );
+}
+
+/** Lignes grisées qui pulsent pendant la recherche. */
+function Skeleton() {
+  const theme = useTheme();
+  const reduce = useReducedMotion();
+  const pulse = useSharedValue(1);
+  useEffect(() => {
+    if (reduce) return;
+    pulse.value = withRepeat(withSequence(withTiming(0.45, { duration: 550 }), withTiming(1, { duration: 550 })), -1);
+  }, [reduce, pulse]);
+  const style = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  const bone = { backgroundColor: theme.skeleton };
+
+  return (
+    <Animated.View
+      accessibilityLabel="Recherche en cours"
+      style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }, style]}>
+      {[0.6, 0.52, 0.66].map((w, i) => (
+        <View key={i} style={[styles.result, i > 0 && { borderTopWidth: 1, borderTopColor: theme.line }]}>
+          <View style={[styles.resultCover, bone]} />
+          <View style={styles.resultText}>
+            <View style={[styles.boneLine, bone, { width: `${w * 100}%`, height: 14 }]} />
+            <View style={[styles.boneLine, bone, { width: `${w * 60}%`, height: 11 }]} />
+          </View>
+        </View>
+      ))}
+    </Animated.View>
   );
 }
 
 /* ------------------------------ Coller à la main ------------------------------ */
 
-function PasteTab({
-  inputStyle,
-  onSaved,
-  addSong,
-}: {
-  inputStyle: any;
-  onSaved: () => void;
-  addSong: (s: Song) => Promise<void>;
-}) {
+function PasteTab({ addSong, onAdded }: { addSong: (s: Song) => Promise<void>; onAdded: (s: Song) => void }) {
   const theme = useTheme();
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
@@ -276,100 +500,89 @@ function PasteTab({
       lines,
     };
     await addSong(song);
-    onSaved();
+    haptics.success();
+    onAdded(song);
   };
 
   return (
     <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-      <Field label="Titre *">
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Ex. La Bamba"
-          placeholderTextColor={theme.textSecondary}
-          style={inputStyle}
-        />
+      <Field label="Titre">
+        <Input value={title} onChangeText={setTitle} placeholder="Ex. La Bamba" accessibilityLabel="Titre" />
       </Field>
-
-      <Field label="Artiste (optionnel)">
-        <TextInput
-          value={artist}
-          onChangeText={setArtist}
-          placeholder="Ex. Ritchie Valens"
-          placeholderTextColor={theme.textSecondary}
-          style={inputStyle}
-        />
+      <Field label="Artiste" optional>
+        <Input value={artist} onChangeText={setArtist} placeholder="Ex. Ritchie Valens" accessibilityLabel="Artiste" />
       </Field>
-
       <Field label="Niveau">
         <View style={styles.levels}>
           {LEVELS.map((lv) => {
             const active = lv === level;
             return (
-              <Pressable
+              <PressableScale
                 key={lv}
-                onPress={() => setLevel(lv)}
+                onPress={() => {
+                  haptics.tap();
+                  setLevel(lv);
+                }}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                scaleTo={0.94}
                 style={[
                   styles.levelChip,
-                  {
-                    borderColor: active ? ACCENT : theme.backgroundSelected,
-                    backgroundColor: active ? ACCENT + '1A' : 'transparent',
-                  },
+                  active
+                    ? { backgroundColor: theme.accent, borderColor: theme.accent }
+                    : { backgroundColor: theme.input, borderColor: theme.inputBorder },
                 ]}>
-                <ThemedText type="small" style={{ color: active ? ACCENT : theme.textSecondary }}>
+                <ThemedText
+                  type="small"
+                  style={{ color: active ? '#FFFFFF' : theme.textSecondary, fontFamily: Fonts.semi }}>
                   {LEVEL_LABELS[lv]}
                 </ThemedText>
-              </Pressable>
+              </PressableScale>
             );
           })}
         </View>
       </Field>
-
-      <Field label="Paroles (espagnol) *">
-        <TextInput
+      <Field label="Paroles en espagnol">
+        <Input
           value={es}
           onChangeText={setEs}
           placeholder={'Para bailar la bamba\nse necesita una poca de gracia'}
-          placeholderTextColor={theme.textSecondary}
+          accessibilityLabel="Paroles en espagnol"
           multiline
-          style={[inputStyle, styles.multiline]}
         />
       </Field>
-
-      <Field label="Traduction (français, optionnel)">
-        <TextInput
+      <Field label="Traduction" optional>
+        <Input
           value={fr}
           onChangeText={setFr}
           placeholder={'Pour danser la bamba\nil faut un peu de grâce'}
-          placeholderTextColor={theme.textSecondary}
+          accessibilityLabel="Traduction en français"
           multiline
-          style={[inputStyle, styles.multiline]}
         />
       </Field>
 
-      <ThemedText type="small" style={{ color: theme.textSecondary }}>
+      <ThemedText type="caption" themeColor="textSecondary">
         {lines.length > 0
-          ? `${lines.length} ligne${lines.length > 1 ? 's' : ''} détectée${lines.length > 1 ? 's' : ''}.`
-          : 'Aucune ligne pour le moment.'}
+          ? `${lines.length} ligne${lines.length > 1 ? 's' : ''} détectée${lines.length > 1 ? 's' : ''}, une par ligne de texte.`
+          : 'Une ligne de chanson par ligne de texte ; la traduction suit le même découpage.'}
       </ThemedText>
 
-      <PrimaryButton
-        title="Enregistrer la chanson"
-        onPress={onSave}
-        disabled={!canSave}
-        loading={saving}
-        style={styles.save}
-      />
+      <PrimaryButton title="Enregistrer la chanson" onPress={onSave} disabled={!canSave} loading={saving} />
     </ScrollView>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  const theme = useTheme();
+function Field({ label, optional, children }: { label: string; optional?: boolean; children: React.ReactNode }) {
   return (
-    <View style={styles.field}>
-      <ThemedText type="smallBold" style={{ color: theme.textSecondary }}>
+    <View style={styles.fieldGroup}>
+      <ThemedText type="smallBold">
         {label}
+        {optional && (
+          <ThemedText type="small" themeColor="textSecondary">
+            {' '}
+            (optionnel)
+          </ThemedText>
+        )}
       </ThemedText>
       {children}
     </View>
@@ -378,43 +591,71 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  tabs: { flexDirection: 'row', gap: Spacing.two, padding: Spacing.three, paddingBottom: 0 },
-  tab: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderRadius: 999,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  scroll: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
-  searchRow: { flexDirection: 'row', gap: Spacing.two, alignItems: 'stretch' },
-  searchBtn: { paddingHorizontal: Spacing.four },
-  resultCard: {
+  fill: { flex: 1 },
+  inner: { flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
+  grabber: { alignSelf: 'center', width: 36, height: 5, borderRadius: 3, marginTop: 8 },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderRadius: 16,
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    paddingLeft: 20,
+    paddingRight: 16,
   },
-  resultTitle: { fontSize: 16, fontWeight: '700' },
-  importPlus: { fontSize: 28, fontWeight: '700' },
-  field: { gap: Spacing.one },
-  input: {
-    minHeight: 50,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
+  segmented: { flexDirection: 'row', gap: 4, marginTop: 16, marginHorizontal: 20, padding: 4, borderRadius: 14 },
+  indicator: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    left: 4,
+    borderRadius: 10,
+    boxShadow: '0px 1px 3px rgba(42, 24, 16, 0.15)',
   },
-  multiline: { minHeight: 130, textAlignVertical: 'top' },
-  levels: { flexDirection: 'row', gap: Spacing.two },
-  levelChip: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderRadius: 999,
-    paddingVertical: 10,
+  segment: { flex: 1, height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  scroll: { padding: 20, paddingTop: 16, gap: 12, paddingBottom: 64 },
+  field: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+    height: 52,
+    paddingLeft: 14,
+    paddingRight: 6,
+    borderWidth: 2,
+    borderRadius: 14,
   },
-  save: { marginTop: Spacing.two },
+  fieldInput: { flex: 1, minWidth: 0, height: '100%', fontFamily: Fonts.body, fontSize: 16, ...noOutline },
+  focusRing: { boxShadow: '0px 0px 0px 4px rgba(209, 31, 107, 0.12)' },
+  card: { borderRadius: 20, borderWidth: 1, boxShadow: '0px 8px 18px -12px rgba(42, 24, 16, 0.35)' },
+  result: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, paddingLeft: 14, paddingRight: 12 },
+  resultCover: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  resultText: { flex: 1, minWidth: 0, gap: 3 },
+  resultTitle: { fontSize: 17, lineHeight: 22 },
+  sync: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    marginTop: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+  syncText: { fontSize: 12, lineHeight: 16 },
+  badge: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  boneLine: { borderRadius: 6 },
+  credit: { textAlign: 'center', marginTop: 6 },
+  fieldGroup: { gap: 6 },
+  input: {
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontFamily: Fonts.body,
+    fontSize: 16,
+    ...noOutline,
+  },
+  multiline: { minHeight: 120, textAlignVertical: 'top', lineHeight: 22 },
+  levels: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  levelChip: { height: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1.5, justifyContent: 'center' },
 });
