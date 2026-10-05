@@ -20,7 +20,49 @@ aussitôt dessus.
 
 ---
 
-## ▶️ Lancer l'app sur ton iPhone (gratuit, via Expo Go)
+## 📲 L'installer sur ton téléphone (version web, rien à installer)
+
+La version web est hébergée sur Vercel et s'installe comme une app (PWA) :
+
+- **iPhone** : ouvre le site dans **Safari** → bouton **Partager** → **Sur l'écran
+  d'accueil**. L'app s'ouvre ensuite en plein écran, avec son icône.
+- **Android** : ouvre le site dans **Chrome** → menu ⋮ → **Installer l'application**.
+
+Une fois ouverte une première fois, elle marche **hors ligne** (sauf la recherche
+de paroles et la traduction automatique, qui passent par Internet).
+
+> ⚠️ Sur iPhone, l'app de l'écran d'accueil et Safari ne partagent pas leur stockage :
+> les chansons ajoutées dans l'un n'apparaissent pas dans l'autre. Installe l'app
+> d'abord, puis ajoute tes chansons depuis l'icône.
+
+## 🚀 Déploiement (Vercel)
+
+Vercel déploie la branche **`main`** à chaque push : build `expo export -p web`,
+sortie `dist` (voir `vercel.json`). Toute adresse qui n'est pas un fichier renvoie
+vers l'accueil, et expo-router affiche la bonne page (ex. `/song/<id>` d'une chanson
+ajoutée). `public/_redirects` fait la même chose sur Netlify / Cloudflare Pages.
+
+Tester le build de production en local :
+```bash
+npx expo export -p web
+```
+puis servir le dossier `dist` avec n'importe quel serveur statique.
+
+**Pièges du service worker** (`public/sw.js`, enregistré en production seulement) :
+
+- **Après un déploiement**, l'écran peut montrer l'ancienne version : le service
+  worker sert l'app depuis le cache. Fermer complètement l'app (ou l'onglet) et la
+  rouvrir. Vérifier ça avant de conclure qu'un déploiement a échoué.
+- **Une icône qui change reste en cache.** Remplacer `assets/images/icon.png`,
+  régénérer les PNG de `public/` (`apple-touch-icon` 180 px, `icon-192`, `icon-512`,
+  `icon-maskable-512`), puis incrémenter **en même temps** le `?v=` des icônes
+  (`src/app/+html.tsx` et `public/manifest.webmanifest`) et le nom `CACHE` de
+  `public/sw.js`. Sur iPhone, l'icône est figée à l'ajout : il faut retirer l'app
+  de l'écran d'accueil et l'ajouter de nouveau.
+
+---
+
+## ▶️ Lancer l'app sur ton iPhone en développement (via Expo Go)
 
 1. Sur ton iPhone, installe **Expo Go** depuis l'App Store.
 2. Sur l'ordinateur, dans ce dossier, lance le serveur de développement :
