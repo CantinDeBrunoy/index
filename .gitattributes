@@ -1,0 +1,8 @@
+# Fins de ligne LF partout, y compris sous Windows : les scripts qui comparent
+# des fichiers générés (tonalli/scripts/checks.ts) et les outils Unix en CI
+# voient le même contenu que sous Windows.
+* text=auto eol=lf
+
+# Scripts Windows : CRLF attendu par cmd.exe
+*.cmd text eol=crlf
+*.bat text eol=crlf
