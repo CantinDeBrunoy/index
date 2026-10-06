@@ -68,6 +68,23 @@ describe("checkMonitor", () => {
 });
 
 describe("checkProject", () => {
+  it("relance une fois une sonde en échec avant de conclure", async () => {
+    const [project] = defineProjects([
+      { slug: "p", name: "P", started: "2026-01", kind: "web", pitch: { fr: "Projet de test." }, stack: [], links: {}, monitors: [http] },
+    ]);
+    const statuses = [500, 200];
+    const waits: number[] = [];
+    const r = await checkProject(project!, {
+      fetch: (async () => new Response("", { status: statuses.shift() ?? 200 })) as typeof fetch,
+      retryDelayMs: 30_000,
+      sleep: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    expect(waits).toEqual([30_000]);
+    expect(r.health).toBe("online");
+  });
+
   it("prend la pire sonde, ignore celles qui n'ont pas pu tourner", async () => {
     const [project] = defineProjects([
       {

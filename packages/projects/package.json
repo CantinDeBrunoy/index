@@ -6,7 +6,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./check": "./src/check.ts"
+    "./check": "./src/check.ts",
+    "./alerts": "./src/alerts.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

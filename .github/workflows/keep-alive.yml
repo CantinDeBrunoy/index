@@ -1,0 +1,42 @@
+name: keep-alive
+
+# Sonde toutes les démos d'INDEX, fait une vraie requête sur les bases qui se mettent en pause
+# (Supabase de Tonalli : 7 jours d'inactivité) et ouvre une issue quand un service tombe.
+# Les cibles sont lues dans packages/projects/src/projects.ts : la même liste que le portfolio.
+#
+# Rien n'est hébergé sur une offre qui s'endort (statique ou edge) : toutes les 6 heures suffit
+# pour alerter vite et garder Supabase éveillé. Le Worker du portfolio fait les mêmes sondes
+# chaque heure via un cron Cloudflare, qui ne dépend pas des crons de GitHub (désactivés après
+# 60 jours sans activité sur un dépôt public) : s'il voit ce workflow désactivé, il ouvre une issue.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+concurrency:
+  group: keep-alive
+  cancel-in-progress: false
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      # Aucune installation : Node exécute directement le TypeScript de scripts/ et packages/.
+      - name: Sonder les services
+        run: node scripts/keep-alive.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TONALLI_SUPABASE_ANON_KEY: ${{ secrets.TONALLI_SUPABASE_ANON_KEY }}

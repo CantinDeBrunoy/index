@@ -36,6 +36,12 @@ export interface CheckOptions {
   timeoutMs?: number;
   fetch?: typeof fetch;
   now?: () => number;
+  /**
+   * Si une sonde échoue, on la relance une fois après ce délai : un raté réseau isolé
+   * n'ouvre pas d'issue. 0 (par défaut) : pas de nouvel essai.
+   */
+  retryDelayMs?: number;
+  sleep?: (ms: number) => Promise<void>;
 }
 
 export const SLOW_MS = 5_000;
@@ -146,10 +152,21 @@ export async function checkMonitor(monitor: Monitor, options: CheckOptions = {})
   };
 }
 
+const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 /** Lance toutes les sondes d'un projet en parallèle ; son état est celui de la pire sonde. */
 export async function checkProject(project: Project, options: CheckOptions = {}): Promise<ProjectCheck> {
-  const results = (await Promise.all(project.monitors.map((m) => checkMonitor(m, options)))).filter(
+  let results = (await Promise.all(project.monitors.map((m) => checkMonitor(m, options)))).filter(
     (r): r is CheckResult => r !== null,
   );
+
+  const retryDelayMs = options.retryDelayMs ?? 0;
+  if (retryDelayMs > 0 && results.some((r) => r.health !== "online")) {
+    await (options.sleep ?? defaultSleep)(retryDelayMs);
+    results = await Promise.all(
+      results.map(async (r) => (r.health === "online" ? r : ((await checkMonitor(r.monitor, options)) ?? r))),
+    );
+  }
+
   return { slug: project.slug, health: worst(results.map((r) => r.health)), results };
 }
