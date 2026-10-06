@@ -130,13 +130,13 @@ npm run lint      # ESLint (eslint-config-expo)
 
 ## Intégration continue
 
-Le workflow GitHub Actions [`ci.yml`](.github/workflows/ci.yml) (sur push / PR vers `main`)
-vérifie : **format des messages de commit** (Conventional Commits), **ESLint**,
-**expo-doctor**, et un **export Android** (`expo export --platform android`).
+Magellan vit dans le monorepo [INDEX](../../README.md). Le workflow `ci.yml` à la racine
+(sur push / PR vers `main`, quand Magellan est touché) vérifie **ESLint**, le **typecheck**,
+le **build web**, **expo-doctor** et un **export Android** (`expo export --platform android`).
 
 ## Convention de commits
 
-[Conventional Commits](https://www.conventionalcommits.org) imposés par la CI :
+[Conventional Commits](https://www.conventionalcommits.org) (convention du projet) :
 
 ```
 feat(globe): afficher la planète en plein écran

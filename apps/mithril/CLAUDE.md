@@ -168,12 +168,13 @@ encodent des séquences où l'erreur coûte cher :
 
 ## Intégration continue
 
-`.github/workflows/ci.yml`, trois jobs sur `windows-latest` :
+`.github/workflows/mithril.yml` à la racine du monorepo INDEX (déclenché seulement quand
+`apps/mithril/` change), trois jobs sur `windows-latest` :
 
 | Job | Déclenchement |
 | --- | --- |
-| Tests unitaires | tout push, sur toute branche |
-| Couverture des tests | tout push, sur toute branche (seuil non encore appliqué) |
+| Tests unitaires | tout push qui touche `apps/mithril/`, sur toute branche |
+| Couverture des tests | tout push qui touche `apps/mithril/` (seuil non encore appliqué) |
 | Audit de sécurité | pull requests vers `main`, et `main` lui-même |
 
 L'audit publie un bilan dans le résumé du run et en artefact téléchargeable. CodeQL n'y

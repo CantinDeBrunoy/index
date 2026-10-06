@@ -50,10 +50,10 @@ Voir [README.md](README.md) pour la vision, l'architecture détaillée et la feu
   branche travailler plutôt que d'en créer une nouvelle.
 - **Pas de merge sur `main` avec une CI rouge.**
 
-### Commits — Conventional Commits (imposé par la CI)
+### Commits — Conventional Commits
 
-Le linter de commit ([`.github/workflows/verify-project.yml`](.github/workflows/verify-project.yml))
-**rejette** tout message hors format. Modèle :
+Convention du projet (depuis l'arrivée dans le monorepo INDEX, la CI ne la vérifie plus).
+Modèle :
 
 ```
 <type>(<scope>): description courte à l'impératif
@@ -72,7 +72,7 @@ Français — code, commentaires (alignés sur l'existant), commits et documenta
 
 - **TypeScript strict**, types explicites pour les modèles (`VisitedCountry`,
   `VisitedCity`) et les messages du bridge WebView.
-- **ESLint** (`eslint-config-expo`) doit passer : `npm run lint`. Je ne contourne pas une
+- **ESLint** (`eslint-config-expo`) doit passer : `pnpm --filter magellan lint`. Je ne contourne pas une
   règle pour faire passer le lint — je corrige.
 - Conventions de nommage de l'existant : composants en `PascalCase.tsx`, hooks/utils en
   `kebab-case.ts`.
@@ -81,13 +81,14 @@ Français — code, commentaires (alignés sur l'existant), commits et documenta
 
 ## Intégration continue
 
-CI GitHub Actions ([`ci.yml`](.github/workflows/ci.yml) → `verify-project.yml`), sur push /
-PR vers `main`. Étapes :
+Magellan vit dans le monorepo INDEX : CI GitHub Actions `ci.yml` à la racine du dépôt, sur
+push / PR vers `main`, quand Magellan (ou un package dont il dépend) est touché :
 
-1. **commit-lint** — format Conventional Commits sur tous les commits.
-2. **ESLint** — `npm run lint`.
-3. **expo-doctor** — cohérence de la config Expo.
-4. **export Android** — `npx expo export --platform android`.
+1. **ESLint, typecheck, build web** — `pnpm turbo run lint typecheck build --filter=magellan`.
+2. **expo-doctor** — cohérence de la config Expo.
+3. **export Android** — `expo export --platform android`.
+
+Déploiement de l'export web sur Cloudflare Workers : `deploy-magellan.yml`.
 
 **Après un push, je surveille la CI.** Si elle est rouge : je diagnostique, corrige et
 re-pousse. Je ne « répare » **jamais** la CI en désactivant une vérification, en affaiblissant
@@ -120,6 +121,6 @@ WebView et le store.
 
 - Merger sans CI verte.
 - Ajouter une dépendance lourde non prévue sans demander.
-- Contourner le lint ou le commit-lint au lieu de corriger.
+- Contourner le lint au lieu de corriger.
 - Partir sur une phase ultérieure de la feuille de route sans validation.
 - Prétendre qu'une étape est testée/fonctionnelle si elle n'a pas été vérifiée sur device.
