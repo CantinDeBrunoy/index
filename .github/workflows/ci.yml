@@ -1,0 +1,80 @@
+name: ci
+
+# Lint, typecheck, tests et build des seules apps touchées par la PR (et de celles qui en
+# dépendent), avec le cache local de Turborepo conservé entre deux exécutions.
+# Mithril (C#, hors pnpm) a sa propre CI : mithril.yml.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, typecheck, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Historique complet : --affected compare la branche à sa base (merge-base).
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm turbo run lint typecheck test build --affected
+
+  magellan-native:
+    name: Magellan (expo-doctor, bundle Android)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Code de sortie 1 = Magellan est concerné par la modification.
+      - name: Magellan est-il touché ?
+        id: affected
+        run: |
+          set +e
+          pnpm turbo query affected --packages magellan --exit-code > /dev/null
+          echo "magellan=$([ $? -eq 1 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - if: steps.affected.outputs.magellan == 'true'
+        working-directory: apps/magellan
+        run: pnpm dlx expo-doctor
+
+      - if: steps.affected.outputs.magellan == 'true'
+        working-directory: apps/magellan
+        run: pnpm exec expo export --platform android --output-dir "$RUNNER_TEMP/magellan-android"
