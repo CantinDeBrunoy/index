@@ -1,0 +1,3 @@
+# Toutes les routes sont gérées côté client par expo-router : on renvoie
+# index.html (statut 200) pour éviter les 404 au rechargement / à la réouverture.
+/*    /index.html   200
