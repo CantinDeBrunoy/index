@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0b1120"/>
+  <!-- Repère de carte… -->
+  <path fill="#a3e635" d="M256 452C214 396 126 312 126 222a130 130 0 0 1 260 0c0 90-88 174-130 230Z"/>
+  <!-- …avec un haltère dedans -->
+  <g fill="#0b1120">
+    <rect x="164" y="213" width="184" height="18" rx="6"/>
+    <rect x="186" y="180" width="26" height="84" rx="8"/>
+    <rect x="300" y="180" width="26" height="84" rx="8"/>
+    <rect x="166" y="196" width="18" height="52" rx="6"/>
+    <rect x="328" y="196" width="18" height="52" rx="6"/>
+  </g>
+</svg>

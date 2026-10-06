@@ -1,0 +1,15 @@
+node_modules
+dist
+*.local
+
+# Cloudflare : état local de wrangler et secrets de dev (la clé TomTom)
+.wrangler
+.dev.vars*
+!.dev.vars.example
+# Types du runtime Workers (600 Ko), régénérés par `npm install` (postinstall)
+worker-configuration.d.ts
+
+# Config de preview propre à cette machine (chemin absolu vers Node)
+.claude/launch.json
+
+.DS_Store
