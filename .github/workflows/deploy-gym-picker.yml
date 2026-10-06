@@ -1,0 +1,25 @@
+name: deploy-gym-picker
+
+# Déploie apps/gym-picker sur Cloudflare Workers, seulement quand son dossier (ou un package
+# partagé, ou le lockfile) change sur main.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/gym-picker/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/deploy-gym-picker.yml
+      - .github/workflows/_deploy-cloudflare.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-cloudflare.yml
+    with:
+      app: gym-picker
+    secrets: inherit

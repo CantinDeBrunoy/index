@@ -1,0 +1,25 @@
+name: deploy-portfolio
+
+# Déploie apps/portfolio sur Cloudflare Workers, seulement quand son dossier (ou un package
+# partagé, ou le lockfile) change sur main.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/portfolio/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/deploy-portfolio.yml
+      - .github/workflows/_deploy-cloudflare.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-cloudflare.yml
+    with:
+      app: portfolio
+    secrets: inherit

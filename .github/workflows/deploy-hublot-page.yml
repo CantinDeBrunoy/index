@@ -1,0 +1,27 @@
+name: deploy-hublot-page
+
+# Déploie apps/hublot sur Cloudflare Workers, seulement quand son dossier (ou un package
+# partagé, ou le lockfile) change sur main.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/hublot/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/deploy-hublot-page.yml
+      - .github/workflows/_deploy-cloudflare.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # La nouvelle page ne remplace l'ancienne (GitHub Pages du dépôt Hublot) qu'à la bascule.
+    if: vars.HUBLOT_ENABLED == 'true'
+    uses: ./.github/workflows/_deploy-cloudflare.yml
+    with:
+      app: hublot
+    secrets: inherit

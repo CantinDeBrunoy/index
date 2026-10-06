@@ -1,0 +1,25 @@
+name: deploy-magellan
+
+# Déploie apps/magellan sur Cloudflare Workers, seulement quand son dossier (ou un package
+# partagé, ou le lockfile) change sur main.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/magellan/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/deploy-magellan.yml
+      - .github/workflows/_deploy-cloudflare.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-cloudflare.yml
+    with:
+      app: magellan
+    secrets: inherit

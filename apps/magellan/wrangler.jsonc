@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Export web statique d'Expo (expo export -p web), servi tel quel : aucun code serveur.
+  "name": "magellan",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Les fiches voyage et étape (/trip/<id>, /stop/<id>) n'existent que dans le stockage local :
+    // toute URL inconnue renvoie l'app, et expo-router affiche la bonne page côté client.
+    "not_found_handling": "single-page-application"
+  }
+}

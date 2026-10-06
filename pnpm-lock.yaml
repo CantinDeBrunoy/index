@@ -439,6 +439,9 @@ importers:
       eslint-config-expo:
         specifier: ~10.0.0
         version: 10.0.0(eslint@9.39.5(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3)
+      wrangler:
+        specifier: ^4.147.0
+        version: 4.147.0(@types/node@24.19.1)
 
   apps/portfolio:
     dependencies:

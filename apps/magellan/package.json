@@ -11,7 +11,8 @@
     "lint": "expo lint",
     "dev": "expo start --web --port 8081",
     "build": "expo export -p web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@expo-google-fonts/caveat": "^0.4.2",
@@ -53,7 +54,8 @@
     "@types/react": "~19.1.0",
     "eslint": "^9.39.2",
     "eslint-config-expo": "~10.0.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "wrangler": "^4.147.0"
   },
   "private": true
 }
