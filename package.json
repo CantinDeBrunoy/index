@@ -1,0 +1,19 @@
+{
+  "name": "@index/root",
+  "private": true,
+  "description": "INDEX : monorepo, hub et portfolio des projets de Cantin Roquier",
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.7"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@index/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Configurations partagées (tsconfig) des packages et du portfolio INDEX",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json"
+  }
+}
