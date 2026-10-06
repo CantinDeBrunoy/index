@@ -1,0 +1,12 @@
+.du-jn-A{transform:rotate(6deg);animation:kDuJnA 4.8s ease-in-out infinite}
+.du-jn-B{transform:rotate(-2deg);animation:kDuJnB 4.8s ease-in-out infinite}
+.du-jn-cloud{animation:kDuJnCloud 4.8s ease-in-out infinite}
+.du-jn-mini{animation:kDuJnMini 1.2s ease-in-out infinite}
+.du-jn-dot{animation:kDuJnDot 2s linear infinite}
+.du-jn-eyeA{animation:kDuJnEyea 4.8s ease-in-out infinite}
+@keyframes kDuJnA{0%{transform:translate(0px,0px) rotate(6deg) scale(1,1)}50%{transform:translate(0px,0px) rotate(8deg) scale(1.02,1.02)}100%{transform:translate(0px,0px) rotate(6deg) scale(1,1)}}
+@keyframes kDuJnB{0%{transform:translate(0px,0px) rotate(-2deg) scale(1,1)}50%{transform:translate(0px,0px) rotate(-4deg) scale(1.02,1.02)}100%{transform:translate(0px,0px) rotate(-2deg) scale(1,1)}}
+@keyframes kDuJnCloud{0%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}50%{transform:translate(0px,-4px) rotate(0deg) scale(1,1)}100%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}}
+@keyframes kDuJnMini{0%{transform:translate(0px,0px) rotate(0deg) scale(1.15,0.85);animation-timing-function:cubic-bezier(.33,.67,.67,1)}50%{transform:translate(0px,-10px) rotate(0deg) scale(1,1);animation-timing-function:cubic-bezier(.33,0,.67,.33)}100%{transform:translate(0px,0px) rotate(0deg) scale(1.15,0.85)}}
+@keyframes kDuJnDot{0%{opacity:0.3}40%{opacity:1}100%{opacity:0.3}}
+@keyframes kDuJnEyea{0%{transform:translate(6px,-3px) rotate(0deg) scale(1,1)}35%{transform:translate(6px,-3px) rotate(0deg) scale(1,1)}45%{transform:translate(3px,-7px) rotate(0deg) scale(1,1)}80%{transform:translate(3px,-7px) rotate(0deg) scale(1,1)}90%{transform:translate(6px,-3px) rotate(0deg) scale(1,1)}100%{transform:translate(6px,-3px) rotate(0deg) scale(1,1)}}
