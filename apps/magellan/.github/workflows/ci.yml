@@ -1,0 +1,16 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Lecture seule ; `pull-requests: read` pour que le commit-lint liste les commits d'une PR.
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  quality:
+    uses: ./.github/workflows/verify-project.yml
