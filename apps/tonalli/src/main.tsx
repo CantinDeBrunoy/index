@@ -1,3 +1,5 @@
+import { portfolioLink } from '@index/projects';
+import { mountIndexBar } from '@index/ui/index-bar';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -10,6 +12,9 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+// Onglet « ← INDEX » vers la fiche du projet sur le portfolio ; masqué dans la PWA installée.
+mountIndexBar({ ...portfolioLink('tonalli'), corner: 'top-left' });
 
 // Le service worker sert deux choses : recevoir les notifications push et
 // permettre l'ouverture du site hors ligne. Mais en développement il sert des
