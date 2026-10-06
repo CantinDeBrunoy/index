@@ -78,10 +78,20 @@ vite. La haute précision ne sert qu'à enregistrer le domicile.
   nvm-windows : `nvm use 24.13.0`.
 - **`worker-configuration.d.ts`** est généré (`postinstall`) et ignoré par git.
   Après une modification de `wrangler.jsonc` : `npm run cf-typegen`.
-- **Secret `TOMTOM_API_KEY`** : `.dev.vars` en local, `wrangler secret put` en
-  production. Il est déclaré dans `secrets.required`, ce qui le type et affiche
-  un avertissement quand il manque. Sans `.dev.vars`, l'avertissement au build
-  est donc normal.
+- **Déploiement : Workers Builds.** Le Worker est relié au dépôt GitHub, et
+  chaque push sur `main` est construit (`npm run build`) puis déployé
+  (`npx wrangler deploy`) par Cloudflare. Un push sur `main` part donc en
+  production.
+- **Secret `TOMTOM_API_KEY`** : `.dev.vars` en local, secret du Worker en
+  production (`wrangler secret put`, ou Settings › Variables and Secrets du
+  Worker — pas le « Secrets Store » du compte, que le Worker ne lit pas). Il
+  est déclaré dans `secrets.required`, ce qui le type, affiche un avertissement
+  au build (normal sans `.dev.vars`) et **fait échouer `wrangler deploy` tant
+  qu'il n'existe pas sur le Worker** : le créer avant le premier déploiement.
+- **Clé TomTom** : le produit « Matrix Routing v2 API » doit être coché sur la
+  clé, et met environ deux minutes à s'activer. Sinon TomTom répond 403,
+  affiché « Clé TomTom non autorisée pour Matrix Routing v2 ». Un 401 (« Clé
+  TomTom invalide ») signale plutôt une valeur mal collée.
 - **Trois configurations TypeScript** (`tsconfig.app/worker/test.json`), plus
   `tsconfig.node.json` pour les fichiers de config. Les tests sont exclus des
   deux premières : types Node et types Workers ne cohabitent pas.

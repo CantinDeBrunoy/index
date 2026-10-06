@@ -42,7 +42,8 @@ async function handleEtas(request: Request, env: Env): Promise<Response> {
 
 function tomtomFailure(error: unknown): Response {
   if (error instanceof TomTomError) {
-    if (error.status === 403) return fail(502, 'Clé TomTom refusée.');
+    if (error.status === 401) return fail(502, 'Clé TomTom invalide.');
+    if (error.status === 403) return fail(502, 'Clé TomTom non autorisée pour Matrix Routing v2.');
     if (error.status === 429) return fail(503, 'Quota TomTom du jour épuisé.');
     return fail(502, `TomTom a répondu une erreur ${error.status}.`);
   }
