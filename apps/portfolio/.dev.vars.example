@@ -1,3 +1,6 @@
-# Copie ce fichier en .dev.vars (ignoré par git) pour sonder la base de Tonalli en local.
-# La clé anon est publique par nature (elle est dans le bundle de Tonalli).
+# Copie ce fichier en .dev.vars (ignoré par git) pour tester le Worker en local.
+# Clé anon Supabase de Tonalli : publique par nature (elle est dans le bundle de Tonalli).
 TONALLI_SUPABASE_ANON_KEY=
+# Jeton GitHub à grain fin, dépôt CantinDeBrunoy/index seulement : Issues (lecture/écriture),
+# Actions (lecture). Laisser vide en local pour ne pas créer d'issues.
+GITHUB_ALERTS_TOKEN=

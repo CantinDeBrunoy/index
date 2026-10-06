@@ -10,7 +10,10 @@
     "run_worker_first": ["/api/*"],
     "not_found_handling": "404-page"
   },
-  // Optionnel : clé anon Supabase de Tonalli, pour que le statut live sonde aussi la base.
-  // Local : fichier .dev.vars. Production : pnpm exec wrangler secret put TONALLI_SUPABASE_ANON_KEY
+  // Keep-alive : les sondes de keep-alive.yml, chaque heure, sans dépendre des crons de GitHub.
+  "triggers": { "crons": ["47 * * * *"] },
+  // Secrets facultatifs (local : .dev.vars ; production : pnpm exec wrangler secret put <NOM>) :
+  // - TONALLI_SUPABASE_ANON_KEY : sonde aussi la base Supabase de Tonalli (et la garde éveillée) ;
+  // - GITHUB_ALERTS_TOKEN : ouvre et ferme les issues d'alerte sur CantinDeBrunoy/index.
   "observability": { "enabled": true }
 }

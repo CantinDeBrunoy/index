@@ -1,13 +1,18 @@
 import { projects } from "@index/projects";
-import { checkProject, type Health } from "@index/projects/check";
+import { createGitHubClient, projectAlerts, syncIssues, workflowAlerts } from "@index/projects/alerts";
+import { checkProject, type CheckOptions, type Health, type ProjectCheck } from "@index/projects/check";
 
 /**
- * Worker du portfolio : sert le site statique (build Astro) et une seule route dynamique,
- * GET /api/status, qui sonde côté serveur les démos de chaque entrée (statut live).
+ * Worker du portfolio :
+ * - sert le site statique (build Astro) ;
+ * - GET /api/status : statut live de chaque entrée, sondé côté serveur ;
+ * - cron Cloudflare (toutes les heures) : les mêmes sondes que keep-alive.yml, donc Supabase
+ *   reste éveillé même si GitHub coupe ses crons, et une issue s'ouvre quand un service tombe
+ *   ou quand GitHub désactive un workflow planifié (à réactiver à la main).
  *
- * Les sondes ne tournent qu'une fois toutes les 5 minutes au plus : résultat gardé en
- * mémoire de l'isolate (marche aussi sur workers.dev, où le Cache API est inopérant)
- * et dans le cache Cloudflare quand le site est sur un domaine personnalisé.
+ * Secrets (facultatifs) : TONALLI_SUPABASE_ANON_KEY pour sonder la base de Tonalli,
+ * GITHUB_ALERTS_TOKEN (jeton à grain fin sur CantinDeBrunoy/index : Issues en écriture,
+ * Actions en lecture) pour les issues.
  */
 
 const TTL_SECONDS = 300;
@@ -17,18 +22,26 @@ export interface StatusPayload {
   projects: Record<string, { health: Health | null }>;
 }
 
+interface Secrets {
+  TONALLI_SUPABASE_ANON_KEY?: string;
+  GITHUB_ALERTS_TOKEN?: string;
+}
+
 let memo: { at: number; body: string } | undefined;
 
-async function computeStatus(env: Env): Promise<string> {
+function secrets(env: Env): Secrets & Record<string, string | undefined> {
+  return env as unknown as Secrets & Record<string, string | undefined>;
+}
+
+async function runChecks(env: Env, options: CheckOptions = {}): Promise<ProjectCheck[]> {
   const monitored = projects.filter((p) => p.monitors.length > 0);
-  const checks = await Promise.all(
-    monitored.map((p) => checkProject(p, { env: env as unknown as Record<string, string | undefined> })),
-  );
+  const checks = await Promise.all(monitored.map((p) => checkProject(p, { env: secrets(env), ...options })));
   const payload: StatusPayload = {
     checkedAt: new Date().toISOString(),
     projects: Object.fromEntries(checks.map((c) => [c.slug, { health: c.health }])),
   };
-  return JSON.stringify(payload);
+  memo = { at: Date.now(), body: JSON.stringify(payload) };
+  return checks;
 }
 
 async function status(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -36,15 +49,15 @@ async function status(request: Request, env: Env, ctx: ExecutionContext): Promis
     return new Response("Méthode non autorisée", { status: 405, headers: { allow: "GET, HEAD" } });
   }
 
+  // Le résultat est gardé en mémoire de l'isolate (marche aussi sur workers.dev, où le Cache API
+  // est inopérant) et dans le cache Cloudflare quand le site a un domaine personnalisé.
   const cacheKey = new Request(new URL("/api/status", request.url));
   const cached = await caches.default.match(cacheKey);
   if (cached) return cached;
 
-  if (!memo || Date.now() - memo.at > TTL_SECONDS * 1000) {
-    memo = { at: Date.now(), body: await computeStatus(env) };
-  }
+  if (!memo || Date.now() - memo.at > TTL_SECONDS * 1000) await runChecks(env);
 
-  const response = new Response(memo.body, {
+  const response = new Response(memo!.body, {
     headers: {
       "content-type": "application/json; charset=utf-8",
       "cache-control": `public, max-age=${TTL_SECONDS}`,
@@ -54,11 +67,27 @@ async function status(request: Request, env: Env, ctx: ExecutionContext): Promis
   return response;
 }
 
+async function keepAlive(env: Env): Promise<void> {
+  // Un raté isolé ne doit pas ouvrir d'issue : chaque sonde en échec est relancée après 30 s.
+  const checks = await runChecks(env, { retryDelayMs: 30_000 });
+  console.log(JSON.stringify({ keepAlive: Object.fromEntries(checks.map((c) => [c.slug, c.health])) }));
+
+  const token = secrets(env).GITHUB_ALERTS_TOKEN;
+  if (!token) return;
+  const github = createGitHubClient({ token });
+  const report = await syncIssues(github, [projectAlerts(projects, checks), await workflowAlerts(github)]);
+  console.log(JSON.stringify({ issues: report }));
+}
+
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
     if (pathname === "/api/status") return status(request, env, ctx);
     if (pathname.startsWith("/api/")) return new Response("Introuvable", { status: 404 });
     return env.ASSETS.fetch(request);
+  },
+
+  async scheduled(_controller, env, ctx) {
+    ctx.waitUntil(keepAlive(env));
   },
 } satisfies ExportedHandler<Env>;
