@@ -1,0 +1,223 @@
+name: CI
+
+# Trois garde-fous, avec des portees differentes :
+#   1. tests           - a chaque push, sur n'importe quelle branche
+#   2. couverture      - a chaque push : mesure la couverture du banc, publie un bilan
+#   3. audit-securite  - sur toute pull request vers main, et sur main lui-meme
+#                        (34 controles + CodeQL, avec bilan)
+#
+# L'audit tourne sur la pull request pour pouvoir la BLOQUER avant le merge ; il tourne
+# aussi sur main pour couvrir les commits pousses directement.
+#
+# Le job d'audit publie systematiquement un bilan (resume de l'execution + artefact
+# telechargeable), y compris quand il echoue : c'est le bilan qui dit pourquoi.
+#
+# Rendre ces verifications bloquantes demande, en plus de ce fichier, une regle de
+# protection de branche sur main exigeant les checks (Settings > Branches).
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests unitaires
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # Le .NET Framework 4 est preinstalle sur les runners Windows : rien a installer.
+      - name: Verifier la presence du compilateur
+        shell: pwsh
+        run: |
+          $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          if (-not (Test-Path $csc)) { throw "csc.exe introuvable sur le runner." }
+          Write-Host "Compilateur : $csc"
+
+      # Plus strict que build.ps1 en local : le moindre avertissement fait echouer la CI.
+      - name: Compilation stricte (avertissements = erreurs)
+        shell: pwsh
+        run: |
+          $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          $sources = @(Get-ChildItem "src" -Filter *.cs -File | ForEach-Object { $_.FullName })
+          & $csc -nologo -target:winexe -codepage:65001 -warn:4 -warnaserror+ `
+            -r:System.Security.dll -out:"$env:RUNNER_TEMP\strict.exe" $sources
+          if ($LASTEXITCODE -ne 0) { throw "Compilation stricte echouee." }
+
+      - name: Compiler et executer le banc de test
+        shell: pwsh
+        run: ./outils/build.ps1
+
+  couverture:
+    name: Couverture des tests
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Coverlet est inutilisable ici : il exige des PDB portables, or le csc.exe du
+      # .NET Framework 4 produit des PDB Windows. dotnet-coverage instrumente
+      # dynamiquement et supporte le Framework. Le SDK .NET est preinstalle sur le runner.
+      - name: Installer dotnet-coverage
+        shell: pwsh
+        run: dotnet tool install --global dotnet-coverage
+
+      # Seuil a 0 tant que la premiere mesure reelle n'a pas eu lieu : le job mesure et
+      # publie sans bloquer. A relever une fois le taux du coeur connu.
+      - name: Mesurer la couverture
+        id: couverture
+        continue-on-error: true
+        shell: pwsh
+        run: ./outils/couverture.ps1 -Seuil 0 -Rapport rapport-couverture.md
+
+      - name: Publier le bilan dans le resume
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path rapport-couverture.md) {
+            Get-Content rapport-couverture.md | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          } else {
+            "## Couverture des tests`n`nLa mesure n'a pas abouti : voir le journal du job." |
+              Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+
+      - name: Publier le bilan en artefact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bilan-couverture
+          path: |
+            rapport-couverture.md
+            couverture.xml
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Verdict
+        if: always()
+        shell: pwsh
+        run: |
+          if ("${{ steps.couverture.outcome }}" -ne "success") {
+            throw "La mesure de couverture a echoue (voir le journal). Aucun seuil n'est encore applique."
+          }
+          Write-Host "Couverture mesuree et publiee."
+
+  audit-securite:
+    name: Audit de securite
+    # Pull requests vers main (pour bloquer le merge) et main lui-meme.
+    # Une branche de travail sans pull request ne declenche que les tests.
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      # L'historique complet est necessaire : l'audit cherche les secrets dans tous
+      # les commits, pas seulement dans l'arbre de travail.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # continue-on-error : on veut le bilan complet (audit + CodeQL) meme en cas
+      # d'echec. Le verdict est rendu par la derniere etape du job.
+      - name: Controles de securite du projet
+        id: audit
+        continue-on-error: true
+        shell: pwsh
+        run: ./outils/audit-securite.ps1 -Rapport rapport-audit.md
+
+      # CodeQL n'est gratuit que sur les depots publics ; sur un depot prive il exige
+      # GitHub Advanced Security. Les etapes sont donc conditionnees a la visibilite.
+      - name: Initialiser CodeQL
+        if: github.event.repository.private == false
+        continue-on-error: true
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+          build-mode: none
+          queries: security-extended
+
+      - name: Analyse CodeQL
+        id: codeql
+        if: github.event.repository.private == false
+        continue-on-error: true
+        uses: github/codeql-action/analyze@v3
+        with:
+          output: resultats-codeql
+          upload: always
+
+      # L'action CodeQL remonte les alertes sans faire echouer le job : on compte
+      # les resultats nous-memes et on les ajoute au bilan.
+      - name: Ajouter CodeQL au bilan
+        id: bilan-codeql
+        if: always()
+        shell: pwsh
+        run: |
+          $lignes = @("", "## Analyse statique CodeQL", "")
+          $total = 0
+          $dossier = "resultats-codeql"
+          if (-not (Test-Path $dossier)) {
+            $lignes += "CodeQL n'a pas ete execute (depot prive, ou etape en echec)."
+          } else {
+            $lignes += "| Regle | Emplacement |"
+            $lignes += "|---|---|"
+            foreach ($f in (Get-ChildItem $dossier -Filter *.sarif)) {
+              $sarif = Get-Content $f.FullName -Raw | ConvertFrom-Json
+              foreach ($run in $sarif.runs) {
+                foreach ($r in $run.results) {
+                  $total++
+                  $lieu = $r.locations[0].physicalLocation
+                  $lignes += "| ``$($r.ruleId)`` | ``$($lieu.artifactLocation.uri):$($lieu.region.startLine)`` |"
+                }
+              }
+            }
+            if ($total -eq 0) { $lignes = $lignes[0..2] + "Aucune alerte (requetes ``security-extended``)." }
+          }
+          $lignes | Out-File -FilePath rapport-audit.md -Append -Encoding utf8
+          "alertes=$total" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Alertes CodeQL : $total"
+
+      - name: Publier le bilan dans le resume
+        if: always()
+        shell: pwsh
+        run: Get-Content rapport-audit.md | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+      - name: Publier le bilan en artefact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bilan-audit-securite
+          path: rapport-audit.md
+          retention-days: 90
+
+      # Verdict : c'est ici, et seulement ici, que le job passe au rouge.
+      - name: Verdict
+        if: always()
+        shell: pwsh
+        run: |
+          $echecs = @()
+          if ("${{ steps.audit.outcome }}" -ne "success") {
+            $echecs += "l'audit du projet a releve des constats bloquants"
+          }
+          if ([int]"${{ steps.bilan-codeql.outputs.alertes }}" -gt 0) {
+            $echecs += "CodeQL a remonte ${{ steps.bilan-codeql.outputs.alertes }} alerte(s)"
+          }
+          if ("${{ github.event.repository.private }}" -eq "true") {
+            Write-Warning "Depot prive : CodeQL desactive (necessite GitHub Advanced Security)."
+            Write-Warning "Seuls les controles de audit-securite.ps1 s'appliquent."
+          }
+          if ($echecs.Count -gt 0) {
+            throw ("Audit de securite en echec : " + ($echecs -join " ; ") + ". Voir le bilan ci-dessus.")
+          }
+          Write-Host "Audit de securite : aucun constat bloquant."
