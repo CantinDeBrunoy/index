@@ -11,7 +11,8 @@
     "checks": "node --experimental-strip-types scripts/checks.ts",
     "icons": "node --experimental-strip-types scripts/make-icons.ts",
     "duo": "node --experimental-strip-types scripts/duo/build.ts",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "test": "node --experimental-strip-types scripts/checks.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",

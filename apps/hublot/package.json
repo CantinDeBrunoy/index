@@ -1,5 +1,5 @@
 {
-  "name": "fare-radar",
+  "name": "hublot",
   "version": "1.0.0",
   "private": true,
   "description": "Alertes de bons plans sur billets d'avion aller-retour depuis Paris (Travelpayouts → ntfy).",
@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
-    "dry-run": "npm run build && node dist/main.js --dry-run",
+    "dry-run": "pnpm run build && node dist/main.js --dry-run",
     "typecheck": "tsc && tsc -p tsconfig.web.json",
     "test": "vitest run"
   },
