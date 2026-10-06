@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // La page de gestion de Hublot, servie telle quelle (aucun code côté serveur).
+  "name": "hublot",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist/page"
+  }
+}

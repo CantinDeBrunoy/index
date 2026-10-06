@@ -4,8 +4,8 @@ import { loadConfig, parseConfig } from "../src/config.js";
 import { CONFIG, watch } from "./helpers.js";
 
 describe("config.json", () => {
-  it("le fichier du dépôt est valide", async () => {
-    const config = await loadConfig(fileURLToPath(new URL("../config.json", import.meta.url)));
+  it("le fichier d'exemple est valide", async () => {
+    const config = await loadConfig(fileURLToPath(new URL("../config.example.json", import.meta.url)));
     expect(config.watches.map((current) => current.to)).toEqual(["MEX", "TYO"]);
   });
 

@@ -58,6 +58,16 @@ describe("client GitHub de la page", () => {
     });
   });
 
+  it("lance le workflow depuis main quand les données vivent sur une autre branche", async () => {
+    const { fetch, calls } = mockFetch(new Response(null, { status: 204 }));
+    await createGitHub({ ...repo, branch: "hublot-data", workflowRef: "main", fetch }).runWorkflow("hublot-check.yml");
+
+    expect(calls[0]).toMatchObject({
+      url: "https://api.github.com/repos/CantinDeBrunoy/Hublot/actions/workflows/hublot-check.yml/dispatches",
+      body: { ref: "main" },
+    });
+  });
+
   it("remonte le statut HTTP et le message de GitHub", async () => {
     const { fetch } = mockFetch(Response.json({ message: "Bad credentials" }, { status: 401 }));
     const failure = createGitHub({ ...repo, fetch }).readFile("config.json");

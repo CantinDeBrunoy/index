@@ -2,6 +2,15 @@
 
 Vérifie toutes les 6 h le prix des allers-retours depuis Paris (CDG / ORY) pour les voyages que tu surveilles, et envoie une notification push sur le téléphone quand un prix passe sous ton seuil. Une page web liste les bons plans et permet d'ajouter, modifier ou supprimer les surveillances. Tout tourne gratuitement sur GitHub (Actions + Pages), sans serveur.
 
+## Dans le monorepo INDEX
+
+Hublot est l'entrée 010 d'[INDEX](../../README.md). Par rapport au dépôt d'origine :
+
+- **Le cron** est `.github/workflows/hublot-check.yml` à la racine du monorepo. Il ne tourne que si la variable de dépôt `HUBLOT_ENABLED` vaut `true`.
+- **L'état** (`config.json`, `data/*.json`) vit sur la branche **`hublot-data`**, pas sur `main` : les ~4 relevés par jour ne remplissent pas l'historique du monorepo. `config.example.json` montre le format.
+- **La page** n'est plus sur GitHub Pages : `pnpm --filter hublot build` la prépare dans `dist/page/` (avec l'onglet « ← INDEX ») et le Worker Cloudflare `hublot` la sert (`wrangler.jsonc`).
+- **La clé GitHub de la page** doit viser le dépôt `CantinDeBrunoy/index` (Contents et Actions en écriture). ⚠️ Elle donne donc accès en écriture à tout le monorepo, pas seulement à Hublot : à garder sur tes appareils uniquement.
+
 ## Fonctionnement
 
 - **Surveillances** : chacune a une destination, une période de départ, une durée de séjour et un prix maximum aller-retour. Elles sont stockées dans `config.json`, que la page modifie pour toi.
@@ -16,7 +25,7 @@ Vérifie toutes les 6 h le prix des allers-retours depuis Paris (CDG / ORY) pour
 
 ## La page web
 
-Adresse : `https://<ton-utilisateur>.github.io/<dépôt>/` (ici `https://cantindebrunoy.github.io/Hublot/`).
+Adresse : celle du Worker Cloudflare `hublot` (voir le tableau des déploiements du README d'INDEX).
 
 - **Bons plans** : toutes les offres sous ton seuil, avec un bouton vers Aviasales.
 - **Mes surveillances** : ajouter (avec recherche de la ville), modifier, supprimer ; meilleur prix actuel et par mois de départ.
@@ -56,20 +65,22 @@ Dans le dépôt : *Settings → Secrets and variables → Actions → New reposi
 
 ### 4. Page web
 
-Dans le dépôt : *Settings → Pages → Build and deployment* → *Source : Deploy from a branch* → branche `main`, dossier `/docs` → *Save*. La page est en ligne au bout d'une minute.
+Déployée par le workflow `deploy-hublot-page.yml` du monorepo à chaque modification de `apps/hublot/`.
 
-Pour un premier relevé tout de suite : onglet *Actions* → **Vérification des prix** → *Run workflow*.
+Pour un premier relevé tout de suite : onglet *Actions* → **hublot-check** → *Run workflow*.
 
 ## En local
 
 ```bash
-npm install
-cp .env.example .env   # puis renseigner TRAVELPAYOUTS_TOKEN (et NTFY_TOPIC pour un vrai passage)
-npm run dry-run        # tableau des meilleurs prix + notifications qui seraient envoyées, sans notifier ni écrire
-npm test
+pnpm install                                  # à la racine du monorepo
+pnpm --filter hublot test
+git worktree add ../hublot-data hublot-data   # l'état réel, à côté du monorepo
+cp apps/hublot/.env.example ../hublot-data/.env   # puis renseigner TRAVELPAYOUTS_TOKEN
+pnpm --filter hublot exec tsc -p tsconfig.build.json
+cd ../hublot-data && node ../index/apps/hublot/dist/main.js --dry-run
 ```
 
-Un vrai passage local (`npm run build && npm start`) notifie et écrit dans `data/`. Comme le workflow commite `data/` toutes les 6 h, fais un `git pull` avant de pousser, et préfère `--dry-run` en local.
+Le CLI lit `config.json` et `data/` dans le dossier courant. Un vrai passage local (sans `--dry-run`) notifie et écrit dans `data/` : comme le workflow commite sur `hublot-data` toutes les 6 h, fais un `git pull` dans le worktree avant de pousser, et préfère `--dry-run`.
 
 ## Bon à savoir
 

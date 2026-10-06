@@ -1,0 +1,77 @@
+name: hublot-check
+
+# Hublot (apps/hublot) : relève toutes les 6 h le prix des allers-retours surveillés et notifie
+# les bons plans par ntfy. Le code vient de main ; l'état (config.json, data/*.json) vit sur la
+# branche hublot-data, pour que les relevés du cron ne remplissent pas l'historique de main.
+#
+# Bascule depuis l'ancien dépôt CantinDeBrunoy/Hublot : ce workflow ne fait rien tant que la
+# variable de dépôt HUBLOT_ENABLED ne vaut pas « true » (Settings → Secrets and variables →
+# Actions → Variables). L'activer, puis désactiver le workflow de l'ancien dépôt.
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  # Lancé aussi par la page de gestion après l'ajout ou la modification d'une surveillance.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Un seul passage à la fois : deux passages simultanés se disputeraient le push de hublot-data.
+concurrency:
+  group: hublot-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: vars.HUBLOT_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: État (branche hublot-data)
+        uses: actions/checkout@v7
+        with:
+          ref: hublot-data
+          path: hublot-state
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --filter "hublot..."
+
+      - run: pnpm --filter hublot build
+
+      # Lien « Tous les bons plans » des notifications : l'URL de démo de packages/projects.
+      - name: URL de la page
+        id: page
+        run: echo "url=$(node --input-type=module -e 'const { getProject } = await import("./packages/projects/src/index.ts"); console.log(getProject("hublot")?.links.demo ?? "")')" >> "$GITHUB_OUTPUT"
+
+      - name: Vérifier les prix
+        working-directory: hublot-state
+        run: node ../apps/hublot/dist/main.js
+        env:
+          TRAVELPAYOUTS_TOKEN: ${{ secrets.TRAVELPAYOUTS_TOKEN }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          HUBLOT_PAGE_URL: ${{ steps.page.outputs.url }}
+
+      # S'exécute aussi quand une surveillance a échoué : les relevés des autres sont gardés.
+      - name: Commit des données
+        if: ${{ !cancelled() }}
+        working-directory: hublot-state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/*.json
+          if git diff --cached --quiet; then
+            echo "Aucune donnée modifiée."
+            exit 0
+          fi
+          git commit -m "data: relevé du $(date -u '+%Y-%m-%d %H:%M') UTC"
+          git pull --rebase origin hublot-data
+          git push origin HEAD:hublot-data

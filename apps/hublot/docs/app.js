@@ -33,8 +33,12 @@ import {
  * @typedef {import("./lib.js").City} City
  */
 
-const BRANCH = "main";
-const WORKFLOW = "check.yml";
+// Dans le monorepo INDEX : le code et le workflow vivent sur main, l'état (config.json, data/)
+// sur la branche hublot-data, pour que les relevés du cron ne remplissent pas l'historique de main.
+const REPOSITORY = { owner: "CantinDeBrunoy", repo: "index" };
+const DATA_BRANCH = "hublot-data";
+const WORKFLOW_REF = "main";
+const WORKFLOW = "hublot-check.yml";
 const CONFIG_FILE = "config.json";
 const SNAPSHOT_FILE = "data/latest.json";
 const TOKEN_KEY = "fare-radar:github-token";
@@ -112,12 +116,7 @@ async function refresh() {
 
 /** @returns {Promise<{ config: Config, sha: string | null, snapshot: Snapshot | null }>} */
 async function loadData() {
-  if (site.local) {
-    // Local preview served from the repository root: the page lives in /docs/.
-    const [config, snapshot] = await Promise.all([fetchJson("../config.json"), fetchJson("../data/latest.json").catch(() => null)]);
-    return { config, sha: null, snapshot };
-  }
-  if (state.token) {
+  if (state.token && !site.local) {
     try {
       const github = gitHub();
       const [configFile, snapshotFile] = await Promise.all([
@@ -129,7 +128,7 @@ async function loadData() {
       showBanner(`Clé GitHub inutilisable (${describeError(error)}) : affichage en lecture seule.`, "warning");
     }
   }
-  const raw = `https://raw.githubusercontent.com/${site.owner}/${site.repo}/${BRANCH}/`;
+  const raw = `https://raw.githubusercontent.com/${site.owner}/${site.repo}/${DATA_BRANCH}/`;
   const [config, snapshot] = await Promise.all([fetchJson(raw + CONFIG_FILE), fetchJson(raw + SNAPSHOT_FILE).catch(() => null)]);
   return { config, sha: null, snapshot };
 }
@@ -427,7 +426,7 @@ async function deleteWatch(watch) {
  * @returns {Promise<string | null>} why the configuration was not saved, null once saved
  */
 async function saveConfig(next, message, searchFor) {
-  if (site.local) return "Aperçu local : les modifications se font depuis la page publiée sur GitHub Pages.";
+  if (site.local) return "Aperçu local : les modifications se font depuis la page publiée.";
   if (!state.token || !state.configSha) {
     openSettings("Pour enregistrer une modification, la page a besoin de ta clé GitHub.");
     return "Ajoute ta clé GitHub, puis enregistre à nouveau.";
@@ -491,7 +490,7 @@ function pollForNewPrices() {
 function setUpSettingsDialog() {
   const tokenUrl = new URL("https://github.com/settings/personal-access-tokens/new");
   tokenUrl.search = new URLSearchParams({
-    name: `fare-radar ${site.repo}`,
+    name: `fare-radar (${site.repo})`,
     description: "Page fare-radar : modifier les surveillances (config.json) et lancer la vérification des prix.",
     target_name: site.owner,
     expires_in: "366",
@@ -550,7 +549,7 @@ async function saveToken() {
 
 /** @param {string} [token] */
 function gitHub(token = state.token ?? "") {
-  return createGitHub({ owner: site.owner, repo: site.repo, token, branch: BRANCH });
+  return createGitHub({ owner: site.owner, repo: site.repo, token, branch: DATA_BRANCH, workflowRef: WORKFLOW_REF });
 }
 
 /** @param {unknown} error */
@@ -621,11 +620,10 @@ function writeToken(token) {
   }
 }
 
-/** Repository served by this page (<owner>.github.io/<repo>/); any other host is a local preview. @param {Location} where */
+/** Dépôt servi par cette page ; sur localhost, aperçu en lecture seule des données publiées. @param {Location} where */
 function locateSite(where) {
-  const owner = /^([a-z0-9-]+)\.github\.io$/i.exec(where.hostname)?.[1];
-  const repo = where.pathname.split("/").filter(Boolean)[0];
-  return owner && repo ? { owner, repo, local: false } : { owner: "CantinDeBrunoy", repo: "Hublot", local: true };
+  const local = where.hostname === "localhost" || where.hostname === "127.0.0.1";
+  return { ...REPOSITORY, local };
 }
 
 /**

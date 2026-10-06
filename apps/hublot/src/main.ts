@@ -21,7 +21,8 @@ async function main(): Promise<number> {
   const config = await loadConfig();
   const now = new Date();
   const notified = purgeNotified(await loadNotified(), now);
-  const overviewUrl = pagesUrl(process.env.GITHUB_REPOSITORY);
+  // Dans le monorepo INDEX, la page n'est plus sur GitHub Pages : le workflow passe son URL.
+  const overviewUrl = process.env.HUBLOT_PAGE_URL || pagesUrl(process.env.GITHUB_REPOSITORY);
 
   console.log(`fare-radar · ${now.toISOString()}${dryRun ? " · --dry-run" : ""}`);
   const results = await collectPrices(config, createTravelpayoutsClient(token), toIsoDate(now), (result) =>

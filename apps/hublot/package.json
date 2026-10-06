@@ -8,15 +8,19 @@
     "node": ">=20.12"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node scripts/build-page.ts",
     "start": "node dist/main.js",
     "dry-run": "pnpm run build && node dist/main.js --dry-run",
     "typecheck": "tsc && tsc -p tsconfig.web.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "deploy:page": "wrangler deploy"
   },
   "devDependencies": {
+    "@index/projects": "workspace:*",
+    "@index/ui": "workspace:*",
     "@types/node": "^20.19.43",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.147.0"
   }
 }

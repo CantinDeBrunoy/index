@@ -37,9 +37,15 @@ export const PORTFOLIO_URL = workersDev("index");
 const MAGELLAN_URL = workersDev("magellan");
 const TONALLI_URL = "https://teinte-du-jour-eight.vercel.app";
 const GYM_PICKER_URL = workersDev("gym-picker");
-// Jusqu'à la bascule sur le monorepo, Hublot tourne encore depuis son ancien repo.
-const HUBLOT_URL = "https://cantindebrunoy.github.io/Hublot/";
-const HUBLOT_LATEST_JSON = "https://raw.githubusercontent.com/CantinDeBrunoy/Hublot/main/data/latest.json";
+/**
+ * Hublot tourne depuis son ancien dépôt (cron + GitHub Pages) jusqu'à la bascule : variable
+ * HUBLOT_ENABLED=true sur le monorepo, cron de l'ancien dépôt désactivé. Passer à true ce jour-là.
+ */
+const HUBLOT_MIGRATED: boolean = false;
+const HUBLOT_URL = HUBLOT_MIGRATED ? workersDev("hublot") : "https://cantindebrunoy.github.io/Hublot/";
+const HUBLOT_LATEST_JSON = HUBLOT_MIGRATED
+  ? "https://raw.githubusercontent.com/CantinDeBrunoy/index/hublot-data/data/latest.json"
+  : "https://raw.githubusercontent.com/CantinDeBrunoy/Hublot/main/data/latest.json";
 
 export const PROJECTS = [
   {
@@ -169,14 +175,14 @@ export const PROJECTS = [
     started: "2026-09",
     kind: "web",
     app: "hublot",
-    host: "GitHub Actions + GitHub Pages",
+    host: HUBLOT_MIGRATED ? "GitHub Actions + Cloudflare Workers" : "GitHub Actions + GitHub Pages",
     pitch: {
       fr: "Surveille toutes les 6 heures le prix des allers-retours depuis Paris et m'alerte quand un vol passe sous mon seuil.",
     },
     stack: ["TypeScript", "Node.js", "GitHub Actions", "ntfy"],
     links: { demo: HUBLOT_URL, code: code("hublot") },
     monitors: [
-      { kind: "http", url: HUBLOT_URL },
+      ...httpMonitor(HUBLOT_URL),
       // Le cron tourne toutes les 6 h : au-delà de 13 h sans données neuves, il est arrêté.
       { kind: "freshness", url: HUBLOT_LATEST_JSON, field: "generatedAt", maxAgeHours: 13 },
     ],

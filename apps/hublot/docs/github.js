@@ -25,9 +25,10 @@ export function decodeBase64(base64) {
 }
 
 /**
- * @param {{ owner: string, repo: string, token: string, branch?: string, fetch?: typeof globalThis.fetch }} options
+ * `branch` : où les fichiers sont lus et écrits ; `workflowRef` : la branche dont le workflow est lancé.
+ * @param {{ owner: string, repo: string, token: string, branch?: string, workflowRef?: string, fetch?: typeof globalThis.fetch }} options
  */
-export function createGitHub({ owner, repo, token, branch = "main", fetch: fetchImpl = globalThis.fetch.bind(globalThis) }) {
+export function createGitHub({ owner, repo, token, branch = "main", workflowRef = "main", fetch: fetchImpl = globalThis.fetch.bind(globalThis) }) {
   const base = `https://api.github.com/repos/${owner}/${repo}`;
 
   /**
@@ -77,7 +78,7 @@ export function createGitHub({ owner, repo, token, branch = "main", fetch: fetch
 
     /** Starts a run of a workflow that has a workflow_dispatch trigger. @param {string} workflow */
     async runWorkflow(workflow) {
-      await request(`/actions/workflows/${workflow}/dispatches`, { method: "POST", body: { ref: branch } });
+      await request(`/actions/workflows/${workflow}/dispatches`, { method: "POST", body: { ref: workflowRef } });
     },
   };
 }
