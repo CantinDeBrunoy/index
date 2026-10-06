@@ -1,0 +1,26 @@
+{
+  "origins": ["CDG", "ORY"],
+  "currency": "eur",
+  "watches": [
+    {
+      "id": "mexico",
+      "label": "Mexico",
+      "to": "MEX",
+      "maxPrice": 500,
+      "departFrom": "2026-09-27",
+      "departTo": "2027-05-31",
+      "minDays": 14,
+      "maxDays": 60
+    },
+    {
+      "id": "tokyo",
+      "label": "Tokyo",
+      "to": "TYO",
+      "maxPrice": 600,
+      "departFrom": "2026-09-27",
+      "departTo": "2027-05-31",
+      "minDays": 14,
+      "maxDays": 60
+    }
+  ]
+}
