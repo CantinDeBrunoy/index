@@ -1,0 +1,18 @@
+---
+lede: "Apprendre l'espagnol avec les chansons qu'on aime : paroles traduites, lecture à voix haute, karaoké à trous, flashcards et quiz, installable et utilisable hors ligne."
+---
+
+## Contexte
+
+Une app d'apprentissage pensée pour le quotidien, installable sur le téléphone. On peut y ajouter ses propres chansons.
+
+## Problème résolu
+
+Les apps de langue généralistes enseignent un vocabulaire sans lien avec ce qu'on écoute. Cancionero part des chansons : il récupère les paroles, les traduit et en tire des exercices.
+
+## Choix techniques
+
+- **Expo SDK 54 et expo-router**, exportés en site statique : une PWA avec manifest et service worker pour le hors-ligne.
+- **APIs publiques appelées depuis le navigateur** : LRCLIB pour les paroles, MyMemory pour la traduction, la synthèse vocale du système pour la lecture. Aucune clé, aucun serveur.
+- **Progression et chansons ajoutées** stockées localement.
+- **Site statique sur Vercel** : rien ne se met en veille.

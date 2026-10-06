@@ -1,0 +1,18 @@
+---
+lede: "Un rituel quotidien pour deux personnes liées : chaque jour, une émotion traduite en couleur et deux photos, puis le calendrier de l'autre se dévoile."
+---
+
+## Contexte
+
+Une PWA bilingue français–espagnol pour garder un lien quotidien entre deux fuseaux horaires, la France et le Mexique.
+
+## Problème résolu
+
+Partager son humeur sans tomber dans la messagerie : un seul geste par jour, et la réciprocité comme règle. On ne voit la journée de l'autre qu'après avoir rempli la sienne, puis on y réagit d'un emoji.
+
+## Choix techniques
+
+- **React 19 et Vite 8**, PWA installable avec notifications Web Push et interface en français et en espagnol.
+- **Supabase** : authentification par e-mail, Postgres avec Row Level Security sur toutes les tables, stockage privé des photos via des URLs signées, fonctions SQL pour lier les binômes.
+- **Deux edge functions** (Deno) : rappels quotidiens planifiés, et notification du binôme à chaque nouvelle entrée ou réaction.
+- **Front statique sur Vercel** ; la base Supabase gratuite, qui se met en pause après une semaine d'inactivité, est gardée éveillée par une vraie requête du workflow keep-alive d'INDEX.

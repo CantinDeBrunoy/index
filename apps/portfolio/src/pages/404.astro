@@ -1,0 +1,35 @@
+---
+import { useTranslations } from "../i18n/ui";
+import Base from "../layouts/Base.astro";
+
+const t = useTranslations("fr");
+---
+
+<Base title={t("notFound.title")} noindex>
+  <main id="contenu" class="not-found theme-dark">
+    <p class="not-found__code display" aria-hidden="true">404</p>
+    <h1 class="label">{t("notFound.title")}</h1>
+    <p>{t("notFound.text")}</p>
+    <p><a class="action" href="/">← INDEX</a></p>
+  </main>
+</Base>
+
+<style>
+  .not-found {
+    display: grid;
+    align-content: end;
+    gap: var(--space-4);
+    min-height: 100svh;
+    padding: var(--gutter);
+  }
+  .not-found__code {
+    margin: 0 0 0 -0.04em;
+    font-size: clamp(8rem, 45vw, 40rem);
+    line-height: 0.8;
+    color: var(--accent);
+  }
+  .not-found h1,
+  .not-found p {
+    margin: 0;
+  }
+</style>

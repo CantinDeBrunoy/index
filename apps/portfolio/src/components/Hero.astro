@@ -1,0 +1,100 @@
+---
+import { projects } from "@index/projects";
+import { langFromUrl, useTranslations } from "../i18n/ui";
+
+const t = useTranslations(langFromUrl(Astro.url));
+const count = String(projects.length).padStart(3, "0");
+const firstYear = projects[0]?.year;
+const lastYear = projects.at(-1)?.year;
+---
+
+<header class="hero theme-dark">
+  <div class="hero__bar label">
+    <span>{t("hero.name")}</span>
+    <span class="hero__role">{t("hero.role")}</span>
+    <span class="hero__place muted">{t("hero.place")}</span>
+  </div>
+
+  <h1 class="hero__title display" data-parallax data-parallax-hero style="--parallax: 0.55">INDEX</h1>
+
+  <div class="hero__foot">
+    <p class="hero__intro">{t("hero.intro")}</p>
+    <p class="hero__count label">
+      <span class="accent">{count}</span>
+      {t("hero.entries")} · {firstYear} → {lastYear}
+    </p>
+    <a class="hero__scroll label" href="#contenu">{t("hero.scroll")} <span aria-hidden="true">↓</span></a>
+  </div>
+</header>
+
+<style>
+  .hero {
+    position: relative;
+    z-index: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    /* minmax(0, 1fr) : le titre géant déborde sans élargir la grille. */
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 100svh;
+  }
+
+  .hero__bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-5);
+    padding: var(--space-4) var(--gutter);
+    border-bottom: var(--border) solid var(--line);
+  }
+
+  /*
+   * « INDEX » en très grand : la largeur des lettres d'Anton fait que 52vw remplissent
+   * l'écran ; le X est volontairement rogné par le bord droit.
+   */
+  .hero__title {
+    align-self: end;
+    margin-left: -0.015em;
+    font-size: var(--hero-size, 54vw);
+    white-space: nowrap;
+    /* Interlignage serré : on retire le vide sous la ligne de base. */
+    line-height: 0.8;
+    margin-bottom: -0.04em;
+  }
+
+  .hero__foot {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--gutter) var(--space-6);
+    border-top: var(--border) solid var(--line);
+    background: var(--bg);
+    position: relative;
+  }
+
+  .hero__intro {
+    margin: 0;
+    max-width: 34ch;
+    font-size: var(--fs-m);
+  }
+
+  .hero__count {
+    margin: 0;
+  }
+
+  .hero__scroll {
+    justify-self: start;
+    text-decoration: none;
+    border-bottom: var(--border-thin) solid currentColor;
+  }
+  .hero__scroll:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  @media (min-width: 48rem) {
+    .hero__foot {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: end;
+      gap: var(--space-6);
+    }
+  }
+</style>

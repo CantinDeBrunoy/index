@@ -1,0 +1,410 @@
+---
+import { projects, type Project } from "@index/projects";
+import { getImage } from "astro:assets";
+import { getEntry, render } from "astro:content";
+import Shot from "../components/Shot.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+import StatusBadge from "../components/StatusBadge.astro";
+import { useTranslations } from "../i18n/ui";
+import Base from "../layouts/Base.astro";
+import { getShot } from "../lib/shots";
+
+export function getStaticPaths() {
+  return projects.map((project, i) => ({
+    params: { entry: `${project.number}-${project.slug}` },
+    props: { project, prev: projects[i - 1], next: projects[i + 1] },
+  }));
+}
+
+interface Props {
+  project: Project;
+  prev?: Project | undefined;
+  next?: Project | undefined;
+}
+
+const { project, prev, next } = Astro.props;
+const t = useTranslations("fr");
+
+const content = await getEntry("projets", `fr/${project.slug}`);
+const { Content } = content ? await render(content) : { Content: undefined };
+
+const desktopShot = getShot(project.slug, "desktop");
+const mobileShot = getShot(project.slug, "mobile");
+const ogImage = desktopShot ? (await getImage({ src: desktopShot, width: 1200, format: "png" })).src : undefined;
+const { demo, code, download } = project.links;
+---
+
+<Base title={`${project.number} ${project.name}`} description={project.pitch.fr} image={ogImage} type="article">
+  <header class="detail-hero theme-dark">
+    <nav class="detail-hero__crumbs label" aria-label={t("detail.back")}>
+      <a href="/">← INDEX</a>
+      <span class="muted">/ {project.number}</span>
+    </nav>
+    <p class="detail-hero__num" aria-hidden="true" data-parallax data-parallax-hero style="--parallax: 0.35">
+      {project.number}
+    </p>
+    <h1 class="detail-hero__name display">
+      <span class="visually-hidden">{project.number}, </span>{project.name}
+    </h1>
+    <div class="detail-hero__foot">
+      <p class="detail-hero__lede">{content?.data.lede ?? project.pitch.fr}</p>
+      <dl class="detail-hero__meta">
+        <div>
+          <dt class="label muted">{t("entry.year")}</dt>
+          <dd class="label">{project.year}</dd>
+        </div>
+        <div>
+          <dt class="label muted">{t("entry.status")}</dt>
+          <dd><StatusBadge project={project} /></dd>
+        </div>
+        {
+          project.host && (
+            <div>
+              <dt class="label muted">{t("entry.host")}</dt>
+              <dd class="label">{project.host}</dd>
+            </div>
+          )
+        }
+        <div class="detail-hero__stack">
+          <dt class="label muted">{t("entry.stack")}</dt>
+          <dd>
+            <ul class="tags" role="list">
+              {project.stack.map((tech) => <li>{tech}</li>)}
+            </ul>
+          </dd>
+        </div>
+      </dl>
+      <ul class="actions" role="list">
+        {
+          demo && (
+            <li>
+              <a class="action" href={demo}>
+                {t("entry.demo")} <span aria-hidden="true">↗</span>
+              </a>
+            </li>
+          )
+        }
+        {
+          download && (
+            <li>
+              <a class="action" href={download}>
+                {t("entry.download")} <span aria-hidden="true">↓</span>
+              </a>
+            </li>
+          )
+        }
+        {
+          code && (
+            <li>
+              <a class="action" href={code}>
+                {t("entry.code")} <span aria-hidden="true">↗</span>
+              </a>
+            </li>
+          )
+        }
+        {
+          !demo && !download && project.kind !== "archive" && (
+            <li>
+              <span class="action" aria-disabled="true">
+                {t("entry.noDemo")}
+              </span>
+            </li>
+          )
+        }
+      </ul>
+    </div>
+  </header>
+
+  <main id="contenu" tabindex="-1">
+    {
+      Content && (
+        <section class="section theme-light detail-body">
+          <div class="prose">
+            <Content />
+          </div>
+        </section>
+      )
+    }
+
+    {
+      (desktopShot || mobileShot) && (
+        <section class="section theme-dark detail-shots" aria-labelledby="captures">
+          <h2 id="captures" class="label">{t("detail.shots")}</h2>
+          <div class="detail-shots__grid">
+            {desktopShot && (
+              <figure class="detail-shots__desktop">
+                <Shot
+                  project={project}
+                  variant="desktop"
+                  alt={`${t("entry.shot")} ${project.name}, ${t("detail.desktop").toLowerCase()}`}
+                  sizes="(min-width: 60rem) 66vw, 100vw"
+                  parallax={-0.08}
+                />
+                <figcaption class="label muted">{t("detail.desktop")}</figcaption>
+              </figure>
+            )}
+            {mobileShot && (
+              <figure class="detail-shots__mobile">
+                <Shot
+                  project={project}
+                  variant="mobile"
+                  alt={`${t("entry.shot")} ${project.name}, ${t("detail.mobile").toLowerCase()}`}
+                  sizes="(min-width: 60rem) 22vw, 60vw"
+                  parallax={0.08}
+                />
+                <figcaption class="label muted">{t("detail.mobile")}</figcaption>
+              </figure>
+            )}
+          </div>
+        </section>
+      )
+    }
+
+    <nav class="section theme-light pager" aria-label="Entrées voisines">
+      {
+        prev ? (
+          <a class="pager__link" href={prev.path} rel="prev">
+            <span class="label muted">← {t("detail.prev")}</span>
+            <span class="pager__num">{prev.number}</span>
+            <span class="pager__name display">{prev.name}</span>
+          </a>
+        ) : (
+          <span />
+        )
+      }
+      <a class="pager__link pager__index" href="/">
+        <span class="label muted">↑ {t("detail.back")}</span>
+        <span class="pager__name display">INDEX</span>
+      </a>
+      {
+        next ? (
+          <a class="pager__link pager__next" href={next.path} rel="next">
+            <span class="label muted">{t("detail.next")} →</span>
+            <span class="pager__num">{next.number}</span>
+            <span class="pager__name display">{next.name}</span>
+          </a>
+        ) : (
+          <span />
+        )
+      }
+    </nav>
+  </main>
+
+  <SiteFooter theme="dark" />
+</Base>
+
+<style>
+  main:focus {
+    outline: none;
+  }
+
+  .detail-hero {
+    position: relative;
+    z-index: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 100svh;
+    overflow: clip;
+  }
+
+  .detail-hero__crumbs {
+    display: flex;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--gutter);
+    border-bottom: var(--border) solid var(--line);
+  }
+  .detail-hero__crumbs a {
+    text-decoration: none;
+  }
+  .detail-hero__crumbs a:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  /*
+   * Le numéro d'entrée en très grand : le seul élément rouge de l'écran, en contour
+   * pour ne jamais faire d'aplat rouge.
+   */
+  .detail-hero__num {
+    align-self: end;
+    margin: 0 0 0 -0.06em;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: clamp(7rem, 34vw, 30rem);
+    line-height: 0.8;
+    letter-spacing: -0.06em;
+    color: transparent;
+    -webkit-text-stroke: var(--border) var(--accent);
+  }
+
+  .detail-hero__name {
+    padding: 0 var(--gutter) var(--space-5);
+    font-size: var(--fs-xxl);
+    overflow-wrap: anywhere;
+  }
+
+  .detail-hero__foot {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: var(--space-5);
+    padding: var(--space-5) var(--gutter) var(--space-6);
+    border-top: var(--border) solid var(--line);
+    background: var(--bg);
+  }
+
+  .detail-hero__lede {
+    max-width: 52ch;
+    margin: 0;
+    font-size: var(--fs-m);
+  }
+
+  .detail-hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-7);
+    margin: 0;
+  }
+  .detail-hero__meta dd {
+    margin: var(--space-2) 0 0;
+  }
+
+  .detail-body {
+    padding-block: var(--space-9);
+  }
+
+  .prose {
+    max-width: 72ch;
+    margin-inline: auto;
+    font-size: var(--fs-m);
+    counter-reset: chapitre;
+  }
+  .prose :global(h2) {
+    counter-increment: chapitre;
+    margin: var(--space-8) 0 var(--space-4);
+    padding-top: var(--space-3);
+    border-top: var(--border) solid var(--line);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+  .prose :global(h2:first-child) {
+    margin-top: 0;
+  }
+  .prose :global(h2)::before {
+    content: counter(chapitre, decimal-leading-zero) " — ";
+  }
+  .prose :global(p),
+  .prose :global(ul) {
+    margin: 0 0 var(--space-4);
+  }
+  .prose :global(ul) {
+    padding-left: 1.2em;
+    list-style: square;
+  }
+  .prose :global(li + li) {
+    margin-top: var(--space-2);
+  }
+  .prose :global(strong) {
+    font-weight: 700;
+  }
+  .prose :global(code) {
+    padding: 0 0.25em;
+    border: 1px solid currentColor;
+    font-size: 0.9em;
+  }
+  .prose :global(a) {
+    text-decoration-thickness: var(--border-thin);
+    text-underline-offset: 0.2em;
+  }
+
+  .detail-shots {
+    display: grid;
+    gap: var(--space-6);
+  }
+  .detail-shots h2 {
+    margin: 0;
+  }
+  .detail-shots__grid {
+    display: grid;
+    gap: var(--space-6);
+    align-items: start;
+  }
+  .detail-shots figure {
+    margin: 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+  .detail-shots figure :global(.shot) {
+    border: var(--border) solid var(--line);
+  }
+  .detail-shots figure:hover :global(.shot__img) {
+    filter: none;
+  }
+  .detail-shots__mobile {
+    max-width: 22rem;
+  }
+
+  .pager {
+    display: grid;
+    gap: var(--space-4);
+    padding: 0;
+  }
+  .pager > * {
+    padding: var(--space-6) var(--gutter);
+  }
+  .pager__link {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    text-decoration: none;
+  }
+  .pager__link:hover {
+    background: var(--black);
+    color: var(--white);
+  }
+  .pager__link:hover .pager__num {
+    color: var(--red);
+  }
+  .pager__num {
+    font-weight: 700;
+    font-size: var(--fs-l);
+    line-height: 1;
+  }
+  .pager__name {
+    font-size: var(--fs-l);
+  }
+
+  @media (min-width: 60rem) {
+    .detail-hero__foot {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+    }
+    .detail-hero__foot .actions {
+      grid-column: 2;
+      grid-row: 1;
+      justify-content: end;
+    }
+    .detail-hero__meta {
+      grid-column: 1 / -1;
+    }
+    .detail-shots__grid {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+    }
+    .pager {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .pager > * + * {
+      border-left: var(--border-thin) solid var(--line);
+    }
+    .pager__index {
+      text-align: center;
+    }
+    .pager__next {
+      text-align: right;
+    }
+  }
+</style>

@@ -1,0 +1,103 @@
+---
+import { projects, type Project } from "@index/projects";
+import Entry from "../components/Entry.astro";
+import Hero from "../components/Hero.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+import { useTranslations } from "../i18n/ui";
+import Base from "../layouts/Base.astro";
+
+const t = useTranslations("fr");
+
+// L'index se lit comme une table des matières : un chapitre par année, dans l'ordre chronologique.
+const years = new Map<number, Project[]>();
+for (const project of projects) {
+  years.set(project.year, [...(years.get(project.year) ?? []), project]);
+}
+const chapters = [...years.entries()];
+// Le hero est noir : les chapitres alternent ensuite blanc, noir, blanc…
+const themeOf = (i: number) => (i % 2 === 0 ? "theme-light" : "theme-dark");
+const footerTheme = chapters.length % 2 === 0 ? "light" : "dark";
+---
+
+<Base>
+  <Hero />
+  <main id="contenu" tabindex="-1">
+    <h2 class="visually-hidden">{t("index.title")}</h2>
+    {
+      chapters.map(([year, list], i) => (
+        <section class:list={["section", "chapter", themeOf(i)]} aria-labelledby={`annee-${year}`}>
+          <p class="chapter__ghost display" aria-hidden="true" data-parallax style="--parallax: 0.6">
+            {year}
+          </p>
+          <header class="chapter__head">
+            <h2 id={`annee-${year}`} class="label">{year}</h2>
+            <p class="label muted">
+              {String(list.length).padStart(2, "0")} {list.length > 1 ? t("index.entries") : t("index.entry")}
+            </p>
+          </header>
+          <ol class="chapter__entries" role="list">
+            {list.map((project) => (
+              <li>
+                <Entry project={project} />
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))
+    }
+  </main>
+  <SiteFooter theme={footerTheme} />
+</Base>
+
+<style>
+  main:focus {
+    outline: none;
+  }
+
+  .chapter {
+    padding-inline: 0;
+    padding-bottom: var(--space-9);
+  }
+
+  /* L'année géante, en contour, glisse plus lentement que les entrées : la couche du fond. */
+  .chapter__ghost {
+    position: absolute;
+    top: var(--space-6);
+    right: -0.06em;
+    z-index: 0;
+    margin: 0;
+    font-size: clamp(9rem, 36vw, 36rem);
+    line-height: 0.8;
+    color: transparent;
+    -webkit-text-stroke: var(--border-thin) var(--line-soft);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .chapter__head {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: 0 var(--gutter) var(--space-7);
+  }
+  .chapter__head h2,
+  .chapter__head p {
+    margin: 0;
+  }
+  .chapter__head h2 {
+    font-size: var(--fs-l);
+    font-family: var(--font-mono);
+    letter-spacing: 0;
+  }
+
+  .chapter__entries {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-bottom: var(--border) solid var(--line);
+  }
+</style>

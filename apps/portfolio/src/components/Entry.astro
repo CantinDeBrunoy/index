@@ -1,0 +1,236 @@
+---
+import type { Project } from "@index/projects";
+import { langFromUrl, useTranslations } from "../i18n/ui";
+import Shot from "./Shot.astro";
+import StatusBadge from "./StatusBadge.astro";
+
+interface Props {
+  project: Project;
+}
+
+const { project } = Astro.props;
+const t = useTranslations(langFromUrl(Astro.url));
+const { demo, code, download } = project.links;
+---
+
+<article class="entry" data-kind={project.kind}>
+  <p class="entry__num" aria-hidden="true">{project.number}</p>
+
+  <div class="entry__body">
+    <h3 class="entry__name display">
+      <a class="entry__link" href={project.path}>
+        <span class="visually-hidden">{project.number}, </span>{project.name}
+      </a>
+    </h3>
+    <p class="entry__pitch">{project.pitch.fr}</p>
+    <ul class="tags" role="list" aria-label={t("entry.stack")}>
+      {project.stack.map((tech) => <li>{tech}</li>)}
+    </ul>
+  </div>
+
+  <div class="entry__side">
+    <dl class="entry__meta">
+      <div>
+        <dt class="label muted">{t("entry.year")}</dt>
+        <dd>{project.year}</dd>
+      </div>
+      <div>
+        <dt class="label muted">{t("entry.status")}</dt>
+        <dd><StatusBadge project={project} /></dd>
+      </div>
+    </dl>
+    {
+      (demo || code || download) && (
+        <ul class="actions entry__actions" role="list">
+          {demo && (
+            <li>
+              <a class="action" href={demo}>
+                {t("entry.demo")} <span aria-hidden="true">↗</span>
+              </a>
+            </li>
+          )}
+          {download && (
+            <li>
+              <a class="action" href={download}>
+                {t("entry.download")} <span aria-hidden="true">↓</span>
+              </a>
+            </li>
+          )}
+          {code && (
+            <li>
+              <a class="action" href={code}>
+                {t("entry.code")} <span aria-hidden="true">↗</span>
+              </a>
+            </li>
+          )}
+        </ul>
+      )
+    }
+  </div>
+
+  <div class="entry__shot">
+    <Shot project={project} sizes="(min-width: 60rem) 34vw, 100vw" parallax={-0.08} />
+  </div>
+</article>
+
+<style>
+  .entry {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "num"
+      "shot"
+      "body"
+      "side";
+    border-top: var(--border) solid var(--line);
+    /* Opaque : l'année géante du chapitre passe derrière les entrées, jamais sous le texte. */
+    background: var(--bg);
+    /* Inversion instantanée au survol : aucune transition. */
+    transition: none;
+  }
+
+  /* Survol ou focus clavier : le fond bascule, le numéro passe au rouge (le seul rouge de l'écran). */
+  :global(.theme-light) .entry:is(:hover, :focus-within) {
+    --bg: var(--black);
+    --fg: var(--white);
+    --muted: var(--gray-500);
+    --accent: var(--red);
+  }
+  :global(.theme-dark) .entry:is(:hover, :focus-within) {
+    --bg: var(--white);
+    --fg: var(--black);
+    --muted: var(--gray-900);
+    --accent: var(--red-ink);
+  }
+  .entry:is(:hover, :focus-within) {
+    background: var(--bg);
+    color: var(--fg);
+  }
+  .entry:is(:hover, :focus-within) .entry__num {
+    color: var(--accent);
+  }
+  .entry:is(:hover, :focus-within) :global(.shot__img) {
+    filter: none;
+  }
+
+  .entry > * {
+    min-width: 0;
+  }
+
+  .entry__num {
+    grid-area: num;
+    margin: 0;
+    padding: var(--space-4) var(--gutter) var(--space-3);
+    border-bottom: var(--border-thin) solid var(--fg);
+    font-size: var(--fs-l);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .entry__body {
+    grid-area: body;
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--gutter) var(--space-4);
+  }
+
+  .entry__name {
+    font-size: var(--fs-xl);
+    overflow-wrap: anywhere;
+  }
+
+  .entry__link {
+    text-decoration: none;
+  }
+  /* Toute l'entrée est cliquable ; les liens d'action restent au-dessus. */
+  .entry__link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .entry__link:focus-visible {
+    outline: none;
+  }
+  .entry:has(.entry__link:focus-visible) {
+    outline: var(--focus-width) solid var(--fg);
+    outline-offset: calc(var(--focus-width) * -1 - 2px);
+  }
+
+  .entry__pitch {
+    max-width: 60ch;
+    margin: 0;
+    font-size: var(--fs-m);
+  }
+
+  .entry__side {
+    grid-area: side;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-4) var(--space-6);
+    padding: 0 var(--gutter) var(--space-5);
+  }
+
+  .entry__meta {
+    display: flex;
+    gap: var(--space-6);
+    margin: 0;
+  }
+  .entry__meta dd {
+    margin: var(--space-1) 0 0;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-label);
+  }
+
+  .entry__actions {
+    position: relative;
+    z-index: 2;
+  }
+
+  .entry__shot {
+    grid-area: shot;
+    border-bottom: var(--border-thin) solid currentColor;
+  }
+  /* Sur mobile, une archive sans capture ne répète pas son numéro en grand. */
+  @media (max-width: 59.99rem) {
+    .entry[data-kind="archive"] .entry__shot {
+      display: none;
+    }
+  }
+
+  @media (min-width: 60rem) {
+    .entry {
+      grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr) minmax(0, 34%);
+      grid-template-areas:
+        "num body shot"
+        "num side shot";
+      grid-template-rows: 1fr auto;
+    }
+    .entry__num {
+      padding: var(--space-5) var(--space-5);
+      border-bottom: 0;
+      border-right: var(--border-thin) solid var(--fg);
+    }
+    .entry__body {
+      padding: var(--space-5) var(--space-6) var(--space-4);
+    }
+    .entry__side {
+      padding: 0 var(--space-6) var(--space-5);
+    }
+    .entry__shot {
+      align-self: stretch;
+      border-bottom: 0;
+      border-left: var(--border-thin) solid currentColor;
+    }
+    .entry__shot :global(.shot) {
+      height: 100%;
+      min-height: 16rem;
+      aspect-ratio: auto;
+    }
+  }
+</style>

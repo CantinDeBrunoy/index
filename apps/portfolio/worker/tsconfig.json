@@ -1,0 +1,10 @@
+{
+  "extends": "@index/config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": ["../worker-configuration.d.ts"],
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["."]
+}

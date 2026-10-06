@@ -1,0 +1,19 @@
+---
+lede: "Une app de voyage « local-first » : un globe 3D interactif où chaque pays visité se colore et chaque voyage se dessine en arcs entre ses étapes."
+---
+
+## Contexte
+
+Garder une trace visuelle de ses voyages sans confier ses données à un service tiers. Magellan est une app Expo (iOS, Android et web) : les voyages, les étapes et les photos restent sur l'appareil.
+
+## Problème résolu
+
+Les carnets de voyage en ligne demandent un compte, stockent tout sur leurs serveurs et affichent des cartes plates. Magellan montre d'un coup d'œil ce qu'on a parcouru, sans inscription ni backend.
+
+## Choix techniques
+
+- **Expo SDK 54 et expo-router** (routes typées, React Compiler) : une seule base de code pour iOS, Android et le web.
+- **Globe en WebGL** avec globe.gl et three.js ; textures et frontières des pays chargées depuis des CDN publics.
+- **Données locales** : AsyncStorage (localStorage sur le web) pour les voyages ; IndexedDB et l'API d'accès aux dossiers pour les photos, leurs miniatures et leurs métadonnées EXIF.
+- **Géocodage** des villes par l'API ouverte d'Open-Meteo, sans clé.
+- **Export web statique** servi par Cloudflare Workers : aucun serveur à réveiller.

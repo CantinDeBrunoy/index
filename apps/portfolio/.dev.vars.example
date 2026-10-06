@@ -1,0 +1,3 @@
+# Copie ce fichier en .dev.vars (ignoré par git) pour sonder la base de Tonalli en local.
+# La clé anon est publique par nature (elle est dans le bundle de Tonalli).
+TONALLI_SUPABASE_ANON_KEY=

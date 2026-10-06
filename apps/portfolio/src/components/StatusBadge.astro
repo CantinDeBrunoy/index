@@ -1,0 +1,29 @@
+---
+import type { Project } from "@index/projects";
+import { langFromUrl, useTranslations } from "../i18n/ui";
+
+interface Props {
+  project: Project;
+}
+
+const { project } = Astro.props;
+const t = useTranslations(langFromUrl(Astro.url));
+
+// Archives et logiciels de bureau n'ont pas de statut live ; une app web sans URL connue n'est pas sondée.
+const initial =
+  project.kind === "archive"
+    ? "archive"
+    : project.kind === "desktop"
+      ? "desktop"
+      : project.monitors.length > 0
+        ? "pending"
+        : "unknown";
+---
+
+<span class="status" data-health={initial} data-status-slug={initial === "pending" ? project.slug : undefined}>
+  {t(`status.${initial}`)}
+</span>
+
+<script>
+  import "../scripts/status";
+</script>

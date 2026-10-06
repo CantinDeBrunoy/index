@@ -1,0 +1,18 @@
+---
+lede: "Une web app pour iPhone qui classe mes quatre salles Fitness Park selon le temps de trajet en voiture, trafic compris, puis ouvre Waze sur la plus rapide."
+---
+
+## Contexte
+
+Choisir sa salle de sport chaque soir selon les bouchons, en un geste depuis l'écran d'accueil du téléphone.
+
+## Problème résolu
+
+Comparer quatre trajets dans une app GPS prend du temps. gym-picker fait le calcul en une fois à partir de la position actuelle et met la meilleure option en tête.
+
+## Choix techniques
+
+- **React et Vite** pour l'interface, un **Cloudflare Worker** pour l'unique route d'API.
+- **Une seule requête TomTom Matrix Routing** (une origine, quatre salles, trafic en direct) ; la clé reste secrète côté Worker.
+- **Limitation de débit par IP** pour protéger le quota gratuit de TomTom.
+- **Rien à réveiller** : un Worker répond en quelques millisecondes, sans démarrage à froid.
