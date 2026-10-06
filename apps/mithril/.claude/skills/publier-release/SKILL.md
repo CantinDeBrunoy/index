@@ -58,17 +58,17 @@ lui-même n'obtiendra pas la même empreinte que la release, et c'est normal.
 Versionnage sémantique, préfixé `v`. Vérifier ce qui existe déjà :
 
 ```powershell
-git tag -l
+git tag -l "mithril-v*"
 ```
 
-S'il n'y a aucun tag, la première release est `v1.0.0`. Ensuite : correctif → patch,
+S'il n'y a aucun tag `mithril-v*`, la première release est `mithril-v1.0.0` : dans le monorepo INDEX, les tags de Mithril portent le préfixe `mithril-`. Ensuite : correctif → patch,
 fonctionnalité → mineure, changement de format de coffre ou rupture d'usage → majeure.
 
 ## 4. Poser le tag
 
 ```powershell
-git tag -a v1.0.0 -m "Mithril v1.0.0"
-git push origin v1.0.0
+git tag -a mithril-v1.0.0 -m "Mithril v1.0.0"
+git push origin mithril-v1.0.0
 ```
 
 Un tag annoté (`-a`), pas un tag léger : il porte l'auteur et la date, et c'est lui qui fera

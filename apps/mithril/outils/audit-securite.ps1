@@ -298,7 +298,8 @@ Controle "R27" "Secrets" "aucun secret dans l'arbre de travail" "CRITIQUE" ($nbS
 
 # Un secret retire par un commit ulterieur reste lisible dans l'historique.
 # La valeur trouvee n'est jamais recopiee : ce bilan peut etre publie en artefact.
-$historique = @(git log -p --all --no-color 2>$null)
+# Dans le monorepo INDEX, seul l'historique du dossier de Mithril est concerne ("-- .").
+$historique = @(git log -p --all --no-color -- . 2>$null)
 $nbHistorique = 0
 foreach ($motif in $motifsSecrets) {
     $nbHistorique += @($historique | Select-String -Pattern $motif).Count
@@ -324,7 +325,9 @@ Interdire "R30" "Build" "build sans telechargement ni eval" "ELEVE" `
 
 # Les actions GitHub sont du code tiers execute avec le jeton du depot.
 $actionsAutorisees = @("actions/checkout", "actions/upload-artifact", "github/codeql-action")
-$workflows = @(Get-ChildItem -Path ".github/workflows" -Filter *.yml -File -ErrorAction SilentlyContinue)
+# Dans le monorepo INDEX, les workflows de Mithril sont a la racine du depot (mithril*.yml).
+$racineDepot = (git rev-parse --show-toplevel 2>$null)
+$workflows = @(Get-ChildItem -Path (Join-Path $racineDepot ".github/workflows") -Filter "mithril*.yml" -File -ErrorAction SilentlyContinue)
 $actionsHorsListe = 0
 foreach ($t in ($workflows | Select-String -Pattern 'uses:\s*([^@\s]+)' -AllMatches)) {
     $action = $t.Matches[0].Groups[1].Value
