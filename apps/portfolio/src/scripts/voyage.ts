@@ -37,12 +37,19 @@ function start(root: HTMLElement) {
 
   let current = fromHash();
   let busy = false;
+  let later = 0;
 
-  /** La prochaine scène, chargée d'avance : elle est prête quand le voile se lève. */
+  /** Une scène chargée d'avance : elle est prête quand le voile se lève. */
   const preload = (i: number) => {
     const stop = stops[i];
     const src = phone.matches ? stop?.dataset.imgPhone : stop?.dataset.img;
     if (src) new Image().src = src;
+  };
+  /** L'escale suivante, une fois la scène affichée chargée, et pas en mode économie de données. */
+  const preloadLater = (i: number) => {
+    window.clearTimeout(later);
+    if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
+    later = window.setTimeout(() => preload(i), 1500);
   };
 
   const show = (i: number) => {
@@ -67,9 +74,9 @@ function start(root: HTMLElement) {
     const hash = i === 0 ? "" : `#escale-${i}`;
     history.replaceState(null, "", `${location.pathname}${location.search}${hash}`);
     for (const link of langLinks) link.href = `${link.dataset.langLink}${hash}`;
-    // La scène affichée se charge tout de suite (elle est en différé dans la page), la suivante aussi.
+    // La scène affichée se charge tout de suite (elle est en différé dans la page), la suivante ensuite.
     stop.querySelector("img")?.setAttribute("loading", "eager");
-    preload(i + 1);
+    preloadLater(i + 1);
   };
 
   const go = (next: number, soft = false) => {
