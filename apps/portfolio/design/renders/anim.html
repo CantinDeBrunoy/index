@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rendus animés INDEX</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"}}</script>
+</head>
+<body style="margin:0;background:#888">
+<canvas id="c"></canvas>
+<script type="module">
+import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const SIZE = 560;
+const canvas = document.getElementById("c");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(SIZE, SIZE, false);
+renderer.setClearColor(0x000000, 0);
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const envTex = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+
+const THEMES = {
+  light: { clay: 0xe9e4db, clay2: 0xd6cfc3, ink: 0x2b2b2f, accent: 0xc25a2e, glass: 0xcfe0e8, mark: 0xf3efe8, shadow: 0.17, env: 0.85, key: 1.6,
+    wood: 0xcdb08a, woodBack: 0xe6d6bd, label: 0xf6f0e6, led: 0xfff3dc, ledPower: 0.5, niche: null },
+  dark: { clay: 0x5a5b62, clay2: 0x45464c, ink: 0x18181b, accent: 0xe3a55a, glass: 0x34444d, mark: 0x0e0f11, shadow: 0.55, env: 0.7, key: 1.9,
+    wood: 0x5b3e2c, woodBack: 0x33251c, label: 0xd8ccb6, led: 0xffd7a0, ledPower: 2.2, niche: { color: 0xffc98a, power: 2.6 } },
+};
+function mats(t) {
+  const m = (color, rough = 0.62) => new THREE.MeshStandardMaterial({ color, roughness: rough });
+  const led = new THREE.MeshStandardMaterial({ color: t.led, emissive: t.led, emissiveIntensity: t.ledPower, roughness: 0.4 });
+  return { clay: m(t.clay), clay2: m(t.clay2, 0.7), ink: m(t.ink, 0.45), accent: m(t.accent, 0.5), glass: m(t.glass, 0.25), mark: m(t.mark, 0.5),
+    wood: m(t.wood, 0.55), woodBack: m(t.woodBack, 0.7), label: m(t.label, 0.8), led };
+}
+const mesh = (geo, mat, x = 0, y = 0, z = 0) => {
+  const o = new THREE.Mesh(geo, mat);
+  o.position.set(x, y, z);
+  o.castShadow = true;
+  o.receiveShadow = true;
+  return o;
+};
+const curve = (points) => new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)));
+const tube = (c, r, mat, seg = 64) => mesh(new THREE.TubeGeometry(c, seg, r, 12, false), mat);
+function roundRect(w, h, r) {
+  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+  return s;
+}
+// u ∈ [0,1] qui fait l'aller-retour sur la boucle, sans saut
+const pingpong = (phi) => (1 - Math.cos(phi)) / 2;
+
+// Chaque objet renvoie son groupe ; userData.animate(phi) le fait vivre, phi ∈ [0, 2π) bouclant sans couture.
+const BUILD = {
+  hero(M) {
+    const g = new THREE.Group();
+    const W = 1.7, D = 2.3, H = 0.62, T = 0.06;
+    g.add(mesh(new RoundedBoxGeometry(W, T, D, 3, 0.02), M.clay2, 0, T / 2, 0));
+    g.add(mesh(new RoundedBoxGeometry(T, H, D, 3, 0.02), M.clay2, -W / 2 + T / 2, H / 2, 0));
+    g.add(mesh(new RoundedBoxGeometry(T, H, D, 3, 0.02), M.clay2, W / 2 - T / 2, H / 2, 0));
+    g.add(mesh(new RoundedBoxGeometry(W, H, T, 3, 0.02), M.clay2, 0, H / 2, -D / 2 + T / 2));
+    g.add(mesh(new RoundedBoxGeometry(W, H + 0.08, T * 1.6, 3, 0.03), M.clay, 0, (H + 0.08) / 2, D / 2));
+    g.add(mesh(new RoundedBoxGeometry(0.44, 0.16, 0.03, 3, 0.02), M.clay2, 0, H * 0.62, D / 2 + T * 0.85));
+    const handle = mesh(new THREE.TorusGeometry(0.13, 0.025, 12, 40, Math.PI), M.ink, 0, H * 0.28, D / 2 + T);
+    handle.rotation.z = Math.PI;
+    g.add(handle);
+    const cards = [];
+    const n = 13;
+    for (let i = 0; i < n; i++) {
+      const raised = i === 8;
+      const card = new THREE.Group();
+      card.add(mesh(new RoundedBoxGeometry(1.48, 1.0, 0.018, 2, 0.03), raised ? M.accent : M.clay, 0, 0.5, 0));
+      const tabX = [-0.5, -0.15, 0.2, 0.5][i % 4];
+      card.add(mesh(new RoundedBoxGeometry(0.32, 0.14, 0.018, 2, 0.03), raised ? M.accent : M.clay, tabX, 1.04, 0));
+      card.position.set(0, T, -D / 2 + 0.22 + i * ((D - 0.4) / (n - 1)));
+      g.add(card);
+      cards.push({ card, raised, i });
+    }
+    g.rotation.y = -0.55;
+    g.userData.animate = (phi) => {
+      for (const { card, raised, i } of cards) {
+        card.rotation.x = -0.06 + 0.035 * Math.sin(phi * 2 - i * 0.55);
+        if (raised) card.position.y = T + 0.12 + 0.34 * pingpong(phi);
+      }
+    };
+    return g;
+  },
+  "metro-pathfinder"(M) {
+    const g = new THREE.Group();
+    g.add(mesh(new RoundedBoxGeometry(2.6, 0.08, 1.9, 4, 0.04), M.clay2, 0, 0.04, 0));
+    const S = { A: [-1, -0.55], B: [-0.45, -0.62], C: [0.15, -0.3], D: [0.85, -0.55], E: [-0.85, 0.35], F: [-0.1, 0.42], G: [0.75, 0.3], H: [-0.25, -0.05] };
+    const y = 0.12;
+    const P = (k, dy = 0) => [S[k][0], y + dy, S[k][1]];
+    for (const l of [["A", "B", "C", "D"], ["E", "F", "G"], ["B", "H", "F"], ["C", "G"]]) g.add(tube(curve(l.map((k) => P(k))), 0.028, M.clay));
+    const path = curve(["A", "B", "H", "F", "G"].map((k) => P(k, 0.035)));
+    g.add(tube(path, 0.036, M.accent));
+    for (const k of Object.keys(S)) g.add(mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.09, 28), ["A", "G"].includes(k) ? M.accent : M.clay, S[k][0], y + 0.02, S[k][1]));
+    const train = mesh(new THREE.CapsuleGeometry(0.055, 0.12, 6, 16), M.mark);
+    g.add(train);
+    g.rotation.y = 0.35;
+    g.userData.animate = (phi) => {
+      const u = pingpong(phi);
+      const p = path.getPointAt(u);
+      const ahead = path.getTangentAt(u);
+      train.position.set(p.x, p.y + 0.06, p.z);
+      train.rotation.set(0, 0, 0);
+      train.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ahead);
+    };
+    return g;
+  },
+  "api-rest-dotnet"(M) {
+    const g = new THREE.Group();
+    const blades = [];
+    const leds = [];
+    for (let i = 0; i < 4; i++) {
+      const blade = new THREE.Group();
+      blade.add(mesh(new RoundedBoxGeometry(1.7, 0.3, 1.15, 4, 0.06), M.clay, 0, 0, 0));
+      for (let k = 0; k < 3; k++) {
+        const led = mesh(new THREE.SphereGeometry(0.035, 16, 16), M.clay2, -0.62 + k * 0.12, 0, 0.58);
+        blade.add(led);
+        if (k === 0) leds.push(led);
+      }
+      blade.add(mesh(new RoundedBoxGeometry(0.6, 0.05, 0.02, 2, 0.01), M.clay2, 0.42, 0, 0.58));
+      blade.position.set(0, 0.17 + i * 0.36, 0);
+      g.add(blade);
+      blades.push(blade);
+    }
+    g.rotation.y = -0.45;
+    g.userData.animate = (phi) => {
+      blades[2].position.z = 0.08 + 0.36 * pingpong(phi);
+      const lit = Math.floor((phi / (Math.PI * 2)) * 8) % 4;
+      leds.forEach((led, i) => (led.material = i === lit ? M.accent : M.clay2));
+    };
+    return g;
+  },
+  "visit-match"(M) {
+    const g = new THREE.Group();
+    g.add(mesh(new THREE.CylinderGeometry(1.25, 1.25, 0.07, 64), M.clay2, 0, 0.035, 0));
+    const pin = (x, z) => {
+      const p = new THREE.Group();
+      p.add(mesh(new THREE.SphereGeometry(0.27, 40, 40), M.clay, 0, 0.78, 0));
+      const cone = mesh(new THREE.ConeGeometry(0.2, 0.62, 40), M.clay, 0, 0.38, 0);
+      cone.rotation.x = Math.PI;
+      p.add(cone);
+      p.position.set(x, 0, z);
+      return p;
+    };
+    const a = pin(-0.65, 0.2), b = pin(0.7, -0.15);
+    g.add(a, b);
+    const arc = new THREE.QuadraticBezierCurve3(new THREE.Vector3(-0.65, 1.05, 0.2), new THREE.Vector3(0, 2.0, 0.05), new THREE.Vector3(0.7, 1.05, -0.15));
+    g.add(mesh(new THREE.TubeGeometry(arc, 64, 0.03, 12), M.accent));
+    const dot = mesh(new THREE.SphereGeometry(0.075, 24, 24), M.accent);
+    g.add(dot);
+    g.userData.animate = (phi) => {
+      a.position.y = 0.06 * (1 + Math.sin(phi));
+      b.position.y = 0.06 * (1 + Math.sin(phi + Math.PI));
+      dot.position.copy(arc.getPoint(pingpong(phi)));
+    };
+    return g;
+  },
+  "galaxy-escape"(M) {
+    const g = new THREE.Group();
+    g.add(mesh(new THREE.SphereGeometry(0.72, 64, 64), M.clay, 0, 1.0, 0));
+    const ring = mesh(new THREE.TorusGeometry(1.18, 0.035, 16, 120), M.accent, 0, 1.0, 0);
+    ring.rotation.set(Math.PI / 2.3, 0.2, 0);
+    g.add(ring);
+    const m1 = mesh(new THREE.IcosahedronGeometry(0.16, 0), M.clay2);
+    const m2 = mesh(new THREE.IcosahedronGeometry(0.1, 0), M.clay2);
+    g.add(m1, m2);
+    g.userData.animate = (phi) => {
+      m1.position.set(Math.cos(phi) * 1.45, 1.0 + Math.sin(phi) * 0.35, Math.sin(phi) * 1.0);
+      m1.rotation.set(phi, phi * 2, 0);
+      m2.position.set(Math.cos(-phi * 2 + 1) * 1.05, 1.0 + Math.cos(phi * 2) * 0.55, Math.sin(-phi * 2 + 1) * 0.8);
+      m2.rotation.set(phi * 2, 0, phi);
+      ring.rotation.z = 0.2 + 0.08 * Math.sin(phi);
+    };
+    return g;
+  },
+  magellan(M) {
+    const g = new THREE.Group();
+    const cy = 1.25, R = 0.82;
+    g.add(mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.1, 48), M.clay2, 0, 0.05, 0));
+    g.add(mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.32, 20), M.clay2, 0, 0.26, 0));
+    const tilt = new THREE.Group();
+    tilt.position.y = cy;
+    tilt.rotation.z = -0.41;
+    const spin = new THREE.Group();
+    tilt.add(spin);
+    spin.add(mesh(new THREE.SphereGeometry(R, 64, 64), M.clay));
+    for (const lat of [-0.5, 0, 0.5]) {
+      const ring = mesh(new THREE.TorusGeometry(R * Math.cos(lat) + 0.004, 0.006, 8, 120), M.clay2, 0, R * Math.sin(lat), 0);
+      ring.rotation.x = Math.PI / 2;
+      spin.add(ring);
+    }
+    const mer = mesh(new THREE.TorusGeometry(R + 0.12, 0.022, 12, 100, Math.PI), M.clay2);
+    mer.rotation.z = Math.PI / 2;
+    tilt.add(mer);
+    const arc = (a, b) => {
+      const va = new THREE.Vector3(...a).normalize(), vb = new THREE.Vector3(...b).normalize();
+      const pts = [];
+      for (let i = 0; i <= 40; i++) {
+        const t = i / 40;
+        pts.push(va.clone().lerp(vb, t).normalize().multiplyScalar(R * (1.02 + Math.sin(Math.PI * t) * 0.32)));
+      }
+      spin.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, 0.018, 10), M.accent));
+      for (const v of [va, vb]) {
+        const p = mesh(new THREE.SphereGeometry(0.045, 16, 16), M.accent);
+        p.position.copy(v.clone().multiplyScalar(R + 0.02));
+        spin.add(p);
+      }
+    };
+    arc([0.2, 0.6, 0.8], [0.9, 0.2, 0.3]);
+    arc([-0.3, 0.3, 0.9], [0.25, -0.35, 0.9]);
+    arc([-0.7, -0.1, -0.6], [-0.2, 0.55, -0.8]);
+    g.add(tilt);
+    g.rotation.y = 0.3;
+    g.userData.animate = (phi) => {
+      spin.rotation.y = phi;
+    };
+    g.userData.sway = 0.08;
+    return g;
+  },
+  cancionero(M) {
+    const g = new THREE.Group();
+    g.add(mesh(new RoundedBoxGeometry(2.5, 0.16, 2.0, 4, 0.06), M.clay, 0, 0.08, 0));
+    const rec = new THREE.Group();
+    rec.position.set(-0.3, 0.2, 0);
+    rec.add(mesh(new THREE.CylinderGeometry(0.88, 0.88, 0.03, 96), M.ink));
+    for (let r = 0.42; r < 0.86; r += 0.07) {
+      const groove = mesh(new THREE.TorusGeometry(r, 0.0035, 6, 120), M.clay2, 0, 0.016, 0);
+      groove.rotation.x = Math.PI / 2;
+      rec.add(groove);
+    }
+    rec.add(mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.034, 64), M.accent, 0, 0.002, 0));
+    rec.add(mesh(new RoundedBoxGeometry(0.18, 0.012, 0.035, 2, 0.006), M.mark, 0.15, 0.022, 0));
+    rec.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 16), M.clay2, 0, 0.04, 0));
+    g.add(rec);
+    g.add(mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.12, 32), M.clay2, 0.92, 0.22, -0.62));
+    const arm = new THREE.Group();
+    arm.position.set(0.92, 0.32, -0.62);
+    arm.add(tube(curve([[0, 0, 0], [-0.04, 0, 0.67], [-0.37, -0.02, 1.04]]), 0.022, M.clay2));
+    arm.add(mesh(new RoundedBoxGeometry(0.14, 0.06, 0.2, 2, 0.02), M.clay2, -0.42, -0.04, 1.08));
+    g.add(arm);
+    g.rotation.y = -0.25;
+    g.userData.animate = (phi) => {
+      rec.rotation.y = -phi;
+      arm.rotation.y = 0.04 * Math.sin(phi);
+    };
+    g.userData.sway = 0.12;
+    return g;
+  },
+  mithril(M) {
+    const g = new THREE.Group();
+    g.add(mesh(new RoundedBoxGeometry(1.15, 0.95, 0.46, 6, 0.16), M.clay, 0, 0.48, 0));
+    // L'anse pivote autour de son montant gauche, comme un vrai cadenas.
+    const shackle = new THREE.Group();
+    shackle.position.x = -0.36;
+    shackle.add(mesh(new THREE.TorusGeometry(0.36, 0.085, 24, 64, Math.PI), M.clay2, 0.36, 1.28, 0));
+    shackle.add(mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.42, 24), M.clay2, 0, 1.07, 0));
+    shackle.add(mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.42, 24), M.clay2, 0.72, 1.07, 0));
+    g.add(shackle);
+    const hole = new THREE.Group();
+    hole.add(mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.04, 32), M.accent));
+    hole.add(mesh(new RoundedBoxGeometry(0.07, 0.04, 0.2, 2, 0.015), M.accent, 0, 0, 0.1));
+    hole.rotation.x = Math.PI / 2;
+    hole.position.set(0, 0.52, 0.235);
+    g.add(hole);
+    g.rotation.y = -0.4;
+    g.userData.animate = (phi) => {
+      const open = Math.max(0, Math.sin(phi));
+      shackle.position.y = 0.2 * Math.min(1, open * 1.6);
+      shackle.rotation.y = -1.1 * Math.max(0, open - 0.35);
+    };
+    return g;
+  },
+  tonalli(M) {
+    const g = new THREE.Group();
+    const sun = new THREE.Group();
+    sun.position.y = 1.15;
+    const core = mesh(new THREE.SphereGeometry(0.5, 64, 64), M.accent);
+    sun.add(core);
+    const rays = [];
+    const n = 14;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const len = i % 2 ? 0.22 : 0.34;
+      const holder = new THREE.Group();
+      holder.rotation.z = a - Math.PI / 2;
+      const ray = mesh(new THREE.CapsuleGeometry(0.055, len, 8, 16), M.clay);
+      ray.position.y = 0.72 + len / 2;
+      holder.add(ray);
+      sun.add(holder);
+      rays.push({ ray, len, i });
+    }
+    sun.rotation.y = -0.35;
+    g.add(sun);
+    g.userData.animate = (phi) => {
+      sun.rotation.z = -phi / 7;
+      core.scale.setScalar(1 + 0.05 * Math.sin(phi * 2));
+      for (const { ray, len, i } of rays) {
+        const k = 1 + 0.22 * Math.sin(phi * 2 - (i / n) * Math.PI * 4);
+        ray.scale.y = k;
+        ray.position.y = 0.72 + (len * k) / 2 + 0.05 * (k - 1);
+      }
+    };
+    return g;
+  },
+  "gym-picker"(M) {
+    const g = new THREE.Group();
+    const bar = new THREE.Group();
+    const along = (geo, mat, x) => {
+      const o = mesh(geo, mat, x, 0, 0);
+      o.rotation.z = Math.PI / 2;
+      return o;
+    };
+    bar.add(along(new THREE.CylinderGeometry(0.055, 0.055, 1.9, 24), M.clay2, 0));
+    for (const s of [-1, 1]) {
+      bar.add(along(new THREE.CylinderGeometry(0.46, 0.46, 0.16, 64), M.clay, s * 0.55));
+      bar.add(along(new THREE.CylinderGeometry(0.36, 0.36, 0.13, 64), M.clay, s * 0.7));
+      bar.add(along(new THREE.CylinderGeometry(0.12, 0.12, 0.07, 32), M.accent, s * 0.81));
+    }
+    bar.position.y = 0.47;
+    bar.rotation.y = 0.55;
+    g.add(bar);
+    g.userData.animate = (phi) => {
+      bar.position.y = 0.47 + 0.24 * pingpong(phi);
+      bar.rotation.x = 0.3 * Math.sin(phi);
+    };
+    return g;
+  },
+  hublot(M) {
+    const g = new THREE.Group();
+    const outer = roundRect(1.25, 1.75, 0.58);
+    outer.holes.push(roundRect(0.86, 1.36, 0.4));
+    const frameGeo = new THREE.ExtrudeGeometry(outer, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 6, curveSegments: 48 });
+    frameGeo.center();
+    const win = new THREE.Group();
+    win.add(mesh(frameGeo, M.clay));
+    win.add(mesh(new THREE.ShapeGeometry(roundRect(0.88, 1.38, 0.41), 48), M.glass, 0, 0, -0.06));
+    const shade = mesh(new RoundedBoxGeometry(0.84, 0.46, 0.03, 2, 0.02), M.accent, 0, 0.44, -0.02);
+    win.add(shade);
+    const cloud = new THREE.Group();
+    for (const [x, y, r] of [[-0.12, 0, 0.13], [0.02, 0.05, 0.17], [0.17, -0.01, 0.12]]) cloud.add(mesh(new THREE.SphereGeometry(r, 32, 32), M.clay, x, y, -0.05));
+    cloud.position.y = -0.2;
+    win.add(cloud);
+    win.position.y = 1.05;
+    win.rotation.y = -0.45;
+    g.add(win);
+    g.userData.animate = (phi) => {
+      const down = pingpong(phi);
+      shade.scale.y = 1 + 1.3 * down;
+      shade.position.y = 0.44 + 0.23 - (0.46 * shade.scale.y) / 2;
+      cloud.position.x = 0.1 * Math.sin(phi);
+      cloud.position.y = -0.25 + 0.03 * Math.sin(phi * 2);
+    };
+    return g;
+  },
+};
+
+Object.assign(BUILD, {
+  gloves(M) {
+    const g = new THREE.Group();
+    const gloves = [];
+    for (const side of [-1, 1]) {
+      const gl = new THREE.Group();
+      const body = mesh(new THREE.SphereGeometry(0.42, 48, 48), M.clay, 0, 0.98, 0.04);
+      body.scale.set(0.86, 1.06, 0.84);
+      gl.add(body);
+      const thumb = mesh(new THREE.CapsuleGeometry(0.12, 0.3, 8, 20), M.clay, -0.3 * side, 0.86, 0.2);
+      thumb.rotation.set(0.35, 0, 0.55 * side);
+      gl.add(thumb);
+      gl.add(mesh(new THREE.CylinderGeometry(0.29, 0.33, 0.46, 40), M.clay2, 0, 0.36, 0));
+      const band = mesh(new THREE.TorusGeometry(0.3, 0.035, 12, 48), M.accent, 0, 0.5, 0);
+      band.rotation.x = Math.PI / 2;
+      gl.add(band);
+      gl.position.x = 0.4 * side;
+      gl.rotation.set(0, -0.35 * side, -0.06 * side);
+      g.add(gl);
+      gloves.push({ gl, side });
+    }
+    g.userData.animate = (phi) => {
+      for (const { gl, side } of gloves) gl.rotation.x = 0.09 * Math.max(0, Math.sin(phi * 2 + (side > 0 ? Math.PI : 0)));
+    };
+    return g;
+  },
+  hold(M) {
+    const g = new THREE.Group();
+    g.add(mesh(new RoundedBoxGeometry(1.5, 1.5, 0.12, 3, 0.03), M.clay2, 0, 0.75, -0.1));
+    const geo = new THREE.IcosahedronGeometry(0.5, 4);
+    const pos = geo.attributes.position, v = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i);
+      const n = 1 + 0.16 * Math.sin(v.x * 4.1 + 1) * Math.cos(v.y * 3.3) + 0.1 * Math.sin(v.z * 5.2 + v.x * 2);
+      v.multiplyScalar(n);
+      v.z = Math.max(v.z * 0.7, -0.05);
+      pos.setXYZ(i, v.x, v.y * 0.85, v.z);
+    }
+    geo.computeVertexNormals();
+    const hold = mesh(geo, M.accent, 0.05, 0.8, 0);
+    g.add(hold);
+    const bolt = mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.06, 24), M.ink, 0.05, 0.8, 0.39);
+    bolt.rotation.x = Math.PI / 2;
+    g.add(bolt);
+    g.rotation.y = -0.3;
+    g.userData.animate = (phi) => { hold.rotation.z = 0.05 * Math.sin(phi); };
+    return g;
+  },
+  book(M) {
+    const g = new THREE.Group();
+    const volume = (w, h, d, y, rot, cover) => {
+      const b = new THREE.Group();
+      b.add(mesh(new RoundedBoxGeometry(w, h, d, 2, 0.015), cover, 0, 0, 0));
+      b.add(mesh(new THREE.BoxGeometry(w - 0.05, h * 0.8, d - 0.04), M.label, 0.03, 0, 0));
+      b.position.y = y;
+      b.rotation.y = rot;
+      g.add(b);
+      return b;
+    };
+    volume(1.15, 0.2, 0.8, 0.1, 0.08, M.clay2);
+    volume(1.0, 0.17, 0.7, 0.285, -0.12, M.clay);
+    const top = new THREE.Group();
+    top.position.set(-0.05, 0.42, 0.02);
+    top.rotation.y = 0.18;
+    top.add(mesh(new THREE.BoxGeometry(0.88, 0.09, 0.62), M.label, 0, 0, 0));
+    const hinge = new THREE.Group();
+    hinge.position.set(-0.45, 0.05, 0);
+    hinge.add(mesh(new RoundedBoxGeometry(0.92, 0.02, 0.66, 2, 0.008), M.clay2, 0.46, 0, 0));
+    top.add(hinge);
+    top.add(mesh(new THREE.BoxGeometry(0.88, 0.02, 0.66), M.clay2, 0, -0.055, 0));
+    top.add(mesh(new THREE.BoxGeometry(0.04, 0.005, 0.3), M.accent, 0.2, 0.05, 0.42));
+    g.add(top);
+    g.userData.animate = (phi) => { hinge.rotation.z = 0.75 * Math.max(0, Math.sin(phi)); };
+    return g;
+  },
+  // Randonnée : une montagne d'argile à deux sommets, son sentier de laiton en lacets jusqu'au fanion,
+  // des sapins au pied ; un randonneur monte le sentier et redescend.
+  randonnee(M) {
+    const g = new THREE.Group();
+    // Un cône bosselé ; la même bosse sert à poser le sentier sur la pente.
+    const bump = (a, k, seed) => 1 + 0.08 * Math.sin(a * 5 + seed) * Math.sin(k * 9 + seed) + 0.04 * Math.sin(a * 11 - seed * 2);
+    const peak = (r, h, seed) => {
+      const geo = new THREE.ConeGeometry(r, h, 96, 32);
+      geo.translate(0, h / 2, 0);
+      const p = geo.attributes.position, v = new THREE.Vector3();
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i);
+        const k = v.y / h;
+        const f = k < 0.01 ? 1 : bump(Math.atan2(v.z, v.x), k, seed);
+        p.setXYZ(i, v.x * f, v.y, v.z * f);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    };
+    const R = 0.85, H = 1.25, SEED = 1.3;
+    g.add(mesh(peak(R, H, SEED), M.clay, 0, 0, 0));
+    g.add(mesh(peak(0.55, 0.8, 4.1), M.clay2, 0.66, 0, -0.3));
+    // Les neiges : un capuchon crème sur le grand sommet.
+    g.add(mesh(new THREE.ConeGeometry(0.215, 0.3, 64), M.label, 0, H - 0.15, 0));
+    // Le sentier : des lacets sur la face tournée vers nous, du pied jusque sous le sommet.
+    const FRONT = Math.atan2(1.45, 0.85);
+    const pts = [];
+    for (let i = 0; i <= 60; i++) {
+      const t = i / 60;
+      const y = 0.03 + t * (H * 0.86);
+      const k = y / H;
+      const a = FRONT + 0.62 * Math.sin(t * 3.5 * Math.PI) * (1 - 0.55 * t);
+      const r = R * (1 - k) * bump(a, k, SEED) + 0.018;
+      pts.push(new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r));
+    }
+    const trail = new THREE.CatmullRomCurve3(pts);
+    g.add(mesh(new THREE.TubeGeometry(trail, 240, 0.02, 10, false), M.accent));
+    // Le fanion du sommet.
+    const flag = new THREE.Group();
+    flag.position.set(0, H - 0.02, 0);
+    flag.add(mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.34, 12), M.ink, 0, 0.17, 0));
+    const cloth = mesh(new RoundedBoxGeometry(0.22, 0.13, 0.012, 1, 0.004), M.accent, 0.11, 0.27, 0);
+    flag.add(cloth);
+    flag.rotation.y = -FRONT + Math.PI / 2;
+    g.add(flag);
+    // Les sapins, au pied.
+    for (const [x, z, s] of [[-0.98, 0.32, 1], [-0.7, 0.78, 0.8], [0.2, 0.98, 0.9], [1.05, 0.38, 0.75]]) {
+      const tree = new THREE.Group();
+      tree.add(mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.08, 10), M.clay2, 0, 0.04, 0));
+      tree.add(mesh(new THREE.ConeGeometry(0.11, 0.2, 18), M.clay2, 0, 0.17, 0));
+      tree.add(mesh(new THREE.ConeGeometry(0.085, 0.16, 18), M.clay2, 0, 0.28, 0));
+      tree.position.set(x, 0, z);
+      tree.scale.setScalar(s);
+      g.add(tree);
+    }
+    // Le randonneur : une petite silhouette d'encre et son sac de laiton.
+    const hiker = new THREE.Group();
+    hiker.add(mesh(new THREE.CapsuleGeometry(0.028, 0.06, 6, 12), M.ink, 0, 0.06, 0));
+    hiker.add(mesh(new THREE.SphereGeometry(0.026, 16, 12), M.ink, 0, 0.13, 0));
+    hiker.add(mesh(new RoundedBoxGeometry(0.04, 0.05, 0.03, 1, 0.008), M.accent, 0, 0.07, -0.03));
+    g.add(hiker);
+    g.userData.animate = (phi) => {
+      const u = 0.06 + 0.84 * pingpong(phi);
+      const at = trail.getPointAt(u);
+      hiker.position.copy(at);
+      const ahead = trail.getPointAt(Math.min(1, u + 0.01));
+      hiker.rotation.y = Math.atan2(ahead.x - at.x, ahead.z - at.z);
+      cloth.rotation.y = 0.35 * Math.sin(phi * 2);
+    };
+    g.userData.sway = 0.12;
+    return g;
+  },
+});
+
+let current = null;
+window.setupAnim = (name, themeName, accent) => {
+  renderer.setSize(SIZE, SIZE, false);
+  if (current) current.scene.traverse((o) => o.isMesh && o.geometry.dispose());
+  const t = accent ? { ...THEMES[themeName], accent } : THEMES[themeName];
+  const M = mats(t);
+  const scene = new THREE.Scene();
+  scene.environment = envTex;
+  scene.environmentIntensity = t.env;
+  const key = new THREE.DirectionalLight(0xffffff, t.key);
+  key.position.set(-3, 6.5, 4);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1536, 1536);
+  key.shadow.radius = 6;
+  key.shadow.bias = -0.0004;
+  Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 0.5, far: 20 });
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0xffffff, 0.5);
+  rim.position.set(4, 3, -4);
+  scene.add(rim);
+
+  const obj = BUILD[name](M);
+  obj.userData.animate?.(0);
+  scene.add(obj);
+  let box = new THREE.Box3().setFromObject(obj);
+  const s = 1.05 / box.getBoundingSphere(new THREE.Sphere()).radius;
+  obj.scale.multiplyScalar(s);
+  box = new THREE.Box3().setFromObject(obj);
+  const c = box.getCenter(new THREE.Vector3());
+  obj.position.x -= c.x;
+  obj.position.z -= c.z;
+  obj.position.y -= box.min.y;
+  const h = new THREE.Box3().setFromObject(obj).max.y;
+
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.ShadowMaterial({ opacity: t.shadow }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 50);
+  const target = new THREE.Vector3(0, h / 2, 0);
+  camera.position.copy(target).add(new THREE.Vector3(0.85, 0.62, 1.45).normalize().multiplyScalar(5.3));
+  camera.lookAt(target);
+  current = { scene, camera, obj, base: obj.rotation.y, sway: obj.userData.sway ?? 0.22 };
+  return true;
+};
+
+window.setupCabinet = (themeName, accent, w = 1200, h = 750) => {
+  if (current) current.scene.traverse((o) => o.isMesh && o.geometry.dispose());
+  renderer.setSize(w, h, false);
+  const t = accent ? { ...THEMES[themeName], accent } : THEMES[themeName];
+  const M = mats(t);
+  const scene = new THREE.Scene();
+  scene.environment = envTex;
+  scene.environmentIntensity = t.niche ? 0.32 : t.env;
+  const key = new THREE.DirectionalLight(0xffffff, t.niche ? 0.55 : 1.35);
+  key.position.set(-4, 7, 8);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.radius = 5;
+  key.shadow.bias = -0.0005;
+  Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -2, near: 0.5, far: 30 });
+  scene.add(key);
+
+  const cab = new THREE.Group();
+  const cols = 5, rows = 3, NW = 1.0, NH = 0.92, D = 0.78, T = 0.07;
+  const W = cols * NW + (cols + 1) * T, H = rows * NH + (rows + 1) * T;
+  cab.add(mesh(new THREE.BoxGeometry(W, H, 0.05), M.woodBack, 0, H / 2, -D / 2));
+  for (let c = 0; c <= cols; c++) cab.add(mesh(new THREE.BoxGeometry(T, H, D), M.wood, -W / 2 + T / 2 + c * (NW + T), H / 2, 0));
+  for (let r = 0; r <= rows; r++) cab.add(mesh(new THREE.BoxGeometry(W, T, D), M.wood, 0, T / 2 + r * (NH + T), 0));
+  cab.add(mesh(new RoundedBoxGeometry(W + 0.12, 0.14, D + 0.1, 2, 0.03), M.wood, 0, -0.07, 0.02));
+  const slots = ["metro-pathfinder", "api-rest-dotnet", "visit-match", "galaxy-escape", "magellan",
+    "cancionero", "mithril", "tonalli", "gym-picker", "hublot",
+    "hero", "gloves", "hold", "book", null];
+  const anims = [];
+  slots.forEach((slug, i) => {
+    const r = Math.floor(i / cols), c = i % cols;
+    const cx = -W / 2 + T + NW / 2 + c * (NW + T);
+    const top = H - T - r * (NH + T);
+    const floorY = top - NH;
+    const led = mesh(new THREE.BoxGeometry(NW * 0.82, 0.014, 0.03), M.led, cx, top - 0.012, D / 2 - 0.09);
+    led.castShadow = false;
+    cab.add(led);
+    if (t.niche) {
+      const pl = new THREE.PointLight(t.niche.color, t.niche.power, 1.7, 1.6);
+      pl.position.set(cx, top - 0.1, D / 2 - 0.2);
+      cab.add(pl);
+    }
+    const label = mesh(new RoundedBoxGeometry(0.26, 0.11, 0.012, 2, 0.008), M.label, cx + NW * 0.3, floorY + 0.06, D / 2 - 0.06);
+    label.rotation.x = -0.35;
+    cab.add(label);
+    if (!slug) return;
+    const raw = BUILD[slug](M);
+    raw.userData.animate?.(0);
+    // Les objets plats (plan du métro, platine) sont présentés redressés, comme sur un pupitre.
+    const tilt = { "metro-pathfinder": 1.05, cancionero: 0.62 }[slug] ?? 0;
+    const obj = new THREE.Group();
+    obj.add(raw);
+    raw.rotation.x += tilt;
+    obj.userData.animate = raw.userData.animate;
+    let box = new THREE.Box3().setFromObject(obj);
+    const size = box.getSize(new THREE.Vector3());
+    const s = Math.min((NW * 0.7) / size.x, (NH * 0.74) / size.y, (D * 0.82) / size.z);
+    obj.scale.multiplyScalar(s);
+    box = new THREE.Box3().setFromObject(obj);
+    const ctr = box.getCenter(new THREE.Vector3());
+    obj.position.x += cx - ctr.x - 0.04;
+    obj.position.z += -0.04 - ctr.z;
+    obj.position.y += floorY - box.min.y;
+    cab.add(obj);
+    anims.push({ obj, base: obj.rotation.y, k: i });
+  });
+  cab.userData.animate = (phi) => {
+    for (const a of anims) {
+      a.obj.rotation.y = a.base + 0.1 * Math.sin(phi + a.k * 0.7);
+      a.obj.userData.animate?.(phi);
+    }
+  };
+  scene.add(cab);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: t.shadow }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.14;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const camera = new THREE.PerspectiveCamera(27, w / h, 0.1, 100);
+  const target = new THREE.Vector3(0, H / 2 - 0.05, 0);
+  camera.position.set(-1.25, H / 2 + 0.75, 8.6);
+  camera.lookAt(target);
+  current = { scene, camera, obj: cab, base: 0, sway: 0 };
+  return true;
+};
+
+window.renderFrame = (i, n) => {
+  const phi = (Math.PI * 2 * i) / n;
+  const { scene, camera, obj, base, sway } = current;
+  obj.rotation.y = base + sway * Math.sin(phi);
+  obj.userData.animate?.(phi);
+  renderer.render(scene, camera);
+  return canvas.toDataURL("image/png");
+};
+window.ready = true;
+</script>
+</body>
+</html>

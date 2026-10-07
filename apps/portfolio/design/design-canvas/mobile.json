@@ -1,0 +1,13 @@
+{
+  "espace": { "id": "ef59ae33bfd0f544e7457eb21cea75e9", "spot": [84, 39] },
+  "terre": { "id": "619fae54b3ee0736fe3c14058dabac9b", "spot": [82.1, 46.4] },
+  "avion": { "id": "c4cedea0b5f00e2ba580ffb136e867ea", "spot": [51, 56.4] },
+  "paris": { "id": "6d75644cea49cb2a7887282f4e5fe062", "spot": [77.9, 52.2] },
+  "monuments": { "id": "385ba3a92db3ec729ce76b97ec2fd3a4", "spot": [71.7, 56.2] },
+  "route": { "id": "c3558dc87443f214dc91276172af6041", "spot": [52.2, 59.3] },
+  "maison": { "id": "40b3408b14f1f166bc07ab0bc0491f85", "spot": [74.8, 75.6] },
+  "salon": { "id": "9a631cbc8944c1b7d88f11d6ad96eb1a", "spot": [30.7, 37.7] },
+  "calendrier": { "id": "bbdaa2b35b8144a8295ad9d1664accd3", "spot": [78.9, 67.6] },
+  "dossiers": { "id": "48a653778eac5af1e4f775a516c8179d", "spot": [71, 45.4] },
+  "bagage": { "id": "dc6f959e73ee0c6f62a4068cc90dd249", "spot": [73.8, 50] }
+}
