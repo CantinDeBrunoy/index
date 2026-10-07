@@ -21,9 +21,9 @@ const BG = {
   passeport: "#0E1018", dossiers: "#E6D5B8", bagage: "#121522",
 };
 // Boucles plus longues là où un tour complet doit rester lent (le globe) : [images, durée, qualité].
-// La carte du monde est riche en détails : 15 images/s et une qualité plus basse la gardent légère.
+// La carte du monde est riche en détails : 9 images/s et une qualité plus basse la gardent légère (2,1 Mo).
 // Le passeport : le tampon s'encre, traverse, tamponne et revient ; 6 s pour que le geste reste posé.
-const LOOPS = { terre: [120, 8000, 60], passeport: [120, 6000, 72] };
+const LOOPS = { terre: [72, 8000, 45], passeport: [120, 6000, 72] };
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".glb": "model/gltf-binary", ".geojson": "application/json" };
 const server = createServer(async (req, res) => {
