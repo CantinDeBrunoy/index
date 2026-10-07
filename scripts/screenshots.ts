@@ -28,36 +28,12 @@ interface Target {
   prepare?: (context: BrowserContext, page: Page) => Promise<void>;
 }
 
-/** gym-picker sans clé TomTom : position fixée à Brunoy et réponse de /api/etas simulée. */
-async function mockGymPicker(context: BrowserContext, page: Page) {
-  await context.grantPermissions(["geolocation"]);
-  await context.setGeolocation({ latitude: 48.6977, longitude: 2.5024 });
-  const leg = (min: number, traffic: number, km: number) => ({
-    durationSec: min * 60,
-    trafficDelaySec: traffic * 60,
-    distanceM: km * 1000,
-  });
-  await page.route("**/api/etas", (route) =>
-    route.fulfill({
-      json: {
-        computedAt: new Date().toISOString(),
-        etas: [
-          { gymId: "montgeron", leg: leg(9, 1, 6.2) },
-          { gymId: "boussy", leg: leg(11, 0, 5.1) },
-          { gymId: "brie", leg: leg(16, 3, 11.8) },
-          { gymId: "lieusaint", leg: leg(19, 4, 14.3) },
-        ],
-      },
-    }),
-  );
-}
-
+// gym-picker (ses salles) et Hublot (les vols surveillés) affichent des données personnelles :
+// pas de capture tant qu'ils n'ont pas de mode démo. Elles ont été retirées du dépôt et de son historique.
 const TARGETS: Target[] = [
   { slug: "magellan", dist: "apps/magellan/dist", settleMs: 8000 },
   { slug: "cancionero", dist: "apps/cancionero/dist", settleMs: 2500 },
   { slug: "tonalli", url: "https://teinte-du-jour-eight.vercel.app", settleMs: 3000 },
-  { slug: "gym-picker", dist: "apps/gym-picker/dist/client", settleMs: 2500, prepare: mockGymPicker },
-  { slug: "hublot", url: "https://cantindebrunoy.github.io/Hublot/", settleMs: 3000 },
 ];
 
 const VIEWPORTS = {
