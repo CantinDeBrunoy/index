@@ -21,11 +21,19 @@ RENDER_DIR="$PWD" REPO_DIR="$(git rev-parse --show-toplevel)" MODE=shot node voy
 
 - `node build-voyage.cjs` assemble `voyage.html` (le moteur de `anim.html` et les scènes de `voyage-scenes.js`).
 - `MODE=shot` rend une image fixe dans `check/` et affiche où tombe le point cliquable.
-- `MODE=encode` écrit la boucle animée dans `anim/`.
+- `MODE=encode` écrit la boucle animée WebP dans `anim/`.
+- `MODE=video` écrit la vidéo d'ordinateur dans `anim/`, en 2560 × 1440 à 24 images par seconde. L'encodage passe par WebCodecs dans Edge, et le fichier MP4 est assemblé par mp4-muxer (licence MIT, dans `vendor/`) :
+  - `CODEC=av01.0.12M.08 QP=32` donne l'AV1 à qualité constante, `<scène>-av1.mp4` ;
+  - `CODEC=avc1.640034 BITRATE=3000000` donne le H.264 de secours, `<scène>.mp4`, pour les navigateurs sans AV1 comme Safari sur la plupart des Mac.
+  - Les scènes chargées en mouvement sont encodées en H.264 à un débit plus élevé : `BITRATE=4000000` pour l'espace et le tourne-disque, `3500000` pour la route.
+  - La Terre est encodée à débit variable dans les deux formats (`RATE=variable BITRATE=3000000`). Toute la carte bouge, et la qualité constante donnait plus de 6 Mo.
 - `MOBILE=1` rend la version téléphone (780 × 760), cadrée par `BOXES` dans `voyage-render.mjs`.
 - `SIZE=1400x1260 SUFFIX=-apercu` rend un autre format. C'est ainsi qu'est fait le passeport de l'image de partage.
 
-Une boucle prête se copie dans `../public/voyage/` : `<scène>.webp` pour l'ordinateur, `<scène>-mobile.webp` pour le téléphone.
+Les fichiers prêts se copient dans `../public/voyage/` :
+- `<scène>-av1.mp4` et `<scène>.mp4` pour l'ordinateur ;
+- `<scène>-mobile.webp` pour le téléphone ;
+- `<scène>.webp`, la boucle d'ordinateur en 1280 × 720, quand le script est coupé.
 
 ## La maquette
 

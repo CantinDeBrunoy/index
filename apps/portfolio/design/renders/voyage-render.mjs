@@ -4,7 +4,7 @@
 //   MODE=encode → la boucle animée dans anim/<scène>-light-laiton.webp
 // Scènes en arguments ; FRAME (shot), FRAMES / LOOP_MS (encode, sinon réglage par scène).
 import { createServer } from "node:http";
-import { readFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join, extname, normalize } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -25,7 +25,7 @@ const BG = {
 // Le passeport : le tampon s'encre, traverse, tamponne et revient ; 6 s pour que le geste reste posé.
 const LOOPS = { terre: [72, 8000, 45], passeport: [120, 6000, 72] };
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".glb": "model/gltf-binary", ".geojson": "application/json" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".glb": "model/gltf-binary", ".geojson": "application/json" };
 const server = createServer(async (req, res) => {
   try {
     const rel = normalize(decodeURIComponent(new URL(req.url, "http://local").pathname)).replace(/^[\\/]+/, "");
@@ -59,7 +59,8 @@ if (process.env.AV) {
 // MOBILE=1 : rendus pour le voyage sur téléphone (scène de 390 × 380, rendue au double), cadrés par BOXES :
 // la zone de l'image d'ordinateur (fractions x0, y0, x1, y1) qui doit rester visible.
 // SIZE=LxH et SUFFIX : un autre format cadré de la même façon (l'image d'aperçu des partages, par exemple).
-const MOBILE = !!process.env.MOBILE || !!process.env.SIZE;
+// En vidéo (MODE=video), SIZE change seulement la définition : le cadrage reste celui de l'ordinateur.
+const MOBILE = !!process.env.MOBILE || (!!process.env.SIZE && MODE !== "video");
 const [MW, MH] = process.env.SIZE ? process.env.SIZE.split("x").map(Number) : [780, 760];
 const BOXES = {
   espace: [-0.04, 0.14, 0.84, 0.78],
@@ -80,7 +81,13 @@ if (process.env.BOX) BOXES[names[0]] = process.env.BOX.split(",").map(Number);
 const suffix = process.env.SUFFIX ?? (MOBILE ? "-mobile" : "");
 for (const name of names) {
   const t0 = Date.now();
-  await page.evaluate(([n, a, m, box]) => (m ? window.setupScene(n, "light", a, m[0], m[1], box) : window.setupScene(n, "light", a)), [name, ACCENT, MOBILE ? [MW, MH] : null, BOXES[name] ?? null]);
+  // Le format : téléphone (cadré par BOXES), vidéo d'ordinateur (2560 × 1440 par défaut, sans recadrage)
+  // ou l'image d'ordinateur habituelle (1280 × 720).
+  const size = MOBILE ? [MW, MH] : MODE === "video" ? (process.env.SIZE ? [MW, MH] : [2560, 1440]) : null;
+  await page.evaluate(
+    ([n, a, s, box]) => (s ? window.setupScene(n, "light", a, s[0], s[1], box) : window.setupScene(n, "light", a)),
+    [name, ACCENT, size, MOBILE ? (BOXES[name] ?? null) : null],
+  );
   // Caméra de mise au point : CAM="x,y,z,cx,cy,cz[,fov]".
   if (process.env.CAM) {
     const [x, y, z, cx, cy, cz, fov] = process.env.CAM.split(",").map(Number);
@@ -94,6 +101,18 @@ for (const name of names) {
   }
   if (MODE === "bounds") {
     for (const prefix of (process.env.PREFIX ?? "Group_").split(",")) console.log(prefix, JSON.stringify(await page.evaluate((p) => window.bounds(p), prefix)));
+  } else if (MODE === "video") {
+    // MP4 pour l'ordinateur : 2560 × 1440 par défaut (SIZE), 24 images/s, fond opaque de l'escale.
+    // QP (quantizer) : plus bas, plus net et plus lourd. CODEC : avc1.640034 (H.264) ou av01.0.12M.08 (AV1).
+    const [, LOOP] = LOOPS[name] ?? [96, 4000];
+    const fps = Number(process.env.FPS ?? 24);
+    const frames = Number(process.env.FRAMES ?? Math.round((Number(process.env.LOOP_MS ?? LOOP) / 1000) * fps));
+    const codec = process.env.CODEC ?? "avc1.640034";
+    await page.evaluate((hex) => window.setBackground(hex), BG[name] ?? "#888888");
+    const b64 = await page.evaluate((o) => window.encodeVideo(o), { frames, fps, codec, quantizer: Number(process.env.QP ?? 32), bitrate: Number(process.env.BITRATE ?? 3e6), rate: process.env.RATE });
+    const out = `${name}${process.env.SUFFIX ?? ""}${codec.startsWith("av01") ? "-av1" : ""}.mp4`;
+    await writeFile(join(dir, "anim", out), Buffer.from(b64, "base64"));
+    console.log(`✓ ${out}  ${frames} images  ${Math.round(Buffer.byteLength(b64, "base64") / 1024)} Ko  ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   } else if (MODE === "shot") {
     const [n] = LOOPS[name] ?? [96];
     const f = Number(process.env.FRAME ?? 0);

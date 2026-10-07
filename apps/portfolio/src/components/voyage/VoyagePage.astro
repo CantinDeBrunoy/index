@@ -114,14 +114,17 @@ function appOf(s: (typeof stops)[number]): { href: string; label: string; short:
         data-bg={START.bg}
         data-pal={START.palette}
         data-place={v.start}
-        data-img={`/voyage/${START.scene}.webp`}
         data-img-phone={`/voyage/${START.scene}-mobile.webp`}
         style={`--stop-bg: ${START.bg}`}
       >
         <div class="intro-scene">
+          <video class="scene scene--video" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true">
+            <source src={`/voyage/${START.scene}-av1.mp4`} type='video/mp4; codecs="av01.0.12M.08"' />
+            <source src={`/voyage/${START.scene}.mp4`} type='video/mp4; codecs="avc1.640034"' />
+          </video>
           <picture>
             <source media="(max-width: 700px)" srcset={`/voyage/${START.scene}-mobile.webp`} />
-            <img class="scene" src={`/voyage/${START.scene}.webp`} alt="" width="1280" height="720" fetchpriority="high" />
+            <img class="scene scene--still" src={`/voyage/${START.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
           </picture>
         </div>
         <div class="intro-shade" aria-hidden="true"></div>
@@ -164,14 +167,18 @@ function appOf(s: (typeof stops)[number]): { href: string; label: string; short:
               data-pal={s.palette}
               data-place={s.text.place}
               data-name={s.project.name}
-              data-img={`/voyage/${s.scene}.webp`}
               data-img-phone={`/voyage/${s.scene}-mobile.webp`}
               style={style}
             >
+              <p class="visually-hidden">{s.text.alt}</p>
               <div class="scene-box">
+                <video class="scene scene--video" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true">
+                  <source src={`/voyage/${s.scene}-av1.mp4`} type='video/mp4; codecs="av01.0.12M.08"' />
+                  <source src={`/voyage/${s.scene}.mp4`} type='video/mp4; codecs="avc1.640034"' />
+                </video>
                 <picture>
                   <source media="(max-width: 700px)" srcset={`/voyage/${s.scene}-mobile.webp`} />
-                  <img class="scene" src={`/voyage/${s.scene}.webp`} alt={s.text.alt} width="1280" height="720" loading="lazy" decoding="async" />
+                  <img class="scene scene--still" src={`/voyage/${s.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
                 </picture>
                 <a class:list={["spot", { "spot--left": left }]} href={next} data-go={last ? undefined : s.n + 1}>
                   <span class="ring" aria-hidden="true" />
@@ -354,8 +361,28 @@ function appOf(s: (typeof stops)[number]): { href: string; label: string; short:
     display: block;
     width: 100%;
     height: 100%;
+    object-fit: cover;
     transform-origin: var(--x) var(--y);
     will-change: transform, opacity, filter;
+  }
+  /* Sur ordinateur, avec le script : la vidéo haute définition (2560 × 1440) remplace la boucle WebP,
+     qui ne se télécharge alors pas. Sur téléphone et sans script : la boucle WebP. */
+  .scene--video {
+    display: none;
+  }
+  @media (min-width: 701px) {
+    :global(.is-live) .scene--video {
+      display: block;
+    }
+    :global(.is-live) .scene--still {
+      display: none;
+    }
+    :global(.is-live) .stop:global(.no-video) .scene--video {
+      display: none;
+    }
+    :global(.is-live) .stop:global(.no-video) .scene--still {
+      display: block;
+    }
   }
 
   .spot {

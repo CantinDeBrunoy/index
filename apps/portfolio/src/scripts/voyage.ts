@@ -28,7 +28,9 @@ function start(root: HTMLElement) {
   const announce = root.querySelector<HTMLElement>("[data-announce]");
   const langLinks = [...root.querySelectorAll<HTMLAnchorElement>("[data-lang-link]")];
   const texts = JSON.parse(root.dataset.texts ?? "{}") as Texts;
-  const phone = matchMedia("(max-width: 700px)");
+  // Sur ordinateur, la scène est une vidéo haute définition ; sur téléphone, une boucle WebP.
+  const desktop = matchMedia("(min-width: 701px)");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)");
 
   const fromHash = () => {
     const n = Number(/^#escale-(\d+)$/.exec(location.hash)?.[1] ?? 0);
@@ -39,11 +41,38 @@ function start(root: HTMLElement) {
   let busy = false;
   let later = 0;
 
+  const videoOf = (i: number) => stops[i]?.querySelector<HTMLVideoElement>("video");
+
+  // Une vidéo illisible (fichier absent, format non pris en charge) : l'escale garde sa boucle WebP.
+  for (const video of root.querySelectorAll("video")) {
+    video.querySelector("source:last-of-type")?.addEventListener("error", () => video.closest("[data-stop]")?.classList.add("no-video"));
+  }
+
+  /** La vidéo de l'escale affichée tourne en boucle ; en mouvement réduit, elle reste sur sa première image. */
+  const play = (i: number) => {
+    const video = videoOf(i);
+    if (!video || !desktop.matches) return;
+    video.preload = "auto";
+    if (reduce.matches) {
+      if (video.readyState === HTMLMediaElement.HAVE_NOTHING) video.load();
+    } else void video.play().catch((error: unknown) => console.debug("voyage : lecture de la vidéo refusée", error));
+  };
+  const pause = (i: number) => {
+    const video = videoOf(i);
+    if (video && !video.paused) video.pause();
+  };
+
   /** Une scène chargée d'avance : elle est prête quand le voile se lève. */
   const preload = (i: number) => {
     const stop = stops[i];
-    const src = phone.matches ? stop?.dataset.imgPhone : stop?.dataset.img;
-    if (src) new Image().src = src;
+    if (!stop) return;
+    if (desktop.matches) {
+      const video = videoOf(i);
+      if (video && video.readyState === HTMLMediaElement.HAVE_NOTHING && video.preload !== "auto") {
+        video.preload = "auto";
+        video.load();
+      }
+    } else if (stop.dataset.imgPhone) new Image().src = stop.dataset.imgPhone;
   };
   /** L'escale suivante, une fois la scène affichée chargée, et pas en mode économie de données. */
   const preloadLater = (i: number) => {
@@ -74,8 +103,10 @@ function start(root: HTMLElement) {
     const hash = i === 0 ? "" : `#escale-${i}`;
     history.replaceState(null, "", `${location.pathname}${location.search}${hash}`);
     for (const link of langLinks) link.href = `${link.dataset.langLink}${hash}`;
-    // La scène affichée se charge tout de suite (elle est en différé dans la page), la suivante ensuite.
-    stop.querySelector("img")?.setAttribute("loading", "eager");
+    // La scène affichée se charge tout de suite (en différé dans la page), la suivante ensuite.
+    for (const k of stops.keys()) if (k !== i) pause(k);
+    play(i);
+    if (!desktop.matches) stop.querySelector("img")?.setAttribute("loading", "eager");
     preloadLater(i + 1);
   };
 
@@ -133,6 +164,11 @@ function start(root: HTMLElement) {
   });
 
   addEventListener("hashchange", () => go(fromHash(), true));
+  // Passage du téléphone à l'ordinateur (fenêtre redimensionnée) : la bonne scène pour la bonne taille.
+  desktop.addEventListener("change", () => (desktop.matches ? play(current) : pause(current)));
+  // Onglet ou fenêtre en arrière-plan : le navigateur met les vidéos muettes en pause ; elles repartent au retour.
+  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && play(current));
+  addEventListener("focus", () => play(current));
 }
 
 const root = document.querySelector<HTMLElement>("[data-voyage]");

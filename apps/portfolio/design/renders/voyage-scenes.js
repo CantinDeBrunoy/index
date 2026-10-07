@@ -1946,6 +1946,57 @@ window.setupScene = (name, themeName, accent, w = 1280, h = 720, box = null) => 
   return true;
 };
 
+// Vidéo : une image de la boucle dessinée sur le canvas, que l'encodeur lit directement (sans PNG),
+// sur un fond opaque de la couleur de l'escale (la vidéo n'a pas de transparence).
+window.drawFrame = (i, n) => {
+  const phi = (Math.PI * 2 * i) / n;
+  const { scene, camera, obj, base, sway } = current;
+  obj.rotation.y = base + sway * Math.sin(phi);
+  obj.userData.animate?.(phi);
+  renderer.render(scene, camera);
+};
+window.setBackground = (hex) => renderer.setClearColor(new THREE.Color(hex), 1);
+
+// Encode la boucle en MP4 (WebCodecs, logiciel) : `quantizer` fixe la qualité, image par image.
+window.encodeVideo = async ({ frames, fps, codec, quantizer, bitrate, rate }) => {
+  const { Muxer, ArrayBufferTarget } = await import(new URL("vendor/mp4-muxer.mjs", location.href).href);
+  const { width, height } = canvas;
+  const muxer = new Muxer({
+    target: new ArrayBufferTarget(),
+    video: { codec: codec.startsWith("av01") ? "av1" : "avc", width, height, frameRate: fps },
+    fastStart: "in-memory",
+  });
+  let failure = null;
+  const encoder = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => (failure = e) });
+  encoder.configure({
+    codec,
+    width,
+    height,
+    framerate: fps,
+    // H.264 (OpenH264) n'a pas de qualité constante : débit variable autour de `bitrate`. L'AV1 peut faire
+    // de même (rate = "variable") pour une scène très détaillée, comme la Terre qui tourne.
+    ...(codec.startsWith("avc") || rate === "variable" ? { bitrateMode: "variable", bitrate } : { bitrateMode: "quantizer" }),
+    latencyMode: "quality",
+    hardwareAcceleration: "prefer-software",
+    ...(codec.startsWith("avc") ? { avc: { format: "avc" } } : {}),
+  });
+  const perFrame = rate === "variable" ? {} : codec.startsWith("av01") ? { av1: { quantizer } } : codec.startsWith("vp09") ? { vp9: { quantizer } } : {};
+  for (let i = 0; i < frames; i++) {
+    window.drawFrame(i, frames);
+    const frame = new VideoFrame(canvas, { timestamp: Math.round((i * 1e6) / fps), duration: Math.round(1e6 / fps) });
+    encoder.encode(frame, { keyFrame: i === 0, ...perFrame });
+    frame.close();
+    while (encoder.encodeQueueSize > 2) await new Promise((r) => encoder.addEventListener("dequeue", r, { once: true }));
+    if (failure) throw failure;
+  }
+  await encoder.flush();
+  muxer.finalize();
+  const bytes = new Uint8Array(muxer.target.buffer);
+  let binary = "";
+  for (let k = 0; k < bytes.length; k += 0x8000) binary += String.fromCharCode(...bytes.subarray(k, k + 0x8000));
+  return btoa(binary);
+};
+
 // Mise au point : bornes, dans le monde, des maillages dont le nom commence par `prefix`.
 window.bounds = (prefix) => {
   current.scene.updateMatrixWorld(true);
