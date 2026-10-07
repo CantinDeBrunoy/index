@@ -7,6 +7,8 @@
   "exports": {
     "./tokens.css": "./src/tokens.css",
     "./fonts.css": "./src/fonts.css",
+    "./voyage.css": "./src/voyage.css",
+    "./fonts-voyage.css": "./src/fonts-voyage.css",
     "./fonts/*": "./fonts/*",
     "./index-bar": {
       "types": "./src/index-bar.d.ts",

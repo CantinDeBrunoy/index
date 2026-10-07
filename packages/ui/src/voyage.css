@@ -1,0 +1,75 @@
+/*
+ * Charte du voyage : la typographie, le laiton et quatre palettes.
+ * Une palette s'applique à un bloc par sa classe (.pal-night, .pal-day, .pal-dusk, .pal-kraft) ;
+ * les composants ne lisent que ses variables : --ink, --muted, --card, --line, --brass,
+ * --brass-text (le laiton des petits textes, assez contrasté), --halo (l'anneau autour des points
+ * cliquables) et --on-brass (le texte posé sur le laiton).
+ */
+
+:root {
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* Les deux fonds du site : la nuit (départ, carnet, hub) et le papier crème des pages de lecture. */
+  --night: #0e1018;
+  --paper: #f6f1e9;
+
+  --radius-s: 10px;
+  --radius-m: 16px;
+  --radius-l: 20px;
+  --radius-pill: 999px;
+
+  /* Les statuts en direct du hub. */
+  --live-on: #9cc59a;
+  --live-asleep: #e3b064;
+  --live-off: #d98c7a;
+}
+
+/* La nuit : le départ, le carnet, le hub, les en-têtes d'« À propos ». */
+.pal-night {
+  --ink: #f1e8da;
+  --muted: #b3aa9c;
+  --card: #171a24;
+  --line: #2b3040;
+  --brass: #d9b475;
+  --brass-text: #d9b475;
+  --halo: rgba(23, 26, 36, 0.6);
+  --on-brass: #0b0c14;
+}
+
+/* Le jour : sur le laiton, l'encre (4,8:1) plutôt que la crème (3:1, trop faible pour un petit texte). */
+.pal-day {
+  --ink: #241e18;
+  --muted: #6a5f52;
+  --card: #fbf7f0;
+  --line: #e3d8c8;
+  --brass: #b08a4f;
+  --brass-text: #8a6a35;
+  --halo: rgba(251, 247, 240, 0.72);
+  --on-brass: #241e18;
+}
+
+/* Le soir (Tonalli, fond mauve) : un gris plus sombre pour que les petits textes restent lisibles. */
+.pal-dusk {
+  --ink: #241e18;
+  --muted: #5a4b4e;
+  --card: #fbf7f0;
+  --line: #e3d8c8;
+  --brass: #b08a4f;
+  --brass-text: #8a6a35;
+  --halo: rgba(251, 247, 240, 0.72);
+  --on-brass: #241e18;
+}
+
+/* Le kraft des dossiers d'INDEX : gris et laiton plus sombres, pour ce fond plus soutenu. */
+.pal-kraft {
+  --ink: #241e18;
+  --muted: #5a4b40;
+  --card: #fbf7f0;
+  --line: #e3d8c8;
+  --brass: #b08a4f;
+  --brass-text: #6e5226;
+  --halo: rgba(251, 247, 240, 0.72);
+  --on-brass: #241e18;
+}

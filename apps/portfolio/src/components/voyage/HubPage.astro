@@ -1,0 +1,554 @@
+---
+/**
+ * « Les apps », le hub : un tableau des départs. Une ligne par app (numéro en volets, destination,
+ * porte, statut, bouton pour l'ouvrir), puis les archives, qui n'ont pas de départ.
+ * Sur ordinateur, un vrai tableau ; sous 700 px, une liste compacte qui tient dans l'écran.
+ * Le statut des apps sondées arrive de /api/status (scripts/hub-status.ts).
+ */
+import { getProject, projects, type Project } from "@index/projects";
+import { FICHE_OF, GATES, HUB, NAMES_EN, type FixedState } from "../../data/hub";
+import { fichePath, ROUTES, type Lang } from "../../i18n/voyage";
+import Voyage from "../../layouts/Voyage.astro";
+import Colophon from "./Colophon.astro";
+import SiteHeader from "./SiteHeader.astro";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const h = HUB[lang];
+const alternates = { fr: ROUTES.apps.fr, en: ROUTES.apps.en };
+
+const live = projects.filter((p) => p.kind !== "archive");
+const archives = projects.filter((p) => p.kind === "archive");
+
+const nameOf = (p: Project) => (lang === "en" ? (NAMES_EN[p.slug] ?? p.name) : p.name);
+const ficheOf = (p: Project) => fichePath(lang, getProject(FICHE_OF[p.slug] ?? p.slug) ?? p);
+
+/** Ce que montre une ligne : un statut sondé en direct, ou un état fixe. */
+function stateOf(p: Project): { live: true } | { live: false; state: FixedState } {
+  if (p.slug === "index") return { live: false, state: "here" };
+  if (p.kind === "desktop") return { live: false, state: "download" };
+  if (p.kind === "archive") return { live: false, state: "archive" };
+  if (!p.links.demo) return { live: false, state: "soon" };
+  return p.monitors.length > 0 ? { live: true } : { live: false, state: "soon" };
+}
+---
+
+<Voyage lang={lang} title={h.pageTitle} description={h.description} alternates={alternates} palette="night">
+  <div class="wrap">
+    <SiteHeader lang={lang} current="apps" alternates={alternates} />
+    <main id="contenu">
+      <section class="intro">
+        <p class="label">{h.label}</p>
+        <h1 class="serif" set:html={h.title} />
+        <p class="intro__text intro__text--long">{h.intro}</p>
+        <p class="intro__text intro__text--short">{h.introShort}</p>
+      </section>
+
+      <section
+        class="board"
+        aria-labelledby="depart-titre"
+        data-board
+        data-checking={h.checking}
+        data-checked-now={h.checkedNow}
+        data-checked-ago={h.checkedAgo}
+        data-unavailable={h.unavailable}
+        data-states={JSON.stringify(h.states)}
+      >
+        <div class="board__top">
+          <h2 id="depart-titre">{h.board}</h2>
+          <p data-checked aria-live="polite">{h.checking}</p>
+        </div>
+        <table class="dep">
+          <colgroup><col class="c-num" /><col class="c-app" /><col /><col class="c-gate" /><col class="c-stat" /><col class="c-act" /></colgroup>
+          <thead>
+            <tr>
+              <th scope="col">{h.cols.num}</th>
+              <th scope="col">{h.cols.app}</th>
+              <th scope="col">{h.cols.dest}</th>
+              <th scope="col">{h.cols.gate}</th>
+              <th scope="col">{h.cols.status}</th>
+              <th scope="col"><span class="visually-hidden">{h.cols.action}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              live.map((p) => {
+                const s = stateOf(p);
+                const { demo, download, code } = p.links;
+                return (
+                  <tr>
+                    <td class="num">
+                      <span class="flap" aria-hidden="true">{[...p.number].map((c) => <i>{c}</i>)}</span>
+                      <span class="visually-hidden">{p.number}</span>
+                    </td>
+                    <td class="app"><a href={ficheOf(p)}>{nameOf(p)}</a></td>
+                    <td class="dest">{h.dest[p.slug]}</td>
+                    <td class="gate">{GATES[p.slug] ?? "—"}</td>
+                    <td class="stat">
+                      {s.live ? (
+                        <span class="st" data-live={p.slug} data-state="pending">{h.states.pending}</span>
+                      ) : (
+                        <span class="st" data-state={s.state}>{h.states[s.state]}</span>
+                      )}
+                    </td>
+                    <td class="act">
+                      {s.live ? (
+                        <a class="go" href={demo}>{h.open}</a>
+                      ) : s.state === "download" && download ? (
+                        <a class="go" href={download}>{h.download}</a>
+                      ) : s.state === "here" && code ? (
+                        <a class="pill" href={code}>{h.code}</a>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })
+            }
+          </tbody>
+        </table>
+
+        <div class="archives">
+          <h3 class="archives__title">{h.archives}</h3>
+          <table class="dep dep--old">
+            <colgroup><col class="c-num" /><col class="c-app" /><col /><col class="c-gate" /><col class="c-stat" /><col class="c-act" /></colgroup>
+            <tbody>
+              {
+                archives.map((p) => (
+                  <tr>
+                    <td class="num">
+                      <span class="flap" aria-hidden="true">{[...p.number].map((c) => <i>{c}</i>)}</span>
+                      <span class="visually-hidden">{p.number}</span>
+                    </td>
+                    <td class="app"><a href={ficheOf(p)}>{nameOf(p)}</a></td>
+                    <td class="dest">{h.dest[p.slug]}</td>
+                    <td class="gate">—</td>
+                    <td class="stat"><span class="st" data-state="archive">{h.states.archive}</span></td>
+                    <td class="act"><a class="link" href={ficheOf(p)}>{h.fiche}</a></td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+        <a class="archives-link" href={ROUTES.projets[lang]}>{h.archivesShort}</a>
+      </section>
+
+      <ul class="legend">
+        {
+          h.legend.map(([state, text]) => (
+            <li>
+              <span class="dot" data-state={state} aria-hidden="true" />
+              {text}
+            </li>
+          ))
+        }
+      </ul>
+    </main>
+    <Colophon lang={lang} />
+  </div>
+</Voyage>
+
+<script>
+  import "../../scripts/hub-status";
+</script>
+
+<style>
+  .intro {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 780px;
+    padding: 40px 0;
+  }
+  .intro h1 {
+    margin: 0;
+    font-size: clamp(56px, 7vw, 104px);
+    line-height: 0.95;
+  }
+  .intro__text {
+    margin: 0;
+    color: var(--muted);
+    font-size: 19px;
+    line-height: 1.6;
+  }
+  .intro__text--short {
+    display: none;
+  }
+
+  .board {
+    padding: 6px 28px 14px;
+    border-radius: 22px;
+    border: 1px solid #262a36;
+    background: #15171f;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  }
+  .board__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 0 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .board__top h2,
+  .board__top p {
+    margin: 0;
+    font: inherit;
+  }
+  .board__top h2 {
+    font-weight: 500;
+    color: var(--brass-text);
+  }
+
+  .dep {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .c-num {
+    width: 104px;
+  }
+  .c-app {
+    width: 210px;
+  }
+  .c-gate {
+    width: 130px;
+  }
+  .c-stat,
+  .c-act {
+    width: 170px;
+  }
+  .dep th {
+    padding: 12px 12px 10px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+  .dep td {
+    padding: 13px 12px;
+    border-top: 1px solid var(--line);
+    vertical-align: middle;
+  }
+
+  /* Le numéro en volets, comme sur un tableau d'aéroport : un trait sombre coupe chaque chiffre. */
+  .flap {
+    display: inline-flex;
+    gap: 3px;
+  }
+  .flap i {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 32px;
+    border-radius: 5px;
+    background: #0b0c12;
+    box-shadow: inset 0 0 0 1px #232634;
+    font-family: var(--font-mono);
+    font-size: 17px;
+    font-style: normal;
+  }
+  .flap i::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  .app a {
+    font-family: var(--font-serif);
+    font-size: 30px;
+    line-height: 1;
+    text-decoration: none;
+  }
+  .app a:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+  }
+  .dest {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .gate {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .act {
+    text-align: right;
+  }
+  .act .go,
+  .act .pill {
+    min-height: 42px;
+    padding: 0 20px;
+    font-size: 14px;
+  }
+
+  .st {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--muted);
+  }
+  .st::before,
+  .dot {
+    content: "";
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  [data-state="online"] {
+    color: var(--live-on);
+  }
+  .st[data-state="online"]::before {
+    box-shadow: 0 0 0 4px rgba(156, 197, 154, 0.16);
+    animation: live 2.4s ease-in-out infinite;
+  }
+  [data-state="asleep"] {
+    color: var(--live-asleep);
+  }
+  [data-state="offline"] {
+    color: var(--live-off);
+  }
+  [data-state="download"],
+  [data-state="here"] {
+    color: var(--brass-text);
+  }
+  .st[data-state="pending"]::before,
+  .st[data-state="unknown"]::before,
+  .st[data-state="soon"]::before,
+  .st[data-state="archive"]::before {
+    border: 1.5px solid currentColor;
+    background: transparent;
+  }
+  @keyframes live {
+    50% {
+      box-shadow: 0 0 0 7px rgba(156, 197, 154, 0);
+    }
+  }
+
+  .archives__title {
+    margin: 22px 0 0;
+    padding: 0 12px 4px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .dep--old .app a {
+    color: var(--muted);
+    font-size: 24px;
+  }
+  .archives-link {
+    display: none;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    margin: 20px 6px 0;
+    padding: 0 0 40px;
+    color: var(--muted);
+    font-size: 14px;
+    list-style: none;
+  }
+  .legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Sur tablette et petit écran d'ordinateur : la porte s'efface, les colonnes se resserrent. */
+  @media (max-width: 1100px) {
+    .board {
+      padding-inline: 20px;
+    }
+    .c-gate,
+    .dep th:nth-child(4),
+    .dep .gate {
+      display: none;
+    }
+    .c-num {
+      width: 96px;
+    }
+    .c-app {
+      width: 170px;
+    }
+    .c-stat,
+    .c-act {
+      width: 150px;
+    }
+  }
+
+  /* Sous 900 px : le tableau devient une liste, chaque ligne sur deux rangs, et les archives se
+     résument à un lien vers le carnet. */
+  @media (max-width: 900px) {
+    .dep {
+      table-layout: auto;
+    }
+    .dep colgroup,
+    .dep thead {
+      display: none;
+    }
+    .dep,
+    .dep tbody {
+      display: block;
+    }
+    .dep tr {
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr) auto;
+      grid-template-areas:
+        "num app app act"
+        "num stat dest dest";
+      align-items: center;
+      gap: 3px 12px;
+      padding: 10px 0;
+      border-top: 1px solid var(--line);
+    }
+    .dep td {
+      display: block;
+      padding: 0;
+      border: 0;
+    }
+    .num {
+      grid-area: num;
+    }
+    .app {
+      grid-area: app;
+    }
+    .app a {
+      font-size: 26px;
+    }
+    .stat {
+      grid-area: stat;
+    }
+    .dest {
+      grid-area: dest;
+      overflow: hidden;
+      font-size: 13px;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .act {
+      grid-area: act;
+    }
+    .act .go,
+    .act .pill {
+      min-height: 38px;
+      padding: 0 16px;
+      font-size: 13px;
+    }
+    .st {
+      gap: 6px;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+    .archives {
+      display: none;
+    }
+    .archives-link {
+      display: block;
+      padding: 14px 0 6px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      text-decoration: none;
+    }
+  }
+
+  /* Sur téléphone : tout se resserre pour que le tableau tienne dans l'écran. */
+  @media (max-width: 700px) {
+    .intro {
+      gap: 8px;
+      padding: 2px 0 14px;
+    }
+    .intro h1 {
+      font-size: 42px;
+    }
+    .intro__text {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .intro__text--long {
+      display: none;
+    }
+    .intro__text--short {
+      display: block;
+    }
+    .board {
+      padding: 0 14px 4px;
+      border-radius: 18px;
+    }
+    .board__top {
+      padding: 12px 0 8px;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+    }
+    .dep tr {
+      gap: 3px 10px;
+      padding: 8px 0;
+    }
+    .app a {
+      font-size: 24px;
+    }
+    .dest {
+      font-size: 12px;
+    }
+    .act .go,
+    .act .pill {
+      min-height: 36px;
+      padding: 0 14px;
+    }
+    .flap {
+      gap: 2px;
+    }
+    .flap i {
+      width: 16px;
+      height: 24px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .st {
+      font-size: 10px;
+    }
+    .st::before {
+      width: 7px;
+      height: 7px;
+    }
+    .legend {
+      display: none;
+    }
+  }
+</style>
