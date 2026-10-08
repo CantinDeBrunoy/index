@@ -51,8 +51,8 @@ const ticker = tickerText(h.ticker, apps, lang);
 
 <Voyage lang={lang} title={h.pageTitle} description={h.description} alternates={alternates} palette="night" background="#08080a">
   <link slot="head" rel="preload" href={dotoUrl} as="font" type="font/woff2" crossorigin />
+  <SiteHeader lang={lang} current="apps" alternates={alternates} />
   <div class="wrap">
-    <SiteHeader lang={lang} current="apps" alternates={alternates} />
     <main id="contenu">
       <section
         class="panel"

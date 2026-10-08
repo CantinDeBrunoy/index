@@ -10,10 +10,17 @@
   box-sizing: border-box;
 }
 
+/* Pas de barre de défilement : le voyage tient dans l'écran, les autres pages défilent ; sans
+   elle, passer d'un onglet à l'autre ne décale plus la page. La molette, le clavier et le doigt
+   défilent toujours. */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   background: var(--night);
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  display: none;
 }
 
 body {
@@ -151,7 +158,8 @@ a {
   color: var(--brass-text);
 }
 
-/* — En-tête : la marque, les onglets, la langue ; sur téléphone, la langue et un menu ☰ — */
+/* — En-tête : la marque, les onglets, la langue ; sur téléphone, la langue et un menu ☰ —
+   Pleine largeur, au même bord que celui du voyage : d'un onglet à l'autre, il ne bouge pas. */
 
 .site-header {
   display: flex;
@@ -159,7 +167,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 22px 0;
+  padding: 22px 40px;
 }
 
 .brand {
@@ -384,7 +392,7 @@ a {
 @media (max-width: 700px) {
   .site-header {
     flex-wrap: nowrap;
-    padding: 8px 0;
+    padding: 8px 16px;
   }
   .brand__name {
     font-size: 28px;

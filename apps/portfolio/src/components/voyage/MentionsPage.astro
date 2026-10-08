@@ -23,8 +23,8 @@ const T = (text: string) => typo(lang, text);
 
 <Voyage lang={lang} title={g.pageTitle} description={g.description} alternates={alternates} palette="day">
   <div class="hero pal-night">
+    <SiteHeader lang={lang} alternates={alternates} />
     <div class="wrap-read">
-      <SiteHeader lang={lang} alternates={alternates} />
       <div class="hero__text">
         <p class="label">{g.label}</p>
         <h1 class="serif" set:html={g.title} />

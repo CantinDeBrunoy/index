@@ -39,8 +39,8 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
 ---
 
 <Voyage lang={lang} title={c.pageTitle} description={c.description} alternates={alternates} palette="night">
+  <SiteHeader lang={lang} current="projets" alternates={alternates} />
   <div class="wrap">
-    <SiteHeader lang={lang} current="projets" alternates={alternates} />
     <main id="contenu">
       <section class="intro">
         <p class="label">{c.label}</p>

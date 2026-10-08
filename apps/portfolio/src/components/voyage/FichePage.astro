@@ -74,24 +74,24 @@ const T = (text: string) => typo(lang, text);
 
 <Voyage lang={lang} title={project.name} description={text.pitch} alternates={alternates} type="article" palette="day">
   <div class={`hero pal-${stop.palette}`} style={`--stop-bg: ${stop.bg}`}>
-    <div class="wrap-read">
-      <SiteHeader lang={lang} current="projets" exact={false} alternates={alternates}>
-        <nav class="itin" aria-label={f.itinAria}>
-          <span class="itin__of">{fill(f.stopOf, { i: n, n: STOPS.length })}</span>
-          <ol class="dots">
-            {
-              itinerary.map((p, k) => (
-                <li>
-                  <a class:list={["dot", { done: k < i }]} href={fichePath(lang, p)} aria-label={p.name} aria-current={k === i ? "page" : undefined}>
-                    <span />
-                  </a>
-                </li>
-              ))
-            }
-          </ol>
-        </nav>
-      </SiteHeader>
+    <SiteHeader lang={lang} current="projets" exact={false} alternates={alternates}>
+      <nav class="itin" aria-label={f.itinAria}>
+        <span class="itin__of">{fill(f.stopOf, { i: n, n: STOPS.length })}</span>
+        <ol class="dots">
+          {
+            itinerary.map((p, k) => (
+              <li>
+                <a class:list={["dot", { done: k < i }]} href={fichePath(lang, p)} aria-label={p.name} aria-current={k === i ? "page" : undefined}>
+                  <span />
+                </a>
+              </li>
+            ))
+          }
+        </ol>
+      </nav>
+    </SiteHeader>
 
+    <div class="wrap-read">
       <div class="hero__body">
         <div class="hero__text">
           <a class="link hero__back" href={`${ROUTES.voyage[lang]}#escale-${n}`}>{f.back}</a>

@@ -39,8 +39,8 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
 
 <Voyage lang={lang} title={a.pageTitle} description={a.description} alternates={alternates} palette="day">
   <div class="hero pal-night">
+    <SiteHeader lang={lang} current="apropos" alternates={alternates} />
     <div class="wrap-read">
-      <SiteHeader lang={lang} current="apropos" alternates={alternates} />
       <div class="hero__body">
         <div class="hero__text">
           <p class="label">{a.label}</p>
