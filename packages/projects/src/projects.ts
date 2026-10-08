@@ -14,11 +14,8 @@ import type { ProjectInput } from "./types.ts";
 export const GITHUB_URL = "https://github.com/CantinDeBrunoy";
 export const MONOREPO_URL = `${GITHUB_URL}/index`;
 
-/**
- * Sous-domaine workers.dev du compte Cloudflare (gym-picker.<ici>.workers.dev).
- * À remplir au premier déploiement : wrangler affiche l'URL complète.
- */
-export const WORKERS_SUBDOMAIN: string | undefined = undefined;
+/** Sous-domaine workers.dev du compte Cloudflare (gym-picker.<ici>.workers.dev). */
+export const WORKERS_SUBDOMAIN: string | undefined = "cantin-roquier";
 
 /** URL Vercel de Cancionero (dashboard Vercel → projet → Domains). À remplir. */
 const CANCIONERO_URL: string | undefined = undefined;

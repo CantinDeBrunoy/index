@@ -42,15 +42,15 @@ const DUSK = { ...DAY, muted: "#5A4B4E" };
 // Le kraft des dossiers d'INDEX : gris et laiton plus sombres, pour rester lisibles sur ce fond plus soutenu.
 const KRAFT = { ...DAY, muted: "#5A4B40", brassText: "#6E5226" };
 // Les liens du panneau de détail, d'après packages/projects/src/projects.ts. « À brancher » : la démo
-// existe mais son adresse n'est connue qu'au déploiement (WORKERS_SUBDOMAIN, URL Vercel de Cancionero).
+// existe mais son adresse n'est pas encore reportée (URL Vercel de Cancionero).
 const PENDING = "#a-brancher";
 const DEMO = {
   "Galaxy Escape": null,
-  Magellan: PENDING,
+  Magellan: "https://magellan.cantin-roquier.workers.dev",
   Hublot: "https://cantindebrunoy.github.io/Hublot/",
   "Métro Pathfinder": null,
   "Visit Match": null,
-  "gym-picker": PENDING,
+  "gym-picker": "https://gym-picker.cantin-roquier.workers.dev",
   Mithril: "https://github.com/CantinDeBrunoy/Mithril/releases",
   Cancionero: PENDING,
   Tonalli: "https://teinte-du-jour-eight.vercel.app",

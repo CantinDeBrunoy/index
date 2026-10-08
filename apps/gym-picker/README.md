@@ -69,7 +69,7 @@ la clé dans le tableau de bord Cloudflare : Workers & Pages › gym-picker ›
 Settings › Variables and Secrets. Le « Secrets Store » du compte est un autre
 endroit, que le Worker ne lit pas.
 
-L'app est servie en HTTPS sur `https://gym-picker.<ton-sous-domaine>.workers.dev`.
+L'app est servie en HTTPS sur https://gym-picker.cantin-roquier.workers.dev.
 Le HTTPS est obligatoire : sans lui, le navigateur refuse la géolocalisation.
 
 ## Installer sur l'iPhone

@@ -93,15 +93,15 @@ Les variables d'environnement de chaque app sont décrites dans son `.env.exampl
 
 | N° | App | Hébergement | URL | Déclenchement |
 |---|---|---|---|---|
-| — | portfolio | Cloudflare Workers `index` | `https://index.<sous-domaine>.workers.dev` | `deploy-portfolio.yml` |
-| 005 | magellan | Cloudflare Workers `magellan` | `https://magellan.<sous-domaine>.workers.dev` | `deploy-magellan.yml` |
+| — | portfolio | Cloudflare Workers `index` | https://index.cantin-roquier.workers.dev | `deploy-portfolio.yml` |
+| 005 | magellan | Cloudflare Workers `magellan` | https://magellan.cantin-roquier.workers.dev | `deploy-magellan.yml` |
 | 006 | cancionero | Vercel (projet existant) | à reporter dans `projects.ts` | intégration Git Vercel, *Root Directory* `apps/cancionero` |
 | 007 | mithril | GitHub Releases (tags `mithril-v*`) | — | à la main (skill `publier-release`), CI `mithril.yml` |
 | 008 | tonalli | Vercel + Supabase | https://teinte-du-jour-eight.vercel.app | intégration Git Vercel, *Root Directory* `apps/tonalli` |
-| 009 | gym-picker | Cloudflare Workers `gym-picker` | `https://gym-picker.<sous-domaine>.workers.dev` | `deploy-gym-picker.yml` |
-| 010 | hublot | GitHub Actions (cron) + Cloudflare Workers `hublot` (page) | `https://hublot.<sous-domaine>.workers.dev` après la bascule | `hublot-check.yml`, `deploy-hublot-page.yml` |
+| 009 | gym-picker | Cloudflare Workers `gym-picker` | https://gym-picker.cantin-roquier.workers.dev | `deploy-gym-picker.yml` |
+| 010 | hublot | GitHub Actions (cron) + Cloudflare Workers `hublot` (page) | https://hublot.cantin-roquier.workers.dev après la bascule | `hublot-check.yml`, `deploy-hublot-page.yml` |
 
-Le sous-domaine workers.dev se renseigne une fois dans `WORKERS_SUBDOMAIN` (`packages/projects/src/projects.ts`). Toutes les URLs, le statut live et l'onglet « ← Index » en découlent.
+Le sous-domaine workers.dev (`cantin-roquier`) est renseigné une seule fois, dans `WORKERS_SUBDOMAIN` (`packages/projects/src/projects.ts`). Toutes les URLs, le statut live et l'onglet « ← Index » en découlent.
 
 Les déploiements Cloudflare passent par le workflow réutilisable `_deploy-cloudflare.yml` : build Turborepo de l'app et de ses packages, puis `wrangler deploy`. Chaque `deploy-<app>.yml` ne se déclenche que quand `apps/<app>/`, `packages/` ou le lockfile changent sur `main`.
 
