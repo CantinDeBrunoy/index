@@ -74,6 +74,13 @@ a {
   padding-inline: clamp(16px, 4vw, 64px);
 }
 
+/* Les pages de lecture (les fiches, « À propos ») : un peu plus étroites. */
+.wrap-read {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: clamp(20px, 4vw, 48px);
+}
+
 /* — Boutons et liens — */
 
 .pill {

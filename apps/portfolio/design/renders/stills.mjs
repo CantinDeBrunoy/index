@@ -4,6 +4,8 @@
 //   <scène>.webp         1280 × 720, l'image d'ordinateur
 //   <scène>-640.webp     640 × 360, la vignette
 //   <scène>-mobile.webp  780 × 760, l'image du téléphone
+// Et les objets d'« À propos » (le passeport, la montagne, les livres, les gants) : leur image fixe, à la
+// taille de la boucle, pour le mouvement réduit et le téléphone.
 // node stills.mjs   (sharp vient du portfolio)
 import { mkdirSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -26,4 +28,9 @@ for (const scene of scenes) {
   await first(`${scene}.webp`).resize({ width: 640 }).webp({ quality: 80 }).toFile(join(out, `${scene}-640.webp`));
   await first(`${scene}-mobile.webp`).webp({ quality: 78 }).toFile(join(out, `${scene}-mobile.webp`));
   console.log(`✓ ${scene}`);
+}
+
+for (const object of ["passeport", "randonnee", "book", "gloves"]) {
+  await first(`${object}.webp`).webp({ quality: 80 }).toFile(join(out, `${object}.webp`));
+  console.log(`✓ ${object}`);
 }

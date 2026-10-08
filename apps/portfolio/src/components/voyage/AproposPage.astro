@@ -1,0 +1,777 @@
+---
+/**
+ * « À propos », le passeport. L'en-tête de nuit, comme le départ et le carnet : le passeport ouvert sur le
+ * bureau, que le tampon de laiton vise. Puis, sur papier crème : quelques mots, l'itinéraire (une frise sur
+ * ordinateur, puis le détail de chaque voie), les langues en visas, la façon de faire, le sac à outils, et ce
+ * qui se passe en dehors du code. Les textes et la frise : data/apropos.ts.
+ * Les objets tournent en boucle sur ordinateur ; sur téléphone et en mouvement réduit, leur image fixe.
+ */
+import { getProject, GITHUB_URL } from "@index/projects";
+import { APROPOS, AWAY, NOW, ROUTE, VISAS } from "../../data/apropos";
+import { EMAIL, fichePath, ROUTES, STRINGS, typo, type Lang } from "../../i18n/voyage";
+import Voyage from "../../layouts/Voyage.astro";
+import Colophon from "./Colophon.astro";
+import SiteHeader from "./SiteHeader.astro";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const a = APROPOS[lang];
+const R = a.route;
+const alternates = { fr: ROUTES.apropos.fr, en: ROUTES.apropos.en };
+const T = (text: string) => typo(lang, text);
+
+// La frise : une colonne par année, chaque date placée en % de l'axe.
+const [from, to] = ROUTE.axis;
+const years = Array.from({ length: to - from }, (_, k) => from + k);
+const pct = (v: number) => +(((v - from) / (to - from)) * 100).toFixed(3);
+const span = (start: number, end: number) => `left: ${pct(start)}%; width: ${(pct(end) - pct(start)).toFixed(3)}%`;
+const cell = `background-size: ${(100 / (to - from)).toFixed(3)}% 100%`;
+const lanes = R.lanes.map((label, lane) => ({ label, bars: ROUTE.bars.filter((b) => b.lane === lane) }));
+
+const legs = [R.school, R.work];
+const visas = VISAS.map((v, k) => ({ ...v, ...a.langs[k]! }));
+const away = AWAY.map((object, k) => ({ object, ...a.away[k]! }));
+const still = (name: string) => `/voyage/stills/${name}.webp`;
+---
+
+<Voyage lang={lang} title={a.pageTitle} description={a.description} alternates={alternates} palette="day">
+  <div class="hero pal-night">
+    <div class="wrap-read">
+      <SiteHeader lang={lang} current="apropos" alternates={alternates} />
+      <div class="hero__body">
+        <div class="hero__text">
+          <p class="label">{a.label}</p>
+          <h1 class="serif">Cantin Roquier</h1>
+          <p class="hero__who">{a.role}<br />{a.where}</p>
+          <p class="hero__lead">{T(a.lead)}</p>
+          <p class="hero__status"><span aria-hidden="true"></span>{a.status}</p>
+          <div class="hero__links">
+            <a class="go" href={`mailto:${EMAIL}`}>{a.write}</a>
+            {
+              a.cv && (
+                <a class="pill" href={a.cv.href} download={a.cv.file}>
+                  {a.cv.label}
+                </a>
+              )
+            }
+            <a class="link" href={a.linkedin} target="_blank" rel="noopener">LinkedIn ↗</a>
+            <a class="link" href={GITHUB_URL} target="_blank" rel="noopener">GitHub ↗</a>
+          </div>
+        </div>
+        <picture class="hero__scene">
+          <source media="(prefers-reduced-motion: reduce)" srcset={still("passeport")} />
+          <img src="/voyage/passeport.webp" alt={a.alt} width="1280" height="720" decoding="async" />
+        </picture>
+      </div>
+    </div>
+  </div>
+
+  <main id="contenu" class="wrap-read">
+    <section class="row words">
+      <h2 class="label">{a.labels.words}</h2>
+      <div class="row__body">
+        <p class="serif words__lead">{T(a.words)}</p>
+        <p class="words__more">{T(a.more)}</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2 class="label">{a.labels.route}</h2>
+      <p class="route__intro">{T(R.intro)}</p>
+      <!-- La frise, sur ordinateur : décorative pour les lecteurs d'écran, le détail des voies, dessous, dit tout. -->
+      <div class="route__frise">
+        <div class="gantt" aria-hidden="true">
+          <div class="axis" style="grid-column: 2; grid-row: 1">
+            {years.map((y, k) => <span style={`left: ${pct(from + k)}%; width: ${pct(from + 1) - pct(from)}%`}>{y}</span>)}
+          </div>
+          <div class="brace" style="grid-column: 2; grid-row: 2">
+            <i style={span(ROUTE.band.from, ROUTE.band.to)}></i>
+            <span style={`left: ${((pct(ROUTE.band.from) + pct(ROUTE.band.to)) / 2).toFixed(3)}%`}>{R.band}</span>
+          </div>
+          <div class="tint" style="grid-column: 2; grid-row: 3 / 5"><i style={span(ROUTE.band.from, ROUTE.band.to)}></i></div>
+          {
+            lanes.map((ln, k) => (
+              <>
+                <span class="lane" style={`grid-column: 1; grid-row: ${3 + k}`}>
+                  {ln.label}
+                </span>
+                <div class="track" style={`grid-column: 2; grid-row: ${3 + k}; ${cell}`}>
+                  {ln.bars.map((b) => {
+                    const [title, sub] = R.bars[b.id];
+                    const tone = "tone" in b ? b.tone : undefined;
+                    return "outside" in b ? (
+                      <>
+                        <span class:list={["bar", tone]} style={span(b.from, b.to)} />
+                        <span class="out" style={`left: ${pct(b.to)}%`}>
+                          {title}
+                        </span>
+                      </>
+                    ) : (
+                      <span class:list={["bar", tone]} style={span(b.from, b.to)}>
+                        <b>{title}</b>
+                        {sub && <small>{sub}</small>}
+                      </span>
+                    );
+                  })}
+                </div>
+              </>
+            ))
+          }
+          <div class="today" style="grid-column: 2; grid-row: 1 / 6">
+            <i style={`left: ${pct(NOW)}%`}></i>
+            <span style={`left: ${pct(NOW)}%`}>{R.now}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="legs">
+        {
+          legs.map((leg) => (
+            <div>
+              <h3 class="serif">{leg.title}</h3>
+              <p class="legs__sub">{leg.sub}</p>
+              <ol>
+                {leg.items.map(([when, title, where, text]) => (
+                  <li>
+                    <span class="legs__when">{when}</span>
+                    <div>
+                      <p class="legs__title">{title}</p>
+                      {where && <p class="legs__where">{where}</p>}
+                      <p class="legs__text">{T(text)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))
+        }
+      </div>
+      <p class="route__projects">
+        {T(R.projects)} <a class="link" href={ROUTES.voyage[lang]}>{R.projectsLink}</a>
+      </p>
+    </section>
+
+    <section class="row langs">
+      <h2 class="label">{a.labels.langs}</h2>
+      <ul class="row__body visas">
+        {
+          visas.map((v) => (
+            <li>
+              <div class="visa" style={`color: ${v.ink}; transform: rotate(${v.rot}deg)`}>
+                <span class="serif visa__name">{v.name}</span>
+                <span class="visa__level">{v.level}</span>
+              </div>
+              {"fiche" in v && v.link && (
+                <a class="link" href={fichePath(lang, getProject(v.fiche)!)}>
+                  {v.link}
+                </a>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="block">
+      <h2 class="label">{a.labels.ways}</h2>
+      <ol class="cards">
+        {
+          a.ways.map(([title, text], k) => (
+            <li class="card">
+              <span class="card__num">{String(k + 1).padStart(2, "0")}</span>
+              <h3 class="serif">{T(title)}</h3>
+              <p>{T(text)}</p>
+            </li>
+          ))
+        }
+      </ol>
+      <div class="tagline">
+        <span class="tagline__label">{a.labels.team}</span>
+        <ul class="chips">{a.team.map((s) => <li class="chip">{s}</li>)}</ul>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2 class="label">{a.labels.bag}</h2>
+      <div class="bag">
+        {
+          a.bag.map(([group, items]) => (
+            <div class="bag__group">
+              <h3 class="serif">{group}</h3>
+              <ul class="chips">{items.map((s) => <li class="chip">{s}</li>)}</ul>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="block">
+      <h2 class="label">{a.labels.away}</h2>
+      <ul class="away">
+        {
+          away.map((o) => (
+            <li>
+              <picture class="away__img">
+                <source media="(prefers-reduced-motion: reduce)" srcset={still(o.object)} />
+                <source media="(max-width: 700px)" srcset={still(o.object)} />
+                <img src={`/voyage/${o.object}.webp`} alt={o.alt} width="560" height="560" loading="lazy" decoding="async" />
+              </picture>
+              <h3 class="serif">{o.title}</h3>
+              {o.text && <p>{T(o.text)}</p>}
+            </li>
+          ))
+        }
+      </ul>
+      <div class="tagline">
+        <span class="tagline__label">{a.labels.also}</span>
+        <ul class="chips">{a.also.map((s) => <li class="chip">{s}</li>)}</ul>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <h2 class="serif" set:html={T(STRINGS[lang].nextIdea)} />
+      <div class="foot__links">
+        <a class="go" href={`mailto:${EMAIL}`}>{EMAIL}</a>
+        <a class="pill foot__pill" href={a.linkedin} target="_blank" rel="noopener">LinkedIn ↗</a>
+        <a class="pill foot__pill" href={GITHUB_URL} target="_blank" rel="noopener">GitHub ↗</a>
+      </div>
+    </footer>
+    <Colophon lang={lang} />
+  </main>
+</Voyage>
+
+<style>
+  /* — L'en-tête de nuit : qui je suis, et le passeport — */
+  .hero {
+    background: var(--night);
+    color: var(--ink);
+  }
+  .hero__body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 32px 48px;
+    padding: 24px 0 72px;
+  }
+  .hero__text {
+    display: flex;
+    flex: 1 1 400px;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(56px, 6.6vw, 96px);
+    line-height: 0.95;
+  }
+  .hero__who {
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .hero__lead {
+    max-width: 540px;
+    margin: 0;
+    font-size: 19px;
+    line-height: 1.6;
+  }
+  .hero__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 15px;
+  }
+  .hero__status span {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--brass);
+    box-shadow: 0 0 0 4px rgba(217, 180, 117, 0.2);
+  }
+  .hero__links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+    padding-top: 6px;
+  }
+  .hero__scene {
+    flex: 1.6 1 560px;
+  }
+  .hero__scene img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: var(--radius-l);
+  }
+
+  /* — Le papier : les rubriques, séparées d'un filet. Une rubrique « en ligne » met son étiquette à
+     gauche du texte, une rubrique « en bloc » au-dessus — */
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 56px;
+    padding: 56px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .row > .label {
+    flex: 1 1 200px;
+  }
+  .row__body {
+    flex: 3 1 560px;
+  }
+  .words {
+    padding-top: 88px;
+  }
+  .words .row__body {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .words__lead {
+    margin: 0;
+    font-size: clamp(26px, 2.6vw, 36px);
+    line-height: 1.3;
+  }
+  .words__more {
+    margin: 0;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.7;
+  }
+  .block {
+    padding: 56px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* L'itinéraire : la frise, puis le détail des deux voies. */
+  .route__intro {
+    max-width: 780px;
+    margin: 16px 0 0;
+    font-size: 17px;
+    line-height: 1.7;
+  }
+  .route__frise {
+    margin-top: 36px;
+    overflow-x: auto;
+  }
+  /* Les deux voies principales tiennent une barre de deux lignes de titre et deux de sous-titre : les
+     barres étroites (la licence, le poste actuel) en ont besoin sous 1440 px, et en anglais. */
+  .gantt {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    grid-template-rows: 22px 34px 108px 108px 64px;
+    gap: 6px 16px;
+    min-width: 860px;
+  }
+  .lane {
+    display: flex;
+    align-items: center;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .axis,
+  .brace,
+  .track {
+    position: relative;
+  }
+  .track {
+    background-image: linear-gradient(to right, var(--line) 1px, transparent 1px);
+  }
+  .axis span {
+    position: absolute;
+    top: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-align: center;
+  }
+  .brace i {
+    position: absolute;
+    bottom: 0;
+    height: 16px;
+    border: 2px solid var(--brass);
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+  }
+  .brace span {
+    position: absolute;
+    top: 0;
+    padding: 0 10px;
+    background: var(--paper);
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+  .tint {
+    position: relative;
+    pointer-events: none;
+  }
+  .tint i {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: 14px;
+    background: rgba(176, 138, 79, 0.11);
+  }
+  .bar {
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    overflow: hidden;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .bar b {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.05;
+  }
+  .bar small {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .bar.alt {
+    border-color: var(--brass);
+    background: #f4ebdc;
+  }
+  .bar.now {
+    border-color: var(--brass);
+    background: var(--brass);
+    color: var(--on-brass);
+  }
+  .bar.now small {
+    color: var(--on-brass);
+  }
+  .bar.trip {
+    top: 16px;
+    bottom: 16px;
+    padding: 0;
+    border-color: #c08a66;
+    background: #e7c3ac;
+  }
+  .out {
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    padding-left: 12px;
+    font-size: 15px;
+    white-space: nowrap;
+    transform: translateY(-50%);
+  }
+  .today {
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .today i {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 2px dashed var(--brass);
+  }
+  .today span {
+    position: absolute;
+    top: 34px;
+    padding: 0 6px;
+    background: var(--paper);
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: nowrap;
+    transform: translateX(calc(-100% - 8px));
+  }
+
+  .legs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+    gap: 40px 56px;
+    margin-top: 48px;
+  }
+  .legs h3 {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1.1;
+  }
+  .legs__sub,
+  .legs__where {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .legs__where {
+    margin-top: 4px;
+  }
+  .legs ol {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin: 20px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .legs li {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 4px 16px;
+  }
+  .legs__when {
+    padding-top: 2px;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .legs__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .legs__text {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .route__projects {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 16px;
+    margin: 40px 0 0;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* Les langues en visas, des tampons d'encre un peu de travers. */
+  .langs {
+    align-items: center;
+    gap: 28px 56px;
+  }
+  .visas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px 40px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .visas li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .visa {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 196px;
+    height: 196px;
+    border-radius: 999px;
+    border: 3px solid currentColor;
+    outline: 1.5px solid currentColor;
+    outline-offset: -14px;
+    text-align: center;
+  }
+  .visa__name {
+    font-size: 34px;
+    line-height: 1;
+  }
+  .visa__level {
+    max-width: 130px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  /* Ma façon de faire : quatre cartes, puis les qualités en équipe. */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 20px;
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 24px;
+    border-radius: var(--radius-m);
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .card__num {
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .card h3 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.1;
+  }
+  .card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .tagline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin-top: 28px;
+  }
+  .tagline__label {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .bag {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+    gap: 28px 56px;
+    margin-top: 28px;
+  }
+  .bag__group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .bag h3 {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.1;
+  }
+
+  /* En dehors du code : les objets du cabinet. */
+  .away {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 28px;
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .away li {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .away__img img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-m);
+    border: 1px solid var(--line);
+    background: #efe7da;
+  }
+  .away h3 {
+    margin: 4px 0 0;
+    font-size: 30px;
+    line-height: 1.05;
+  }
+  .away p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 88px 0 64px;
+  }
+  /* Assez étroit pour que les trois boutons tiennent à sa droite, comme sur la maquette. */
+  .foot h2 {
+    max-width: 560px;
+    margin: 0;
+    font-size: clamp(40px, 5vw, 68px);
+    line-height: 1;
+  }
+  .foot__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .foot__pill {
+    min-height: 52px;
+  }
+
+  /* Sous 1180 px, une barre d'une année ne tient plus son texte (« CY Gennevilliers ») : la frise s'efface,
+     le détail des deux voies, dessous, dit tout. */
+  @media (max-width: 1180px) {
+    .route__frise {
+      display: none;
+    }
+  }
+
+  /* Sous 700 px : les visas se serrent deux par ligne. */
+  @media (max-width: 700px) {
+    .hero__body {
+      padding: 12px 0 48px;
+    }
+    .words {
+      padding-top: 56px;
+    }
+    .row,
+    .block {
+      padding: 40px 0;
+    }
+    .visas {
+      gap: 24px;
+    }
+    .visa {
+      width: 150px;
+      height: 150px;
+      outline-offset: -11px;
+    }
+    .visa__name {
+      font-size: 28px;
+    }
+    .visa__level {
+      max-width: 104px;
+    }
+    .foot {
+      padding: 64px 0 48px;
+    }
+  }
+</style>

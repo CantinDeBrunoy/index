@@ -71,7 +71,7 @@ const T = (text: string) => typo(lang, text);
 
 <Voyage lang={lang} title={project.name} description={text.pitch} alternates={alternates} type="article" palette="day">
   <div class={`hero pal-${stop.palette}`} style={`--stop-bg: ${stop.bg}`}>
-    <div class="fwrap">
+    <div class="wrap-read">
       <SiteHeader lang={lang} current="projets" exact={false} alternates={alternates}>
         <nav class="itin" aria-label={f.itinAria}>
           <span class="itin__of">{fill(f.stopOf, { i: n, n: STOPS.length })}</span>
@@ -136,7 +136,7 @@ const T = (text: string) => typo(lang, text);
     </div>
   </div>
 
-  <main id="contenu" class="fwrap">
+  <main id="contenu" class="wrap-read">
     <section class="why">
       <h2 class="label">{f.why}</h2>
       <p class="serif why__text">{T(why)}</p>
@@ -312,12 +312,6 @@ const T = (text: string) => typo(lang, text);
 </script>
 
 <style>
-  .fwrap {
-    max-width: 1200px;
-    margin-inline: auto;
-    padding-inline: clamp(20px, 4vw, 48px);
-  }
-
   /* — L'en-tête : la couleur, la palette et la scène de l'escale — */
   .hero {
     background: var(--stop-bg);
