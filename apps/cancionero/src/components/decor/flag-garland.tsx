@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -46,8 +46,25 @@ function drawFlags(): FlagCode[] {
  * Guirlande de drapeaux latino-américains. Les drapeaux tombent sur la corde
  * à l'ouverture, se balancent chacun à son rythme, et un coup de vent les
  * traverse de gauche à droite de temps en temps — ou quand on la touche.
+ *
+ * Sur le web, le HTML est rendu au build : la largeur de l'écran y vaut 0 et le
+ * tirage n'est pas celui du navigateur. Rendue dès le HTML, la guirlande ferait
+ * échouer l'hydratation (erreur React #418) ; elle n'est donc dessinée qu'une
+ * fois l'app montée. Ses drapeaux sont invisibles avant leur chute, rien ne
+ * change à l'écran.
  */
 export function FlagGarland({ width }: { width: number }) {
+  const [hasHydrated, setHasHydrated] = useState(Platform.OS !== 'web');
+
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
+
+  if (!hasHydrated) return <View style={{ height: HEIGHT }} />;
+  return <Garland width={width} />;
+}
+
+function Garland({ width }: { width: number }) {
   const theme = useTheme();
   const reduce = useReducedMotion();
   const [gust, setGust] = useState(0);

@@ -39,8 +39,13 @@ const rowTransition = LinearTransition.duration(260);
 
 export default function SongScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getSong } = useSongs();
+  const { getSong, loading } = useSongs();
+  const theme = useTheme();
   const song = getSong(id);
+  // Tant que les chansons de l'appareil se chargent, une chanson ajoutée n'est pas encore
+  // connue : un fond vide plutôt que « introuvable ». C'est aussi ce que contient la page
+  // pré-rendue du web (song/[id].html), que le premier rendu doit reproduire à l'identique.
+  if (loading) return <View style={[styles.loading, { backgroundColor: theme.background }]} />;
   return song ? <SongView song={song} /> : <MissingSong />;
 }
 
@@ -367,6 +372,7 @@ const styles = StyleSheet.create({
   rowText: { flex: 1, minWidth: 0, gap: 3 },
   lyric: { fontFamily: Fonts.displaySemi, fontSize: 18, lineHeight: 26 },
   fr: { fontFamily: Fonts.bodyItalic },
+  loading: { flex: 1 },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 32 },
   missingLink: { minHeight: 44, justifyContent: 'center' },
 });

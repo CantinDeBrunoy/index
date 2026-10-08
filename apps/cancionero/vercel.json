@@ -4,5 +4,8 @@
   "devCommand": "expo",
   "cleanUrls": true,
   "framework": null,
-  "rewrites": [{ "source": "/:path*", "destination": "/" }]
+  "rewrites": [
+    { "source": "/song/:id", "destination": "/song/[id]" },
+    { "source": "/:path*", "destination": "/" }
+  ]
 }
