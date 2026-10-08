@@ -48,7 +48,7 @@ const TINT = {
   avion: 0x8fb8d3, // le ciel
   paris: 0xa9b2ba, // le zinc des toits
   monuments: 0xa9ba9d, // la sauge des arbres
-  monument: 0xeab9b2, // le rouge très clair des monuments (tour Eiffel, arc de triomphe), qui les détache du décor
+  monument: 0xeab9b2, // le rouge très clair des monuments (tour Eiffel, arc de triomphe) et de la porte du coffre de Mithril, qui les détache du décor
   route: 0xc6ab9c, // la tuile
   maison: 0xa3b79d, // la plante, le tapis
   salon: 0xcdb3a4, // la terre cuite du tapis
@@ -316,14 +316,20 @@ function car(M, k, body) {
   return g;
 }
 
-// Le vrai coffre-fort de Mithril (modèle libre). Sa texture est une palette : on y repeint
-// les zones sombres (molette, poignée) en laiton et le reste en craie.
-const SAFE_MAT = (() => {
+// Le vrai coffre-fort de Mithril (modèle libre). Sa texture est une palette : on y repeint les zones
+// sombres (molette, poignée) et le reste. Le caisson reste en craie ; la porte et le fond prennent le
+// rouge clair des monuments, qui détache le coffre du bureau, et la molette et la poignée le laiton.
+const rgbOf = (hex) => [hex >> 16, (hex >> 8) & 255, hex & 255];
+const SAFE_LOOK = { body: [233, 228, 219], door: rgbOf(TINT.monument), knobs: [176, 138, 79], inside: 0x9b6d67 };
+const SAFE_TEX = (() => {
   let tex = null;
   SAFE.scene.traverse((o) => {
     if (o.isMesh && o.material.map) tex = o.material.map;
   });
-  const img = tex.image;
+  return tex;
+})();
+const safeMat = (base, knobs) => {
+  const img = SAFE_TEX.image;
   const c = document.createElement("canvas");
   c.width = img.width;
   c.height = img.height;
@@ -332,25 +338,83 @@ const SAFE_MAT = (() => {
   const d = ctx.getImageData(0, 0, c.width, c.height);
   for (let i = 0; i < d.data.length; i += 4) {
     const l = (0.2126 * d.data[i] + 0.7152 * d.data[i + 1] + 0.0722 * d.data[i + 2]) / 255;
-    const rgb = l < 0.3 ? [176, 138, 79] : [233, 228, 219].map((v) => v * (0.88 + 0.12 * l));
+    const rgb = l < 0.3 ? knobs : base.map((v) => v * (0.88 + 0.12 * l));
     d.data[i] = rgb[0];
     d.data[i + 1] = rgb[1];
     d.data[i + 2] = rgb[2];
   }
   ctx.putImageData(d, 0, 0);
   const t = new THREE.CanvasTexture(c);
-  t.flipY = tex.flipY;
+  t.flipY = SAFE_TEX.flipY;
   t.colorSpace = THREE.SRGBColorSpace;
   return new THREE.MeshStandardMaterial({ map: t, roughness: 0.55, metalness: 0.05 });
-})();
+};
+const SAFE_BODY_MAT = safeMat(SAFE_LOOK.body, SAFE_LOOK.knobs);
+const SAFE_DOOR_MAT = safeMat(SAFE_LOOK.door, SAFE_LOOK.knobs);
+// La couleur de la porte sans texture (le gris de la palette, l = 0,545), pour son épaisseur.
+const SAFE_PLAIN = new THREE.MeshStandardMaterial({
+  color: new THREE.Color().setRGB(...SAFE_LOOK.door.map((v) => (v * 0.945) / 255), THREE.SRGBColorSpace),
+  roughness: 0.55,
+  metalness: 0.05,
+});
+const SAFE_INSIDE = new THREE.MeshStandardMaterial({ color: SAFE_LOOK.inside, roughness: 0.8, side: THREE.BackSide });
+// Le modèle est d'un seul tenant : on en détache la porte (la plaque en relief et la poignée) et la molette.
+// Coordonnées du modèle, en millièmes : la porte couvre x −0,89 → 1,32, y 0,31 → 2,31, devant z = 0,68,
+// et derrière elle le caisson est ouvert. userData.door pivote sur la charnière, au bord droit du caisson
+// (rotation.y > 0 : la porte s'ouvre) ; userData.dial tourne sur son axe (rotation.z).
 function safe(h = 1) {
   const g = fitModel(SAFE, h);
+  let box;
   g.traverse((o) => {
-    if (!o.isMesh) return;
-    o.material = SAFE_MAT;
-    o.castShadow = true;
-    o.receiveShadow = true;
+    if (o.isMesh) box = o;
   });
+  const K = 1e-3;
+  const geo = box.geometry, P = geo.attributes.position, idx = geo.index.array;
+  const at = (i) => [P.getX(i) / K, P.getY(i) / K, P.getZ(i) / K];
+  const inDoor = (i) => {
+    const [x, y, z] = at(i);
+    return x > -0.9 && x < 1.33 && y > 0.3 && y < 2.32 && z > 0.679;
+  };
+  const inDial = (i) => {
+    const [x, y, z] = at(i);
+    return x > -0.6 && x < -0.2 && y > 1.15 && y < 1.55 && z > 0.695;
+  };
+  const parts = { body: [], door: [], dial: [] };
+  for (let t = 0; t < idx.length; t += 3) {
+    const v = [idx[t], idx[t + 1], idx[t + 2]];
+    parts[v.every(inDial) ? "dial" : v.every(inDoor) ? "door" : "body"].push(...v);
+  }
+  const part = (list) => {
+    const p = geo.clone();
+    p.setIndex(list);
+    return p;
+  };
+  box.geometry = part(parts.body);
+  box.material = SAFE_BODY_MAT;
+  box.castShadow = true;
+  box.receiveShadow = true;
+  // Le fond du caisson, vu par l'ouverture.
+  const inside = mesh(new THREE.BoxGeometry(2.21 * K, 2.0 * K, 2.38 * K), SAFE_INSIDE, 0.215 * K, 1.31 * K, -0.51 * K);
+  inside.castShadow = false;
+  box.add(inside);
+  // La porte : la charnière au coin avant droit, la plaque décalée d'autant pour rester à sa place, fermée.
+  const HX = 1.42 * K, HZ = 0.7 * K;
+  const door = new THREE.Group();
+  door.position.set(HX, 0, HZ);
+  box.add(door);
+  const plate = mesh(part(parts.door), SAFE_DOOR_MAT, -HX, 0, -HZ);
+  door.add(plate);
+  // Son épaisseur, cachée dans l'ouverture quand elle est fermée.
+  plate.add(mesh(new THREE.BoxGeometry(2.17 * K, 1.96 * K, 0.12 * K), SAFE_PLAIN, 0.215 * K, 1.31 * K, 0.62 * K));
+  // La molette tourne autour de son centre.
+  const ring = parts.dial.map(at);
+  const [DX, DY] = [0, 1].map((a) => (Math.min(...ring.map((p) => p[a])) + Math.max(...ring.map((p) => p[a]))) / 2 * K);
+  const dial = new THREE.Group();
+  dial.position.set(DX, DY, 0);
+  plate.add(dial);
+  dial.add(mesh(part(parts.dial), SAFE_DOOR_MAT, -DX, -DY, 0));
+  g.userData.door = door;
+  g.userData.dial = dial;
   return g;
 }
 
@@ -1819,9 +1883,16 @@ const SCENES = {
     deck.position.set(1.75, 0.0, 0.7);
     g.add(deck);
     g.userData.hotspot = deck;
+    // La boucle dure 8 s : on arrive, le coffre est ouvert ; sa porte se ferme, la molette fait un tour
+    // pour verrouiller, puis il se rouvre à la fin de la boucle. Le serveur et la platine gardent leur
+    // rythme de 4 s (deux tours par boucle).
+    const OPEN = 1.85;
     g.userData.animate = (phi) => {
-      rack.userData.animate(phi);
-      deck.userData.animate(phi);
+      const u = phi / (Math.PI * 2);
+      vault.userData.door.rotation.y = OPEN * (1 - smooth(0.03, 0.17, u) + smooth(0.84, 0.97, u));
+      vault.userData.dial.rotation.z = -Math.PI * 2 * smooth(0.2, 0.36, u);
+      rack.userData.animate(2 * phi);
+      deck.userData.animate(2 * phi);
     };
     g.userData.camera = { pos: [0.9, 2.3, 4.6], target: [0.1, 0.8, -0.4], fov: 38 };
     return g;
@@ -2482,6 +2553,7 @@ const SCENES = {
 };
 // Une scène par tenue du copilote : « tenue-<escale> ».
 for (const k of TENUES) SCENES["tenue-" + k] = (M) => copilot(M, k);
+
 
 // `box` : cadrage mobile. [x0, y0, x1, y1], en fractions de l'image d'ordinateur (16:9), est la zone qui doit
 // rester visible (l'objet du projet et celui qu'on touche). La caméra vise son centre et recule, même direction
