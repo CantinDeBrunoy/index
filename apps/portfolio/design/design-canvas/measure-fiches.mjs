@@ -22,8 +22,10 @@ Object.assign(local, {
   "33f2e78196e9a623469c70d106773eee": "/renders/anim/book-light-laiton.webp",
   "8563c7c32a51084d38d631ab09236273": "/renders/anim/randonnee-light-laiton.webp",
 });
+// Les captures des fiches, telles que téléchargées du canvas (Artifact read) : facultatives. Sans elles, les trois
+// fiches qui en ont une se mesurent plus courtes.
 const SHOTS = "artifact-files/f8f160c6-ddd3-4779-92f2-9a3a3c72f488";
-for (const f of await readdir(join(root, SHOTS))) if (f.endsWith(".jpg")) local[f.slice(0, -4)] = `/${SHOTS}/${f}`;
+for (const f of await readdir(join(root, SHOTS)).catch(() => [])) if (f.endsWith(".jpg")) local[f.slice(0, -4)] = `/${SHOTS}/${f}`;
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".webp": "image/webp", ".jpg": "image/jpeg", ".png": "image/png" };
 const server = createServer(async (req, res) => {
