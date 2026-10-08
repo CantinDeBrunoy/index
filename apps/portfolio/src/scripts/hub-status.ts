@@ -1,12 +1,13 @@
 /**
  * Le tableau des départs, en direct : le statut des apps sondées (/api/status ; le Worker les sonde
  * côté serveur, résultat gardé 5 minutes, redemandé toutes les 5 minutes tant que la page est visible),
- * l'heure de l'écran et le bandeau d'infos voyageurs. Les textes viennent de la page (attributs data-*
- * du tableau), dans sa langue.
+ * l'heure de l'écran, le bandeau d'infos voyageurs et le clignotement (scripts/hub-blink.ts).
+ * Les textes viennent de la page (attributs data-* du tableau), dans sa langue.
  */
 
 import type { TickerStrings } from "../data/hub";
 import type { Lang } from "../i18n/voyage";
+import { startBlinking, syncBlinks } from "./hub-blink";
 import { tickerText, type TickerApp } from "./hub-ticker";
 
 type Health = "online" | "asleep" | "offline";
@@ -92,6 +93,7 @@ function start(board: HTMLElement) {
       // L'annonce de la première vérification suffit : la suite (« il y a 3 min ») ne se lit pas à voix haute.
       checked?.removeAttribute("aria-live");
       showTicker();
+      syncBlinks(board);
     }
   }
 
@@ -110,6 +112,8 @@ function start(board: HTMLElement) {
     setTimeout(tick, 60_000 - (Date.now() % 60_000) + 50);
   };
   tick();
+  syncBlinks(board);
+  startBlinking(board);
 }
 
 const board = document.querySelector<HTMLElement>("[data-board]");

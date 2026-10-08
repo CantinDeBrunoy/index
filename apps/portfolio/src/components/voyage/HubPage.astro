@@ -242,12 +242,7 @@ const ticker = tickerText(h.ticker, apps, lang);
       linear-gradient(currentColor 0 0) 0 0.2em / 100% 0.085em no-repeat,
       linear-gradient(currentColor 0 0) 0 0.4em / 100% 0.085em no-repeat;
     filter: drop-shadow(0 0 5px rgba(255, 176, 32, 0.6));
-    animation: colon 2s steps(1, end) infinite;
-  }
-  @keyframes colon {
-    50% {
-      opacity: 0.2;
-    }
+    animation: led-blink 1s steps(1, end) infinite;
   }
   .panel__checked {
     margin: 8px 0 0;
@@ -327,13 +322,19 @@ const ticker = tickerText(h.ticker, apps, lang);
   .st[data-state="archive"] {
     color: var(--led-dim);
   }
+  /* Le clignotement de l'écran, allumé puis éteint, chaque seconde : une remarque en attente, l'heure,
+     et de temps en temps un texte au hasard, deux ou trois fois (scripts/hub-blink.ts, qui les cale
+     tous sur la même horloge). */
   .st[data-state="pending"],
   .st[data-state="asleep"],
   .st[data-state="offline"] {
-    animation: blink 1s steps(2, start) infinite;
+    animation: led-blink 1s steps(1, end) infinite;
   }
-  @keyframes blink {
-    to {
+  .is-blinking {
+    animation: led-blink 1s steps(1, end) var(--blinks, 2);
+  }
+  @keyframes led-blink {
+    50% {
       opacity: 0.15;
     }
   }
@@ -593,7 +594,8 @@ const ticker = tickerText(h.ticker, apps, lang);
 
   @media (prefers-reduced-motion: reduce) {
     .st,
-    .panel__colon {
+    .panel__colon,
+    .is-blinking {
       animation: none !important;
     }
     .ticker {
