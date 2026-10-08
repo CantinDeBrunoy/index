@@ -13,6 +13,8 @@ import { getProject } from "@index/projects";
 import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
+import Copilote from "./Copilote.astro";
+import CopiloteAccueil from "./CopiloteAccueil.astro";
 
 interface Props {
   lang: Lang;
@@ -215,7 +217,9 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                   {"note" in app && <span class="cartel__note">{app.note}</span>}
                 </div>
               </article>
+              {s.n === 1 && <CopiloteAccueil lang={lang} />}
               <nav class="stop-nav ui" aria-label={v.dotsAria}>
+                <Copilote lang={lang} n={s.n} scene={s.scene} />
                 <a class="pill back" href={prev} data-go={s.n - 1} data-soft aria-label={fill(v.backTo, { place: places[s.n - 1]! })}>
                   <span aria-hidden="true">←</span>
                   <span class="back__place" aria-hidden="true">
@@ -238,6 +242,8 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
 </Voyage>
 
 <script>
+  // Le copilote d'abord : il écoute le voyage dès sa première escale.
+  import "../../scripts/copilote";
   import "../../scripts/voyage";
 </script>
 
@@ -547,11 +553,17 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     display: none;
   }
 
+  /* Le retour, et le copilote rangé à sa gauche. Sa pastille (--dock) grandit avec l'écran, comme l'affiche ;
+     la rangée se place pour que le retour garde sa hauteur, son centre à 62 px du bas. */
   .stop-nav {
+    --dock: max(52px, calc(64 * var(--u)));
     position: absolute;
     z-index: 2;
     right: 40px;
-    bottom: 40px;
+    bottom: calc(62px - var(--dock) / 2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
   .back {
     font-size: 15px;
@@ -852,6 +864,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
       display: none;
     }
     .next {
+      order: 2;
       display: flex;
       flex: 1;
       min-height: 52px;

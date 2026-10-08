@@ -108,6 +108,8 @@ function start(root: HTMLElement) {
     play(i);
     if (!desktop.matches) stop.querySelector("img")?.setAttribute("loading", "eager");
     preloadLater(i + 1);
+    // Le copilote suit le voyage (scripts/copilote.ts).
+    root.dispatchEvent(new CustomEvent("voyage:escale", { detail: { i } }));
   };
 
   const go = (next: number, soft = false) => {

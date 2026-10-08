@@ -44,6 +44,11 @@ serveur de développement : `astro dev`, puis `node og.mjs [adresse]`, qui écri
 pages `/apercu/<carte>` n'existent qu'en développement (`src/pages/apercu`, `src/data/apercus.ts`). À refaire quand
 les textes des escales changent.
 
+Le copilote du voyage (le bonhomme qui accueille à l'escale 1, puis change de tenue à chaque escale) se rend
+à part, sur fond transparent : `MODE=encode SIZE=400x400 SUFFIX=-site FRAMES=72 Q=72 node voyage-render.mjs tenue-espace
+tenue-terre …` pour ses dix tenues, et `SIZE=640x640 SUFFIX=-accueil` pour la tenue de l'espace en grand. Puis
+`node copilote-site.mjs` les copie dans `../public/voyage/copilote/` et en tire une image fixe chacune.
+
 ## La maquette
 
 ```bash
@@ -51,6 +56,12 @@ cd apps/portfolio/design/design-canvas
 node build-voyage-boards.cjs   # écrit les planches dans project/
 node place-voyage.cjs          # range les planches sur le canvas (project/canvas.json)
 ```
+
+Les propositions du guide (le copilote qui explique le voyage à la première escale) partent de l'escale 1 :
+`node build-guide-propals.cjs`, puis `node place-guide-propals.cjs <canvas.json>`. Le copilote est un bonhomme
+d'argile : en combinaison dans l'espace, puis habillé pour chaque escale. Chaque tenue est la scène
+`tenue-<escale>` (`astronaute` est celle de l'espace), rendue sur fond transparent avec
+`MODE=encode SIZE=640x640 SUFFIX=-guide`. Leurs identifiants sur le canvas sont dans `guide.json`.
 
 Les planches sont publiées sur le canvas, qui reste la référence visuelle. Les images y sont désignées par leur
 identifiant sur le canvas (`ids.json`, `mobile.json`).
