@@ -5,7 +5,7 @@
  * en bas à gauche, qui mène aux projets. Sous 700 px, comme une escale du voyage mobile.
  */
 import { NOT_FOUND, NOT_FOUND_SCENE as S } from "../../data/annexes";
-import { ROUTES, type Lang } from "../../i18n/voyage";
+import { ROUTES, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import SiteHeader from "./SiteHeader.astro";
 
@@ -50,7 +50,7 @@ const position = `--x: ${S.spot[0]}%; --y: ${S.spot[1]}%; --mx: ${S.spotMobile[0
     <main id="contenu" class="nf-card">
       <p class="label">{n.label}</p>
       <h1 class="serif" set:html={n.title} />
-      <p class="nf-card__text">{n.text}</p>
+      <p class="nf-card__text">{typo(lang, n.text)}</p>
       <div class="nf-card__links">
         <a class="link" href={ROUTES.projets[lang]}>{n.projects}</a>
         <a class="link nf-card__about" href={ROUTES.apropos[lang]}>{n.about}</a>

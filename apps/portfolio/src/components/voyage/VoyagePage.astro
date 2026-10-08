@@ -11,7 +11,7 @@
  */
 import { getProject } from "@index/projects";
 import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
-import { fichePath, LANGS, ROUTES, STRINGS, TABS, type Lang } from "../../i18n/voyage";
+import { fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 
 interface Props {
@@ -122,7 +122,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
         <div class="intro ui">
           <p class="label">{v.introLabel}</p>
           <h1 class="serif" tabindex="-1" data-focus set:html={v.introTitle} />
-          <p class="intro__text">{v.introText}</p>
+          <p class="intro__text">{typo(lang, v.introText)}</p>
           <div class="intro__actions">
             <a class="go" href="#escale-1" data-go="1">{v.takeOff}</a>
             <div class="intro__more">
@@ -189,8 +189,8 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                 <h2 class="serif" id={`escale-${s.n}-titre`} tabindex="-1" data-focus>
                   {s.project.name}
                 </h2>
-                <p class="cartel__pitch">{s.text.pitch}</p>
-                {s.text.extra && <p class="cartel__extra">{s.text.extra}</p>}
+                <p class="cartel__pitch">{typo(lang, s.text.pitch)}</p>
+                {s.text.extra && <p class="cartel__extra">{typo(lang, s.text.extra)}</p>}
                 <div class="cartel__links">
                   {"href" in app ? (
                     <a class="go" href={app.href}>

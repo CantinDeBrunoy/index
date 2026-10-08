@@ -8,12 +8,12 @@
  * Les textes viennent de la collection de contenu (src/content/projets) ; le décor et l'accroche, de
  * data/voyage.ts ; les liens, la pile et l'hébergeur, de @index/projects.
  */
-import { getProject, GITHUB_URL, projects } from "@index/projects";
+import { getProject, GITHUB_URL } from "@index/projects";
 import { getImage } from "astro:assets";
 import { getEntry } from "astro:content";
 import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
 import { appOf, fill, kindOf, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
-import { EMAIL, fichePath, ROUTES, type Lang } from "../../i18n/voyage";
+import { EMAIL, fichePath, ROUTES, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import { getShot } from "../../lib/shots";
 import Colophon from "./Colophon.astro";
@@ -65,6 +65,8 @@ const shelf = await Promise.all(
 const after = STOPS[i + 1];
 const next = after && { ...after, n: n + 1, project: getProject(after.slug)!, text: STOP_TEXTS[lang][after.slug]! };
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
+// Les textes en prose, à la typographie de la langue (les espaces insécables du français).
+const T = (text: string) => typo(lang, text);
 ---
 
 <Voyage lang={lang} title={project.name} description={text.pitch} alternates={alternates} type="article" palette="day">
@@ -93,7 +95,7 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
           <p class="label">{f.stop} {n} · {text.place}</p>
           <h1 class="serif">{project.name}</h1>
           <p class="hero__kind">{kind.line}</p>
-          <p class="hero__pitch">{text.pitch}</p>
+          <p class="hero__pitch">{T(text.pitch)}</p>
           <div class="hero__links">
             {"href" in app ? <a class="go" href={app.href}>{app.label}</a> : <span class="hero__note">{app.note}</span>}
             {
@@ -137,7 +139,7 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
   <main id="contenu" class="fwrap">
     <section class="why">
       <h2 class="label">{f.why}</h2>
-      <p class="serif why__text">{why}</p>
+      <p class="serif why__text">{T(why)}</p>
     </section>
 
     <section class="what">
@@ -147,8 +149,8 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
           features.map((item, k) => (
             <li class="card">
               <span class="card__num">{String(k + 1).padStart(2, "0")}</span>
-              <h3 class="serif">{item.title}</h3>
-              <p>{item.text}</p>
+              <h3 class="serif">{T(item.title)}</h3>
+              <p>{T(item.text)}</p>
             </li>
           ))
         }
@@ -162,8 +164,8 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
           {
             choices.map((item) => (
               <div>
-                <dt>{item.title}</dt>
-                <dd>{item.text}</dd>
+                <dt>{T(item.title)}</dt>
+                <dd>{T(item.text)}</dd>
               </div>
             ))
           }
@@ -237,7 +239,7 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
               <source srcset={shotSet.srcSet.attribute} sizes="(min-width: 1140px) 1040px, calc(100vw - 40px)" type="image/webp" />
               <img class="shot" src={shotSet.src} width={shot.width} height={shot.height} alt={capture.alt} loading="lazy" decoding="async" />
             </picture>
-            <figcaption>{capture.caption}</figcaption>
+            <figcaption>{T(capture.caption)}</figcaption>
           </figure>
         </section>
       )
@@ -253,7 +255,7 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
                 <h3 class="serif shelf__name">
                   {s.project.number} · {s.name}
                 </h3>
-                <p class="shelf__text">{s.text}</p>
+                <p class="shelf__text">{T(s.text)}</p>
                 <ul class="chips">{s.project.stack.map((tech) => <li class="chip">{tech}</li>)}</ul>
               </article>
             ))}
@@ -281,7 +283,7 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
             <span class="next-card__text">
               <span class="next-card__label">{fill(f.next, { place: next.text.place })}</span>
               <span class="serif next-card__name">{next.project.name}</span>
-              <span class="next-card__pitch">{next.text.pitch}</span>
+              <span class="next-card__pitch">{T(next.text.pitch)}</span>
               <span class="link">{f.go}</span>
             </span>
           </a>
@@ -289,7 +291,7 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
           <a class="post end-card" href={ROUTES.projets[lang]}>
             <span class="next-card__label">{f.end}</span>
             <span class="serif next-card__name">{f.journal}</span>
-            <span class="link">{fill(f.seeAll, { n: projects.length })}</span>
+            <span class="link">{f.seeAll}</span>
           </a>
         )
       }
@@ -297,7 +299,7 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
 
     <footer class="foot">
       <p>
-        {fill(f.question, { name: project.name })} <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+        {T(fill(f.question, { name: project.name }))} <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
       </p>
       <a class="pill" href={GITHUB_URL} target="_blank" rel="noopener">GitHub ↗</a>
     </footer>

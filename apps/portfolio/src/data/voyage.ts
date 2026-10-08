@@ -6,7 +6,7 @@
  */
 
 import type { Project } from "@index/projects";
-import type { Lang } from "../i18n/voyage";
+import { NBSP, type Lang } from "../i18n/voyage";
 
 export type Palette = "night" | "day" | "dusk" | "kraft";
 
@@ -296,6 +296,6 @@ export function kindOf(project: Project, text: StopText, lang: Lang) {
     type,
     year,
     status: shown ?? v.statusDownload,
-    line: [project.number, type, year, ...(shown ? [shown] : [])].map((part) => part.replaceAll(" ", " ")).join(" · "),
+    line: [project.number, type, year, ...(shown ? [shown] : [])].map((part) => part.replaceAll(" ", NBSP)).join(`${NBSP}· `),
   };
 }

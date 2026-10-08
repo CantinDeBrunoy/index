@@ -12,7 +12,7 @@ import { projects, type Project } from "@index/projects";
 import dotoUrl from "@index/ui/fonts/doto-latin-wght-normal.woff2?url";
 import { ficheHref, nameOf as nameIn } from "../../data/fiches";
 import { GATES, HUB, type FixedState } from "../../data/hub";
-import { ROUTES, type Lang } from "../../i18n/voyage";
+import { ROUTES, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import { tickerText } from "../../scripts/hub-ticker";
 import Colophon from "./Colophon.astro";
@@ -157,12 +157,12 @@ const ticker = tickerText(h.ticker, apps, lang);
       </section>
 
       <a class="arrivals-link" href={ROUTES.projets[lang]}>{h.arrivalsShort}</a>
-      <p class="note">{h.intro}</p>
+      <p class="note">{typo(lang, h.intro)}</p>
       <ul class="legend">
         {
           h.legend.map(([, label, text]) => (
             <li>
-              <b>{label}</b> {text}
+              <b>{label}</b> {typo(lang, text)}
             </li>
           ))
         }

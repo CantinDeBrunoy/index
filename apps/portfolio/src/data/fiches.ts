@@ -31,7 +31,6 @@ export const FICHE: Record<
     go: string;
     end: string;
     journal: string;
-    /** {n} : le nombre de projets. */
     seeAll: string;
     /** {name} : le projet. */
     question: string;
@@ -55,7 +54,7 @@ export const FICHE: Record<
     go: "Continuer le voyage →",
     end: "Fin du voyage",
     journal: "Le carnet de voyage",
-    seeAll: "Voir les {n} projets →",
+    seeAll: "Voir les onze projets →",
     question: "Une question sur {name} ?",
   },
   en: {
@@ -76,7 +75,7 @@ export const FICHE: Record<
     go: "Continue the journey →",
     end: "End of the journey",
     journal: "The travel journal",
-    seeAll: "See all {n} projects →",
+    seeAll: "See all eleven projects →",
     question: "A question about {name}?",
   },
 };
