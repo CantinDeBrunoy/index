@@ -95,9 +95,9 @@ Les variables d'environnement de chaque app sont décrites dans son `.env.exampl
 |---|---|---|---|---|
 | — | portfolio | Cloudflare Workers `index` | https://index.cantin-roquier.workers.dev | `deploy-portfolio.yml` |
 | 005 | magellan | Cloudflare Workers `magellan` | https://magellan.cantin-roquier.workers.dev | `deploy-magellan.yml` |
-| 006 | cancionero | Vercel (projet existant) | à reporter dans `projects.ts` | intégration Git Vercel, *Root Directory* `apps/cancionero` |
+| 006 | cancionero | Vercel `cancionero-cantin` | https://cancionero-cantin.vercel.app | intégration Git Vercel, *Root Directory* `apps/cancionero` |
 | 007 | mithril | GitHub Releases (tags `mithril-v*`) | — | à la main (skill `publier-release`), CI `mithril.yml` |
-| 008 | tonalli | Vercel + Supabase | https://teinte-du-jour-eight.vercel.app | intégration Git Vercel, *Root Directory* `apps/tonalli` |
+| 008 | tonalli | Vercel `teinte-du-jour` + Supabase | https://teinte-du-jour-eight.vercel.app | intégration Git Vercel, *Root Directory* `apps/tonalli` |
 | 009 | gym-picker | Cloudflare Workers `gym-picker` | https://gym-picker.cantin-roquier.workers.dev | `deploy-gym-picker.yml` |
 | 010 | hublot | GitHub Actions (cron) + Cloudflare Workers `hublot` (page) | https://hublot.cantin-roquier.workers.dev après la bascule | `hublot-check.yml`, `deploy-hublot-page.yml` |
 
@@ -151,7 +151,7 @@ pnpm --filter portfolio exec wrangler secret put GITHUB_ALERTS_TOKEN
 
 `GITHUB_ALERTS_TOKEN` est un jeton GitHub à grain fin limité au dépôt `index`, avec *Issues* en lecture/écriture et *Actions* en lecture.
 
-**Vercel :** relier `teinte-du-jour-eight` (Tonalli) et le projet Cancionero au dépôt `index`, avec *Root Directory* `apps/tonalli` ou `apps/cancionero`, et activer l'option qui ignore les déploiements quand le dossier n'a pas changé.
+**Vercel :** les projets `teinte-du-jour` (Tonalli) et `cancionero-cantin` sont reliés au dépôt `index`, avec *Root Directory* `apps/tonalli` ou `apps/cancionero`, Node 24, l'option qui ignore les déploiements quand le dossier n'a pas changé, et la variable `ENABLE_EXPERIMENTAL_COREPACK` = `1`, sans laquelle Vercel n'utilise pas la version de pnpm fixée dans `packageManager`.
 
 **Cloudflare :** déconnecter Workers Builds de l'ancien dépôt `gym-picker`. Les déploiements passent désormais par `deploy-gym-picker.yml`. Le secret `TOMTOM_API_KEY` reste sur le Worker.
 

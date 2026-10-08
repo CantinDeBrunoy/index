@@ -17,8 +17,8 @@ export const MONOREPO_URL = `${GITHUB_URL}/index`;
 /** Sous-domaine workers.dev du compte Cloudflare (gym-picker.<ici>.workers.dev). */
 export const WORKERS_SUBDOMAIN: string | undefined = "cantin-roquier";
 
-/** URL Vercel de Cancionero (dashboard Vercel → projet → Domains). À remplir. */
-const CANCIONERO_URL: string | undefined = undefined;
+/** URL Vercel de Cancionero (projet Vercel « cancionero-cantin »). */
+const CANCIONERO_URL: string | undefined = "https://cancionero-cantin.vercel.app";
 
 const workersDev = (worker: string) =>
   WORKERS_SUBDOMAIN ? `https://${worker}.${WORKERS_SUBDOMAIN}.workers.dev` : undefined;

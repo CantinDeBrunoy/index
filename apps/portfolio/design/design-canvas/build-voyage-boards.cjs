@@ -41,8 +41,8 @@ const DAY = { ink: "#241E18", muted: "#6A5F52", card: "#FBF7F0", line: "#E3D8C8"
 const DUSK = { ...DAY, muted: "#5A4B4E" };
 // Le kraft des dossiers d'INDEX : gris et laiton plus sombres, pour rester lisibles sur ce fond plus soutenu.
 const KRAFT = { ...DAY, muted: "#5A4B40", brassText: "#6E5226" };
-// Les liens du panneau de détail, d'après packages/projects/src/projects.ts. « À brancher » : la démo
-// existe mais son adresse n'est pas encore reportée (URL Vercel de Cancionero).
+// Les liens du panneau de détail, d'après packages/projects/src/projects.ts. « À brancher » : une démo
+// qui existe mais dont l'adresse n'est pas encore reportée.
 const PENDING = "#a-brancher";
 const DEMO = {
   "Galaxy Escape": null,
@@ -52,7 +52,7 @@ const DEMO = {
   "Visit Match": null,
   "gym-picker": "https://gym-picker.cantin-roquier.workers.dev",
   Mithril: "https://github.com/CantinDeBrunoy/Mithril/releases",
-  Cancionero: PENDING,
+  Cancionero: "https://cancionero-cantin.vercel.app",
   Tonalli: "https://teinte-du-jour-eight.vercel.app",
   // INDEX n'a pas d'autre démo que ce site : le cartel le dit (noDemoText).
   INDEX: null,
