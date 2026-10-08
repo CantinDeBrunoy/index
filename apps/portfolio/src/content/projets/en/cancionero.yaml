@@ -1,0 +1,19 @@
+# Cancionero, la fiche en anglais. Brouillon, à réécrire.
+why: "A song you love sticks without any effort. Cancionero turns it into a Spanish lesson: you read it, understand it, sing it, and the words stay."
+features:
+  - title: "Translated lyrics"
+    text: "Each line with its French translation, read aloud on demand."
+  - title: "Fill-in-the-blank karaoke"
+    text: "Fill in the missing words as the song plays."
+  - title: "Cards and quizzes"
+    text: "The vocabulary as flashcards, and a quiz marked on the spot, even offline."
+choices:
+  - title: "An installable app"
+    text: "It installs from the browser and works offline; an iOS app would have needed an Apple developer account."
+  - title: "Expo and React Native Web"
+    text: "The same code for the web today, and for phones tomorrow."
+  - title: "No server"
+    text: "Lyrics are looked up in LRCLIB, a public database, and everything else lives on the device."
+capture:
+  alt: "Screenshot of Cancionero: the vocabulary to review and the list of songs, from “Hola, ¿cómo estás?” to “En el mercado”."
+  caption: "The songs and the vocabulary to review."

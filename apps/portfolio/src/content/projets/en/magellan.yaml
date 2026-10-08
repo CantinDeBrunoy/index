@@ -1,0 +1,19 @@
+# Magellan, la fiche en anglais. Brouillon, à réécrire.
+why: "I wanted to open an app and see my own world map: a globe that fills in as I cross countries. And I wanted those memories to stay on my phone, with no account and no server."
+features:
+  - title: "The globe fills in"
+    text: "Visited countries light up, each city gets its flag, an arc links the stops."
+  - title: "Trips as index cards"
+    text: "Sorted by year: a sticky note per stop, a postcard per city, the budget."
+  - title: "Photos sort themselves"
+    text: "The app reads the date and place of each photo and files it under the right stop."
+choices:
+  - title: "One codebase"
+    text: "Expo and React Native: iOS, Android and the web from the same code."
+  - title: "globe.gl for the Earth"
+    text: "A proven 3D globe, in a WebView on phones and right in the page on the web: only the data is shared."
+  - title: "A version per platform when needed"
+    text: ".web and .native files rather than a hack that would break one of them."
+capture:
+  alt: "Screenshot of Magellan: the globe and its coloured countries, with the counter of the demo data (14 trips, 22 cities, 13 countries)."
+  caption: "The globe, with the demo trips."

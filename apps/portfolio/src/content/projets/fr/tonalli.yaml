@@ -1,0 +1,19 @@
+# Tonalli, la fiche en français. Brouillon, à réécrire.
+why: "Une émotion, une couleur, deux photos : un rituel à deux, chaque jour, même à distance. Je voulais un fil entre deux personnes, pas un réseau social : pas de fil d'actualité, pas de commentaires, juste nos journées."
+features:
+  - title: "Une couleur par jour"
+    text: "Une émotion parmi douze, en trois intensités : c'est elle qui donne la couleur."
+  - title: "Deux photos sur le moment"
+    text: "La scène puis le visage, pris dans l'app, jamais depuis la galerie."
+  - title: "Le calendrier de l'autre"
+    text: "Il ne se dévoile qu'une fois sa propre journée remplie ; on y répond d'un seul emoji."
+choices:
+  - title: "La réciprocité écrite dans la base"
+    text: "Les règles d'accès de Supabase la font respecter en SQL : impossible de la contourner depuis le navigateur."
+  - title: "Le jour de l'auteur"
+    text: "La date d'une entrée se calcule dans le fuseau de celui qui l'écrit, jamais en UTC : sinon, le soir, la journée se décale."
+  - title: "Un site plutôt qu'une app"
+    text: "Tonalli a commencé en app mobile, puis est devenu un site installable : il ne fallait rien avoir à installer."
+capture:
+  alt: "Capture de Tonalli : l'écran d'accueil, le personnage-goutte et les boutons de connexion."
+  caption: "L'écran d'accueil."

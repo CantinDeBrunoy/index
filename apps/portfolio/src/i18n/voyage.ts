@@ -23,6 +23,9 @@ export const ROUTES: Record<PageKey, Record<Lang, string>> = {
 export const fichePath = (lang: Lang, project: Pick<Project, "path">): string =>
   lang === "fr" ? project.path : `/en${project.path}`;
 
+/** L'adresse où m'écrire, au pied des pages. */
+export const EMAIL = "cantin.roquier@gmail.com";
+
 /** Les onglets de l'en-tête, dans l'ordre : le voyage, le hub, les projets, à propos. */
 export const TABS = ["voyage", "apps", "projets", "apropos"] as const satisfies readonly PageKey[];
 export type TabKey = (typeof TABS)[number];

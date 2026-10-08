@@ -1,0 +1,14 @@
+# Métro Pathfinder, la fiche en français. Brouillon, à réécrire.
+why: "Dans le métro parisien, le trajet le plus court n'est pas toujours celui qu'on croit. Je voulais le calculer moi-même : ce fut mon premier algorithme sur un graphe."
+features:
+  - title: "Deux stations, un trajet"
+    text: "On choisit le départ et l'arrivée : le plus court chemin s'affiche."
+  - title: "Le réseau en graphe"
+    text: "Les stations sont des nœuds, les tronçons qui les relient sont des arêtes."
+  - title: "Une application de bureau"
+    text: "Une fenêtre Swing pour choisir les stations et lire l'itinéraire."
+choices:
+  - title: "Dijkstra"
+    text: "Le plus court chemin dans un graphe aux distances positives : exact, et simple à vérifier à la main."
+  - title: "Java et Swing"
+    text: "Un langage et une interface que je connaissais : tout l'effort allait à l'algorithme."

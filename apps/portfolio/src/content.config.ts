@@ -3,15 +3,28 @@ import { glob } from "astro/loaders";
 import { z } from "astro/zod";
 
 /**
- * Textes longs des fiches projet (contexte, problème résolu, choix techniques).
- * Un fichier par langue et par entrée : src/content/projets/fr/<slug>.mdx.
- * Les métadonnées (numéro, nom, stack, URLs…) restent dans @index/projects.
+ * Les textes des fiches projet, un fichier par langue et par projet : src/content/projets/fr/<slug>.yaml.
+ * Les chaînes sont entre guillemets doubles : les « : » des textes français ne se lisent pas comme des clés.
+ * Les métadonnées (numéro, nom, pile, hébergeur, liens…) restent dans @index/projects ; le décor et
+ * l'accroche de chaque escale, dans src/data/voyage.ts. Ce sont des brouillons, à réécrire.
  */
+const item = z.object({ title: z.string(), text: z.string() });
+
 const projets = defineCollection({
-  loader: glob({ pattern: "**/*.mdx", base: "./src/content/projets" }),
+  // L'identifiant est le chemin du fichier, « fr/magellan » : sans ça, celui d'INDEX (index.yaml) prendrait
+  // le nom de son dossier, comme une page.
+  loader: glob({ pattern: "**/*.yaml", base: "./src/content/projets", generateId: ({ entry }) => entry.replace(/\.yaml$/, "") }),
   schema: z.object({
-    /** Phrase d'accroche de la fiche, plus longue que le pitch de l'index. */
-    lede: z.string(),
+    /** « Pourquoi je l'ai fabriqué ». */
+    why: z.string().optional(),
+    /** « Ce que ça fait » : trois cartes. */
+    features: z.array(item).default([]),
+    /** « Comment c'est fait » : un choix, et sa raison. */
+    choices: z.array(item).default([]),
+    /** La capture d'écran (src/assets/shots/<slug>-desktop.jpg), sans donnée personnelle. */
+    capture: z.object({ alt: z.string(), caption: z.string() }).optional(),
+    /** Un projet raconté sur la fiche d'un autre (l'API REST .NET, sur l'étagère de Mithril) : ce qu'en dit l'étagère. */
+    shelf: z.string().optional(),
   }),
 });
 

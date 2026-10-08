@@ -1,0 +1,16 @@
+# gym-picker, la fiche en français. Brouillon, à réécrire.
+why: "Mes salles de sport sont à distance comparable : c'est le trafic qui décide laquelle est la plus proche. Plutôt que de les vérifier une par une dans Waze, l'app les compare toutes d'un coup."
+features:
+  - title: "Le trafic en temps réel"
+    text: "Toutes les salles classées par temps de trajet en voiture, bouchons compris."
+  - title: "Un appui, et c'est parti"
+    text: "Toucher une salle ouvre Waze ou Google Maps sur le bon trajet."
+  - title: "Un domicile de secours"
+    text: "Si le GPS tarde, le calcul part d'une adresse gardée sur le téléphone."
+choices:
+  - title: "TomTom plutôt que Google"
+    text: "Pas de carte bancaire : au-delà du quota gratuit, l'API refuse au lieu de facturer."
+  - title: "Un Worker Cloudflare devant l'API"
+    text: "La clé ne quitte jamais le serveur, et chaque adresse IP est limitée à 20 appels par minute."
+  - title: "Le domicile reste sur le téléphone"
+    text: "La position part dans le corps de la requête, jamais dans l'adresse : les URL finissent dans les journaux."

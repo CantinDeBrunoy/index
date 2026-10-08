@@ -1,0 +1,18 @@
+# Mithril, la fiche en anglais. Brouillon, à réécrire.
+why: "I wanted a password vault I could read from end to end: no cloud, no dependencies, compiled with what Windows already ships. And anyone can recompile it to check."
+features:
+  - title: "Strong passwords"
+    text: "From 8 to 128 characters, without ambiguous ones if you like, with their strength shown."
+  - title: "A vault encrypted twice"
+    text: "By Windows, then by the master password, with AES-256."
+  - title: "Auto-typing"
+    text: "A shortcut fills in the active window, without going through the clipboard."
+choices:
+  - title: "No dependencies"
+    text: "Compiled by csc.exe, the compiler that ships with Windows: no installer, a single .exe."
+  - title: "The phone, without the cloud"
+    text: "Paired with a six-digit code, it syncs over the local network, each side verifying the other."
+  - title: "Unbiased randomness"
+    text: "Windows' cryptographic generator, rejecting biased draws: every character has exactly the same chance."
+  - title: "A security audit in CI"
+    text: "37 rules check on every change that the promised guarantees still hold; all networking lives in a single file."

@@ -38,14 +38,15 @@
   --on-brass: #0b0c14;
 }
 
-/* Le jour : sur le laiton, l'encre (4,8:1) plutôt que la crème (3:1, trop faible pour un petit texte). */
+/* Le jour : sur le laiton, l'encre (4,8:1) plutôt que la crème (3:1, trop faible pour un petit texte).
+   Le laiton des petits textes tient 4,8:1 sur le papier crème et 5:1 sur les cartes. */
 .pal-day {
   --ink: #241e18;
   --muted: #6a5f52;
   --card: #fbf7f0;
   --line: #e3d8c8;
   --brass: #b08a4f;
-  --brass-text: #8a6a35;
+  --brass-text: #84652f;
   --halo: rgba(251, 247, 240, 0.72);
   --on-brass: #241e18;
 }
@@ -57,7 +58,7 @@
   --card: #fbf7f0;
   --line: #e3d8c8;
   --brass: #b08a4f;
-  --brass-text: #8a6a35;
+  --brass-text: #84652f;
   --halo: rgba(251, 247, 240, 0.72);
   --on-brass: #241e18;
 }

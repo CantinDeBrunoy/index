@@ -5,6 +5,7 @@
  * Les textes sont des brouillons, à réécrire.
  */
 
+import type { Project } from "@index/projects";
 import type { Lang } from "../i18n/voyage";
 
 export type Palette = "night" | "day" | "dusk" | "kraft";
@@ -234,6 +235,8 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     codeShort: "Le code ↗",
     noApp: "Archive · pas d'app en ligne",
     soon: "App bientôt en ligne",
+    statusSoon: "Bientôt en ligne",
+    statusDownload: "À télécharger",
     backTo: "Revenir : {place}",
   },
   en: {
@@ -260,9 +263,39 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     codeShort: "Code ↗",
     noApp: "Archive · no live app",
     soon: "App coming soon",
+    statusSoon: "Coming soon",
+    statusDownload: "Download",
     backTo: "Back: {place}",
   },
 };
 
 export const fill = (s: string, values: Record<string, string | number>) =>
   s.replace(/\{(\w+)\}/g, (m, k: string) => (k in values ? String(values[k]) : m));
+
+/** Le lien vers l'app d'une escale, ou la note qui le remplace : une archive, INDEX, une app pas encore en ligne. */
+export function appOf(project: Project, text: StopText, lang: Lang): { href: string; label: string; short: string } | { note: string } {
+  const v = VOYAGE[lang];
+  const { kind, links } = project;
+  if (text.noApp) return { note: text.noApp };
+  if (kind === "desktop" && links.download) return { href: links.download, label: v.download, short: v.download };
+  if (kind === "web" && links.demo) return { href: links.demo, label: v.app, short: v.appShort };
+  return { note: kind === "archive" ? v.noApp : v.soon };
+}
+
+/**
+ * Le type, l'année et le statut d'une escale, d'après son « Type · année · statut ». Une app dont
+ * l'adresse n'est pas encore connue est « bientôt en ligne » ; un logiciel, sans statut, « à télécharger ».
+ * `line` : la ligne du cartel et de la fiche, numéro en tête ; elle ne se coupe qu'entre ses éléments.
+ */
+export function kindOf(project: Project, text: StopText, lang: Lang) {
+  const v = VOYAGE[lang];
+  const [type = "", year = String(project.year), status] = text.kind.split(" · ");
+  const soon = project.kind === "web" && !project.links.demo && !text.noApp;
+  const shown = status && soon ? v.statusSoon : status;
+  return {
+    type,
+    year,
+    status: shown ?? v.statusDownload,
+    line: [project.number, type, year, ...(shown ? [shown] : [])].map((part) => part.replaceAll(" ", " ")).join(" · "),
+  };
+}

@@ -1,0 +1,16 @@
+# Visit Match, la fiche en anglais. Brouillon, à réécrire.
+why: "An engineering school project, taken all the way to a business plan. Travelling alone is freeing, but sometimes you want to share a visit: Visit Match connects solo travellers who share the same destinations and interests."
+features:
+  - title: "Shared interests"
+    text: "You enter your destinations and what you're into."
+  - title: "The right matches"
+    text: "The app brings together the travellers with the most in common."
+  - title: "Meeting up on the spot"
+    text: "Once you agree, all that's left is to set a time and a place."
+choices:
+  - title: "Flutter"
+    text: "One codebase for iOS and Android."
+  - title: "Firebase"
+    text: "Accounts and data with no server to maintain."
+  - title: "Figma first"
+    text: "Screens designed and discussed before the first line of code."

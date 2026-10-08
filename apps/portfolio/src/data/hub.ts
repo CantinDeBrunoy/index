@@ -188,9 +188,3 @@ export const GATES: Record<string, string> = {
   hublot: "GitHub",
   index: "Cloudflare",
 };
-
-/** Le nom anglais de l'API REST .NET ; les autres noms ne se traduisent pas. */
-export const NAMES_EN: Record<string, string> = { "api-rest-dotnet": ".NET REST API" };
-
-/** Les projets sans fiche à eux : l'API REST .NET est racontée sur l'étagère de Mithril. */
-export const FICHE_OF: Record<string, string> = { "api-rest-dotnet": "mithril" };

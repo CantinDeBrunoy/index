@@ -10,7 +10,7 @@
  * le retour et l'escale suivante au pouce.
  */
 import { getProject } from "@index/projects";
-import { fill, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
+import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { fichePath, LANGS, ROUTES, STRINGS, TABS, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 
@@ -29,15 +29,6 @@ const stops = STOPS.map((stop, i) => {
   return { ...stop, n: i + 1, project, text: STOP_TEXTS[lang][stop.slug]! };
 });
 const places = [v.start, ...stops.map((s) => s.text.place)];
-
-/** Ce qui remplace « Ouvrir l'app » : la note d'une archive, d'INDEX, ou d'une app pas encore en ligne. */
-function appOf(s: (typeof stops)[number]): { href: string; label: string; short: string } | { note: string } {
-  const { kind, links } = s.project;
-  if (s.text.noApp) return { note: s.text.noApp };
-  if (kind === "desktop" && links.download) return { href: links.download, label: v.download, short: v.download };
-  if (kind === "web" && links.demo) return { href: links.demo, label: v.app, short: v.appShort };
-  return { note: kind === "archive" ? v.noApp : v.soon };
-}
 ---
 
 <Voyage lang={lang} alternates={alternates} palette="night" background={START.bg}>
@@ -144,7 +135,7 @@ function appOf(s: (typeof stops)[number]): { href: string; label: string; short:
 
       {
         stops.map((s) => {
-          const app = appOf(s);
+          const app = appOf(s.project, s.text, lang);
           const last = s.n === stops.length;
           const next = last ? ROUTES.projets[lang] : `#escale-${s.n + 1}`;
           const prev = s.n === 1 ? "#depart" : `#escale-${s.n - 1}`;
@@ -194,9 +185,7 @@ function appOf(s: (typeof stops)[number]): { href: string; label: string; short:
                 }
               </div>
               <article class="cartel ui">
-                <p class="cartel__kind">
-                  {s.project.number} · {s.text.kind}
-                </p>
+                <p class="cartel__kind">{kindOf(s.project, s.text, lang).line}</p>
                 <h2 class="serif" id={`escale-${s.n}-titre`} tabindex="-1" data-focus>
                   {s.project.name}
                 </h2>
@@ -278,41 +267,6 @@ function appOf(s: (typeof stops)[number]): { href: string; label: string; short:
     flex-direction: column;
     align-items: center;
     gap: 2px;
-  }
-  .dots {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .dot {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-  }
-  .dot span {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    border: 1.5px solid var(--muted);
-    transition: transform 0.2s;
-  }
-  .dot:global(.done) span {
-    border-color: var(--brass);
-    background: var(--brass);
-  }
-  .dot[aria-current] span {
-    width: 13px;
-    height: 13px;
-    border-color: var(--brass);
-    background: var(--brass);
-  }
-  .dot:hover span {
-    transform: scale(1.35);
   }
   .vcaption {
     margin: 0;

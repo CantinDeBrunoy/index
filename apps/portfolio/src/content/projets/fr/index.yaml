@@ -1,0 +1,16 @@
+# INDEX, la fiche en français. Brouillon, à réécrire.
+why: "Mes projets vivaient chacun dans son coin, et certains s'endormaient sur les offres gratuites. INDEX les réunit dans un seul dépôt, les garde éveillés, et les présente ici, numérotés, comme les escales d'un voyage."
+features:
+  - title: "Un seul dépôt"
+    text: "Les dix projets importés avec tout leur historique, chacun dans son dossier."
+  - title: "Rien ne s'endort"
+    text: "Un robot garde la base de Tonalli éveillée, vérifie chaque site toutes les heures et ouvre un ticket si l'un tombe."
+  - title: "Chaque projet à sa place"
+    text: "Un numéro, une fiche et une escale : ce site."
+choices:
+  - title: "pnpm et Turborepo"
+    text: "Chaque projet garde ses propres versions ; seuls ceux qui changent sont reconstruits et testés."
+  - title: "Un hébergement en deux"
+    text: "Les apps déjà sur Vercel y restent, avec leurs adresses ; les autres partent sur Cloudflare Workers."
+  - title: "Le réveil dans GitHub Actions"
+    text: "Une vraie requête garde Supabase éveillé, et le dépôt se réactive lui-même pour que ses tâches planifiées ne s'arrêtent jamais."

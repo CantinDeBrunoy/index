@@ -2,6 +2,7 @@
 /**
  * L'en-tête des pages : la marque, les quatre onglets du site et l'interrupteur FR / EN.
  * Sous 700 px : la marque réduite à « Index », la langue et un menu ☰ (un <details>, sans script).
+ * Entre la marque et les onglets, ce que la page y met (une fiche : ses escales en points).
  */
 import { LANGS, ROUTES, STRINGS, TABS, type Lang, type TabKey } from "../../i18n/voyage";
 
@@ -23,6 +24,7 @@ const currentOf = (key: TabKey) => (key === current ? (exact ? "page" : "true") 
   <a class="brand" href={ROUTES.voyage[lang]}>
     <span class="brand__name">Index</span><span class="brand__who">Cantin Roquier</span>
   </a>
+  <slot />
   <div class="nav-desktop">
     <nav aria-label={t.tabsAria} class="tabs">
       {TABS.map((key) => <a href={ROUTES[key][lang]} aria-current={currentOf(key)}>{t.tabs[key]}</a>)}

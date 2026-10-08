@@ -125,6 +125,7 @@ a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+  color: var(--brass-text);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
@@ -268,6 +269,96 @@ a {
 }
 .m-drop a[aria-current] {
   color: var(--brass-text);
+}
+
+/* — Les escales en points (le voyage, les fiches) : déjà vues, en laiton ; l'escale courante, plus grosse — */
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+}
+.dot span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1.5px solid var(--muted);
+  transition: transform 0.2s;
+}
+.dot.done span {
+  border-color: var(--brass);
+  background: var(--brass);
+}
+.dot[aria-current] span {
+  width: 13px;
+  height: 13px;
+  border-color: var(--brass);
+  background: var(--brass);
+}
+.dot:hover span {
+  transform: scale(1.35);
+}
+
+/* — Une pastille (la pile d'un projet), sur le papier des pages de lecture — */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* — Une carte à vignette (l'escale suivante, le carnet) : la vignette se soulève au survol — */
+
+.post {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-decoration: none;
+}
+.thumb {
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  transition:
+    transform 0.25s,
+    border-color 0.25s;
+}
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.post:hover .thumb {
+  transform: translateY(-4px);
+  border-color: var(--brass);
 }
 
 /* — Pied de page : le lien vers les mentions légales — */

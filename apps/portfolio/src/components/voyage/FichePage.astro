@@ -1,0 +1,751 @@
+---
+/**
+ * Une fiche projet, une par escale du voyage. L'en-tête prend la couleur et la scène de l'escale : la vidéo
+ * haute définition sur ordinateur, la boucle du téléphone sous 700 px, une image fixe en mouvement réduit.
+ * Le reste est sur papier crème : pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait à côté du
+ * billet (sa souche porte le numéro), les captures, l'étagère (les projets racontés ici), puis l'escale
+ * suivante, qui reprend le voyage ; après la dernière, le carnet.
+ * Les textes viennent de la collection de contenu (src/content/projets) ; le décor et l'accroche, de
+ * data/voyage.ts ; les liens, la pile et l'hébergeur, de @index/projects.
+ */
+import { getProject, GITHUB_URL, projects } from "@index/projects";
+import { getImage } from "astro:assets";
+import { getEntry } from "astro:content";
+import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
+import { appOf, fill, kindOf, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
+import { EMAIL, fichePath, ROUTES, type Lang } from "../../i18n/voyage";
+import Voyage from "../../layouts/Voyage.astro";
+import { getShot } from "../../lib/shots";
+import Colophon from "./Colophon.astro";
+import SiteHeader from "./SiteHeader.astro";
+
+interface Props {
+  lang: Lang;
+  /** Le projet de l'escale (slug de @index/projects). */
+  slug: string;
+}
+
+const { lang, slug } = Astro.props;
+const f = FICHE[lang];
+const i = STOPS.findIndex((s) => s.slug === slug);
+const stop = STOPS[i];
+const project = getProject(slug);
+const entry = await getEntry("projets", `${lang}/${slug}`);
+if (!stop || !project || !entry?.data.why) throw new Error(`Fiche incomplète : ${lang}/${slug}`);
+
+const n = i + 1;
+const text = STOP_TEXTS[lang][slug]!;
+const { why, features, choices, capture } = entry.data;
+const kind = kindOf(project, text, lang);
+const app = appOf(project, text, lang);
+const code = project.links.code;
+const alternates = { fr: fichePath("fr", project), en: fichePath("en", project) };
+
+// La capture : celle d'ordinateur, et sous 700 px celle du téléphone, s'il y en a une.
+const shot = capture ? getShot(slug, "desktop") : undefined;
+const shotPhone = capture ? getShot(slug, "mobile") : undefined;
+const shotSet = shot && (await getImage({ src: shot, widths: [640, 1040, 1440], format: "webp" }));
+const shotPhoneSet = shotPhone && (await getImage({ src: shotPhone, widths: [390, 780], format: "webp" }));
+
+// L'itinéraire : chaque escale ouvre sa fiche.
+const itinerary = STOPS.map((s) => getProject(s.slug)!);
+
+// L'étagère : les projets sans fiche à eux, racontés sur celle-ci.
+const shelf = await Promise.all(
+  Object.entries(FICHE_OF)
+    .filter(([, host]) => host === slug)
+    .map(async ([shelved]) => {
+      const p = getProject(shelved)!;
+      const e = await getEntry("projets", `${lang}/${shelved}`);
+      return { project: p, name: nameOf(p, lang), text: e?.data.shelf ?? "" };
+    }),
+);
+
+// L'escale suivante, qui reprend le voyage ; après la dernière, le carnet.
+const after = STOPS[i + 1];
+const next = after && { ...after, n: n + 1, project: getProject(after.slug)!, text: STOP_TEXTS[lang][after.slug]! };
+const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
+---
+
+<Voyage lang={lang} title={project.name} description={text.pitch} alternates={alternates} type="article" palette="day">
+  <div class={`hero pal-${stop.palette}`} style={`--stop-bg: ${stop.bg}`}>
+    <div class="fwrap">
+      <SiteHeader lang={lang} current="projets" exact={false} alternates={alternates}>
+        <nav class="itin" aria-label={f.itinAria}>
+          <span class="itin__of">{fill(f.stopOf, { i: n, n: STOPS.length })}</span>
+          <ol class="dots">
+            {
+              itinerary.map((p, k) => (
+                <li>
+                  <a class:list={["dot", { done: k < i }]} href={fichePath(lang, p)} aria-label={p.name} aria-current={k === i ? "page" : undefined}>
+                    <span />
+                  </a>
+                </li>
+              ))
+            }
+          </ol>
+        </nav>
+      </SiteHeader>
+
+      <div class="hero__body">
+        <div class="hero__text">
+          <a class="link hero__back" href={`${ROUTES.voyage[lang]}#escale-${n}`}>{f.back}</a>
+          <p class="label">{f.stop} {n} · {text.place}</p>
+          <h1 class="serif">{project.name}</h1>
+          <p class="hero__kind">{kind.line}</p>
+          <p class="hero__pitch">{text.pitch}</p>
+          <div class="hero__links">
+            {"href" in app ? <a class="go" href={app.href}>{app.label}</a> : <span class="hero__note">{app.note}</span>}
+            {
+              code && (
+                <a class="link" href={code} target="_blank" rel="noopener">
+                  {VOYAGE[lang].code}
+                </a>
+              )
+            }
+          </div>
+        </div>
+
+        <div class="hero__scene" data-scene-video role="img" aria-label={text.alt}>
+          <script is:inline>
+            document.currentScript.parentElement.classList.add("js");
+          </script>
+          <video
+            class="scene--video"
+            muted
+            loop
+            playsinline
+            disablepictureinpicture
+            preload="none"
+            poster={still(stop.scene)}
+            aria-hidden="true"
+          >
+            <source src={`/voyage/${stop.scene}-av1.mp4`} type='video/mp4; codecs="av01.0.12M.08"' />
+            <source src={`/voyage/${stop.scene}.mp4`} type='video/mp4; codecs="avc1.640034"' />
+          </video>
+          <picture>
+            <source media="(max-width: 700px) and (prefers-reduced-motion: reduce)" srcset={still(stop.scene, "-mobile")} />
+            <source media="(max-width: 700px)" srcset={`/voyage/${stop.scene}-mobile.webp`} />
+            <source media="(prefers-reduced-motion: reduce)" srcset={still(stop.scene)} />
+            <img class="scene--still" src={`/voyage/${stop.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
+          </picture>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main id="contenu" class="fwrap">
+    <section class="why">
+      <h2 class="label">{f.why}</h2>
+      <p class="serif why__text">{why}</p>
+    </section>
+
+    <section class="what">
+      <h2 class="label">{f.what}</h2>
+      <ol class="cards">
+        {
+          features.map((item, k) => (
+            <li class="card">
+              <span class="card__num">{String(k + 1).padStart(2, "0")}</span>
+              <h3 class="serif">{item.title}</h3>
+              <p>{item.text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section class="how">
+      <div class="how__choices">
+        <h2 class="label">{f.how}</h2>
+        <dl>
+          {
+            choices.map((item) => (
+              <div>
+                <dt>{item.title}</dt>
+                <dd>{item.text}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+
+      <aside class="billet" aria-label={f.ticketAria}>
+        <div class="billet__body">
+          <h2 class="label">{f.ticket}</h2>
+          <dl>
+            <div class="wide">
+              <dt>{f.fields.stop}</dt>
+              <dd>{n} · {text.place}</dd>
+            </div>
+            <div>
+              <dt>{f.fields.type}</dt>
+              <dd>{kind.type}</dd>
+            </div>
+            <div>
+              <dt>{f.fields.year}</dt>
+              <dd>{kind.year}</dd>
+            </div>
+            <div>
+              <dt>{f.fields.status}</dt>
+              <dd>{kind.status}</dd>
+            </div>
+            {
+              project.host && (
+                <div class="wide">
+                  <dt>{f.fields.host}</dt>
+                  <dd>{project.host}</dd>
+                </div>
+              )
+            }
+          </dl>
+          <div>
+            <p class="billet__stack">{f.fields.stack}</p>
+            <ul class="chips">{project.stack.map((tech) => <li class="chip">{tech}</li>)}</ul>
+          </div>
+          {
+            code && (
+              <a class="link billet__code" href={code} target="_blank" rel="noopener">
+                {f.readCode}
+              </a>
+            )
+          }
+        </div>
+        <div class="souche" aria-hidden="true">
+          <span class="serif souche__num">{project.number}</span>
+          <span class="souche__name">{project.name}</span>
+        </div>
+      </aside>
+    </section>
+
+    {
+      capture && shot && shotSet && (
+        <section class="pictures">
+          <h2 class="label">{f.pictures}</h2>
+          <figure>
+            <picture>
+              {shotPhone && shotPhoneSet && (
+                <source
+                  media="(max-width: 700px)"
+                  srcset={shotPhoneSet.srcSet.attribute}
+                  sizes="300px"
+                  width={shotPhone.width}
+                  height={shotPhone.height}
+                  type="image/webp"
+                />
+              )}
+              <source srcset={shotSet.srcSet.attribute} sizes="(min-width: 1140px) 1040px, calc(100vw - 40px)" type="image/webp" />
+              <img class="shot" src={shotSet.src} width={shot.width} height={shot.height} alt={capture.alt} loading="lazy" decoding="async" />
+            </picture>
+            <figcaption>{capture.caption}</figcaption>
+          </figure>
+        </section>
+      )
+    }
+
+    {
+      shelf.length > 0 && (
+        <section class="shelf">
+          <h2 class="label">{f.shelf}</h2>
+          <div class="shelf__list">
+            {shelf.map((s) => (
+              <article class="shelf__item" id={s.project.slug}>
+                <h3 class="serif shelf__name">
+                  {s.project.number} · {s.name}
+                </h3>
+                <p class="shelf__text">{s.text}</p>
+                <ul class="chips">{s.project.stack.map((tech) => <li class="chip">{tech}</li>)}</ul>
+              </article>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <section class="next">
+      {
+        next ? (
+          <a class="post next-card" href={`${ROUTES.voyage[lang]}#escale-${next.n}`}>
+            <span class="thumb" style={`background: ${next.bg}`}>
+              <img
+                src={still(next.scene, "-640")}
+                srcset={`${still(next.scene, "-640")} 640w, ${still(next.scene)} 1280w`}
+                sizes="(min-width: 760px) 560px, 100vw"
+                alt=""
+                width="640"
+                height="360"
+                loading="lazy"
+                decoding="async"
+              />
+            </span>
+            <span class="next-card__text">
+              <span class="next-card__label">{fill(f.next, { place: next.text.place })}</span>
+              <span class="serif next-card__name">{next.project.name}</span>
+              <span class="next-card__pitch">{next.text.pitch}</span>
+              <span class="link">{f.go}</span>
+            </span>
+          </a>
+        ) : (
+          <a class="post end-card" href={ROUTES.projets[lang]}>
+            <span class="next-card__label">{f.end}</span>
+            <span class="serif next-card__name">{f.journal}</span>
+            <span class="link">{fill(f.seeAll, { n: projects.length })}</span>
+          </a>
+        )
+      }
+    </section>
+
+    <footer class="foot">
+      <p>
+        {fill(f.question, { name: project.name })} <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+      </p>
+      <a class="pill" href={GITHUB_URL} target="_blank" rel="noopener">GitHub ↗</a>
+    </footer>
+    <Colophon lang={lang} />
+  </main>
+</Voyage>
+
+<script>
+  import "../../scripts/scene-video";
+</script>
+
+<style>
+  .fwrap {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: clamp(20px, 4vw, 48px);
+  }
+
+  /* — L'en-tête : la couleur, la palette et la scène de l'escale — */
+  .hero {
+    background: var(--stop-bg);
+    color: var(--ink);
+  }
+  /* Les petits textes de laiton et de gris sont posés sur le fond de l'escale, plus soutenu que les
+     cartes : sur les fonds clairs, un laiton et un gris plus sombres, 4,5:1 au moins. */
+  .hero.pal-day,
+  .hero.pal-dusk {
+    --brass-text: #684c22;
+  }
+  .hero.pal-day {
+    --muted: #5f5447;
+  }
+
+  .itin {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .itin__of {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .hero__body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 32px 48px;
+    padding: 16px 0 72px;
+  }
+  .hero__text {
+    display: flex;
+    flex: 1 1 400px;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .hero__back {
+    align-self: flex-start;
+    min-height: 32px;
+    margin-bottom: -4px;
+  }
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(56px, 6.6vw, 96px);
+    line-height: 0.95;
+  }
+  .hero__kind {
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .hero__pitch {
+    max-width: 540px;
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.55;
+  }
+  .hero__links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 22px;
+    padding-top: 6px;
+  }
+  .hero__note {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  /* La scène : sur ordinateur, avec le script, la vidéo haute définition (la boucle WebP ne se télécharge
+     alors pas) ; sans script, ou si la vidéo est illisible, la boucle. */
+  .hero__scene {
+    position: relative;
+    flex: 1.6 1 560px;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--radius-l);
+  }
+  .hero__scene video,
+  .hero__scene img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .hero__scene img {
+    display: block;
+  }
+  .hero__scene .scene--video {
+    display: none;
+  }
+  @media (min-width: 701px) {
+    .hero__scene:global(.js) .scene--video {
+      display: block;
+    }
+    .hero__scene:global(.js) .scene--still {
+      display: none;
+    }
+    .hero__scene:global(.js.no-video) .scene--video {
+      display: none;
+    }
+    .hero__scene:global(.js.no-video) .scene--still {
+      display: block;
+    }
+  }
+
+  /* — Le papier : les rubriques, séparées d'un filet — */
+  .why {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 56px;
+    padding: 88px 0 56px;
+    border-bottom: 1px solid var(--line);
+  }
+  .why .label,
+  .shelf .label {
+    flex: 1 1 200px;
+  }
+  .why__text {
+    flex: 3 1 560px;
+    margin: 0;
+    font-size: clamp(26px, 2.6vw, 36px);
+    line-height: 1.3;
+  }
+  .what,
+  .how,
+  .pictures {
+    padding: 56px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 20px;
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 24px;
+    border-radius: var(--radius-m);
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .card__num {
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .card h3 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.1;
+  }
+  .card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .how {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px 56px;
+  }
+  .how__choices {
+    flex: 3 1 520px;
+  }
+  .how__choices dl {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    margin: 28px 0 0;
+  }
+  .how__choices dt {
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .how__choices dd {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Le billet : l'essentiel du projet, et sa souche détachable, qui porte le numéro. */
+  .billet {
+    position: relative;
+    display: flex;
+    flex: 2 1 360px;
+    align-self: flex-start;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .billet__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+    padding: 26px 26px 22px;
+  }
+  .billet dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+    margin: 0;
+  }
+  .billet .wide {
+    grid-column: 1 / -1;
+  }
+  .billet dt,
+  .billet__stack {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .billet dd {
+    margin: 4px 0 0;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .billet__stack {
+    margin: 0 0 10px;
+  }
+  .billet__code {
+    align-self: flex-start;
+  }
+  .souche {
+    position: relative;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    width: 92px;
+    border-left: 2px dashed var(--line);
+  }
+  /* Les deux encoches de la découpe, couleur du papier. */
+  .souche::before,
+  .souche::after {
+    content: "";
+    position: absolute;
+    left: -12px;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .souche::before {
+    top: -12px;
+    clip-path: inset(50% 0 0 0);
+  }
+  .souche::after {
+    bottom: -12px;
+    clip-path: inset(0 0 50% 0);
+  }
+  .souche span {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+  .souche__num {
+    color: var(--brass-text);
+    font-size: 44px;
+    line-height: 1;
+  }
+  .souche__name {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .pictures figure {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin: 28px 0 0;
+  }
+  .shot {
+    display: block;
+    width: min(100%, 1040px);
+    height: auto;
+    border-radius: var(--radius-l);
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 48px rgba(36, 30, 24, 0.12);
+  }
+  .pictures picture {
+    display: contents;
+  }
+  .pictures figcaption {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .shelf {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 56px;
+    padding: 48px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .shelf__list {
+    display: flex;
+    flex: 3 1 560px;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .shelf__item {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .shelf__name {
+    margin: 0;
+    font-size: 32px;
+    line-height: 1.1;
+  }
+  .shelf__text {
+    margin: 0;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* — L'escale suivante, ou le carnet après la dernière — */
+  .next {
+    padding: 56px 0 40px;
+  }
+  .next-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    align-items: center;
+    gap: 24px 40px;
+  }
+  .end-card {
+    gap: 10px;
+  }
+  .next-card__text {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .next-card__label {
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .next-card__name {
+    font-size: 48px;
+    line-height: 1;
+  }
+  .next-card__pitch {
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 32px 0 56px;
+    border-top: 1px solid var(--line);
+  }
+  .foot p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .foot p a {
+    color: var(--brass-text);
+  }
+
+  /* Les points des escales tiennent dans l'en-tête à partir de 1100 px. */
+  @media (max-width: 1100px) {
+    .itin {
+      display: none;
+    }
+  }
+
+  /* Sous 700 px : la scène dans le cadre du téléphone, sous le texte. */
+  @media (max-width: 700px) {
+    .hero__body {
+      gap: 28px;
+      padding: 12px 0 48px;
+    }
+    .hero__scene {
+      flex-basis: 100%;
+      aspect-ratio: 780 / 760;
+    }
+    .hero__pitch {
+      font-size: 18px;
+    }
+    .why {
+      padding: 56px 0 40px;
+    }
+    .what,
+    .how,
+    .pictures {
+      padding: 40px 0;
+    }
+    /* La capture du téléphone, à la taille d'un téléphone. */
+    .shot {
+      width: min(100%, 300px);
+      border-radius: 28px;
+    }
+    .next-card__name {
+      font-size: 40px;
+    }
+  }
+</style>

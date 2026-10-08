@@ -1,0 +1,14 @@
+# Galaxy Escape, la fiche en anglais. Brouillon, à réécrire.
+why: "I wanted to understand what it takes to run a 3D game in a simple browser tab. Galaxy Escape, a runner inspired by Temple Run, was my testing ground: an endless race, a world that invents itself in front of the ship."
+features:
+  - title: "An endless race"
+    text: "You keep speeding up, dodging whatever comes at you."
+  - title: "Generated levels"
+    text: "The track builds itself as you play: never the same twice."
+  - title: "In the browser"
+    text: "Play straight away, with nothing to install."
+choices:
+  - title: "Three.js rather than a game engine"
+    text: "Learning 3D from the ground up, and staying on the web."
+  - title: "Procedural generation"
+    text: "Endless levels, without drawing them one by one."

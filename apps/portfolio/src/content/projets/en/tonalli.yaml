@@ -1,0 +1,19 @@
+# Tonalli, la fiche en anglais. Brouillon, à réécrire.
+why: "One emotion, one colour, two photos: a ritual for two, every day, even far apart. I wanted a thread between two people, not a social network: no feed, no comments, just our days."
+features:
+  - title: "A colour a day"
+    text: "One emotion out of twelve, in three intensities: that's what sets the colour."
+  - title: "Two photos in the moment"
+    text: "The scene, then your face, taken in the app, never from the gallery."
+  - title: "The other's calendar"
+    text: "It only reveals itself once you've filled in your own day; you reply with a single emoji."
+choices:
+  - title: "Reciprocity written into the database"
+    text: "Supabase access rules enforce it in SQL: impossible to get around from the browser."
+  - title: "The author's day"
+    text: "An entry's date is computed in its author's time zone, never in UTC: otherwise, in the evening, the day shifts."
+  - title: "A website rather than an app"
+    text: "Tonalli started as a mobile app, then became an installable website: there had to be nothing to install."
+capture:
+  alt: "Screenshot of Tonalli: the home screen, the drop character and the sign-in buttons."
+  caption: "The home screen."

@@ -8,10 +8,11 @@
  */
 import "@index/ui/fonts-doto.css";
 
-import { getProject, projects, type Project } from "@index/projects";
+import { projects, type Project } from "@index/projects";
 import dotoUrl from "@index/ui/fonts/doto-latin-wght-normal.woff2?url";
-import { FICHE_OF, GATES, HUB, NAMES_EN, type FixedState } from "../../data/hub";
-import { fichePath, ROUTES, type Lang } from "../../i18n/voyage";
+import { ficheHref, nameOf as nameIn } from "../../data/fiches";
+import { GATES, HUB, type FixedState } from "../../data/hub";
+import { ROUTES, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import { tickerText } from "../../scripts/hub-ticker";
 import Colophon from "./Colophon.astro";
@@ -28,8 +29,8 @@ const alternates = { fr: ROUTES.apps.fr, en: ROUTES.apps.en };
 const live = projects.filter((p) => p.kind !== "archive");
 const archives = projects.filter((p) => p.kind === "archive");
 
-const nameOf = (p: Project) => (lang === "en" ? (NAMES_EN[p.slug] ?? p.name) : p.name);
-const ficheOf = (p: Project) => fichePath(lang, getProject(FICHE_OF[p.slug] ?? p.slug) ?? p);
+const nameOf = (p: Project) => nameIn(p, lang);
+const ficheOf = (p: Project) => ficheHref(p, lang);
 
 /** Ce que montre une ligne : un statut sondé en direct, ou un état fixe. */
 function stateOf(p: Project): { live: true } | { live: false; state: FixedState } {

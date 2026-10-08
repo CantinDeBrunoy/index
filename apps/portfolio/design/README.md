@@ -35,6 +35,10 @@ Les fichiers prêts se copient dans `../public/voyage/` :
 - `<scène>-mobile.webp` pour le téléphone ;
 - `<scène>.webp`, la boucle d'ordinateur en 1280 × 720, quand le script est coupé.
 
+Puis `node stills.mjs` en tire les images fixes, dans `../public/voyage/stills/` : la première image de chaque
+boucle, en 1280 × 720, en vignette de 640 × 360 et en version téléphone. Elles servent aux vignettes (l'escale
+suivante d'une fiche, le carnet) et au mouvement réduit, où rien ne doit bouger.
+
 ## La maquette
 
 ```bash
@@ -48,7 +52,8 @@ identifiant sur le canvas (`ids.json`, `mobile.json`).
 
 Les textes sont dans ces fichiers :
 - `i18n.cjs` : l'interface et les escales ;
-- `fiches-data(.en).cjs` : les fiches ;
+- `fiches-data(.en).cjs` : les fiches, pour les planches seulement. Le site lit les siens dans
+  `../src/content/projets/` (un fichier YAML par langue et par projet) : c'est là qu'ils se réécrivent ;
 - `apropos-data(.en).cjs` : la page « À propos » ;
 - `annexes-data.cjs` : la 404, les mentions légales et les aperçus de partage ;
 - `hub-data.cjs` : la page « Les apps » et l'onglet « ← Index ».
