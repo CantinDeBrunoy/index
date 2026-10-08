@@ -20,4 +20,6 @@ export default defineConfig({
     routing: { prefixDefaultLocale: false },
   },
   integrations: [mdx(), sitemap({ filter: (page) => !page.includes("/styleguide") })],
+  // Pas de barre d'outils d'Astro en bas des pages pendant le développement : personne n'en a l'usage.
+  devToolbar: { enabled: false },
 });
