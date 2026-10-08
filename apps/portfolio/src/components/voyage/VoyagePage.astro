@@ -171,6 +171,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                   <source media="(max-width: 700px)" srcset={`/voyage/${s.scene}-mobile.webp`} />
                   <img class="scene scene--still" src={`/voyage/${s.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
                 </picture>
+                <div class="poster-veil ui" aria-hidden="true" />
                 <a class:list={["spot", { "spot--left": left }]} href={next} data-go={last ? undefined : s.n + 1}>
                   <span class="ring" aria-hidden="true" />
                   <span class="lab">{s.text.cta} →</span>
@@ -185,7 +186,10 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                 }
               </div>
               <article class="cartel ui">
-                <p class="cartel__kind">{kindOf(s.project, s.text, lang).line}</p>
+                <p class="cartel__kind">
+                  <span class="cartel__num">{s.project.number}</span>
+                  <span>{kindOf(s.project, s.text, lang).meta}</span>
+                </p>
                 <h2 class="serif" id={`escale-${s.n}-titre`} tabindex="-1" data-focus>
                   {s.project.name}
                 </h2>
@@ -445,7 +449,23 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     white-space: nowrap;
   }
 
-  /* — Le cartel, en bas à gauche ; le retour, en bas à droite — */
+  /* — Le cartel, en bas à gauche : une affiche, le nom du projet en très grand à même la scène,
+     sur un voile de la couleur de l'escale ; le retour, en bas à droite.
+     L'affiche grandit avec l'écran, comme la scène : --u vaut 1px sur un écran de 1440 × 900. — */
+  .stop {
+    --u: clamp(0.72px, min(100vw / 1440, 100svh / 900), 2px);
+  }
+  /* Le voile est dans la scène, sous l'anneau ; il couvre le coin bas gauche de l'écran, pas de l'image. */
+  .poster-veil {
+    position: absolute;
+    z-index: 1;
+    left: calc(50% - 50vw);
+    bottom: calc(50% - 50svh);
+    width: 62vw;
+    height: 66svh;
+    background: radial-gradient(farthest-side at 0% 100%, var(--stop-bg) 0%, var(--stop-bg) 38%, transparent 100%);
+    pointer-events: none;
+  }
   .cartel {
     position: absolute;
     z-index: 2;
@@ -453,51 +473,75 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     bottom: 40px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    width: 460px;
-    padding: 22px 24px 14px;
-    border-radius: 16px;
-    border: 1px solid var(--line);
-    background: var(--card);
+    gap: calc(14 * var(--u));
+    width: min(calc(720 * var(--u)), calc(100% - 280px));
+  }
+  /* Sans carte, les petits textes reposent sur la couleur de l'escale : sur les escales claires, un laiton
+     et un gris plus sombres que ceux des cartes (au moins 5:1 ; ceux des cartes tombaient à 3,2:1 sur Tonalli). */
+  .stop:not(.pal-night) .cartel {
+    --brass-text: #63491f;
+    --muted: #574a3e;
   }
   .cartel__kind {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
     margin: 0;
     color: var(--brass-text);
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: max(12px, calc(13 * var(--u)));
+  }
+  .cartel__num {
+    display: inline-flex;
+    align-items: center;
+    height: 2em;
+    padding: 0 0.8em;
+    border-radius: var(--radius-pill);
+    background: var(--brass);
+    color: var(--on-brass);
+    font-weight: 500;
   }
   .cartel h2 {
     margin: 0;
-    font-size: 48px;
-    line-height: 1;
+    font-size: calc(116 * var(--u));
+    line-height: 0.86;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
     outline: none;
   }
   .cartel__pitch {
+    max-width: calc(540 * var(--u));
     margin: 0;
-    font-size: 15px;
-    line-height: 1.55;
+    font-size: max(15px, calc(19 * var(--u)));
+    line-height: 1.5;
   }
   .cartel__extra {
+    max-width: calc(540 * var(--u));
     margin: 0;
     color: var(--muted);
-    font-size: 13px;
+    font-size: max(13px, calc(14 * var(--u)));
     line-height: 1.5;
   }
   .cartel__links {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0 22px;
+    gap: 12px calc(22 * var(--u));
+    padding-top: calc(6 * var(--u));
   }
   .cartel__links .go {
-    min-height: 44px;
-    padding: 0 20px;
-    font-size: 14px;
+    min-height: max(48px, calc(52 * var(--u)));
+    padding: 0 calc(26 * var(--u));
+    font-size: max(15px, calc(16 * var(--u)));
+  }
+  .cartel__links .link {
+    font-size: max(14px, calc(15 * var(--u)));
   }
   .cartel__note {
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: max(12px, calc(12 * var(--u)));
   }
   .sm {
     display: none;
@@ -725,24 +769,39 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     .tag {
       display: none;
     }
+    /* Le bas de la scène se fond dans la couleur de l'escale ; le titre remonte dessus. */
+    .poster-veil {
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      height: 26%;
+      background: linear-gradient(180deg, transparent 0%, var(--stop-bg) 100%);
+    }
     .cartel {
       position: relative;
       left: auto;
       bottom: auto;
       gap: 8px;
       width: auto;
-      margin: 12px 16px 0;
-      padding: 16px 18px 10px;
+      margin: -38px 20px 0;
     }
     .cartel__kind {
+      gap: 4px 8px;
       font-size: 11px;
     }
     .cartel h2 {
-      font-size: 38px;
+      font-size: 64px;
+      line-height: 0.88;
+      letter-spacing: -0.015em;
+    }
+    .cartel__pitch,
+    .cartel__extra {
+      max-width: none;
     }
     .cartel__pitch {
-      font-size: 14px;
-      line-height: 1.5;
+      font-size: 15px;
+      line-height: 1.45;
     }
     .cartel__extra {
       font-size: 12px;
@@ -750,12 +809,17 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     }
     .cartel__links {
       gap: 0 18px;
+      padding-top: 4px;
     }
+    /* Le bouton du bas (l'escale suivante) reste le seul en laiton : celui de l'app passe à l'encre. */
     .cartel__links .go {
       min-height: 44px;
-      padding: 0;
-      background: none;
-      color: var(--ink);
+      padding: 0 18px;
+      background: var(--ink);
+      color: var(--card);
+      font-size: 14px;
+    }
+    .cartel__links .link {
       font-size: 14px;
     }
     .cartel__note {

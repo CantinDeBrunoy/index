@@ -285,17 +285,21 @@ export function appOf(project: Project, text: StopText, lang: Lang): { href: str
 /**
  * Le type, l'année et le statut d'une escale, d'après son « Type · année · statut ». Une app dont
  * l'adresse n'est pas encore connue est « bientôt en ligne » ; un logiciel, sans statut, « à télécharger ».
- * `line` : la ligne du cartel et de la fiche, numéro en tête ; elle ne se coupe qu'entre ses éléments.
+ * `line` : la ligne de la fiche et du carnet, numéro en tête ; elle ne se coupe qu'entre ses éléments.
+ * `meta` : la même sans le numéro, que le cartel du voyage pose à part, dans sa pastille de laiton.
  */
 export function kindOf(project: Project, text: StopText, lang: Lang) {
   const v = VOYAGE[lang];
   const [type = "", year = String(project.year), status] = text.kind.split(" · ");
   const soon = project.kind === "web" && !project.links.demo && !text.noApp;
   const shown = status && soon ? v.statusSoon : status;
+  const join = (parts: string[]) => parts.map((part) => part.replaceAll(" ", NBSP)).join(`${NBSP}· `);
+  const meta = [type, year, ...(shown ? [shown] : [])];
   return {
     type,
     year,
     status: shown ?? v.statusDownload,
-    line: [project.number, type, year, ...(shown ? [shown] : [])].map((part) => part.replaceAll(" ", NBSP)).join(`${NBSP}· `),
+    line: join([project.number, ...meta]),
+    meta: join(meta),
   };
 }
