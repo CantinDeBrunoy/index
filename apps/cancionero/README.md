@@ -38,9 +38,11 @@ de paroles et la traduction automatique, qui passent par Internet).
 ## 🚀 Déploiement (Vercel)
 
 Vercel déploie la branche **`main`** à chaque push : build `expo export -p web`,
-sortie `dist` (voir `vercel.json`). Toute adresse qui n'est pas un fichier renvoie
-vers l'accueil, et expo-router affiche la bonne page (ex. `/song/<id>` d'une chanson
-ajoutée). `public/_redirects` fait la même chose sur Netlify / Cloudflare Pages.
+sortie `dist` (voir `vercel.json`). Une chanson (`/song/<id>`) reçoit sa page
+pré-rendue, `song/[id].html` ; toute autre adresse qui n'est pas un fichier renvoie
+vers l'accueil, et expo-router affiche la bonne page. Le HTML servi doit être celui
+de la page affichée : sinon React ne peut pas l'hydrater (erreur #418) et refait tout
+l'écran. `public/_redirects` fait la même chose sur Netlify / Cloudflare Pages.
 
 Tester le build de production en local :
 ```bash
