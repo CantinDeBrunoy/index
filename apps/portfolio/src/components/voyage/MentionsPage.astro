@@ -1,0 +1,186 @@
+---
+/**
+ * Les mentions légales : l'en-tête de nuit, comme « À propos », puis sur papier crème une rangée par
+ * rubrique (l'éditeur, l'hébergeur, vos données, la propriété intellectuelle) et la liste des crédits.
+ * Les textes : data/annexes.ts ; les crédits : data/credits.ts.
+ */
+import { LEGAL } from "../../data/annexes";
+import { CREDIT_LIST } from "../../data/credits";
+import { VOYAGE } from "../../data/voyage";
+import { ROUTES, typo, type Lang } from "../../i18n/voyage";
+import Voyage from "../../layouts/Voyage.astro";
+import SiteHeader from "./SiteHeader.astro";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const g = LEGAL[lang];
+const alternates = { fr: ROUTES.mentions.fr, en: ROUTES.mentions.en };
+const T = (text: string) => typo(lang, text);
+---
+
+<Voyage lang={lang} title={g.pageTitle} description={g.description} alternates={alternates} palette="day">
+  <div class="hero pal-night">
+    <div class="wrap-read">
+      <SiteHeader lang={lang} alternates={alternates} />
+      <div class="hero__text">
+        <p class="label">{g.label}</p>
+        <h1 class="serif" set:html={g.title} />
+        <p class="hero__intro">{T(g.intro)}</p>
+      </div>
+    </div>
+  </div>
+
+  <main id="contenu" class="wrap-read">
+    {
+      g.sections.map(([label, paragraphs]) => (
+        <section class="row">
+          <h2 class="label">{label}</h2>
+          <div class="legal">
+            {paragraphs.map((p) => (
+              <p set:html={T(p)} />
+            ))}
+          </div>
+        </section>
+      ))
+    }
+    <section class="row">
+      <h2 class="label">{g.creditsLabel}</h2>
+      <div class="legal">
+        <dl>
+          {
+            CREDIT_LIST[lang].map(([what, licence]) => (
+              <div>
+                <dt>{T(what)}</dt>
+                <dd set:html={licence} />
+              </div>
+            ))
+          }
+        </dl>
+        <p class="legal__note">{g.repainted}</p>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p class="foot__updated">{g.updated}</p>
+      <a class="pill" href={ROUTES.voyage[lang]}>{VOYAGE[lang].start} →</a>
+    </footer>
+  </main>
+</Voyage>
+
+<style>
+  .hero {
+    background: var(--night);
+    color: var(--ink);
+  }
+  .hero__text {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 760px;
+    padding: 48px 0 72px;
+  }
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(56px, 6.6vw, 96px);
+    line-height: 0.95;
+  }
+  .hero__intro {
+    margin: 0;
+    color: var(--muted);
+    font-size: 19px;
+    line-height: 1.6;
+  }
+
+  main {
+    padding-top: 40px;
+  }
+  /* Une rangée par rubrique : l'étiquette à gauche, le texte à droite. */
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 56px;
+    padding: 48px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .row > .label {
+    flex: 1 1 200px;
+  }
+  .legal {
+    display: flex;
+    flex: 3 1 560px;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .legal p {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.7;
+  }
+  .legal :global(a) {
+    color: var(--brass-text);
+    text-underline-offset: 3px;
+  }
+  .legal :global(strong) {
+    font-weight: 500;
+  }
+  .legal dl {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+  .legal dl div {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 4px 28px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .legal dt {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .legal dd {
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .legal .legal__note {
+    color: var(--muted);
+    font-size: 15px;
+  }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 40px 0 64px;
+  }
+  .foot__updated {
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  @media (max-width: 700px) {
+    .hero__text {
+      padding: 32px 0 48px;
+    }
+    main {
+      padding-top: 8px;
+    }
+    .row {
+      padding: 36px 0;
+    }
+    .legal dl div {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
