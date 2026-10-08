@@ -7,7 +7,8 @@
  * construction du site : la frise et le poste actuel suivent sans qu'on y touche.
  */
 
-import type { Lang } from "../i18n/voyage";
+import { projects } from "@index/projects";
+import { inWords, type Lang } from "../i18n/voyage";
 
 const built = new Date();
 /** Aujourd'hui, en année décimale. */
@@ -167,7 +168,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
           ],
         ],
       },
-      projects: "Et en parallèle, onze projets à moi, de 2022 à 2026 : chaque escale de ce site, et le site lui-même.",
+      projects: `Et en parallèle, ${inWords("fr", projects.length)} projets à moi, de 2022 à 2026 : chaque escale de ce site, et le site lui-même.`,
       projectsLink: "Revoir le voyage →",
     },
     langs: [
@@ -279,7 +280,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
           ],
         ],
       },
-      projects: "And alongside, eleven projects of my own, from 2022 to 2026: every stop on this site, and the site itself.",
+      projects: `And alongside, ${inWords("en", projects.length)} projects of my own, from 2022 to 2026: every stop on this site, and the site itself.`,
       projectsLink: "Back to the journey →",
     },
     langs: [

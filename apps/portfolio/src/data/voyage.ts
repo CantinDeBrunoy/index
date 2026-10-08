@@ -5,8 +5,8 @@
  * Les textes sont des brouillons, à réécrire.
  */
 
-import type { Project } from "@index/projects";
-import { NBSP, type Lang } from "../i18n/voyage";
+import { projects, type Project } from "@index/projects";
+import { inWords, NBSP, type Lang } from "../i18n/voyage";
 
 export type Palette = "night" | "day" | "dusk" | "kraft";
 
@@ -211,11 +211,11 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
   },
 };
 
-/** Les textes du voyage. {i}, {k}, {place}, {name} : remplacés à l'affichage. */
+/** Les textes du voyage. Le nombre d'escales et de projets suit les listes ; {i}, {k}, {place}, {name} : remplacés à l'affichage. */
 export const VOYAGE: Record<Lang, Record<string, string>> = {
   fr: {
     introLabel: "Index · depuis 2022",
-    introTitle: "Un voyage en dix <em>escales</em>.",
+    introTitle: `Un voyage en ${inWords("fr", STOPS.length)} <em>escales</em>.`,
     introText:
       "Je fabrique les outils qui me manquent. Ici, chacun devient un objet du décor : la planète, l'avion, le hublot, la station… Clique dessus pour passer à l'escale suivante.",
     takeOff: "Décoller →",
@@ -223,8 +223,8 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     seeAll: "Voir tous les projets",
     allProjects: "Tous les projets",
     start: "Le départ",
-    caption0: "Dix escales · onze projets",
-    caption: "Escale {i} sur 10 · {place}",
+    caption0: `${inWords("fr", STOPS.length, true)} escales · ${inWords("fr", projects.length)} projets`,
+    caption: `Escale {i} sur ${STOPS.length} · {place}`,
     announce: "Escale {i} : {place}, {name}",
     dot: "Escale {k} : {place}",
     dotsAria: "Les escales du voyage",
@@ -243,7 +243,7 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
   },
   en: {
     introLabel: "Index · since 2022",
-    introTitle: "A journey in ten <em>stops</em>.",
+    introTitle: `A journey in ${inWords("en", STOPS.length)} <em>stops</em>.`,
     introText:
       "I build the tools I'm missing. Here, each one becomes part of the scenery: the planet, the plane, the window, the station… Click it to fly on to the next stop.",
     takeOff: "Take off →",
@@ -251,8 +251,8 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     seeAll: "See all projects",
     allProjects: "All projects",
     start: "Departure",
-    caption0: "Ten stops · eleven projects",
-    caption: "Stop {i} of 10 · {place}",
+    caption0: `${inWords("en", STOPS.length, true)} stops · ${inWords("en", projects.length)} projects`,
+    caption: `Stop {i} of ${STOPS.length} · {place}`,
     announce: "Stop {i}: {place}, {name}",
     dot: "Stop {k}: {place}",
     dotsAria: "The journey's stops",

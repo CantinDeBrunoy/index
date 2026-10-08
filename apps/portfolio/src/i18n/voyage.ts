@@ -36,6 +36,17 @@ export const NBSP = String.fromCharCode(0xa0);
 export const typo = (lang: Lang, text: string): string =>
   lang === "fr" ? text.replace(/ ([:;?!»])/g, `${NBSP}$1`).replace(/« /g, `«${NBSP}`) : text;
 
+const WORDS: Record<Lang, readonly string[]> = {
+  fr: ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf", "vingt"],
+  en: ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"],
+};
+
+/** Un nombre en toutes lettres (dix escales, onze projets) ; au-delà de vingt, en chiffres. `upper` : la majuscule. */
+export function inWords(lang: Lang, n: number, upper = false): string {
+  const word = WORDS[lang][n] ?? String(n);
+  return upper ? word.charAt(0).toUpperCase() + word.slice(1) : word;
+}
+
 /** Les onglets de l'en-tête, dans l'ordre : le voyage, le hub, les projets, à propos. */
 export const TABS = ["voyage", "apps", "projets", "apropos"] as const satisfies readonly PageKey[];
 export type TabKey = (typeof TABS)[number];

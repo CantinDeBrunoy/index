@@ -6,7 +6,7 @@
  */
 
 import { getProject, projects, type Project } from "@index/projects";
-import { fichePath, type Lang } from "../i18n/voyage";
+import { fichePath, inWords, type Lang } from "../i18n/voyage";
 import { STOPS } from "./voyage";
 
 export const FICHE: Record<
@@ -73,7 +73,7 @@ export const FICHE: Record<
     go: "Continuer le voyage →",
     end: "Fin du voyage",
     journal: "Le carnet de voyage",
-    seeAll: "Voir les onze projets →",
+    seeAll: `Voir les ${inWords("fr", projects.length)} projets →`,
     question: "Une question sur {name} ?",
   },
   en: {
@@ -104,7 +104,7 @@ export const FICHE: Record<
     go: "Continue the journey →",
     end: "End of the journey",
     journal: "The travel journal",
-    seeAll: "See all eleven projects →",
+    seeAll: `See all ${inWords("en", projects.length)} projects →`,
     question: "A question about {name}?",
   },
 };

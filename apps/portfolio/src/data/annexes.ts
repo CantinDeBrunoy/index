@@ -4,7 +4,8 @@
  * départ ; le cartel mène aux projets. Et les mentions légales. Brouillons, à relire.
  */
 
-import { EMAIL, NBSP, type Lang } from "../i18n/voyage";
+import { projects } from "@index/projects";
+import { EMAIL, inWords, NBSP, type Lang } from "../i18n/voyage";
 
 /** La scène de la 404 : le fond du terminal de nuit et la valise à cliquer, en % de chaque rendu. */
 export const NOT_FOUND_SCENE = {
@@ -38,7 +39,7 @@ export const NOT_FOUND: Record<Lang, NotFoundStrings> = {
     text: "Cette page n'existe pas, ou plus : elle a dû se perdre en correspondance. Le reste du voyage, lui, est bien arrivé.",
     spot: "Reprendre le voyage",
     alt: "Un tapis à bagages tourne à vide dans un terminal de nuit, sous le panneau du tapis 404 ; à côté, une valise terre cuite attend seule, l'étiquette « 404 » pendue à sa poignée.",
-    projects: "Voir les onze projets →",
+    projects: `Voir les ${inWords("fr", projects.length)} projets →`,
     about: "À propos →",
   },
   en: {
@@ -50,7 +51,7 @@ export const NOT_FOUND: Record<Lang, NotFoundStrings> = {
     text: "This page doesn't exist, or no longer does: it must have gone astray on a connection. The rest of the journey arrived safely.",
     spot: "Resume the journey",
     alt: "A baggage carousel turns empty in a terminal at night, under the sign for belt 404; beside it, a terracotta suitcase waits alone, a “404” tag hanging from its handle.",
-    projects: "See all eleven projects →",
+    projects: `See all ${inWords("en", projects.length)} projects →`,
     about: "About →",
   },
 };
