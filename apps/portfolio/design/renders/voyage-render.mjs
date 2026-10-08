@@ -18,7 +18,7 @@ const ACCENT = 0xb08a4f;
 const BG = {
   espace: "#0B0C14", terre: "#10131C", avion: "#DCE9F0", paris: "#DCE3EA", monuments: "#E0E8DA",
   route: "#F2DFD3", maison: "#F1E7DA", salon: "#F3D5B5", tonalliA: "#D8C2C6", tonalliB: "#D8C2C6", calendrier: "#D8C2C6",
-  passeport: "#0E1018", dossiers: "#E6D5B8", bagage: "#121522",
+  passeport: "#0E1018", dossiers: "#E6D5B8", bagage: "#121522", astronaute: "#0B0C14",
 };
 // Boucles plus longues là où un tour complet doit rester lent (le globe) : [images, durée, qualité].
 // La carte du monde est riche en détails : 9 images/s et une qualité plus basse la gardent légère (2,1 Mo).
@@ -118,7 +118,7 @@ for (const name of names) {
     const f = Number(process.env.FRAME ?? 0);
     const url = await page.evaluate(([i, k]) => window.renderFrame(i, k), [f, n]);
     const spot = await page.evaluate(() => window.hotspot());
-    await sharp(Buffer.from(url.split(",")[1], "base64")).flatten({ background: BG[name] ?? "#888888" }).png().toFile(join(dir, "check", `${name}${suffix}-shot.png`));
+    await sharp(Buffer.from(url.split(",")[1], "base64")).flatten({ background: BG[name] ?? BG[name.replace(/^tenue-/, "")] ?? "#888888" }).png().toFile(join(dir, "check", `${name}${suffix}-shot.png`));
     // Ordinateur : position sur l'artboard 1440 × 900 (rendu 1440 × 810 posé à 45 px du haut).
     // Mobile : position dans l'image elle-même, qui remplit toute la zone de la scène.
     const board = spot && (MOBILE ? { x: +spot.x.toFixed(1), y: +spot.y.toFixed(1) } : { x: +spot.x.toFixed(1), y: +((45 + (spot.y / 100) * 810) / 9).toFixed(1) });

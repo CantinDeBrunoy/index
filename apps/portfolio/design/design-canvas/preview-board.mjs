@@ -17,6 +17,10 @@ const local = Object.fromEntries(Object.entries(IDS).map(([scene, id]) => [id, `
 // Les rendus du voyage sur téléphone.
 const MOB = JSON.parse(await readFile(join(here, "mobile.json"), "utf8"));
 for (const [scene, { id }] of Object.entries(MOB)) local[id] = `/renders/anim/${scene}-mobile.webp`;
+// L'astronaute du guide (build-guide-propals.cjs).
+const GUIDE = JSON.parse(await readFile(join(here, "guide.json"), "utf8"));
+local[GUIDE.astronaute] = "/renders/anim/astronaute-guide.webp";
+for (const [scene, id] of Object.entries(GUIDE.tenues ?? {})) local[id] = `/renders/anim/tenue-${scene}-guide.webp`;
 
 const html = await readFile(join(here, "project", `${name}.dc.html`), "utf8");
 const code = html.match(/<script type="text\/x-dc"[^>]*>([\s\S]*?)<\/script>/)[1];
@@ -65,14 +69,16 @@ const browser = await chromium.launch({ channel: "msedge" });
 const page = await browser.newPage({ viewport: { width, height } });
 for (const i of steps.split(",").map(Number)) {
   const c = new Component({});
-  c.state = { ...c.state, i, menu: menu === "menu" };
+  // STATE='{"step":2}' fige d'autres valeurs de l'état ; WAIT=3000 laisse finir les animations d'entrée.
+  c.state = { ...c.state, i, menu: menu === "menu", ...JSON.parse(process.env.STATE ?? "{}") };
   const vals = c.renderVals();
   const doc = `<!doctype html><html><head><meta charset="utf-8">${helmet}</head><body>${render(vals)}</body></html>`
     .replace(/\/_blob\/([0-9a-f]{32})/g, (m, id) => local[id] ?? m);
-  const file = `${name}-${i}${menu ? "-menu" : ""}`;
+  const file = `${name}-${i}${menu ? "-menu" : ""}${process.env.TAG ?? ""}`;
   await writeFile(join(here, "measure", `${file}.html`), doc);
   await page.goto(`${base}/design-canvas/measure/${file}.html`, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
+  if (process.env.WAIT) await page.waitForTimeout(Number(process.env.WAIT));
   await page.screenshot({ path: join(here, "measure", `${file}.png`) });
   console.log("✓", file);
 }

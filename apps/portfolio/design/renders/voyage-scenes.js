@@ -914,6 +914,585 @@ function folderPile(M, { n = 5, w = 0.9, d = 0.66, pages = false } = {}) {
   return g;
 }
 
+// ——— Le copilote du voyage ———
+// Un petit bonhomme d'argile qui accompagne le visiteur, rendu sur fond transparent et posé par-dessus les escales.
+// Dans l'espace (escale 1), il porte la combinaison : son visage se devine derrière la visière de verre doré.
+// Ensuite il la laisse : c'est un bonhomme normal, habillé pour chaque escale (la couleur de la scène, un accessoire
+// tiré du projet). À l'escale 2, il tient encore son casque à la main. Il regarde vers la gauche, là où s'ouvre sa bulle.
+const TENUES = ["espace", "terre", "avion", "paris", "monuments", "route", "maison", "salon", "calendrier", "dossiers"];
+const SKIN = 0xe9c3a1, HAIR = 0x4a3426;
+const VISOR = { a: 0.33, b: 0.21, y: -0.03 };
+// Le bord de la visière : un superellipse (coins arrondis), |x/a|⁴ + |y/b|⁴ = 1.
+const visorEdge = (t, a, b) => {
+  const c = Math.cos(t), s = Math.sin(t);
+  return [a * Math.sign(c) * Math.pow(Math.abs(c), 0.5), b * Math.sign(s) * Math.pow(Math.abs(s), 0.5)];
+};
+const onSphere = (x, y, r) => new THREE.Vector3(x, y, Math.sqrt(Math.max(0, r * r - x * x - y * y)));
+// Oriente un objet plat (son axe z) selon la normale de la sphère au point où il est posé.
+const faceOut = (o) => {
+  o.lookAt(o.position.clone().multiplyScalar(2));
+  return o;
+};
+
+// Le casque de la combinaison : coque d'argile, visière bombée de laiton, liseré, oreillettes.
+// `open` : la coque est percée sous la visière, qui devient un verre doré : on voit le visage derrière.
+function spaceHelmet(M, { open = false } = {}) {
+  const g = new THREE.Group();
+  const HR = 0.45, RINGS = 18, SEGS = 96;
+  const { a: VA, b: VB, y: VY } = VISOR;
+  const shellGeo = new THREE.SphereGeometry(HR, 96, 64);
+  if (open) {
+    const p = shellGeo.attributes.position, idx = shellGeo.index.array, keep = [];
+    const inside = (x, y) => Math.pow(Math.abs(x / (VA - 0.004)), 4) + Math.pow(Math.abs((y - VY) / (VB - 0.004)), 4) < 1;
+    for (let k = 0; k < idx.length; k += 3) {
+      let cx = 0, cy = 0, cz = 0;
+      for (let j = 0; j < 3; j++) {
+        cx += p.getX(idx[k + j]);
+        cy += p.getY(idx[k + j]);
+        cz += p.getZ(idx[k + j]);
+      }
+      if (!(cz > 0 && inside(cx / 3, cy / 3))) keep.push(idx[k], idx[k + 1], idx[k + 2]);
+    }
+    shellGeo.setIndex(keep);
+  }
+  const shell = mesh(shellGeo, new THREE.MeshStandardMaterial({ color: 0xf1ece4, roughness: 0.58, side: open ? THREE.DoubleSide : THREE.FrontSide }));
+  // Percée, la coque n'ombre pas le visage : il reste lisible derrière le verre.
+  if (open) shell.castShadow = false;
+  g.add(shell);
+  const pos = [], ids = [];
+  pos.push(...onSphere(0, VY, HR + 0.012).toArray());
+  for (let k = 1; k <= RINGS; k++) {
+    for (let j = 0; j < SEGS; j++) {
+      const [x, y] = visorEdge((j / SEGS) * Math.PI * 2, VA, VB);
+      pos.push(...onSphere((x * k) / RINGS, VY + (y * k) / RINGS, HR + 0.012).toArray());
+    }
+  }
+  for (let j = 0; j < SEGS; j++) ids.push(0, 1 + j, 1 + ((j + 1) % SEGS));
+  for (let k = 1; k < RINGS; k++) {
+    const a0 = 1 + (k - 1) * SEGS, a1 = 1 + k * SEGS;
+    for (let j = 0; j < SEGS; j++) {
+      const j1 = (j + 1) % SEGS;
+      ids.push(a0 + j, a1 + j, a1 + j1, a0 + j, a1 + j1, a0 + j1);
+    }
+  }
+  const visorGeo = new THREE.BufferGeometry();
+  visorGeo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  visorGeo.setIndex(ids);
+  visorGeo.computeVertexNormals();
+  const visor = mesh(visorGeo, open
+    ? new THREE.MeshStandardMaterial({ color: 0xe6c27e, metalness: 0.5, roughness: 0.06, transparent: true, opacity: 0.4, depthWrite: false })
+    : new THREE.MeshStandardMaterial({ color: 0xd9b475, metalness: 1, roughness: 0.16 }));
+  if (open) visor.castShadow = false;
+  g.add(visor);
+  const rimPts = [];
+  for (let j = 0; j < SEGS; j++) {
+    const [x, y] = visorEdge((j / SEGS) * Math.PI * 2, VA, VB);
+    rimPts.push(onSphere(x, VY + y, HR + 0.012));
+  }
+  g.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rimPts, true), 192, 0.032, 12, true), M.clay2));
+  for (const x of [-0.45, 0.45]) {
+    const ear = mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.09, 32), M.clay2, x, 0, 0);
+    ear.rotation.z = Math.PI / 2;
+    g.add(ear);
+  }
+  return g;
+}
+
+// La tête du bonhomme : yeux, sourcils, joues, nez, sourire, oreilles, cheveux bruns (calotte, nuque, frange).
+const HEAD_R = 0.37;
+function copilotHead(M) {
+  const g = new THREE.Group();
+  const R = HEAD_R;
+  const skin = tinted(SKIN, 0.62), hair = tinted(HAIR, 0.75);
+  g.add(mesh(new THREE.SphereGeometry(R, 64, 48), skin));
+  for (const sx of [-1, 1]) {
+    const ear = mesh(new THREE.SphereGeometry(0.075, 24, 16), skin, sx * 0.36, -0.02, -0.01);
+    ear.scale.set(0.55, 1, 0.8);
+    g.add(ear);
+    const ep = onSphere(sx * 0.125, 0.0, R - 0.012);
+    const eye = faceOut(mesh(new THREE.SphereGeometry(0.037, 20, 16), M.ink, ep.x, ep.y, ep.z));
+    eye.scale.set(0.85, 1.15, 0.6);
+    g.add(eye);
+    const hp = onSphere(sx * 0.125 + 0.012, 0.02, R + 0.006);
+    g.add(mesh(new THREE.SphereGeometry(0.011, 10, 8), M.label, hp.x, hp.y, hp.z));
+    const bp = onSphere(sx * 0.13, 0.1, R - 0.002);
+    const brow = faceOut(mesh(new RoundedBoxGeometry(0.075, 0.02, 0.026, 1, 0.009), hair, bp.x, bp.y, bp.z));
+    brow.rotateZ(sx * -0.12);
+    g.add(brow);
+    const cp = onSphere(sx * 0.205, -0.08, R + 0.002);
+    g.add(faceOut(mesh(new THREE.CircleGeometry(0.046, 24), tinted(0xeaa092, 0.85), cp.x, cp.y, cp.z)));
+  }
+  const np = onSphere(0, -0.045, R - 0.012);
+  g.add(mesh(new THREE.SphereGeometry(0.032, 16, 12), skin, np.x, np.y, np.z));
+  const sp = onSphere(0, -0.105, R - 0.004);
+  const smile = faceOut(mesh(new THREE.TorusGeometry(0.058, 0.012, 8, 24, Math.PI), M.ink, sp.x, sp.y, sp.z));
+  smile.rotateZ(Math.PI);
+  g.add(smile);
+  // Les cheveux : la calotte jusqu'au front, la nuque derrière les oreilles, quatre mèches de frange.
+  g.add(mesh(new THREE.SphereGeometry(R + 0.016, 64, 32, 0, Math.PI * 2, 0, 1.12), hair));
+  g.add(mesh(new THREE.SphereGeometry(R + 0.012, 48, 24, Math.PI + 0.35, Math.PI - 0.7, 0.9, 1.05), hair));
+  [[-0.17, 0.165, 0.45], [-0.055, 0.19, -0.2], [0.07, 0.185, 0.3], [0.185, 0.155, -0.45]].forEach(([x, y, r]) => {
+    const p = onSphere(x, y, R + 0.008);
+    const tuft = faceOut(mesh(new THREE.SphereGeometry(0.075, 20, 14), hair, p.x, p.y, p.z));
+    tuft.scale.set(1.25, 0.75, 0.55);
+    tuft.rotateZ(r);
+    g.add(tuft);
+  });
+  return g;
+}
+
+// Ses habits, escale par escale : haut, manches (longues, courtes, retroussées), bas, chaussures.
+const WARDROBE = {
+  terre: { top: 0xcdb48a, sleeves: "long", bottom: 0x8f7d5c, shoes: 0x6b4a33 },
+  avion: { top: 0x2f3a4f, sleeves: "long", bottom: 0x2f3a4f, shoes: 0x2b2b2f },
+  paris: { top: "stripes", sleeves: "long", bottom: 0x34405a, shoes: 0x2b2b2f },
+  monuments: { top: 0xa9ba9d, sleeves: "short", bottom: 0xd9c9a6, shorts: true, shoes: 0xf1ece4 },
+  route: { top: 0xc4664f, sleeves: "short", bottom: 0x2b2b2f, shorts: true, shoes: 0xf1ece4 },
+  maison: { top: 0x8fa889, sleeves: "long", bottom: 0xb5b0a8, shoes: 0xf1ece4, slippers: true },
+  salon: { top: 0xd8b39a, sleeves: "long", bottom: 0x6e5444, shoes: 0x2b2b2f },
+  calendrier: { top: 0xf1ece4, sleeves: "rolled", bottom: 0x7d6f6a, shoes: 0x6b4a33 },
+  dossiers: { top: 0xb08a62, sleeves: "long", bottom: 0x4b4540, shoes: 0x2b2b2f },
+};
+// Le bras au repos, par défaut : pendant, légèrement en avant. L'escale 2 porte le casque, le bras plus plié.
+const REST_POSES = { default: [[-0.25, 0, -0.38], [-0.7, 0, 0]], terre: [[-0.15, 0, -0.42], [-1.15, 0, 0]] };
+
+function copilot(M, outfit = "espace") {
+  const g = new THREE.Group();
+  const fig = new THREE.Group();
+  g.add(fig);
+  const space = outfit === "espace";
+  const W = WARDROBE[outfit];
+  const skin = tinted(SKIN, 0.62);
+  const brass = new THREE.MeshStandardMaterial({ color: 0xc9a063, metalness: 0.9, roughness: 0.32 });
+  const soft = (color, rough = 0.85) => new THREE.MeshStandardMaterial({ color, roughness: rough, side: THREE.DoubleSide });
+  const clay = tinted(0xf1ece4, 0.58);
+  const band = tinted(TINT.espace, 0.6);
+  const extra = [];
+  // Le haut : une couleur, ou la marinière (rayures marine en texture sur le torse et les manches).
+  const topMat = !W
+    ? clay
+    : W.top === "stripes"
+      ? new THREE.MeshStandardMaterial({
+          roughness: 0.65,
+          map: canvasTex(16, 256, (c, w, h) => {
+            c.fillStyle = "#F1ECE4";
+            c.fillRect(0, 0, w, h);
+            c.fillStyle = "#34405A";
+            for (let k = 0; k < 7; k++) c.fillRect(0, (k + 0.3) * (h / 7), w, h / 15);
+          }),
+        })
+      : tinted(W.top, 0.72);
+  const bottomMat = W ? tinted(W.bottom, 0.75) : clay;
+  const shoeMat = W ? tinted(W.shoes, 0.6) : M.clay2;
+
+  // — Le corps —
+  let head, handY;
+  if (space) {
+    fig.add(mesh(new RoundedBoxGeometry(0.66, 0.6, 0.48, 4, 0.19), clay, 0, 0, 0));
+    fig.add(mesh(new RoundedBoxGeometry(0.68, 0.08, 0.5, 2, 0.04), band, 0, -0.2, 0));
+    fig.add(mesh(new RoundedBoxGeometry(0.54, 0.58, 0.24, 3, 0.09), M.clay2, 0, 0.06, -0.31));
+    fig.add(mesh(new RoundedBoxGeometry(0.3, 0.17, 0.06, 2, 0.025), M.clay2, 0, 0.04, 0.235));
+    [[-0.08, M.accent], [0, band], [0.08, tinted(TINT.bagage, 0.5)]].forEach(([x, mat]) => {
+      const b = mesh(new THREE.CylinderGeometry(0.027, 0.027, 0.03, 20), mat, x, 0.04, 0.27);
+      b.rotation.x = Math.PI / 2;
+      fig.add(b);
+    });
+    head = new THREE.Group();
+    head.position.set(0, 0.62, 0);
+    fig.add(head);
+    head.add(spaceHelmet(M, { open: true }));
+    const inner = copilotHead(M);
+    inner.position.set(0, -0.035, 0.025);
+    head.add(inner);
+    handY = -0.29;
+  } else {
+    fig.add(mesh(new RoundedBoxGeometry(0.58, 0.54, 0.4, 4, 0.16), topMat, 0, 0, 0));
+    fig.add(mesh(new THREE.CylinderGeometry(0.085, 0.095, 0.12, 24), skin, 0, 0.31, 0));
+    head = new THREE.Group();
+    head.position.set(0, 0.66, 0);
+    fig.add(head);
+    head.add(copilotHead(M));
+    handY = -0.245;
+  }
+  // Ce qui se pose sur la tête : les chapeaux ont été dessinés pour le casque, réduits à la taille des cheveux.
+  const hat = new THREE.Group();
+  hat.scale.setScalar(0.86);
+  head.add(hat);
+
+  // — Les bras : l'épaule pivote, le coude aussi —
+  const arm = (side) => {
+    const a = new THREE.Group();
+    const elbow = new THREE.Group();
+    if (space) {
+      a.position.set(side * 0.33, 0.14, 0);
+      a.add(mesh(new THREE.CapsuleGeometry(0.1, 0.16, 8, 20), clay, 0, -0.12, 0));
+      elbow.position.set(0, -0.24, 0);
+      elbow.add(mesh(new THREE.CapsuleGeometry(0.095, 0.14, 8, 20), clay, 0, -0.1, 0));
+      const cuff = mesh(new THREE.TorusGeometry(0.095, 0.028, 12, 32), band, 0, -0.19, 0);
+      cuff.rotation.x = Math.PI / 2;
+      elbow.add(cuff);
+      elbow.add(mesh(new THREE.SphereGeometry(0.115, 32, 24), M.clay2, 0, -0.29, 0));
+    } else {
+      a.position.set(side * 0.3, 0.15, 0);
+      a.add(mesh(new THREE.CapsuleGeometry(0.085, 0.13, 8, 20), topMat, 0, -0.1, 0));
+      elbow.position.set(0, -0.2, 0);
+      const bare = W.sleeves !== "long";
+      elbow.add(mesh(new THREE.CapsuleGeometry(0.076, 0.11, 8, 20), bare ? skin : topMat, 0, -0.085, 0));
+      if (W.sleeves === "rolled") {
+        const roll = mesh(new THREE.TorusGeometry(0.083, 0.03, 12, 32), topMat, 0, -0.01, 0);
+        roll.rotation.x = Math.PI / 2;
+        elbow.add(roll);
+      }
+      elbow.add(mesh(new THREE.SphereGeometry(0.09, 28, 20), skin, 0, handY, 0));
+    }
+    a.add(elbow);
+    fig.add(a);
+    return { a, elbow };
+  };
+  const wave = arm(1), rest = arm(-1);
+
+  // — Les jambes —
+  const leg = (side) => {
+    const l = new THREE.Group();
+    if (space) {
+      l.position.set(side * 0.16, -0.26, 0);
+      l.add(mesh(new THREE.CapsuleGeometry(0.115, 0.16, 8, 20), clay, 0, -0.14, 0));
+      l.add(mesh(new RoundedBoxGeometry(0.25, 0.14, 0.3, 2, 0.06), M.clay2, 0, -0.3, 0.03));
+    } else {
+      l.position.set(side * 0.135, -0.24, 0);
+      if (W.shorts) {
+        l.add(mesh(new THREE.CapsuleGeometry(0.105, 0.04, 8, 20), bottomMat, 0, -0.05, 0));
+        l.add(mesh(new THREE.CapsuleGeometry(0.08, 0.1, 8, 20), skin, 0, -0.16, 0));
+        l.add(mesh(new THREE.CylinderGeometry(0.083, 0.083, 0.07, 20), M.label, 0, -0.235, 0));
+      } else {
+        l.add(mesh(new THREE.CapsuleGeometry(0.1, 0.14, 8, 20), bottomMat, 0, -0.12, 0));
+      }
+      if (W.slippers) {
+        l.add(mesh(new RoundedBoxGeometry(0.22, 0.09, 0.3, 2, 0.04), shoeMat, 0, -0.3, 0.04));
+        l.add(mesh(new THREE.SphereGeometry(0.045, 16, 12), tinted(0x8fa889, 0.9), 0, -0.25, 0.16));
+      } else {
+        l.add(mesh(new RoundedBoxGeometry(0.21, 0.11, 0.29, 2, 0.05), shoeMat, 0, -0.3, 0.035));
+      }
+    }
+    fig.add(l);
+    return l;
+  };
+  const legL = leg(-1), legR = leg(1);
+
+  // Un accessoire tenu dans la main au repos : son point de prise est son origine ; « euler » l'oriente par rapport
+  // au corps, dans la pose moyenne du bras (il suit ensuite le balancement).
+  const [RA, RE] = REST_POSES[outfit] ?? REST_POSES.default;
+  const REST_A = new THREE.Euler(...RA), REST_E = new THREE.Euler(...RE);
+  const hold = (obj, euler) => {
+    const q = new THREE.Quaternion().setFromEuler(REST_A).multiply(new THREE.Quaternion().setFromEuler(REST_E)).invert();
+    obj.quaternion.copy(q.multiply(new THREE.Quaternion().setFromEuler(euler)));
+    obj.position.set(0, handY, 0);
+    rest.elbow.add(obj);
+  };
+  // Sur le torse du bonhomme : la face avant est à z = 0,2.
+  const FRONT = 0.2;
+
+  if (space) {
+    // L'antenne, et le cordon de laiton qui le relie au vaisseau, hors champ à droite : il sort par le bord de
+    // l'image, que la page fait déborder de l'écran.
+    const antenna = new THREE.Group();
+    antenna.position.set(-0.47, 0.06, 0);
+    antenna.rotation.z = 0.35;
+    antenna.add(mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.32, 10), M.ink, 0, 0.16, 0));
+    antenna.add(mesh(new THREE.SphereGeometry(0.04, 20, 16), M.accent, 0, 0.33, 0));
+    head.add(antenna);
+    fig.add(tube(curve([[0.1, -0.05, -0.43], [0.5, -0.42, -0.62], [0.95, -0.62, -0.3], [1.5, -0.4, -0.2], [2.4, -0.55, -0.3]]), 0.018, M.accent));
+    extra.push((phi) => (antenna.rotation.z = 0.35 + 0.12 * Math.sin(2 * phi + 0.4)));
+  }
+  if (outfit === "terre") {
+    // Magellan : il a laissé la combinaison et garde le casque sous la main. Chapeau d'explorateur, chemise
+    // saharienne, foulard océan.
+    const felt = tinted(0xc29f6e, 0.78);
+    hat.add(mesh(new THREE.CylinderGeometry(0.6, 0.62, 0.03, 64), felt, 0, 0.3, 0));
+    hat.add(mesh(new THREE.CylinderGeometry(0.28, 0.35, 0.28, 48), felt, 0, 0.45, 0));
+    hat.add(mesh(new THREE.CylinderGeometry(0.352, 0.357, 0.07, 48), M.ink, 0, 0.35, 0));
+    hat.rotation.set(-0.08, 0, 0.12);
+    const scarf = mesh(new THREE.TorusGeometry(0.15, 0.05, 16, 40), tinted(TINT.terre, 0.6), 0, 0.29, 0.01);
+    scarf.rotation.x = Math.PI / 2;
+    fig.add(scarf);
+    const knot = mesh(new RoundedBoxGeometry(0.09, 0.16, 0.04, 2, 0.018), tinted(TINT.terre, 0.6), -0.05, 0.19, FRONT + 0.01);
+    knot.rotation.z = 0.25;
+    fig.add(knot);
+    for (const sx of [-1, 1]) fig.add(mesh(new RoundedBoxGeometry(0.12, 0.1, 0.025, 1, 0.01), tinted(0xbfa57a, 0.75), sx * 0.15, 0.06, FRONT + 0.005));
+    fig.add(mesh(new RoundedBoxGeometry(0.6, 0.06, 0.42, 2, 0.03), tinted(0x6b4a33, 0.6), 0, -0.2, 0));
+    const helm = spaceHelmet(M);
+    helm.scale.setScalar(0.5);
+    const carry = new THREE.Group();
+    helm.position.set(0, 0.2, 0.06);
+    helm.rotation.y = -0.6;
+    carry.add(helm);
+    hold(carry, new THREE.Euler(0, 0.32, 0));
+  }
+  if (outfit === "avion") {
+    // Hublot : le pilote. Casquette, veste marine à boutons de laiton, ailes sur la poitrine, galons aux poignets.
+    const navy = tinted(0x2f3a4f, 0.5);
+    hat.add(mesh(new THREE.CylinderGeometry(0.4, 0.345, 0.16, 48), navy, 0, 0.4, 0));
+    hat.add(mesh(new THREE.CylinderGeometry(0.352, 0.352, 0.065, 48), M.ink, 0, 0.345, 0));
+    const peak = mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.025, 48, 1, false, -Math.PI / 2, Math.PI), M.ink, 0, 0.315, 0.1);
+    peak.scale.z = 0.85;
+    peak.rotation.x = 0.22;
+    hat.add(peak);
+    const wings = (parent, x, y, z, s) => {
+      const w = new THREE.Group();
+      w.position.set(x, y, z);
+      w.scale.setScalar(s);
+      const disc = mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.02, 24), brass);
+      disc.rotation.x = Math.PI / 2;
+      w.add(disc);
+      for (const sx of [-1, 1]) {
+        const wing = mesh(new RoundedBoxGeometry(0.11, 0.032, 0.016, 1, 0.006), brass, sx * 0.09, 0.012, 0);
+        wing.rotation.z = sx * 0.28;
+        w.add(wing);
+      }
+      parent.add(w);
+    };
+    wings(hat, 0, 0.41, 0.385, 1);
+    wings(fig, -0.14, 0.15, FRONT + 0.01, 0.7);
+    hat.rotation.set(0.04, 0, -0.08);
+    // Le col de chemise et la cravate, les boutons de la veste.
+    fig.add(mesh(new RoundedBoxGeometry(0.17, 0.08, 0.04, 1, 0.015), M.label, 0, 0.24, 0.15));
+    fig.add(mesh(new RoundedBoxGeometry(0.05, 0.2, 0.02, 1, 0.008), M.ink, 0, 0.12, FRONT + 0.005));
+    for (const [x, y] of [[-0.09, 0.02], [0.09, 0.02], [-0.09, -0.11], [0.09, -0.11]]) fig.add(mesh(new THREE.SphereGeometry(0.02, 12, 10), brass, x, y, FRONT + 0.005));
+    for (const arm of [wave, rest]) {
+      const stripe = mesh(new THREE.TorusGeometry(0.079, 0.012, 8, 32), brass, 0, -0.14, 0);
+      stripe.rotation.x = Math.PI / 2;
+      arm.elbow.add(stripe);
+    }
+  }
+  if (outfit === "paris") {
+    // Métro Pathfinder : le Parisien. Béret, marinière, foulard rouge et baguette.
+    const beret = mesh(new THREE.SphereGeometry(0.43, 48, 24), M.ink, 0.04, 0.36, -0.03);
+    beret.scale.set(1, 0.32, 1);
+    hat.add(beret);
+    hat.add(mesh(new THREE.CylinderGeometry(0.016, 0.022, 0.06, 12), M.ink, 0.04, 0.5, -0.03));
+    hat.rotation.z = -0.2;
+    const red = tinted(0xb5483f, 0.7);
+    const scarf = mesh(new THREE.TorusGeometry(0.13, 0.035, 12, 32), red, 0, 0.29, 0.01);
+    scarf.rotation.x = Math.PI / 2;
+    fig.add(scarf);
+    const tip = mesh(new THREE.ConeGeometry(0.06, 0.12, 4), red, 0.05, 0.2, FRONT + 0.01);
+    tip.rotation.set(0, Math.PI / 4, Math.PI);
+    fig.add(tip);
+    const crust = tinted(0xd09a58, 0.7), cut = tinted(0xe9c88f, 0.8);
+    const bread = new THREE.Group();
+    bread.add(mesh(new THREE.CapsuleGeometry(0.052, 0.6, 8, 20), crust, 0, 0.2, 0));
+    for (let k = 0; k < 4; k++) {
+      const c = mesh(new THREE.SphereGeometry(0.03, 12, 8), cut, 0, -0.02 + k * 0.14, 0.045);
+      c.scale.set(0.9, 2.2, 0.5);
+      c.rotation.z = 0.5;
+      bread.add(c);
+    }
+    hold(bread, new THREE.Euler(0.1, 0.32, 0.35));
+  }
+  if (outfit === "monuments") {
+    // Visit Match : le touriste. Bob de toile, appareil photo, sac à dos, short et chaussettes.
+    const sage = soft(0xe8dcc0);
+    hat.add(mesh(new THREE.CylinderGeometry(0.27, 0.335, 0.2, 48), sage, 0, 0.43, 0));
+    hat.add(mesh(new THREE.CylinderGeometry(0.335, 0.5, 0.11, 48, 1, true), sage, 0, 0.275, 0));
+    const hband = mesh(new THREE.CylinderGeometry(0.315, 0.33, 0.05, 48, 1, true), soft(0x93a886), 0, 0.36, 0);
+    hat.add(hband);
+    hat.rotation.set(-0.06, 0, 0.1);
+    const cam = new THREE.Group();
+    cam.position.set(0, -0.02, FRONT + 0.05);
+    fig.add(cam);
+    cam.add(mesh(new RoundedBoxGeometry(0.24, 0.15, 0.09, 2, 0.025), M.ink, 0, 0, 0));
+    cam.add(mesh(new RoundedBoxGeometry(0.07, 0.045, 0.05, 1, 0.01), M.ink, -0.07, 0.085, -0.01));
+    const lens = mesh(new THREE.CylinderGeometry(0.052, 0.056, 0.07, 32), brass, 0.025, -0.005, 0.065);
+    lens.rotation.x = Math.PI / 2;
+    cam.add(lens);
+    const glass = mesh(new THREE.CylinderGeometry(0.037, 0.037, 0.01, 32), new THREE.MeshStandardMaterial({ color: 0x1b2228, roughness: 0.08, metalness: 0.2 }), 0.025, -0.005, 0.102);
+    glass.rotation.x = Math.PI / 2;
+    cam.add(glass);
+    const strap = mesh(new THREE.TorusGeometry(0.2, 0.012, 10, 48), M.ink, 0, 0.16, 0.08);
+    strap.rotation.x = 1.25;
+    fig.add(strap);
+    const kraft = tinted(KRAFT, 0.8);
+    fig.add(mesh(new RoundedBoxGeometry(0.44, 0.46, 0.18, 3, 0.07), kraft, 0, 0.02, -0.27));
+    for (const sx of [-1, 1]) fig.add(mesh(new RoundedBoxGeometry(0.06, 0.4, 0.03, 1, 0.012), kraft, sx * 0.17, 0.06, FRONT - 0.005));
+  }
+  if (outfit === "route") {
+    // gym-picker : le sportif. Bandeau et poignets éponge, short, baskets, haltère.
+    const terry = tinted(0xf1ece4, 0.9);
+    const hb = mesh(new THREE.TorusGeometry(0.385, 0.05, 16, 64), terry, 0, 0.235, 0);
+    hb.rotation.x = Math.PI / 2;
+    hat.add(hb);
+    const line = mesh(new THREE.TorusGeometry(0.4, 0.014, 8, 64), tinted(0xc4664f, 0.8), 0, 0.235, 0);
+    line.rotation.x = Math.PI / 2;
+    hat.add(line);
+    hat.rotation.z = 0.1;
+    for (const arm of [wave, rest]) {
+      const wb = mesh(new THREE.TorusGeometry(0.078, 0.03, 12, 32), terry, 0, -0.15, 0);
+      wb.rotation.x = Math.PI / 2;
+      arm.elbow.add(wb);
+    }
+    const db = new THREE.Group();
+    const bar = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.42, 16), brass);
+    bar.rotation.z = Math.PI / 2;
+    db.add(bar);
+    for (const sx of [-1, 1]) {
+      const pl = mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.07, 32), M.ink, sx * 0.165, 0, 0);
+      pl.rotation.z = Math.PI / 2;
+      db.add(pl);
+    }
+    hold(db, new THREE.Euler(0, 0.32, 0.15));
+  }
+  if (outfit === "maison") {
+    // Mithril : à la maison. Sweat à capuche, pantalon de jogging, chaussons, et la clé de laiton du coffre.
+    const hoodie = tinted(0x8fa889, 0.8);
+    const hood = mesh(new THREE.TorusGeometry(0.2, 0.075, 14, 32, Math.PI), hoodie, 0, 0.27, -0.03);
+    hood.rotation.set(Math.PI / 2, 0, Math.PI);
+    fig.add(hood);
+    for (const sx of [-1, 1]) fig.add(mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.14, 8), M.label, sx * 0.06, 0.17, FRONT + 0.01));
+    fig.add(mesh(new RoundedBoxGeometry(0.32, 0.13, 0.03, 1, 0.02), tinted(0x82a07b, 0.85), 0, -0.13, FRONT + 0.005));
+    const key = new THREE.Group();
+    key.add(mesh(new THREE.TorusGeometry(0.075, 0.024, 12, 32), brass, 0, 0.14, 0));
+    key.add(mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.27, 16), brass, 0, 0.37, 0));
+    key.add(mesh(new RoundedBoxGeometry(0.075, 0.05, 0.022, 1, 0.006), brass, 0.042, 0.47, 0));
+    key.add(mesh(new RoundedBoxGeometry(0.055, 0.03, 0.022, 1, 0.006), brass, 0.035, 0.41, 0));
+    hold(key, new THREE.Euler(0, 0.32, 0.3));
+  }
+  if (outfit === "salon") {
+    // Cancionero : le mélomane. Casque audio terre cuite, pull, un vinyle, une note de laiton qui flotte.
+    const cupMat = tinted(0xc98f72, 0.55);
+    head.add(mesh(new THREE.TorusGeometry(0.43, 0.032, 12, 64, Math.PI), M.ink, 0, 0.02, 0));
+    for (const sx of [-1, 1]) {
+      const cup = mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.1, 32), cupMat, sx * 0.43, 0.0, 0);
+      cup.rotation.z = Math.PI / 2;
+      head.add(cup);
+      const cap = mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.03, 32), M.ink, sx * 0.49, 0.0, 0);
+      cap.rotation.z = Math.PI / 2;
+      head.add(cap);
+    }
+    const collar = mesh(new THREE.TorusGeometry(0.12, 0.035, 12, 32), tinted(0xc9a086, 0.8), 0, 0.28, 0.01);
+    collar.rotation.x = Math.PI / 2;
+    fig.add(collar);
+    const rec = new THREE.Group();
+    const disc = mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.012, 48), new THREE.MeshStandardMaterial({ color: 0x1d1d22, roughness: 0.25 }), 0, 0.2, 0);
+    disc.rotation.x = Math.PI / 2;
+    rec.add(disc);
+    const lab = mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.016, 32), cupMat, 0, 0.2, 0);
+    lab.rotation.x = Math.PI / 2;
+    rec.add(lab);
+    hold(rec, new THREE.Euler(0, 0.32, 0.2));
+    const note = new THREE.Group();
+    fig.add(note);
+    const nh = mesh(new THREE.SphereGeometry(0.055, 20, 14), brass);
+    nh.scale.set(1.25, 0.9, 0.7);
+    nh.rotation.z = 0.4;
+    note.add(nh);
+    note.add(mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.22, 10), brass, 0.06, 0.11, 0));
+    const flag = mesh(new RoundedBoxGeometry(0.08, 0.03, 0.012, 1, 0.005), brass, 0.1, 0.2, 0);
+    flag.rotation.z = -0.6;
+    note.add(flag);
+    extra.push((phi) => {
+      note.position.set(-0.72, 1.0 + 0.06 * Math.sin(2 * phi), 0.1);
+      note.rotation.z = 0.18 * Math.sin(phi);
+    });
+  }
+  if (outfit === "calendrier") {
+    // Tonalli : le peintre de la couleur du jour. Chemise aux manches retroussées, tablier, palette, pinceau,
+    // et une touche de peinture sur la joue.
+    const apron = tinted(0xd9b2bb, 0.75);
+    fig.add(mesh(new RoundedBoxGeometry(0.46, 0.5, 0.03, 2, 0.06), apron, 0, -0.06, FRONT + 0.012));
+    for (const sx of [-1, 1]) {
+      const st = mesh(new RoundedBoxGeometry(0.045, 0.2, 0.022, 1, 0.01), apron, sx * 0.17, 0.24, 0.16);
+      st.rotation.x = -0.55;
+      fig.add(st);
+    }
+    fig.add(mesh(new RoundedBoxGeometry(0.17, 0.09, 0.02, 1, 0.01), tinted(0xc99ea8, 0.75), 0.09, -0.19, FRONT + 0.03));
+    [["love", -0.12, 0.08], ["joy", 0.13, 0.03], ["serenity", -0.05, -0.17]].forEach(([k, x, y]) => {
+      const d = mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.006, 20), tinted(EMO[k], 0.5), x, y, FRONT + 0.03);
+      d.rotation.x = Math.PI / 2;
+      fig.add(d);
+    });
+    const smudge = onSphere(-0.24, 0.02, HEAD_R + 0.003);
+    head.add(faceOut(mesh(new THREE.CircleGeometry(0.03, 16), tinted(EMO.serenity, 0.6), smudge.x, smudge.y, smudge.z)));
+    const sh = new THREE.Shape();
+    sh.absellipse(0, 0, 0.25, 0.18, 0, Math.PI * 2, false, 0);
+    const hole = new THREE.Path();
+    hole.absellipse(0.12, -0.02, 0.034, 0.028, 0, Math.PI * 2, true, 0);
+    sh.holes.push(hole);
+    const pg = new THREE.ExtrudeGeometry(sh, { depth: 0.018, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 2, curveSegments: 40 });
+    pg.translate(-0.12, 0.02, -0.009);
+    const pal = new THREE.Group();
+    pal.add(mesh(pg, tinted(0xcdb08a, 0.6)));
+    [["joy", -0.22, 0.12], ["love", -0.33, 0.05], ["serenity", -0.32, -0.07], ["gratitude", -0.2, -0.11], ["nostalgia", -0.09, 0.14]].forEach(([k, x, y]) => {
+      const b = mesh(new THREE.SphereGeometry(0.036, 16, 12), tinted(EMO[k], 0.5), x, y, 0.016);
+      b.scale.z = 0.45;
+      pal.add(b);
+    });
+    hold(pal, new THREE.Euler(0.35, 0.32, 0.25));
+    const brush = new THREE.Group();
+    brush.add(mesh(new THREE.CylinderGeometry(0.014, 0.018, 0.3, 12), tinted(0xcdb08a, 0.6), 0, -0.15, 0));
+    brush.add(mesh(new THREE.CylinderGeometry(0.02, 0.018, 0.05, 12), brass, 0, -0.32, 0));
+    const tipB = mesh(new THREE.ConeGeometry(0.022, 0.08, 12), tinted(EMO.love, 0.5), 0, -0.38, 0);
+    tipB.rotation.x = Math.PI;
+    brush.add(tipB);
+    brush.position.set(0, handY, 0);
+    wave.elbow.add(brush);
+  }
+  if (outfit === "dossiers") {
+    // INDEX : l'archiviste. Gilet kraft sur chemise et cravate, lunettes rondes de laiton, crayon sur l'oreille,
+    // un dossier sous la main.
+    fig.add(mesh(new RoundedBoxGeometry(0.13, 0.5, 0.02, 1, 0.008), M.label, 0, 0.0, FRONT + 0.003));
+    fig.add(mesh(new RoundedBoxGeometry(0.045, 0.24, 0.02, 1, 0.008), M.ink, 0, 0.1, FRONT + 0.012));
+    for (const y of [0.0, -0.1, -0.2]) fig.add(mesh(new THREE.SphereGeometry(0.018, 12, 10), brass, 0.085, y, FRONT + 0.006));
+    for (const sx of [-1, 1]) {
+      const ep = onSphere(sx * 0.125, 0.0, HEAD_R + 0.03);
+      const ring = faceOut(mesh(new THREE.TorusGeometry(0.075, 0.012, 12, 40), brass, ep.x, ep.y, ep.z));
+      head.add(ring);
+      head.add(tube(curve([[sx * 0.2, 0.01, 0.34], [sx * 0.32, 0.03, 0.2], [sx * 0.36, 0.03, 0.04]]), 0.009, brass, 24));
+    }
+    head.add(tube(curve([[-0.05, 0.005, 0.385], [0, 0.025, 0.392], [0.05, 0.005, 0.385]]), 0.009, brass, 16));
+    const pen = new THREE.Group();
+    pen.add(mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.24, 12), tinted(0xd8a24a, 0.6), 0, 0, 0));
+    const nib = mesh(new THREE.ConeGeometry(0.016, 0.045, 12), M.ink, 0, -0.142, 0);
+    nib.rotation.x = Math.PI;
+    pen.add(nib);
+    pen.position.set(0.36, 0.1, 0.02);
+    pen.rotation.set(0.3, 0, -1.0);
+    head.add(pen);
+    const fold = new THREE.Group();
+    fold.add(mesh(new RoundedBoxGeometry(0.36, 0.46, 0.03, 1, 0.012), tinted(KRAFT, 0.82), 0.12, 0.17, 0));
+    fold.add(mesh(new THREE.BoxGeometry(0.32, 0.06, 0.02), M.label, 0.12, 0.415, -0.003));
+    fold.add(mesh(new RoundedBoxGeometry(0.1, 0.045, 0.032, 1, 0.01), tinted(TINT.espace, 0.7), 0.22, 0.42, 0));
+    hold(fold, new THREE.Euler(0.15, 0.32, -0.12));
+  }
+
+  fig.rotation.y = -0.32;
+  g.userData.animate = (phi) => {
+    if (space) {
+      // En apesanteur : il flotte et dérive doucement.
+      fig.position.y = 0.07 * Math.sin(phi);
+      fig.rotation.z = 0.07 * Math.sin(phi + 0.6);
+      fig.rotation.x = 0.05 * Math.sin(phi + 1.4);
+      legL.rotation.x = 0.16 * Math.sin(phi);
+      legR.rotation.x = -0.12 * Math.sin(phi + 0.5);
+    } else {
+      // Sur terre : il sautille sur place, la tête penchée au rythme du salut.
+      fig.position.y = 0.035 * (1 - Math.cos(2 * phi)) / 2;
+      fig.rotation.z = 0.035 * Math.sin(phi);
+      fig.rotation.x = 0;
+      head.rotation.z = 0.07 * Math.sin(phi + 0.5);
+      legL.rotation.x = 0.05 * Math.sin(2 * phi);
+      legR.rotation.x = -0.05 * Math.sin(2 * phi);
+    }
+    // Le salut : le bras tendu sur le côté, l'avant-bras levé qui balance trois fois par boucle.
+    wave.a.rotation.set(0.1, 0, 1.25 + 0.06 * Math.sin(3 * phi));
+    wave.elbow.rotation.set(0, 0, 1.2 + 0.5 * Math.sin(3 * phi));
+    rest.a.rotation.set(REST_A.x, 0, REST_A.z + 0.05 * Math.sin(phi));
+    rest.elbow.rotation.copy(REST_E);
+    for (const f of extra) f(phi);
+  };
+  g.userData.camera = { pos: [0, 0.35, 6.2], target: [0.12, 0.22, 0], fov: 26 };
+  return g;
+}
+
 const SCENES = {
   // 004 Galaxy Escape : l'espace, la planète à anneau ; la Terre au loin
   espace(M) {
@@ -1896,7 +2475,13 @@ const SCENES = {
     g.userData.camera = { pos: [0.8, 2.9, 7.0], target: [0.1, 0.45, 0.1], fov: 34 };
     return g;
   },
+  // Le guide : le copilote en combinaison spatiale (sa tenue à l'escale 1), sur fond transparent.
+  astronaute(M) {
+    return copilot(M, "espace");
+  },
 };
+// Une scène par tenue du copilote : « tenue-<escale> ».
+for (const k of TENUES) SCENES["tenue-" + k] = (M) => copilot(M, k);
 
 // `box` : cadrage mobile. [x0, y0, x1, y1], en fractions de l'image d'ordinateur (16:9), est la zone qui doit
 // rester visible (l'objet du projet et celui qu'on touche). La caméra vise son centre et recule, même direction
