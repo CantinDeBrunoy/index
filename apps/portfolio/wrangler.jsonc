@@ -3,6 +3,9 @@
   "name": "index",
   "main": "./worker/index.ts",
   "compatibility_date": "2026-10-01",
+  // Les sondes visent aussi Magellan et gym-picker, d'autres Workers du même workers.dev : sans ce
+  // drapeau, Cloudflare refuse un fetch d'un Worker vers un autre de la même zone (erreur 1042).
+  "compatibility_flags": ["global_fetch_strictly_public"],
   "assets": {
     // Le site (build Astro) est servi directement ; seul /api/* passe par le Worker.
     "directory": "./dist",
