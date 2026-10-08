@@ -1,0 +1,201 @@
+---
+/**
+ * Le carnet de voyage, « Les projets » : le sommaire du voyage, de nuit, une carte postale par escale.
+ * La carte ouvre la fiche du projet ; le lien du dessous rouvre son escale. Les projets racontés sur la
+ * fiche d'un autre (l'API REST .NET, sur l'étagère de Mithril) sont nommés sur sa carte. Puis l'adresse où
+ * m'écrire, et les crédits des modèles 3D des scènes.
+ * Les vignettes sont les images fixes des scènes (public/voyage/stills) : un carnet de cartes postales, et
+ * une page légère, là où les dix boucles animées pèseraient près de 6 Mo.
+ */
+import { getProject, GITHUB_URL } from "@index/projects";
+import { CARNET } from "../../data/carnet";
+import { CREDITS } from "../../data/credits";
+import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
+import { fill, kindOf, STOP_TEXTS, STOPS } from "../../data/voyage";
+import { EMAIL, fichePath, ROUTES, STRINGS, typo, type Lang } from "../../i18n/voyage";
+import Voyage from "../../layouts/Voyage.astro";
+import Colophon from "./Colophon.astro";
+import SiteHeader from "./SiteHeader.astro";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const c = CARNET[lang];
+const f = FICHE[lang];
+const alternates = { fr: ROUTES.projets.fr, en: ROUTES.projets.en };
+
+const cards = STOPS.map((stop, i) => {
+  const project = getProject(stop.slug)!;
+  const text = STOP_TEXTS[lang][stop.slug]!;
+  const shelved = Object.entries(FICHE_OF)
+    .filter(([, host]) => host === stop.slug)
+    .map(([slug]) => getProject(slug)!)
+    .map((p) => `${p.number} ${nameOf(p, lang)}`);
+  return { ...stop, n: i + 1, project, text, kind: kindOf(project, text, lang).line, shelved };
+});
+const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
+---
+
+<Voyage lang={lang} title={c.pageTitle} description={c.description} alternates={alternates} palette="night">
+  <SiteHeader lang={lang} current="projets" alternates={alternates} />
+  <div class="wrap">
+    <main id="contenu">
+      <section class="intro">
+        <p class="label">{c.label}</p>
+        <h1 class="serif" set:html={c.title} />
+        <p class="intro__text">{typo(lang, c.intro)}</p>
+      </section>
+
+      <ol class="cards">
+        {
+          cards.map((s) => (
+            <li class="card">
+              <a class="post" href={fichePath(lang, s.project)}>
+                <span class="thumb" style={`background: ${s.bg}`}>
+                  <img
+                    src={still(s.scene, "-640")}
+                    srcset={`${still(s.scene, "-640")} 640w, ${still(s.scene)} 1280w`}
+                    sizes="(min-width: 1180px) 370px, (min-width: 760px) 50vw, 100vw"
+                    alt=""
+                    width="640"
+                    height="360"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </span>
+                <span class="card__stop">
+                  {f.stop} {s.n} · {s.text.place}
+                </span>
+                <span class="serif card__name">{s.project.name}</span>
+                <span class="card__kind">{s.kind}</span>
+                {s.shelved.length > 0 && <span class="card__shelf">{typo(lang, fill(c.shelf, { list: s.shelved.join(", ") }))}</span>}
+              </a>
+              <a class="link card__revisit" href={`${ROUTES.voyage[lang]}#escale-${s.n}`} aria-label={fill(c.revisitAria, { n: s.n, place: s.text.place })}>
+                {c.revisit}
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+
+      <footer class="foot">
+        <h2 class="serif" set:html={typo(lang, STRINGS[lang].nextIdea)} />
+        <div class="foot__links">
+          <a class="go" href={`mailto:${EMAIL}`}>{EMAIL}</a>
+          <a class="pill foot__github" href={GITHUB_URL} target="_blank" rel="noopener">GitHub ↗</a>
+        </div>
+      </footer>
+      <p class="credits" set:html={typo(lang, CREDITS[lang])} />
+    </main>
+    <Colophon lang={lang} />
+  </div>
+</Voyage>
+
+<style>
+  .intro {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 760px;
+    padding: 56px 0 64px;
+  }
+  .intro h1 {
+    margin: 0;
+    font-size: clamp(56px, 7vw, 104px);
+    line-height: 0.95;
+  }
+  .intro__text {
+    margin: 0;
+    color: var(--muted);
+    font-size: 19px;
+    line-height: 1.6;
+  }
+
+  /* Les cartes postales : trois de front sur ordinateur, deux sur tablette, une par ligne sur téléphone. */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 48px 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .card__stop {
+    padding-top: 6px;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .card__name {
+    font-size: 34px;
+    line-height: 1;
+  }
+  .card__kind {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .card__shelf {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .card__revisit {
+    align-self: flex-start;
+  }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 32px;
+    margin-top: 112px;
+    padding-top: 48px;
+    border-top: 1px solid var(--line);
+  }
+  .foot h2 {
+    max-width: 640px;
+    margin: 0;
+    font-size: clamp(40px, 5vw, 68px);
+    line-height: 1;
+  }
+  .foot__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .foot__github {
+    min-height: 52px;
+  }
+
+  .credits {
+    margin: 40px 0 16px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .credits :global(a) {
+    color: inherit;
+    text-underline-offset: 3px;
+  }
+
+  @media (max-width: 700px) {
+    .intro {
+      padding: 32px 0 44px;
+    }
+    .foot {
+      margin-top: 80px;
+    }
+    /* L'adresse, longue, tient sur la largeur du téléphone. */
+    .foot__links .go {
+      font-size: 15px;
+    }
+  }
+</style>

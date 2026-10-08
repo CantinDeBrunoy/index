@@ -16,7 +16,7 @@ index/
     hublot/       010 · CLI Node (cron GitHub Actions) + page de gestion
   packages/
     projects/     @index/projects : la liste des entrées (source de vérité unique) et les sondes de statut
-    ui/           @index/ui : tokens de la charte, polices, onglet « ← INDEX » des apps
+    ui/           @index/ui : palettes du voyage, polices, onglet « ← Index » des apps
     config/       @index/config : tsconfig partagé
   scripts/        keep-alive.ts, screenshots.ts
   .github/workflows/
@@ -26,7 +26,7 @@ Les entrées 001 à 004 sont des archives (projets antérieurs, sans démo en li
 
 - **pnpm workspaces + Turborepo.** Chaque app garde ses propres dépendances et versions, et reste buildable seule : `pnpm turbo run build --filter=<app>`.
 - **Historique conservé.** Chaque projet a été importé avec `git filter-repo --to-subdirectory-filter apps/<app>` : `git log` et `git blame` remontent à ses premiers commits.
-- **Une seule source de vérité.** `packages/projects/src/projects.ts` alimente le portfolio (liste, fiches, statut live), l'onglet « ← INDEX » des apps, le keep-alive et le cron de Hublot.
+- **Une seule source de vérité.** `packages/projects/src/projects.ts` alimente le portfolio (liste, fiches, statut live), l'onglet « ← Index » des apps, le keep-alive et le cron de Hublot.
 
 ## Lancer en local
 
@@ -83,7 +83,7 @@ Les variables d'environnement de chaque app sont décrites dans son `.env.exampl
    ```bash
    pnpm screenshots <slug>
    ```
-7. **Monter l'onglet « ← INDEX »** dans l'app (web) : `mountIndexBar({ ...portfolioLink("<slug>"), corner: "top-right" })`, avec `@index/ui` et `@index/projects` en dépendances.
+7. **Monter l'onglet « ← Index »** dans l'app (web) : `mountIndexBar({ ...portfolioLink("<slug>"), corner: "top-right" })`, avec `@index/ui` et `@index/projects` en dépendances.
 8. **Déployer** :
    - sur Cloudflare : un `wrangler.jsonc` dans l'app et une copie de `.github/workflows/deploy-magellan.yml` en `deploy-<app>.yml` ;
    - sur Vercel : relier le projet au dépôt `index` avec *Root Directory* = `apps/<app>`.
@@ -93,15 +93,15 @@ Les variables d'environnement de chaque app sont décrites dans son `.env.exampl
 
 | N° | App | Hébergement | URL | Déclenchement |
 |---|---|---|---|---|
-| — | portfolio | Cloudflare Workers `index` | `https://index.<sous-domaine>.workers.dev` | `deploy-portfolio.yml` |
-| 005 | magellan | Cloudflare Workers `magellan` | `https://magellan.<sous-domaine>.workers.dev` | `deploy-magellan.yml` |
-| 006 | cancionero | Vercel (projet existant) | à reporter dans `projects.ts` | intégration Git Vercel, *Root Directory* `apps/cancionero` |
+| — | portfolio | Cloudflare Workers `index` | https://index.cantin-roquier.workers.dev | `deploy-portfolio.yml` |
+| 005 | magellan | Cloudflare Workers `magellan` | https://magellan.cantin-roquier.workers.dev | `deploy-magellan.yml` |
+| 006 | cancionero | Vercel `cancionero-cantin` | https://cancionero-cantin.vercel.app | intégration Git Vercel, *Root Directory* `apps/cancionero` |
 | 007 | mithril | GitHub Releases (tags `mithril-v*`) | — | à la main (skill `publier-release`), CI `mithril.yml` |
-| 008 | tonalli | Vercel + Supabase | https://teinte-du-jour-eight.vercel.app | intégration Git Vercel, *Root Directory* `apps/tonalli` |
-| 009 | gym-picker | Cloudflare Workers `gym-picker` | `https://gym-picker.<sous-domaine>.workers.dev` | `deploy-gym-picker.yml` |
-| 010 | hublot | GitHub Actions (cron) + Cloudflare Workers `hublot` (page) | `https://hublot.<sous-domaine>.workers.dev` après la bascule | `hublot-check.yml`, `deploy-hublot-page.yml` |
+| 008 | tonalli | Vercel `teinte-du-jour` + Supabase | https://teinte-du-jour-eight.vercel.app | intégration Git Vercel, *Root Directory* `apps/tonalli` |
+| 009 | gym-picker | Cloudflare Workers `gym-picker` | https://gym-picker.cantin-roquier.workers.dev | `deploy-gym-picker.yml` |
+| 010 | hublot | GitHub Actions (cron) + Cloudflare Workers `hublot` (page) | https://hublot.cantin-roquier.workers.dev après la bascule | `hublot-check.yml`, `deploy-hublot-page.yml` |
 
-Le sous-domaine workers.dev se renseigne une fois dans `WORKERS_SUBDOMAIN` (`packages/projects/src/projects.ts`). Toutes les URLs, le statut live et l'onglet « ← INDEX » en découlent.
+Le sous-domaine workers.dev (`cantin-roquier`) est renseigné une seule fois, dans `WORKERS_SUBDOMAIN` (`packages/projects/src/projects.ts`). Toutes les URLs, le statut live et l'onglet « ← Index » en découlent.
 
 Les déploiements Cloudflare passent par le workflow réutilisable `_deploy-cloudflare.yml` : build Turborepo de l'app et de ses packages, puis `wrangler deploy`. Chaque `deploy-<app>.yml` ne se déclenche que quand `apps/<app>/`, `packages/` ou le lockfile changent sur `main`.
 
@@ -151,7 +151,7 @@ pnpm --filter portfolio exec wrangler secret put GITHUB_ALERTS_TOKEN
 
 `GITHUB_ALERTS_TOKEN` est un jeton GitHub à grain fin limité au dépôt `index`, avec *Issues* en lecture/écriture et *Actions* en lecture.
 
-**Vercel :** relier `teinte-du-jour-eight` (Tonalli) et le projet Cancionero au dépôt `index`, avec *Root Directory* `apps/tonalli` ou `apps/cancionero`, et activer l'option qui ignore les déploiements quand le dossier n'a pas changé.
+**Vercel :** les projets `teinte-du-jour` (Tonalli) et `cancionero-cantin` sont reliés au dépôt `index`, avec *Root Directory* `apps/tonalli` ou `apps/cancionero`, Node 24, l'option qui ignore les déploiements quand le dossier n'a pas changé, et la variable `ENABLE_EXPERIMENTAL_COREPACK` = `1`, sans laquelle Vercel n'utilise pas la version de pnpm fixée dans `packageManager`.
 
 **Cloudflare :** déconnecter Workers Builds de l'ancien dépôt `gym-picker`. Les déploiements passent désormais par `deploy-gym-picker.yml`. Le secret `TOMTOM_API_KEY` reste sur le Worker.
 
@@ -175,4 +175,4 @@ Jusqu'à la bascule, Hublot tourne depuis son ancien dépôt. Le monorepo est pr
 
 ## Charte
 
-Brutalisme typographique noir et blanc, un seul accent rouge, rare. Tokens dans `packages/ui/src/tokens.css`, page de référence `/styleguide`. Les apps gardent leur propre design ; seul l'onglet « ← INDEX » reprend la charte.
+« Le voyage » : chaque projet est une escale, une scène 3D d'argile et de laiton, précalculée (`apps/portfolio/design/`). Instrument Serif, Geist et Geist Mono, auto-hébergées ; quatre palettes (nuit, jour, soir, kraft) dans `packages/ui/src/voyage.css`. Les apps gardent leur propre design ; seul l'onglet « ← Index » (`packages/ui/src/index-bar.js`) reprend la matière du voyage : une pilule de nuit, « Index » en italique, le numéro en laiton, sans police à charger.

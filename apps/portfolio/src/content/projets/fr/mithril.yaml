@@ -1,0 +1,18 @@
+# Mithril, la fiche en français. Brouillon, à réécrire.
+why: "Je voulais un coffre à mots de passe que je puisse relire en entier : sans cloud, sans dépendance, compilé avec ce que Windows fournit déjà. Et chacun peut le recompiler pour vérifier."
+features:
+  - title: "Des mots de passe solides"
+    text: "De 8 à 128 caractères, sans caractères ambigus si on veut, avec leur force affichée."
+  - title: "Un coffre chiffré deux fois"
+    text: "Par Windows, puis par le mot de passe maître, en AES-256."
+  - title: "La frappe automatique"
+    text: "Un raccourci remplit la fenêtre active, sans passer par le presse-papiers."
+choices:
+  - title: "Aucune dépendance"
+    text: "Compilé par csc.exe, le compilateur livré avec Windows : pas d'installeur, un seul .exe."
+  - title: "Le téléphone, sans cloud"
+    text: "Appairé par un code à six chiffres, il se synchronise sur le réseau local, chaque côté vérifiant l'autre."
+  - title: "Un tirage sans biais"
+    text: "Le générateur cryptographique de Windows, en rejetant les tirages biaisés : chaque caractère a exactement la même chance."
+  - title: "Un audit de sécurité dans la CI"
+    text: "37 règles vérifient à chaque modification que les garanties annoncées restent vraies ; tout le réseau tient dans un seul fichier."

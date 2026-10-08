@@ -1,0 +1,12 @@
+---
+/** Le bas de page : le lien vers les mentions légales. */
+import { ROUTES, STRINGS, type Lang } from "../../i18n/voyage";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<p class="colophon"><a href={ROUTES.mentions[lang]}>{STRINGS[lang].legal}</a></p>

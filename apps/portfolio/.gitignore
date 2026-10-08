@@ -1,2 +1,11 @@
 # Généré par wrangler types (postinstall)
 worker-configuration.d.ts
+
+# Sorties des outils de design (design/README.md) : elles se régénèrent.
+design/renders/anim/
+design/renders/check/
+design/renders/voyage.html
+design/renders/encode-voyage.mjs
+design/design-canvas/project/
+design/design-canvas/measure/
+design/artifact-files/

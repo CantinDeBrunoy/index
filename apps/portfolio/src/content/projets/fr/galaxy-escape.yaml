@@ -1,0 +1,14 @@
+# Galaxy Escape, la fiche en français. Brouillon, à réécrire.
+why: "Je voulais comprendre ce qu'il faut pour faire tourner un jeu en 3D dans un simple onglet. Galaxy Escape, un runner inspiré de Temple Run, a été mon terrain d'essai : une course sans fin, un monde qui s'invente devant le vaisseau."
+features:
+  - title: "Une course sans fin"
+    text: "On avance toujours plus vite, et il faut esquiver ce qui arrive en face."
+  - title: "Des niveaux générés"
+    text: "Le parcours se construit au fil de la partie : jamais deux fois le même."
+  - title: "Dans le navigateur"
+    text: "On joue tout de suite, sans rien installer."
+choices:
+  - title: "Three.js plutôt qu'un moteur de jeu"
+    text: "Apprendre la 3D par ses bases, et rester sur le web."
+  - title: "La génération procédurale"
+    text: "Des niveaux infinis, sans les dessiner un par un."

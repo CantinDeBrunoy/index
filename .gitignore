@@ -18,6 +18,9 @@ dist/
 # Médias lourds (démos vidéo)
 *.mp4
 *.mov
+# Sauf les scènes du voyage sur ordinateur (2560 × 1440, 20 Mo en tout) : le site les sert, et le
+# déploiement part du dépôt (deploy-portfolio.yml). Sans elles, il se rabattrait sur les boucles WebP.
+!apps/portfolio/public/voyage/*.mp4
 
 # Divers
 .DS_Store

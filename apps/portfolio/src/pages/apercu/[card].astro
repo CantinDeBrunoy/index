@@ -1,0 +1,246 @@
+---
+/**
+ * Les aperçus de partage, une page de 1200 × 630 par image (data/apercus.ts), servies par le serveur de
+ * développement seulement : la construction du site n'en garde aucune. design/renders/og.mjs les photographie
+ * dans public/og/. La page /apercu/index les liste.
+ * Celui du site : le passeport ouvert à droite, le nom à gauche, gros pour rester lisible en vignette.
+ * Celui d'une fiche : la scène de son escale en grand, et son cartel, comme dans le voyage.
+ */
+import "@index/ui/voyage.css";
+
+import { getProject } from "@index/projects";
+import monoUrl from "@index/ui/fonts/geist-mono-latin-wght-normal.woff2?url";
+import sansUrl from "@index/ui/fonts/geist-latin-wght-normal.woff2?url";
+import serifItalicUrl from "@index/ui/fonts/instrument-serif-latin-400-italic.woff2?url";
+import serifUrl from "@index/ui/fonts/instrument-serif-latin-400-normal.woff2?url";
+import { CARDS, OG_LINE, type Card } from "../../data/apercus";
+import { APROPOS } from "../../data/apropos";
+import { FICHE } from "../../data/fiches";
+import { STOP_TEXTS, STOPS } from "../../data/voyage";
+import { typo } from "../../i18n/voyage";
+
+export function getStaticPaths() {
+  if (!import.meta.env.DEV) return [];
+  return [
+    { params: { card: "index" }, props: { card: undefined } },
+    ...CARDS.map((card) => ({ params: { card: card.id }, props: { card } })),
+  ];
+}
+
+interface Props {
+  card: Card | undefined;
+}
+
+const { card } = Astro.props;
+const stop = card?.kind === "fiche" ? STOPS.find((s) => s.slug === card.slug) : undefined;
+const project = card?.kind === "fiche" ? getProject(card.slug) : undefined;
+const text = card?.kind === "fiche" ? STOP_TEXTS[card.lang][card.slug] : undefined;
+
+// Les polices du site, sans attente : la photo doit les avoir, pas leurs remplaçantes.
+const fonts = [
+  ["Instrument Serif", "normal", "400", serifUrl, "woff2"],
+  ["Instrument Serif", "italic", "400", serifItalicUrl, "woff2"],
+  ["Geist", "normal", "100 900", sansUrl, "woff2-variations"],
+  ["Geist Mono", "normal", "100 900", monoUrl, "woff2-variations"],
+]
+  .map(([family, style, weight, url, format]) => `@font-face{font-family:"${family}";font-style:${style};font-weight:${weight};font-display:block;src:url("${url}") format("${format}")}`)
+  .join("\n");
+---
+
+<!doctype html>
+<html lang={card?.lang ?? "fr"}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>Aperçu · {card?.id ?? "index"}</title>
+    <style is:inline set:html={fonts} />
+  </head>
+  <body>
+    {
+      !card ? (
+        <ul class="list">
+          {CARDS.map((c) => (
+            <li>
+              <a href={`/apercu/${c.id}`} data-card={c.id}>
+                {c.id}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : card.kind === "site" ? (
+        <div class="og pal-night" style="background: var(--night)">
+          <img class="og__passport" src="/voyage/apercu.webp" alt="" />
+          <div class="og__shade" aria-hidden="true" />
+          <div class="og__left">
+            <span class="serif og__brand">Index</span>
+            <div class="og__who">
+              <h1 class="serif">
+                Cantin
+                <br />
+                Roquier
+              </h1>
+              <p>{APROPOS[card.lang].role}</p>
+            </div>
+            <p class="og__line">{OG_LINE[card.lang]}</p>
+          </div>
+        </div>
+      ) : (
+        stop &&
+        project &&
+        text && (
+          <div class={`og pal-${stop.palette}`} style={`background: ${stop.bg}`}>
+            <img class="og__scene" src={`/voyage/stills/${stop.scene}.webp`} alt="" />
+            <div class="og__top">
+              <span class="serif">Index</span>
+              <span class="og__who-small">Cantin Roquier</span>
+            </div>
+            <article class:list={["og__cartel", { "og__cartel--right": card.side === "right" }]}>
+              <p class="og__stop">
+                {FICHE[card.lang].stop} {card.n} · {text.place}
+              </p>
+              <h1 class="serif">{project.name}</h1>
+              <p class="og__pitch">{typo(card.lang, text.pitch)}</p>
+            </article>
+          </div>
+        )
+      )
+    }
+  </body>
+</html>
+
+<style is:global>
+  body {
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .serif {
+    font-family: var(--font-serif);
+    font-weight: 400;
+  }
+  .og {
+    position: relative;
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  .og h1,
+  .og p {
+    margin: 0;
+  }
+
+  /* — Le site : le passeport à droite, le nom à gauche — */
+  .og__passport {
+    position: absolute;
+    right: 0;
+    top: 0;
+    display: block;
+    width: 700px;
+    height: 630px;
+  }
+  .og__shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #0e1018 0%, #0e1018 42%, rgba(14, 16, 24, 0.72) 50%, rgba(14, 16, 24, 0) 64%);
+  }
+  .og__left {
+    position: absolute;
+    left: 64px;
+    top: 52px;
+    bottom: 54px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 600px;
+  }
+  .og__brand {
+    font-size: 46px;
+    font-style: italic;
+    line-height: 1;
+  }
+  .og__who {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .og__who h1 {
+    font-size: 116px;
+    line-height: 0.9;
+    letter-spacing: -0.01em;
+  }
+  .og__who p {
+    max-width: 430px;
+    color: var(--muted);
+    font-size: 28px;
+    line-height: 1.3;
+    text-wrap: balance;
+  }
+  .og__line {
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 19px;
+  }
+
+  /* — Une fiche : la scène en grand, le cartel en bas à gauche — */
+  .og__scene {
+    position: absolute;
+    left: 0;
+    top: -23px;
+    display: block;
+    width: 1200px;
+    height: 675px;
+  }
+  .og__top {
+    position: absolute;
+    left: 40px;
+    top: 28px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .og__top .serif {
+    font-size: 38px;
+    font-style: italic;
+  }
+  .og__who-small {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 15px;
+  }
+  .og__cartel {
+    position: absolute;
+    left: 40px;
+    bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 540px;
+    box-sizing: border-box;
+    padding: 26px 28px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .og__cartel--right {
+    left: auto;
+    right: 40px;
+  }
+  .og__stop {
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 15px;
+  }
+  .og__cartel h1 {
+    font-size: 76px;
+    line-height: 1;
+  }
+  .og__pitch {
+    font-size: 22px;
+    line-height: 1.45;
+  }
+
+  .list {
+    font-family: var(--font-mono);
+  }
+</style>

@@ -14,14 +14,11 @@ import type { ProjectInput } from "./types.ts";
 export const GITHUB_URL = "https://github.com/CantinDeBrunoy";
 export const MONOREPO_URL = `${GITHUB_URL}/index`;
 
-/**
- * Sous-domaine workers.dev du compte Cloudflare (gym-picker.<ici>.workers.dev).
- * À remplir au premier déploiement : wrangler affiche l'URL complète.
- */
-export const WORKERS_SUBDOMAIN: string | undefined = undefined;
+/** Sous-domaine workers.dev du compte Cloudflare (gym-picker.<ici>.workers.dev). */
+export const WORKERS_SUBDOMAIN: string | undefined = "cantin-roquier";
 
-/** URL Vercel de Cancionero (dashboard Vercel → projet → Domains). À remplir. */
-const CANCIONERO_URL: string | undefined = undefined;
+/** URL Vercel de Cancionero (projet Vercel « cancionero-cantin »). */
+const CANCIONERO_URL: string | undefined = "https://cancionero-cantin.vercel.app";
 
 const workersDev = (worker: string) =>
   WORKERS_SUBDOMAIN ? `https://${worker}.${WORKERS_SUBDOMAIN}.workers.dev` : undefined;
@@ -131,7 +128,8 @@ export const PROJECTS = [
       fr: "Un générateur de mots de passe pour Windows, avec coffre chiffré local et saisie automatique, sans installation ni réseau.",
     },
     stack: ["C#", "WinForms", ".NET Framework", "AES-256"],
-    links: { code: code("mithril") },
+    // Les versions publiées de l'ancien dépôt, jusqu'à la première release du monorepo (tag mithril-v*).
+    links: { download: `${GITHUB_URL}/Mithril/releases`, code: code("mithril") },
   },
   {
     slug: "tonalli",
@@ -186,5 +184,19 @@ export const PROJECTS = [
       // Le cron tourne toutes les 6 h : au-delà de 13 h sans données neuves, il est arrêté.
       { kind: "freshness", url: HUBLOT_LATEST_JSON, field: "generatedAt", maxAgeHours: 13 },
     ],
+  },
+  {
+    // Le portfolio lui-même : le hub d'où s'ouvrent toutes les apps. Pas de sonde, c'est lui qui sonde.
+    slug: "index",
+    name: "INDEX",
+    started: "2026-10",
+    kind: "web",
+    app: "portfolio",
+    host: "Cloudflare Workers",
+    pitch: {
+      fr: "Mes projets réunis dans un seul dépôt, gardés éveillés par des robots, et présentés ici escale par escale.",
+    },
+    stack: ["pnpm", "Turborepo", "Astro", "TypeScript", "GitHub Actions", "Cloudflare Workers"],
+    links: { demo: PORTFOLIO_URL, code: MONOREPO_URL },
   },
 ] as const satisfies readonly ProjectInput[];

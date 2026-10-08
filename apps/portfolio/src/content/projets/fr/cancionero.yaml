@@ -1,0 +1,19 @@
+# Cancionero, la fiche en français. Brouillon, à réécrire.
+why: "Une chanson qu'on aime, on la retient sans effort. Cancionero en fait une leçon d'espagnol : on la lit, on la comprend, on la chante, et les mots restent."
+features:
+  - title: "Les paroles traduites"
+    text: "Chaque ligne avec sa traduction en français, et sa voix à écouter."
+  - title: "Le karaoké à trous"
+    text: "On complète les mots manquants en suivant la chanson."
+  - title: "Cartes et quiz"
+    text: "Le vocabulaire en cartes, et un quiz corrigé sur-le-champ, même hors ligne."
+choices:
+  - title: "Une application installable"
+    text: "Elle s'installe depuis le navigateur et marche hors ligne ; une app iOS aurait demandé un compte développeur Apple."
+  - title: "Expo et React Native Web"
+    text: "Le même code pour le web aujourd'hui, et pour le téléphone demain."
+  - title: "Pas de serveur"
+    text: "Les paroles se cherchent dans LRCLIB, une base publique, et tout le reste vit sur l'appareil."
+capture:
+  alt: "Capture de Cancionero : le vocabulaire à réviser et la liste des chansons, de « Hola, ¿cómo estás? » à « En el mercado »."
+  caption: "Les chansons et le vocabulaire à réviser."

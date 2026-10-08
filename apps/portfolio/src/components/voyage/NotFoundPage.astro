@@ -1,0 +1,309 @@
+---
+/**
+ * La 404, « Bagage égaré » : une escale hors itinéraire. Sur ordinateur, comme une escale du voyage :
+ * la scène en grand (vidéo haute définition), l'anneau sur la valise, qui ramène au départ, et le cartel
+ * en bas à gauche, qui mène aux projets. Sous 700 px, comme une escale du voyage mobile.
+ */
+import { NOT_FOUND, NOT_FOUND_SCENE as S } from "../../data/annexes";
+import { ROUTES, typo, type Lang } from "../../i18n/voyage";
+import Voyage from "../../layouts/Voyage.astro";
+import SiteHeader from "./SiteHeader.astro";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const n = NOT_FOUND[lang];
+// La page manquante n'a pas d'équivalent dans l'autre langue : l'interrupteur mène à l'accueil.
+const alternates = { fr: ROUTES.voyage.fr, en: ROUTES.voyage.en };
+const home = ROUTES.voyage[lang];
+const position = `--x: ${S.spot[0]}%; --y: ${S.spot[1]}%; --mx: ${S.spotMobile[0]}%; --my: ${S.spotMobile[1]}%`;
+---
+
+<Voyage lang={lang} title={n.pageTitle} description={n.description} alternates={alternates} palette="night" background={S.bg} noindex>
+  <div class="nf" data-scene-video style={position}>
+    <script is:inline>
+      document.currentScript.parentElement.classList.add("js");
+    </script>
+    <p class="visually-hidden">{n.alt}</p>
+    <div class="scene-box">
+      <video class="scene scene--video" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true">
+        <source src={`/voyage/${S.scene}-av1.mp4`} type='video/mp4; codecs="av01.0.12M.08"' />
+        <source src={`/voyage/${S.scene}.mp4`} type='video/mp4; codecs="avc1.640034"' />
+      </video>
+      <picture>
+        <source media="(max-width: 700px)" srcset={`/voyage/${S.scene}-mobile.webp`} />
+        <img class="scene scene--still" src={`/voyage/${S.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
+      </picture>
+      <a class="spot" href={home}>
+        <span class="ring" aria-hidden="true"></span>
+        <span class="lab">{n.spot} →</span>
+      </a>
+    </div>
+
+    <div class="nf-head">
+      <SiteHeader lang={lang} alternates={alternates} />
+    </div>
+    <p class="nf-cap">{n.caption}</p>
+
+    <main id="contenu" class="nf-card">
+      <p class="label">{n.label}</p>
+      <h1 class="serif" set:html={n.title} />
+      <p class="nf-card__text">{typo(lang, n.text)}</p>
+      <div class="nf-card__links">
+        <a class="link" href={ROUTES.projets[lang]}>{n.projects}</a>
+        <a class="link nf-card__about" href={ROUTES.apropos[lang]}>{n.about}</a>
+      </div>
+    </main>
+
+    <nav class="nf-go" aria-label={n.spot}>
+      <a class="go" href={home}>{n.spot} →</a>
+    </nav>
+  </div>
+</Voyage>
+
+<script>
+  import "../../scripts/scene-video";
+</script>
+
+<style>
+  .nf {
+    position: relative;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+
+  /* La scène couvre l'écran sans se déformer ; l'anneau est placé en % de l'image. */
+  .scene-box {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 177.78svh);
+    aspect-ratio: 16 / 9;
+    transform: translate(-50%, -50%);
+  }
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .scene--video {
+    display: none;
+  }
+  @media (min-width: 701px) {
+    .nf:global(.js) .scene--video {
+      display: block;
+    }
+    .nf:global(.js) .scene--still {
+      display: none;
+    }
+    .nf:global(.js.no-video) .scene--video {
+      display: none;
+    }
+    .nf:global(.js.no-video) .scene--still {
+      display: block;
+    }
+  }
+
+  /* L'anneau sur la valise : un halo clair, pour se détacher de la terre cuite. */
+  .spot {
+    --halo: rgba(246, 240, 230, 0.55);
+    position: absolute;
+    z-index: 2;
+    left: var(--x);
+    top: var(--y);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--ink);
+    text-decoration: none;
+    transform: translate(-26px, -26px);
+  }
+  .ring {
+    position: relative;
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
+    border: 2px solid var(--brass);
+    box-shadow: 0 0 0 5px var(--halo);
+  }
+  .ring::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--brass);
+  }
+  .ring::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 999px;
+    border: 2px solid var(--brass);
+    animation: sonar 2.4s ease-out infinite;
+  }
+  @keyframes sonar {
+    from {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+    to {
+      transform: scale(1.9);
+      opacity: 0;
+    }
+  }
+  .lab {
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 0 18px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background 0.2s,
+      color 0.2s;
+  }
+  .spot:hover .lab,
+  .spot:focus-visible .lab {
+    background: var(--ink);
+    color: var(--card);
+  }
+
+  .nf-head {
+    position: absolute;
+    z-index: 3;
+    left: 0;
+    right: 0;
+    top: 0;
+  }
+  .nf-cap {
+    display: none;
+  }
+
+  /* Le cartel, en bas à gauche. */
+  .nf-card {
+    position: absolute;
+    z-index: 2;
+    left: 40px;
+    bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 460px;
+    padding: 22px 24px 14px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .nf-card h1 {
+    margin: 0;
+    font-size: 48px;
+    line-height: 1;
+  }
+  .nf-card__text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  .nf-card__links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 22px;
+  }
+  .nf-go {
+    display: none;
+  }
+
+  /* Le téléphone : la scène recadrée en haut, le cartel dessous, le bouton au pouce. */
+  @media (max-width: 700px) {
+    .nf {
+      display: flex;
+      flex-direction: column;
+      padding-top: 104px;
+    }
+    .scene-box {
+      position: relative;
+      left: auto;
+      top: auto;
+      flex: none;
+      width: 100%;
+      aspect-ratio: 780 / 760;
+      overflow: hidden;
+      transform: none;
+    }
+    .spot {
+      left: var(--mx);
+      top: var(--my);
+    }
+    .lab {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+    .nf-cap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 62px;
+      display: block;
+      margin: 0;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-align: center;
+    }
+    .nf-card {
+      position: relative;
+      left: auto;
+      bottom: auto;
+      gap: 8px;
+      width: auto;
+      margin: 12px 16px 0;
+      padding: 16px 18px 10px;
+    }
+    .nf-card h1 {
+      font-size: 38px;
+    }
+    .nf-card__text {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .nf-card__about {
+      display: none;
+    }
+    .nf-go {
+      display: flex;
+      margin-top: auto;
+      padding: 16px 16px 22px;
+    }
+    .nf-go .go {
+      flex: 1;
+      min-height: 52px;
+      padding: 0 18px;
+      font-size: 15px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring::after {
+      animation: none;
+      opacity: 0;
+    }
+  }
+</style>

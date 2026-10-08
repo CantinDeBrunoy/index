@@ -1,0 +1,23 @@
+---
+/**
+ * Les fiches projet, en anglais : /en/005-magellan, une par escale du voyage (components/voyage/FichePage).
+ * Un projet raconté sur la fiche d'un autre (l'API REST .NET, sur l'étagère de Mithril) y renvoie.
+ */
+import { getProject } from "@index/projects";
+import FichePage from "../../components/voyage/FichePage.astro";
+import { FICHE_OF, ficheHref, fichePaths } from "../../data/fiches";
+
+export function getStaticPaths() {
+  return fichePaths();
+}
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+const project = getProject(slug);
+if (project && slug in FICHE_OF) return Astro.redirect(ficheHref(project, "en"), 301);
+---
+
+<FichePage lang="en" slug={slug} />

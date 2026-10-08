@@ -1,0 +1,14 @@
+# Métro Pathfinder, la fiche en anglais. Brouillon, à réécrire.
+why: "On the Paris metro, the shortest route isn't always the one you'd think. I wanted to compute it myself: it was my first algorithm on a graph."
+features:
+  - title: "Two stations, one route"
+    text: "Pick the start and the end: the shortest path appears."
+  - title: "The network as a graph"
+    text: "Stations are nodes, the sections linking them are edges."
+  - title: "A desktop app"
+    text: "A Swing window to pick the stations and read the route."
+choices:
+  - title: "Dijkstra"
+    text: "The shortest path in a graph with positive distances: exact, and easy to check by hand."
+  - title: "Java and Swing"
+    text: "A language and a toolkit I already knew: all the effort went into the algorithm."

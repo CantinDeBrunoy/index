@@ -1,0 +1,16 @@
+# gym-picker, la fiche en anglais. Brouillon, à réécrire.
+why: "My gyms are all about the same distance away: traffic decides which one is closest. Rather than checking them one by one in Waze, the app compares them all at once."
+features:
+  - title: "Live traffic"
+    text: "Every gym ranked by driving time, traffic included."
+  - title: "One tap and off you go"
+    text: "Tapping a gym opens Waze or Google Maps with the route."
+  - title: "A fallback home"
+    text: "If GPS is slow, the route starts from an address saved on the phone."
+choices:
+  - title: "TomTom rather than Google"
+    text: "No credit card: past the free quota, the API refuses instead of billing."
+  - title: "A Cloudflare Worker in front of the API"
+    text: "The key never leaves the server, and each IP address is limited to 20 calls a minute."
+  - title: "Home stays on the phone"
+    text: "The position travels in the request body, never in the URL: URLs end up in logs."

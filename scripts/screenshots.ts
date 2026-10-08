@@ -1,11 +1,11 @@
 /**
- * Captures d'écran des projets pour le portfolio :
+ * Captures d'écran des projets pour les fiches du portfolio :
  *   apps/portfolio/src/assets/shots/<slug>-desktop.jpg et <slug>-mobile.jpg
- * plus l'image Open Graph par défaut : apps/portfolio/public/og.png.
+ * Les images de partage, elles, se font depuis les planches du voyage : apps/portfolio/design/renders/og.mjs.
  *
  * Usage (après `pnpm build`, les builds locaux servent de source quand l'app n'a pas d'URL publique) :
  *   node scripts/screenshots.ts            # tout
- *   node scripts/screenshots.ts tonalli    # une seule entrée (ou « og »)
+ *   node scripts/screenshots.ts tonalli    # une seule entrée
  *
  * Utilise le navigateur Edge déjà installé (playwright-core, channel msedge) : aucun téléchargement.
  */
@@ -28,36 +28,12 @@ interface Target {
   prepare?: (context: BrowserContext, page: Page) => Promise<void>;
 }
 
-/** gym-picker sans clé TomTom : position fixée à Brunoy et réponse de /api/etas simulée. */
-async function mockGymPicker(context: BrowserContext, page: Page) {
-  await context.grantPermissions(["geolocation"]);
-  await context.setGeolocation({ latitude: 48.6977, longitude: 2.5024 });
-  const leg = (min: number, traffic: number, km: number) => ({
-    durationSec: min * 60,
-    trafficDelaySec: traffic * 60,
-    distanceM: km * 1000,
-  });
-  await page.route("**/api/etas", (route) =>
-    route.fulfill({
-      json: {
-        computedAt: new Date().toISOString(),
-        etas: [
-          { gymId: "montgeron", leg: leg(9, 1, 6.2) },
-          { gymId: "boussy", leg: leg(11, 0, 5.1) },
-          { gymId: "brie", leg: leg(16, 3, 11.8) },
-          { gymId: "lieusaint", leg: leg(19, 4, 14.3) },
-        ],
-      },
-    }),
-  );
-}
-
+// gym-picker (ses salles) et Hublot (les vols surveillés) affichent des données personnelles :
+// pas de capture tant qu'ils n'ont pas de mode démo. Elles ont été retirées du dépôt et de son historique.
 const TARGETS: Target[] = [
   { slug: "magellan", dist: "apps/magellan/dist", settleMs: 8000 },
   { slug: "cancionero", dist: "apps/cancionero/dist", settleMs: 2500 },
   { slug: "tonalli", url: "https://teinte-du-jour-eight.vercel.app", settleMs: 3000 },
-  { slug: "gym-picker", dist: "apps/gym-picker/dist/client", settleMs: 2500, prepare: mockGymPicker },
-  { slug: "hublot", url: "https://cantindebrunoy.github.io/Hublot/", settleMs: 3000 },
 ];
 
 const VIEWPORTS = {
@@ -132,25 +108,7 @@ async function capture(target: Target) {
   }
 }
 
-/** Image Open Graph par défaut : le hero du portfolio en 1200 × 630. */
-async function captureOg() {
-  const local = await serve("apps/portfolio/dist");
-  const browser = await chromium.launch({ channel: "msedge" });
-  try {
-    const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
-    await page.goto(local.url, { waitUntil: "networkidle" });
-    await page.evaluate(() => document.fonts.ready);
-    const path = join(ROOT, "apps/portfolio/public/og.png");
-    await page.screenshot({ path });
-    console.log(`✓ og → ${path}`);
-  } finally {
-    await browser.close();
-    local.server.close();
-  }
-}
-
 const only = process.argv[2];
 for (const target of TARGETS.filter((t) => !only || t.slug === only)) {
   await capture(target).catch((error: unknown) => console.error(`✗ ${target.slug} : ${String(error)}`));
 }
-if (!only || only === "og") await captureOg();

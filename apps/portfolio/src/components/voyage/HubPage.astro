@@ -1,0 +1,610 @@
+---
+/**
+ * « Les apps », le hub : un écran de départs ambré, à points lumineux, comme dans un hall d'aéroport.
+ * Une ligne par app (année, numéro de vol, destination, porte, remarque) et le bouton pour embarquer ;
+ * les archives en arrivées ; un bandeau d'infos voyageurs qui défile. Le statut des apps sondées, l'heure
+ * et le bandeau se mettent à jour dans la page (scripts/hub-status.ts, d'après /api/status).
+ * Sur ordinateur, un vrai tableau ; sous 900 px, une liste compacte qui tient dans l'écran du téléphone.
+ */
+import "@index/ui/fonts-doto.css";
+
+import { projects, type Project } from "@index/projects";
+import dotoUrl from "@index/ui/fonts/doto-latin-wght-normal.woff2?url";
+import { ficheHref, nameOf as nameIn } from "../../data/fiches";
+import { GATES, HUB, type FixedState } from "../../data/hub";
+import { ROUTES, typo, type Lang } from "../../i18n/voyage";
+import Voyage from "../../layouts/Voyage.astro";
+import { tickerText } from "../../scripts/hub-ticker";
+import Colophon from "./Colophon.astro";
+import SiteHeader from "./SiteHeader.astro";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const h = HUB[lang];
+const alternates = { fr: ROUTES.apps.fr, en: ROUTES.apps.en };
+
+const live = projects.filter((p) => p.kind !== "archive");
+const archives = projects.filter((p) => p.kind === "archive");
+
+const nameOf = (p: Project) => nameIn(p, lang);
+const ficheOf = (p: Project) => ficheHref(p, lang);
+
+/** Ce que montre une ligne : un statut sondé en direct, ou un état fixe. */
+function stateOf(p: Project): { live: true } | { live: false; state: FixedState } {
+  if (p.slug === "index") return { live: false, state: "here" };
+  if (p.kind === "desktop") return { live: false, state: "download" };
+  if (p.kind === "archive") return { live: false, state: "archive" };
+  if (!p.links.demo) return { live: false, state: "soon" };
+  return p.monitors.length > 0 ? { live: true } : { live: false, state: "soon" };
+}
+
+// Le bandeau, tel qu'il s'affiche avant le statut en direct ; le script le complète ensuite.
+const apps = live.map((p) => {
+  const s = stateOf(p);
+  return { slug: p.slug, name: nameOf(p), state: s.live ? "live" : s.state };
+});
+const ticker = tickerText(h.ticker, apps, lang);
+---
+
+<Voyage lang={lang} title={h.pageTitle} description={h.description} alternates={alternates} palette="night" background="#08080a">
+  <link slot="head" rel="preload" href={dotoUrl} as="font" type="font/woff2" crossorigin />
+  <SiteHeader lang={lang} current="apps" alternates={alternates} />
+  <div class="wrap">
+    <main id="contenu">
+      <section
+        class="panel"
+        aria-labelledby="departs"
+        data-board
+        data-lang={lang}
+        data-states={JSON.stringify(h.states)}
+        data-ticker={JSON.stringify({ ...h.ticker, apps })}
+        data-checked-now={h.checkedNow}
+        data-checked-ago={h.checkedAgo}
+        data-unavailable={h.unavailable}
+      >
+        <div class="panel__top">
+          <div>
+            <h1 id="departs" class="led" style={`--chars: ${h.board.length}`}>{h.board}</h1>
+            <p class="led panel__sub">
+              <span class="panel__alt" lang={lang === "fr" ? "en" : "fr"}>{h.boardAlt} · </span>{h.boardSub}
+            </p>
+          </div>
+          <div class="panel__time">
+            <p class="led panel__clock" aria-hidden="true">
+              <span data-clock-h>--</span><i class="panel__colon"></i><span data-clock-m>--</span>
+            </p>
+            <p class="panel__checked" data-checked aria-live="polite">{h.checking}</p>
+          </div>
+        </div>
+
+        <table class="dep led">
+          <colgroup><col class="c-year" /><col class="c-num" /><col /><col class="c-gate" /><col class="c-stat" /><col class="c-act" /></colgroup>
+          <thead>
+            <tr>
+              <th scope="col">{h.cols.year}</th>
+              <th scope="col">{h.cols.num}</th>
+              <th scope="col">{h.cols.dest}</th>
+              <th scope="col" class="gate">{h.cols.gate}</th>
+              <th scope="col">{h.cols.status}</th>
+              <th scope="col"><span class="visually-hidden">{h.cols.action}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              live.map((p) => {
+                const s = stateOf(p);
+                const { demo, download, code } = p.links;
+                return (
+                  <tr>
+                    <td class="year">{p.year}</td>
+                    <td class="num">IDX{p.number}</td>
+                    <td class="dest">
+                      <a href={ficheOf(p)} title={h.dest[p.slug]}>{nameOf(p)}</a>
+                      <span class="visually-hidden"> — {h.dest[p.slug]}</span>
+                    </td>
+                    <td class="gate">{GATES[p.slug] ?? "—"}</td>
+                    <td class="stat">
+                      {s.live ? (
+                        <span class="st" data-live={p.slug} data-state="pending">{h.states.pending}</span>
+                      ) : (
+                        <span class="st" data-state={s.state}>{h.states[s.state]}</span>
+                      )}
+                    </td>
+                    <td class="act">
+                      {s.live ? (
+                        <a class="board-go board-go--solid" href={demo}>{h.open}</a>
+                      ) : s.state === "download" && download ? (
+                        <a class="board-go" href={download}>{h.download}</a>
+                      ) : s.state === "here" && code ? (
+                        <a class="board-go" href={code}>{h.code}</a>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })
+            }
+          </tbody>
+        </table>
+
+        <div class="arrivals">
+          <h2 class="led arrivals__title">{h.arrivals} <span class="arrivals__sub">{h.arrivalsSub}</span></h2>
+          <table class="dep dep--old led">
+            <colgroup><col class="c-year" /><col class="c-num" /><col /><col class="c-gate" /><col class="c-stat" /><col class="c-act" /></colgroup>
+            <tbody>
+              {
+                archives.map((p) => (
+                  <tr>
+                    <td class="year">{p.year}</td>
+                    <td class="num">IDX{p.number}</td>
+                    <td class="dest">
+                      <a href={ficheOf(p)} title={h.dest[p.slug]}>{nameOf(p)}</a>
+                      <span class="visually-hidden"> — {h.dest[p.slug]}</span>
+                    </td>
+                    <td class="gate">—</td>
+                    <td class="stat"><span class="st" data-state="archive">{h.states.archive}</span></td>
+                    <td class="act"><a class="board-go" href={ficheOf(p)}>{h.fiche}</a></td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="ticker" aria-hidden="true"><p class="led" data-ticker-text>{ticker}</p></div>
+      </section>
+
+      <a class="arrivals-link" href={ROUTES.projets[lang]}>{h.arrivalsShort}</a>
+      <p class="note">{typo(lang, h.intro)}</p>
+      <ul class="legend">
+        {
+          h.legend.map(([, label, text]) => (
+            <li>
+              <b>{label}</b> {typo(lang, text)}
+            </li>
+          ))
+        }
+      </ul>
+    </main>
+    <Colophon lang={lang} />
+  </div>
+</Voyage>
+
+<script>
+  import "../../scripts/hub-status";
+</script>
+
+<style>
+  .panel {
+    --led: #ffb020;
+    --led-dim: #b97d14;
+    --led-bright: #ffd27a;
+    --led-line: #1a1309;
+    position: relative;
+    margin-top: 8px;
+    padding: 26px 30px 0;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 1px solid #1e1a12;
+    background:
+      radial-gradient(circle, #1c1407 1px, transparent 1.6px) 0 0 / 6px 6px,
+      #050404;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+    color: var(--led);
+  }
+  /* Les points lumineux : Doto, en capitales, avec leur halo. */
+  .led {
+    font-family: "Doto", var(--font-mono);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-shadow:
+      0 0 6px rgba(255, 176, 32, 0.55),
+      0 0 18px rgba(255, 140, 0, 0.25);
+  }
+
+  .panel__top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px dashed #3a2a0c;
+  }
+  .panel__top h1 {
+    margin: 0;
+    font-size: 64px;
+    line-height: 1;
+  }
+  .panel__sub {
+    margin: 6px 0 0;
+    color: var(--led-dim);
+    font-size: 18px;
+  }
+  .panel__time {
+    text-align: right;
+  }
+  .panel__clock {
+    margin: 0;
+    font-size: 56px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  /* Le deux-points de Doto, en graisse 800, ressemble à deux croix : deux points carrés à la place,
+     sur la grille des chiffres (un point = 0,1 em, sept rangs), qui clignotent comme une horloge. */
+  .panel__colon {
+    display: inline-block;
+    width: 0.085em;
+    height: 0.7em;
+    margin: 0 0.16em 0 0.12em;
+    background:
+      linear-gradient(currentColor 0 0) 0 0.2em / 100% 0.085em no-repeat,
+      linear-gradient(currentColor 0 0) 0 0.4em / 100% 0.085em no-repeat;
+    filter: drop-shadow(0 0 5px rgba(255, 176, 32, 0.6));
+    animation: led-blink 1s steps(1, end) infinite;
+  }
+  .panel__checked {
+    margin: 8px 0 0;
+    color: #8a5c12;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .dep {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .c-year {
+    width: 96px;
+  }
+  .c-num {
+    width: 120px;
+  }
+  .c-gate {
+    width: 200px;
+  }
+  .c-stat {
+    width: 240px;
+  }
+  .c-act {
+    width: 160px;
+  }
+  .dep th {
+    padding: 16px 0 8px;
+    color: #7d5410;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.16em;
+    text-align: left;
+    text-shadow: none;
+  }
+  .dep td {
+    height: 50px;
+    padding: 0;
+    border-bottom: 1px solid var(--led-line);
+    font-size: 26px;
+    white-space: nowrap;
+  }
+  .dep tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .year,
+  .num,
+  .gate {
+    color: var(--led-dim);
+  }
+  .dest {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dest a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .dest a:hover {
+    color: var(--led-bright);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
+  }
+
+  .st {
+    color: var(--led-bright);
+  }
+  .st[data-state="pending"],
+  .st[data-state="unknown"],
+  .st[data-state="soon"],
+  .st[data-state="archive"] {
+    color: var(--led-dim);
+  }
+  /* Le clignotement de l'écran, allumé puis éteint, chaque seconde : une remarque en attente, l'heure,
+     et de temps en temps un texte au hasard, deux ou trois fois (scripts/hub-blink.ts, qui les cale
+     tous sur la même horloge). */
+  .st[data-state="pending"],
+  .st[data-state="asleep"],
+  .st[data-state="offline"] {
+    animation: led-blink 1s steps(1, end) infinite;
+  }
+  .is-blinking {
+    animation: led-blink 1s steps(1, end) var(--blinks, 2);
+  }
+  @keyframes led-blink {
+    50% {
+      opacity: 0.15;
+    }
+  }
+
+  .act {
+    text-align: right;
+  }
+  .board-go {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 3px;
+    border: 1.5px solid var(--led);
+    color: var(--led);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-shadow: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: filter 0.2s;
+  }
+  .board-go--solid {
+    background: var(--led);
+    color: #08080a;
+  }
+  .board-go:hover {
+    filter: brightness(1.15);
+  }
+
+  .arrivals__title {
+    margin: 8px 0 0;
+    padding: 22px 0 6px;
+    border-top: 1px dashed #3a2a0c;
+    font-size: 30px;
+  }
+  .arrivals__sub {
+    color: var(--led-dim);
+    font-size: 18px;
+  }
+  .dep--old .dest {
+    color: var(--led-dim);
+  }
+
+  /* Le bandeau d'infos voyageurs, qui défile de droite à gauche. Il part après un court délai :
+     le statut en direct a le temps d'arriver, et le script le glisse dans le texte avant le passage. */
+  .ticker {
+    margin: 18px -30px 0;
+    padding: 12px 0;
+    overflow: hidden;
+    border-top: 1px solid #2a1d08;
+    background: #0b0804;
+    white-space: nowrap;
+  }
+  .ticker p {
+    display: inline-block;
+    margin: 0;
+    padding-left: 100%;
+    font-size: 22px;
+    animation: tick 40s linear 1.5s infinite;
+  }
+  @keyframes tick {
+    to {
+      transform: translateX(-100%);
+    }
+  }
+
+  .arrivals-link {
+    display: none;
+  }
+  .note,
+  .legend {
+    color: #a0742a;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .note {
+    margin: 22px 4px 0;
+    line-height: 1.6;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    margin: 12px 4px 0;
+    padding: 0 0 40px;
+    list-style: none;
+  }
+  .legend b {
+    margin-right: 8px;
+    color: #ffb020;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  /* Écran moyen : la porte s'efface, les caractères se resserrent. */
+  @media (max-width: 1100px) {
+    .panel__top h1 {
+      font-size: 52px;
+    }
+    .panel__clock {
+      font-size: 44px;
+    }
+    .c-year {
+      width: 76px;
+    }
+    .c-num {
+      width: 104px;
+    }
+    .c-stat {
+      width: 200px;
+    }
+    .c-act {
+      width: 150px;
+    }
+    .c-gate,
+    .dep .gate {
+      display: none;
+    }
+    .dep td {
+      font-size: 22px;
+    }
+  }
+
+  /* Sous 900 px : une liste, chaque app sur deux rangs ; les archives se résument à un lien. */
+  @media (max-width: 900px) {
+    .panel {
+      padding: 16px 14px 0;
+    }
+    .panel__top {
+      gap: 12px;
+    }
+    /* Le titre se règle sur sa longueur (« Départs », 7 signes ; « Departures », 10) pour laisser
+       sa place à l'heure : un signe de Doto avance de 0,625 em, espacement compris. */
+    .panel__top h1 {
+      font-size: clamp(22px, calc((110vw - 115px) / var(--chars)), 40px);
+    }
+    .panel__sub {
+      font-size: 12px;
+    }
+    .panel__alt,
+    .panel__checked {
+      display: none;
+    }
+    .panel__clock {
+      font-size: clamp(26px, 8.5vw, 34px);
+    }
+    .dep {
+      table-layout: auto;
+    }
+    .dep colgroup,
+    .dep thead {
+      display: none;
+    }
+    .dep,
+    .dep tbody {
+      display: block;
+    }
+    /* Premier rang : la destination et le bouton ; puis, à la ligne, le vol, la porte, la remarque. */
+    .dep tr {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 2px 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--led-line);
+    }
+    .dep tr::after {
+      content: "";
+      flex-basis: 100%;
+      order: 3;
+    }
+    .dep tbody tr:last-child {
+      border-bottom: 0;
+    }
+    .dep td {
+      display: block;
+      height: auto;
+      border: 0;
+      font-size: 15px;
+    }
+    .dep .year {
+      display: none;
+    }
+    .dep .dest {
+      flex: 1 1 0;
+      min-width: 0;
+      font-size: 20px;
+    }
+    .dep .act {
+      order: 2;
+    }
+    .dep .num {
+      order: 4;
+    }
+    .dep .gate {
+      order: 5;
+      display: block;
+    }
+    .dep .stat {
+      order: 6;
+    }
+    .dep .num::after,
+    .dep .gate::after {
+      content: " ·";
+    }
+    .board-go {
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: 11px;
+    }
+    .arrivals {
+      display: none;
+    }
+    .ticker {
+      margin: 12px -14px 0;
+      padding: 9px 0;
+    }
+    .ticker p {
+      font-size: 16px;
+      animation-duration: 28s;
+    }
+    .arrivals-link {
+      display: block;
+      margin: 14px 4px 0;
+      color: #a0742a;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.5;
+      text-decoration: none;
+    }
+    .note {
+      padding-bottom: 32px;
+    }
+    .legend {
+      display: none;
+    }
+  }
+
+  /* Petits téléphones : le second rang se resserre, puis la porte s'efface, comme sur écran moyen. */
+  @media (max-width: 400px) {
+    .dep td {
+      font-size: 14px;
+    }
+    .dep .dest {
+      font-size: 19px;
+    }
+  }
+  @media (max-width: 360px) {
+    .dep .gate {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .st,
+    .panel__colon,
+    .is-blinking {
+      animation: none !important;
+    }
+    .ticker {
+      white-space: normal;
+    }
+    .ticker p {
+      padding: 0 30px;
+      animation: none;
+    }
+  }
+</style>

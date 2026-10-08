@@ -1,0 +1,16 @@
+# Hublot, la fiche en anglais. Brouillon, à réécrire.
+why: "Ticket prices change all the time, and I didn't want to keep watching them myself. Hublot checks them for me and only bothers me when it's worth it."
+features:
+  - title: "Watches"
+    text: "A destination, a departure window, a length of stay, a price not to exceed."
+  - title: "Every six hours"
+    text: "A bot checks round-trip prices for each watch."
+  - title: "An alert, not a flood"
+    text: "A notification when a price drops below the threshold, at most one per departure month, even during sales."
+choices:
+  - title: "GitHub Actions as the server"
+    text: "The bot runs as a free scheduled job: no machine to look after."
+  - title: "Price checks on their own branch"
+    text: "Four checks a day, kept apart: the code history stays readable."
+  - title: "ntfy for alerts"
+    text: "A notification on my phone, without writing an app."

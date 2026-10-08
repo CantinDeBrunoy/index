@@ -1,0 +1,19 @@
+# Magellan, la fiche en français. Brouillon, à réécrire.
+why: "Je voulais ouvrir une app et voir ma propre carte du monde : un globe qui se colore au fil des pays traversés. Et que ces souvenirs restent sur mon téléphone, sans compte ni serveur."
+features:
+  - title: "Le globe se colore"
+    text: "Les pays visités s'allument, chaque ville porte son drapeau, un arc relie les étapes."
+  - title: "Les voyages en fiches"
+    text: "Rangés par année : un post-it par étape, une carte postale par ville, le budget."
+  - title: "Les photos se rangent seules"
+    text: "L'app lit la date et le lieu de chaque photo et la classe dans la bonne étape."
+choices:
+  - title: "Une seule base de code"
+    text: "Expo et React Native : iOS, Android et le web à partir du même code."
+  - title: "globe.gl pour la Terre"
+    text: "Un globe 3D éprouvé, dans une WebView sur téléphone et directement dans la page sur le web : seules les données sont partagées."
+  - title: "Une version par plateforme quand il le faut"
+    text: "Des fichiers .web et .native plutôt qu'un bricolage qui casserait l'une des deux."
+capture:
+  alt: "Capture de Magellan : le globe et ses pays colorés, avec le compteur « 14 voyages, 22 villes, 13 pays » des données de démonstration."
+  caption: "Le globe, avec les voyages de démonstration."

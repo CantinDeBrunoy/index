@@ -1,8 +1,10 @@
 /**
- * Lien commun « ← INDEX » : relie chaque app au portfolio sans toucher à son design.
+ * Lien commun « ← Index » : relie chaque app au portfolio sans toucher à son design.
  *
- * Un petit onglet fixe dans un coin, rendu en Shadow DOM (aucun style ne fuit vers l'app
- * hôte, et inversement). Il reste masqué quand l'app tourne en PWA installée et à l'impression.
+ * Un petit onglet fixe dans un coin, dans la matière du voyage : une pilule de nuit, « Index » en italique
+ * et le numéro de l'entrée en laiton. Rendu en Shadow DOM (aucun style ne fuit vers l'app hôte, et
+ * inversement), sans police à charger : Georgia, la police système et sa chasse fixe. Il reste masqué quand
+ * l'app tourne en PWA installée et à l'impression.
  *
  *   import { mountIndexBar } from "@index/ui/index-bar";
  *   mountIndexBar({ href: "https://…/008-tonalli", entry: "008", corner: "bottom-left" });
@@ -36,36 +38,56 @@ const STYLE = `
   right: max(8px, env(safe-area-inset-right));
   top: max(8px, env(safe-area-inset-top));
 }
+/* La pilule de nuit : son liseré clair et son ombre la détachent sur un fond sombre comme sur un clair. */
 a {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  font: 700 11px/1 "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 9px;
+  box-sizing: border-box;
+  height: 34px;
+  padding: 0 13px 0 11px;
+  border-radius: 999px;
+  background: rgba(14, 16, 24, 0.9);
+  color: #f1e8da;
+  box-shadow: 0 0 0 1px rgba(241, 232, 218, 0.3), 0 8px 22px rgba(0, 0, 0, 0.22);
+  font: 500 13px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+  white-space: nowrap;
   text-decoration: none;
-  color: #fff;
-  background: #000;
-  border: 2px solid #fff;
-  /* Anneau noir net (pas une ombre) : l'onglet reste lisible sur fond clair comme sur fond sombre. */
-  box-shadow: 0 0 0 2px #000;
   cursor: pointer;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.2s, color 0.2s;
 }
-a:hover {
-  color: #000;
-  background: #fff;
-}
-a:focus-visible {
-  outline: 3px solid #fff;
-  outline-offset: 4px;
-  color: #000;
-  background: #fff;
+.brand {
+  font: italic 400 17px/1 Georgia, "Times New Roman", serif;
 }
 .sep {
-  width: 2px;
-  align-self: stretch;
-  background: currentColor;
+  width: 1px;
+  height: 14px;
+  background: rgba(241, 232, 218, 0.3);
+}
+.entry {
+  font: 400 11px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  letter-spacing: 0.08em;
+  color: #d9b475;
+}
+/* Au survol, la crème : le numéro passe au laiton sombre (6:1 sur la crème). */
+a:hover {
+  background: #f1e8da;
+  color: #0e1018;
+  box-shadow: 0 0 0 1px rgba(14, 16, 24, 0.2), 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+a:hover .entry {
+  color: #6e5226;
+}
+a:hover .sep {
+  background: rgba(14, 16, 24, 0.25);
+}
+a:focus-visible {
+  outline: 2px solid #d9b475;
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  a { transition: none; }
 }
 @media print {
   :host { display: none; }
@@ -77,6 +99,14 @@ function isStandalone() {
     window.matchMedia?.("(display-mode: standalone)").matches === true ||
     /** @type {any} */ (window.navigator).standalone === true
   );
+}
+
+/** @param {string} className @param {string} [text] */
+function span(className, text) {
+  const el = document.createElement("span");
+  el.className = className;
+  if (text) el.textContent = text;
+  return el;
 }
 
 function define() {
@@ -110,12 +140,13 @@ function define() {
         "aria-label",
         entry ? `Retour au portfolio INDEX, entrée ${entry}` : "Retour au portfolio INDEX",
       );
-      link.append("← INDEX");
+      const arrow = span("arrow", "←");
+      arrow.setAttribute("aria-hidden", "true");
+      link.append(arrow, span("brand", "Index"));
       if (entry) {
-        const sep = document.createElement("span");
-        sep.className = "sep";
+        const sep = span("sep");
         sep.setAttribute("aria-hidden", "true");
-        link.append(sep, entry);
+        link.append(sep, span("entry", entry));
       }
 
       root.replaceChildren(style, link);
@@ -126,7 +157,7 @@ function define() {
 }
 
 /**
- * Ajoute (ou met à jour) l'onglet « ← INDEX » dans la page.
+ * Ajoute (ou met à jour) l'onglet « ← Index » dans la page.
  * @param {import("./index-bar.js").IndexBarOptions} options
  * @returns {HTMLElement | null} l'élément, ou null s'il n'a pas été affiché
  */

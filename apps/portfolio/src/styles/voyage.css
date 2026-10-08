@@ -1,0 +1,420 @@
+/*
+ * Le site « le voyage » : la base et les éléments communs à toutes les pages (boutons, liens,
+ * en-tête, onglets, menu du téléphone, pied de page). Les couleurs viennent de la palette du bloc
+ * (@index/ui/voyage.css) ; sous 700 px, l'en-tête passe en version téléphone.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Pas de barre de défilement : le voyage tient dans l'écran, les autres pages défilent ; sans
+   elle, passer d'un onglet à l'autre ne décale plus la page. La molette, le clavier et le doigt
+   défilent toujours. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--night);
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background: var(--page-bg, var(--night));
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 3px;
+}
+
+.serif {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: -100px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--brass);
+  color: var(--on-brass);
+  font-weight: 500;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 12px;
+}
+
+.wrap {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 4vw, 64px);
+}
+
+/* Les pages de lecture (les fiches, « À propos ») : un peu plus étroites. */
+.wrap-read {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: clamp(20px, 4vw, 48px);
+}
+
+/* — Boutons et liens — */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.pill:hover {
+  background: var(--ink);
+  color: var(--card);
+}
+
+/* Le bouton de laiton : l'action principale d'un écran (ouvrir l'app, décoller…). */
+.go {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--brass);
+  color: var(--on-brass);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.go:hover {
+  filter: brightness(1.08);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--brass-text);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* L'étiquette en laiton au-dessus d'un titre ou d'une rubrique. */
+.label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--brass-text);
+}
+
+/* — En-tête : la marque, les onglets, la langue ; sur téléphone, la langue et un menu ☰ —
+   Pleine largeur, au même bord que celui du voyage : d'un onglet à l'autre, il ne bouge pas. */
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 40px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 44px;
+  text-decoration: none;
+}
+.brand__name {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-style: italic;
+}
+.brand__who {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+.tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.tabs a:hover {
+  background: var(--line);
+}
+.tabs a[aria-current] {
+  background: var(--ink);
+  color: var(--card);
+}
+.lang a {
+  min-width: 40px;
+  justify-content: center;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.nav-desktop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.nav-phone {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.m-menu {
+  position: relative;
+}
+.m-menu summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  list-style: none;
+  cursor: pointer;
+}
+.m-menu summary::-webkit-details-marker {
+  display: none;
+}
+.m-drop {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 230px;
+  padding: 8px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
+}
+.m-drop a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: var(--radius-s);
+  color: var(--ink);
+  font-size: 16px;
+  text-decoration: none;
+}
+.m-drop a[aria-current] {
+  color: var(--brass-text);
+}
+
+/* — Les escales en points (le voyage, les fiches) : déjà vues, en laiton ; l'escale courante, plus grosse — */
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+}
+.dot span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1.5px solid var(--muted);
+  transition: transform 0.2s;
+}
+.dot.done span {
+  border-color: var(--brass);
+  background: var(--brass);
+}
+.dot[aria-current] span {
+  width: 13px;
+  height: 13px;
+  border-color: var(--brass);
+  background: var(--brass);
+}
+.dot:hover span {
+  transform: scale(1.35);
+}
+
+/* — Une pastille (la pile d'un projet), sur le papier des pages de lecture — */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* — Une carte à vignette (l'escale suivante, le carnet) : la vignette se soulève au survol — */
+
+.post {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-decoration: none;
+}
+.thumb {
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  transition:
+    transform 0.25s,
+    border-color 0.25s;
+}
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.post:hover .thumb {
+  transform: translateY(-4px);
+  border-color: var(--brass);
+}
+
+/* — Pied de page : le lien vers les mentions légales — */
+
+.colophon {
+  margin: 0;
+  padding: 0 0 40px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.colophon a {
+  color: var(--muted);
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .site-header {
+    flex-wrap: nowrap;
+    padding: 8px 16px;
+  }
+  .brand__name {
+    font-size: 28px;
+  }
+  .brand__who,
+  .nav-desktop {
+    display: none;
+  }
+  .nav-phone {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .post:hover .thumb {
+    transform: none;
+  }
+}

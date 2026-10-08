@@ -1,0 +1,16 @@
+# Hublot, la fiche en français. Brouillon, à réécrire.
+why: "Le prix d'un billet bouge tout le temps, et je n'avais pas envie de le guetter moi-même. Hublot le relève à ma place et ne me dérange que quand ça vaut le coup."
+features:
+  - title: "Des surveillances"
+    text: "Une destination, une période de départ, une durée de séjour, un prix à ne pas dépasser."
+  - title: "Toutes les six heures"
+    text: "Un robot relève le prix des allers-retours pour chaque surveillance."
+  - title: "Une alerte, pas une rafale"
+    text: "Une notification quand un prix passe sous le seuil, une seule par mois de départ, même pendant les promos."
+choices:
+  - title: "GitHub Actions comme serveur"
+    text: "Le robot tourne dans une tâche planifiée gratuite : aucune machine à entretenir."
+  - title: "Les relevés sur leur propre branche"
+    text: "Quatre relevés par jour, rangés à part : l'historique du code reste lisible."
+  - title: "ntfy pour les alertes"
+    text: "Une notification sur le téléphone, sans application à écrire."

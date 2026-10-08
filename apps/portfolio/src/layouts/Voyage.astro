@@ -1,0 +1,82 @@
+---
+/**
+ * La page du site « le voyage » : l'en-tête HTML (titre, description, langues, aperçu de partage),
+ * les polices auto-hébergées et la palette de la page. Le contenu (en-tête du site compris) vient
+ * de la page elle-même.
+ */
+import "@index/ui/fonts-voyage.css";
+import "@index/ui/voyage.css";
+import "../styles/voyage.css";
+
+import sansUrl from "@index/ui/fonts/geist-latin-wght-normal.woff2?url";
+import monoUrl from "@index/ui/fonts/geist-mono-latin-wght-normal.woff2?url";
+import serifUrl from "@index/ui/fonts/instrument-serif-latin-400-normal.woff2?url";
+import { ogImageFor } from "../data/apercus";
+import { LANGS, STRINGS, type Lang } from "../i18n/voyage";
+
+interface Props {
+  lang: Lang;
+  /** Le titre de la page, sans le nom du site. */
+  title?: string;
+  description?: string;
+  /** La même page dans chaque langue : l'interrupteur FR / EN et les liens hreflang. */
+  alternates: Record<Lang, string>;
+  /** Image d'aperçu des partages, chemin absolu sur le site ; par défaut, celle de la fiche ou du site (data/apercus.ts). */
+  image?: string;
+  type?: "website" | "article";
+  noindex?: boolean;
+  /** La palette de la page entière et son fond. */
+  palette?: "night" | "day";
+  background?: string;
+}
+
+const { lang, title, alternates, type = "website", noindex = false, palette = "night" } = Astro.props;
+const t = STRINGS[lang];
+const description = Astro.props.description ?? t.siteDescription;
+const image = Astro.props.image ?? ogImageFor(Astro.url.pathname, lang);
+const background = Astro.props.background ?? (palette === "night" ? "var(--night)" : "var(--paper)");
+const fullTitle = title ? `${title} — INDEX` : t.siteTitle;
+const absolute = (path: string) => (Astro.site ? new URL(path, Astro.site).href : undefined);
+const canonical = absolute(Astro.url.pathname);
+const ogImage = absolute(image);
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    {
+      Astro.site &&
+        LANGS.map((l) => <link rel="alternate" hreflang={l} href={absolute(alternates[l])} />)
+    }
+    {Astro.site && <link rel="alternate" hreflang="x-default" href={absolute(alternates.fr)} />}
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content="#0e1018" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <link rel="preload" href={serifUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={sansUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={monoUrl} as="font" type="font/woff2" crossorigin />
+
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content="INDEX" />
+    <meta property="og:locale" content={lang === "fr" ? "fr_FR" : "en_GB"} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {ogImage && <meta property="og:image:width" content="1200" />}
+    {ogImage && <meta property="og:image:height" content="630" />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <slot name="head" />
+  </head>
+  <body class={`pal-${palette}`} style={`--page-bg: ${background}`}>
+    <a class="skip-link" href="#contenu">{t.skip}</a>
+    <slot />
+  </body>
+</html>
