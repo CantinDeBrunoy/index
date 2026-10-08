@@ -39,6 +39,11 @@ Puis `node stills.mjs` en tire les images fixes, dans `../public/voyage/stills/`
 boucle, en 1280 × 720, en vignette de 640 × 360 et en version téléphone. Elles servent aux vignettes (l'escale
 suivante d'une fiche, le carnet) et au mouvement réduit, où rien ne doit bouger.
 
+Les aperçus de partage (l'image d'un lien collé sur LinkedIn ou WhatsApp, 1200 × 630) se photographient depuis le
+serveur de développement : `astro dev`, puis `node og.mjs [adresse]`, qui écrit `../public/og/<carte>.jpg`. Les
+pages `/apercu/<carte>` n'existent qu'en développement (`src/pages/apercu`, `src/data/apercus.ts`). À refaire quand
+les textes des escales changent.
+
 ## La maquette
 
 ```bash

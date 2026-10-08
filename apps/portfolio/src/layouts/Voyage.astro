@@ -11,6 +11,7 @@ import "../styles/voyage.css";
 import sansUrl from "@index/ui/fonts/geist-latin-wght-normal.woff2?url";
 import monoUrl from "@index/ui/fonts/geist-mono-latin-wght-normal.woff2?url";
 import serifUrl from "@index/ui/fonts/instrument-serif-latin-400-normal.woff2?url";
+import { ogImageFor } from "../data/apercus";
 import { LANGS, STRINGS, type Lang } from "../i18n/voyage";
 
 interface Props {
@@ -20,7 +21,7 @@ interface Props {
   description?: string;
   /** La même page dans chaque langue : l'interrupteur FR / EN et les liens hreflang. */
   alternates: Record<Lang, string>;
-  /** Image d'aperçu des partages, chemin absolu sur le site. */
+  /** Image d'aperçu des partages, chemin absolu sur le site ; par défaut, celle de la fiche ou du site (data/apercus.ts). */
   image?: string;
   type?: "website" | "article";
   noindex?: boolean;
@@ -29,9 +30,10 @@ interface Props {
   background?: string;
 }
 
-const { lang, title, alternates, image = "/og.png", type = "website", noindex = false, palette = "night" } = Astro.props;
+const { lang, title, alternates, type = "website", noindex = false, palette = "night" } = Astro.props;
 const t = STRINGS[lang];
 const description = Astro.props.description ?? t.siteDescription;
+const image = Astro.props.image ?? ogImageFor(Astro.url.pathname, lang);
 const background = Astro.props.background ?? (palette === "night" ? "var(--night)" : "var(--paper)");
 const fullTitle = title ? `${title} — INDEX` : t.siteTitle;
 const absolute = (path: string) => (Astro.site ? new URL(path, Astro.site).href : undefined);
@@ -68,6 +70,8 @@ const ogImage = absolute(image);
     <meta property="og:description" content={description} />
     {canonical && <meta property="og:url" content={canonical} />}
     {ogImage && <meta property="og:image" content={ogImage} />}
+    {ogImage && <meta property="og:image:width" content="1200" />}
+    {ogImage && <meta property="og:image:height" content="630" />}
     <meta name="twitter:card" content="summary_large_image" />
     <slot name="head" />
   </head>
