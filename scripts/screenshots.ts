@@ -1,11 +1,11 @@
 /**
- * Captures d'écran des projets pour le portfolio :
+ * Captures d'écran des projets pour les fiches du portfolio :
  *   apps/portfolio/src/assets/shots/<slug>-desktop.jpg et <slug>-mobile.jpg
- * plus l'image Open Graph par défaut : apps/portfolio/public/og.png.
+ * Les images de partage, elles, se font depuis les planches du voyage : apps/portfolio/design/renders/og.mjs.
  *
  * Usage (après `pnpm build`, les builds locaux servent de source quand l'app n'a pas d'URL publique) :
  *   node scripts/screenshots.ts            # tout
- *   node scripts/screenshots.ts tonalli    # une seule entrée (ou « og »)
+ *   node scripts/screenshots.ts tonalli    # une seule entrée
  *
  * Utilise le navigateur Edge déjà installé (playwright-core, channel msedge) : aucun téléchargement.
  */
@@ -108,25 +108,7 @@ async function capture(target: Target) {
   }
 }
 
-/** Image Open Graph par défaut : le hero du portfolio en 1200 × 630. */
-async function captureOg() {
-  const local = await serve("apps/portfolio/dist");
-  const browser = await chromium.launch({ channel: "msedge" });
-  try {
-    const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
-    await page.goto(local.url, { waitUntil: "networkidle" });
-    await page.evaluate(() => document.fonts.ready);
-    const path = join(ROOT, "apps/portfolio/public/og.png");
-    await page.screenshot({ path });
-    console.log(`✓ og → ${path}`);
-  } finally {
-    await browser.close();
-    local.server.close();
-  }
-}
-
 const only = process.argv[2];
 for (const target of TARGETS.filter((t) => !only || t.slug === only)) {
   await capture(target).catch((error: unknown) => console.error(`✗ ${target.slug} : ${String(error)}`));
 }
-if (!only || only === "og") await captureOg();

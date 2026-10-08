@@ -5,8 +5,6 @@
   "description": "Charte INDEX : palettes du voyage, polices auto-hébergées et lien commun « ← Index »",
   "type": "module",
   "exports": {
-    "./tokens.css": "./src/tokens.css",
-    "./fonts.css": "./src/fonts.css",
     "./voyage.css": "./src/voyage.css",
     "./fonts-voyage.css": "./src/fonts-voyage.css",
     "./fonts-doto.css": "./src/fonts-doto.css",

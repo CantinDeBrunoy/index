@@ -3,7 +3,7 @@
  * Instrument Serif pour les titres, Geist pour le texte, Geist Mono pour les étiquettes.
  * Aucune requête vers Google Fonts au runtime : les mentions légales du site le promettent.
  *
- * Comme fonts.css : font-display: optional + <link rel="preload"> côté page (aucun décalage).
+ * font-display: optional + <link rel="preload"> côté page : aucun décalage au chargement.
  */
 
 @font-face {

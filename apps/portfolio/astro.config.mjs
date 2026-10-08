@@ -19,7 +19,7 @@ export default defineConfig({
     // Le français reste à la racine ; l'anglais arrivera sous /en/.
     routing: { prefixDefaultLocale: false },
   },
-  integrations: [mdx(), sitemap({ filter: (page) => !page.includes("/styleguide") })],
+  integrations: [mdx(), sitemap()],
   // Pas de barre d'outils d'Astro en bas des pages pendant le développement : personne n'en a l'usage.
   devToolbar: { enabled: false },
 });
