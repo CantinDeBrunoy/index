@@ -27,7 +27,7 @@ export interface Stop {
 }
 
 export const STOPS: Stop[] = [
-  { slug: "galaxy-escape", code: "GLX", scene: "espace", bg: "#0b0c14", palette: "night", spot: [70.5, 31.3], spotMobile: [84, 39] },
+  { slug: "galactic-escape", code: "GLX", scene: "espace", bg: "#0b0c14", palette: "night", spot: [70.5, 31.3], spotMobile: [84, 39] },
   { slug: "magellan", code: "MGL", scene: "terre", bg: "#10131c", palette: "night", spot: [83, 43.8], spotMobile: [82.1, 46.4] },
   { slug: "hublot", code: "HBL", scene: "avion", bg: "#dce9f0", palette: "day", spot: [52.9, 56], spotMobile: [51, 56.4] },
   { slug: "metro-pathfinder", code: "MTR", scene: "paris", bg: "#dce3ea", palette: "day", spot: [79.5, 55.7], spotMobile: [77.9, 52.2] },
@@ -60,11 +60,11 @@ export interface StopText {
 
 export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
   fr: {
-    "galaxy-escape": {
+    "galactic-escape": {
       place: "L'espace",
       alt: "L'espace : une planète à l'anneau de laiton et aux bandes lavande, ses lunes, et la Terre au loin parmi les étoiles.",
-      kind: "Jeu 3D · 2024 · Archive",
-      pitch: "Un jeu de course infinie en 3D dans le navigateur, avec génération procédurale des niveaux.",
+      kind: "Jeu 3D · 2022 · Archive",
+      pitch: "Un jeu de survie en 3D inspiré du jeu du plombier : poser des cases pour se tracer un chemin dans l'espace, entre les météores, un monstre aux trousses.",
       cta: "Descendre vers la Terre",
     },
     magellan: {
@@ -135,11 +135,11 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
     },
   },
   en: {
-    "galaxy-escape": {
+    "galactic-escape": {
       place: "Space",
       alt: "Space: a planet with a brass ring and lavender bands, its moons, and the Earth far off among the stars.",
-      kind: "3D game · 2024 · Archive",
-      pitch: "An endless 3D runner in the browser, with procedurally generated levels.",
+      kind: "3D game · 2022 · Archive",
+      pitch: "A 3D survival game inspired by Pipe Mania: lay tiles to carve a path through space, between the meteors, with a monster on your heels.",
       cta: "Descend to Earth",
     },
     magellan: {

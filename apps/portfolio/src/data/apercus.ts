@@ -21,8 +21,8 @@ export type Card =
 
 const sfx = (lang: Lang) => (lang === "fr" ? "" : "-en");
 
-/** Le cartel passe à droite quand l'objet de la scène est à gauche : la planète de Galaxy Escape. */
-const CARTEL_RIGHT = new Set(["galaxy-escape"]);
+/** Le cartel passe à droite quand l'objet de la scène est à gauche : la planète de Galactic Escape. */
+const CARTEL_RIGHT = new Set(["galactic-escape"]);
 
 /** Toutes les cartes : le site, puis une par fiche, chaque fois en français et en anglais. */
 export const CARDS: Card[] = (["fr", "en"] as const).flatMap((lang): Card[] => [

@@ -1,0 +1,14 @@
+# Galactic Escape, la fiche en anglais. Brouillon, à réécrire.
+why: "A school project, five of us, in 2022: build a complete game in the browser. We started from Pipe Mania, where you lay pipes to guide the water, and took it to space, with a monster hot on our heels."
+features:
+  - title: "A path, tile by tile"
+    text: "You lay tiles with two, three or four exits to extend your route; a preview shows whether it connects."
+  - title: "The taxman on your heels"
+    text: "Michel, a little alien, is fleeing Roberto, a tax agent hot on his trail: every tile laid quickly is ground gained."
+  - title: "Meteors in the way"
+    text: "They block tiles and force you to route around them. Four levels, from “easy” to “impossible”."
+choices:
+  - title: "Three.js for the scene, React for the rest"
+    text: "The game itself is 3D; the menus, the inventory and the timer stay plain React components."
+  - title: "Game logic kept apart, and tested"
+    text: "Tile placement, the inventory and map generation live outside the 3D code, checked by Jest tests."

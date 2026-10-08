@@ -46,6 +46,17 @@ const HUBLOT_LATEST_JSON = HUBLOT_MIGRATED
 
 export const PROJECTS = [
   {
+    slug: "galactic-escape",
+    name: "Galactic Escape",
+    started: "2022-01",
+    kind: "archive",
+    pitch: {
+      fr: "Un jeu de survie en 3D inspiré du jeu du plombier : poser des cases pour se tracer un chemin dans l'espace, entre les météores, un monstre aux trousses.",
+    },
+    stack: ["React", "Three.js", "JavaScript", "Sass"],
+    links: { code: `${GITHUB_URL}/run4urlife` },
+  },
+  {
     slug: "metro-pathfinder",
     name: "Métro Pathfinder",
     started: "2022-10",
@@ -77,17 +88,6 @@ export const PROJECTS = [
     },
     stack: ["Flutter", "Dart", "Firebase", "Figma"],
     links: {},
-  },
-  {
-    slug: "galaxy-escape",
-    name: "Galaxy Escape",
-    started: "2024-01",
-    kind: "archive",
-    pitch: {
-      fr: "Un jeu de course infinie en 3D dans le navigateur, avec génération procédurale des niveaux.",
-    },
-    stack: ["Three.js", "WebGL", "JavaScript"],
-    links: { code: `${GITHUB_URL}/run4urlife` },
   },
   {
     slug: "magellan",

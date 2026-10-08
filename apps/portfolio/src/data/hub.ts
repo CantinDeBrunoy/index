@@ -85,7 +85,7 @@ export const HUB: Record<Lang, HubStrings> = {
     download: "Télécharger ↓",
     code: "Le code ↗",
     fiche: "La fiche →",
-    arrivalsShort: "Arrivées : Métro Pathfinder, API REST .NET, Visit Match, Galaxy Escape →",
+    arrivalsShort: "Arrivées : Galactic Escape, Métro Pathfinder, API REST .NET, Visit Match →",
     legend: [
       ["online", "À l'heure", "l'app répond"],
       ["asleep", "Retardé", "elle se réveille, quelques secondes"],
@@ -113,7 +113,7 @@ export const HUB: Record<Lang, HubStrings> = {
       "metro-pathfinder": "Le plus court chemin dans le métro",
       "api-rest-dotnet": "Des microservices C#, tests d'abord",
       "visit-match": "Des voyageurs solo qui se trouvent",
-      "galaxy-escape": "Une course sans fin dans l'espace",
+      "galactic-escape": "Une course-poursuite dans l'espace, case par case",
     },
   },
   en: {
@@ -145,7 +145,7 @@ export const HUB: Record<Lang, HubStrings> = {
     download: "Download ↓",
     code: "Code ↗",
     fiche: "Project →",
-    arrivalsShort: "Arrivals: Métro Pathfinder, .NET REST API, Visit Match, Galaxy Escape →",
+    arrivalsShort: "Arrivals: Galactic Escape, Métro Pathfinder, .NET REST API, Visit Match →",
     legend: [
       ["online", "On time", "the app responds"],
       ["asleep", "Delayed", "it's waking up, a few seconds"],
@@ -173,7 +173,7 @@ export const HUB: Record<Lang, HubStrings> = {
       "metro-pathfinder": "The shortest route on the metro",
       "api-rest-dotnet": "C# microservices, test-first",
       "visit-match": "Solo travellers finding each other",
-      "galaxy-escape": "An endless run through space",
+      "galactic-escape": "A chase through space, one tile at a time",
     },
   },
 };

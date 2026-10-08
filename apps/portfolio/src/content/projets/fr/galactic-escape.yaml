@@ -1,0 +1,14 @@
+# Galactic Escape, la fiche en français. Brouillon, à réécrire.
+why: "Un projet d'école, à cinq, en 2022 : faire un jeu complet dans le navigateur. Nous sommes partis du jeu du plombier, où l'on pose des tuyaux pour guider l'eau, et l'avons emmené dans l'espace, avec un monstre lancé à nos trousses."
+features:
+  - title: "Un chemin case par case"
+    text: "On pose des cases à deux, trois ou quatre sorties pour prolonger sa route ; un aperçu montre si elle se raccorde."
+  - title: "Le fisc aux trousses"
+    text: "Michel, un petit alien, fuit Roberto, agent du fisc lancé à sa poursuite : chaque case posée vite, c'est de l'avance gagnée."
+  - title: "Des météores sur la route"
+    text: "Ils bloquent des cases et obligent à tracer autour. Quatre niveaux, de « facile » à « impossible »."
+choices:
+  - title: "Three.js pour la scène, React pour le reste"
+    text: "La partie se joue en 3D ; les menus, l'inventaire et le chronomètre restent de simples composants React."
+  - title: "La logique à part, et testée"
+    text: "Le placement des cases, l'inventaire et la génération de la carte vivent hors de la 3D, vérifiés par des tests Jest."
