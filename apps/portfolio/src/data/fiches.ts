@@ -20,10 +20,19 @@ export const FICHE: Record<
     why: string;
     what: string;
     how: string;
-    ticket: string;
-    ticketAria: string;
-    fields: { stop: string; type: string; year: string; status: string; host: string; stack: string };
-    readCode: string;
+    /**
+     * La carte d'embarquement, d'Index vers le projet. {n} : le numéro du projet. Son talon ouvre l'app ;
+     * sans app, il dit pourquoi : une archive, une app pas encore en ligne, ou ce site même.
+     */
+    pass: {
+      title: string;
+      flight: string;
+      from: string;
+      to: string;
+      fields: { passenger: string; you: string; stop: string; type: string; year: string; status: string; gate: string; bags: string };
+      readCode: string;
+      gate: Record<"open" | "archive" | "soon" | "here", { kicker: string; big: string; act?: string }>;
+    };
     pictures: string;
     shelf: string;
     /** {place} : le lieu de l'escale suivante. */
@@ -44,10 +53,20 @@ export const FICHE: Record<
     why: "Pourquoi je l'ai fabriqué",
     what: "Ce que ça fait",
     how: "Comment c'est fait",
-    ticket: "Le billet",
-    ticketAria: "Fiche technique",
-    fields: { stop: "Escale", type: "Type", year: "Année", status: "Statut", host: "Hébergé sur", stack: "La pile" },
-    readCode: "Lire le code ↗",
+    pass: {
+      title: "Carte d'embarquement",
+      flight: "Vol {n}",
+      from: "Départ",
+      to: "Arrivée",
+      fields: { passenger: "Passager", you: "Vous", stop: "Escale", type: "Type", year: "Année", status: "Statut", gate: "Porte", bags: "Bagages en soute" },
+      readCode: "Lire le code ↗",
+      gate: {
+        open: { kicker: "Embarquement immédiat", big: "Embarquer" },
+        archive: { kicker: "Vol terminé", big: "Atterri" },
+        soon: { kicker: "Prochain départ", big: "Bientôt" },
+        here: { kicker: "À bord", big: "Vous y êtes", act: "C'est ce site" },
+      },
+    },
     pictures: "En images",
     shelf: "Sur l'étagère aussi",
     next: "Escale suivante · {place}",
@@ -65,10 +84,20 @@ export const FICHE: Record<
     why: "Why I built it",
     what: "What it does",
     how: "How it's made",
-    ticket: "The ticket",
-    ticketAria: "Fact sheet",
-    fields: { stop: "Stop", type: "Type", year: "Year", status: "Status", host: "Hosted on", stack: "Stack" },
-    readCode: "Read the code ↗",
+    pass: {
+      title: "Boarding pass",
+      flight: "Flight {n}",
+      from: "From",
+      to: "To",
+      fields: { passenger: "Passenger", you: "You", stop: "Stop", type: "Type", year: "Year", status: "Status", gate: "Gate", bags: "Checked baggage" },
+      readCode: "Read the code ↗",
+      gate: {
+        open: { kicker: "Now boarding", big: "Board" },
+        archive: { kicker: "Flight completed", big: "Landed" },
+        soon: { kicker: "Next departure", big: "Soon" },
+        here: { kicker: "On board", big: "You're here", act: "This very site" },
+      },
+    },
     pictures: "In pictures",
     shelf: "Also on the shelf",
     next: "Next stop · {place}",

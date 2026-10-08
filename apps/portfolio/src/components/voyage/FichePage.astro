@@ -2,9 +2,9 @@
 /**
  * Une fiche projet, une par escale du voyage. L'en-tête prend la couleur et la scène de l'escale : la vidéo
  * haute définition sur ordinateur, la boucle du téléphone sous 700 px, une image fixe en mouvement réduit.
- * Le reste est sur papier crème : pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait à côté du
- * billet (sa souche porte le numéro), les captures, l'étagère (les projets racontés ici), puis l'escale
- * suivante, qui reprend le voyage ; après la dernière, le carnet.
+ * Le reste est sur papier crème : pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait à côté de
+ * la carte d'embarquement (d'Index vers le projet ; son talon ouvre l'app), les captures, l'étagère (les
+ * projets racontés ici), puis l'escale suivante, qui reprend le voyage ; après la dernière, le carnet.
  * Les textes viennent de la collection de contenu (src/content/projets) ; le décor et l'accroche, de
  * data/voyage.ts ; les liens, la pile et l'hébergeur, de @index/projects.
  */
@@ -39,6 +39,9 @@ const { why, features, choices, capture } = entry.data;
 const kind = kindOf(project, text, lang);
 const app = appOf(project, text, lang);
 const code = project.links.code;
+// La carte d'embarquement part d'Index ; son talon ouvre l'app, ou dit pourquoi il n'y en a pas.
+const HOME_CODE = STOPS.find((s) => s.slug === "index")!.code;
+const gate = f.pass.gate["href" in app ? "open" : text.noApp ? "here" : project.kind === "archive" ? "archive" : "soon"];
 const alternates = { fr: fichePath("fr", project), en: fichePath("en", project) };
 
 // La capture : celle d'ordinateur, et sous 700 px celle du téléphone, s'il y en a une.
@@ -172,50 +175,94 @@ const T = (text: string) => typo(lang, text);
         </dl>
       </div>
 
-      <aside class="billet" aria-label={f.ticketAria}>
-        <div class="billet__body">
-          <h2 class="label">{f.ticket}</h2>
-          <dl>
-            <div class="wide">
-              <dt>{f.fields.stop}</dt>
-              <dd>{n} · {text.place}</dd>
+      <aside class="pass" aria-label={`${f.pass.title} · ${project.name}`}>
+        <div class="pass__paper">
+          <p class="pass__band pal-night">
+            <span>{f.pass.title}</span>
+            <span>{fill(f.pass.flight, { n: project.number })}</span>
+          </p>
+          <div class="pass__body">
+            <div class="pass__route">
+              <p class="pass__port">
+                <span class="pass__k">{f.pass.from}</span>
+                <span class="serif pass__code" aria-hidden="true">{HOME_CODE}</span>
+                <span class="pass__city">Index</span>
+              </p>
+              <span class="pass__path" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M3.5 12c0-1 1-1.2 2.5-1.2h13c1.4 0 2.2.6 2.2 1.2s-.8 1.2-2.2 1.2H6c-1.5 0-2.5-.2-2.5-1.2zM10.5 10.8 8 3.5h2l5 7.3zM10.5 13.2 8 20.5h2l5-7.3zM4.6 10.8 3.4 7.5h1.2l2.2 3.3zM4.6 13.2l-1.2 3.3h1.2l2.2-3.3z"
+                  ></path>
+                </svg>
+              </span>
+              <p class="pass__port pass__port--to">
+                <span class="pass__k">{f.pass.to}</span>
+                <span class="serif pass__code" aria-hidden="true">{stop.code}</span>
+                <span class="pass__city">{project.name}</span>
+              </p>
             </div>
+            <dl class="pass__fields">
+              <div>
+                <dt>{f.pass.fields.passenger}</dt>
+                <dd>{f.pass.fields.you}</dd>
+              </div>
+              <div>
+                <dt>{f.pass.fields.status}</dt>
+                <dd>{kind.status}</dd>
+              </div>
+              <div>
+                <dt>{f.pass.fields.type}</dt>
+                <dd>{kind.type}</dd>
+              </div>
+              <div>
+                <dt>{f.pass.fields.year}</dt>
+                <dd>{kind.year}</dd>
+              </div>
+              <div class="wide">
+                <dt>{f.pass.fields.stop}</dt>
+                <dd>{n} · {text.place}</dd>
+              </div>
+              {
+                project.host && (
+                  <div class="wide">
+                    <dt>{f.pass.fields.gate}</dt>
+                    <dd>{project.host}</dd>
+                  </div>
+                )
+              }
+            </dl>
             <div>
-              <dt>{f.fields.type}</dt>
-              <dd>{kind.type}</dd>
-            </div>
-            <div>
-              <dt>{f.fields.year}</dt>
-              <dd>{kind.year}</dd>
-            </div>
-            <div>
-              <dt>{f.fields.status}</dt>
-              <dd>{kind.status}</dd>
+              <p class="pass__k pass__bags">{f.pass.fields.bags}</p>
+              <ul class="chips">{project.stack.map((tech) => <li class="chip">{tech}</li>)}</ul>
             </div>
             {
-              project.host && (
-                <div class="wide">
-                  <dt>{f.fields.host}</dt>
-                  <dd>{project.host}</dd>
-                </div>
+              code && (
+                <a class="link pass__read" href={code} target="_blank" rel="noopener">
+                  {f.pass.readCode}
+                </a>
               )
             }
-          </dl>
-          <div>
-            <p class="billet__stack">{f.fields.stack}</p>
-            <ul class="chips">{project.stack.map((tech) => <li class="chip">{tech}</li>)}</ul>
           </div>
           {
-            code && (
-              <a class="link billet__code" href={code} target="_blank" rel="noopener">
-                {f.readCode}
+            "href" in app ? (
+              <a class="pass__gate" href={app.href}>
+                <span class="pass__gate-text">
+                  <span class="pass__k">{gate.kicker}</span>
+                  <span class="serif pass__big">{gate.big}</span>
+                </span>
+                <span class="pass__act">{app.label}</span>
               </a>
+            ) : (
+              <p class="pass__gate pass__gate--off">
+                <span class="pass__gate-text">
+                  <span class="pass__k">{gate.kicker}</span>
+                  <span class="serif pass__big">{gate.big}</span>
+                </span>
+                <span class="pass__act">{gate.act ?? app.note}</span>
+              </p>
             )
           }
-        </div>
-        <div class="souche" aria-hidden="true">
-          <span class="serif souche__num">{project.number}</span>
-          <span class="souche__name">{project.name}</span>
         </div>
       </aside>
     </section>
@@ -508,98 +555,160 @@ const T = (text: string) => typo(lang, text);
     line-height: 1.6;
   }
 
-  /* Le billet : l'essentiel du projet, et sa souche détachable, qui porte le numéro. */
-  .billet {
-    position: relative;
-    display: flex;
+  /* La carte d'embarquement : d'Index vers le projet, sur papier, posée de biais. Son bandeau est à l'encre
+     de nuit ; son talon, détaché par une ligne pointillée et deux encoches, ouvre l'app (en laiton) ou dit
+     pourquoi il n'y en a pas. */
+  .pass {
     flex: 2 1 360px;
     align-self: flex-start;
-    border-radius: 18px;
-    border: 1px solid var(--line);
-    background: var(--card);
+    transform: rotate(-1deg);
+    filter: drop-shadow(0 1px 0 rgba(36, 30, 24, 0.14)) drop-shadow(0 22px 30px rgba(20, 14, 8, 0.16));
   }
-  .billet__body {
+  .pass__paper {
+    --gate: 80px;
+    overflow: hidden;
+    border-radius: 18px;
+    background: var(--card);
+    /* Les encoches : un demi-cercle découpé de chaque côté de la ligne pointillée. */
+    mask:
+      radial-gradient(circle at 0 calc(100% - var(--gate)), transparent 12px, #000 12.5px) left / 51% 100% no-repeat,
+      radial-gradient(circle at 100% calc(100% - var(--gate)), transparent 12px, #000 12.5px) right / 51% 100% no-repeat;
+  }
+  .pass__band {
     display: flex;
-    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 38px;
+    margin: 0;
+    padding: 0 22px;
+    background: var(--card);
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .pass__body {
+    display: flex;
     flex-direction: column;
     gap: 20px;
-    min-width: 0;
-    padding: 26px 26px 22px;
+    padding: 22px 24px 18px;
   }
-  .billet dl {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px 20px;
+  .pass__route {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+  }
+  .pass__port {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
     margin: 0;
   }
-  .billet .wide {
+  .pass__port--to {
+    align-items: flex-end;
+    text-align: right;
+  }
+  .pass__k,
+  .pass__fields dt {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .pass__code {
+    font-size: 56px;
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+  }
+  .pass__city {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .pass__path {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 30px;
+    color: var(--brass);
+  }
+  .pass__path::before,
+  .pass__path::after {
+    content: "";
+    flex: 1;
+    border-top: 2px dotted var(--brass);
+  }
+  .pass__path svg {
+    flex: none;
+  }
+  .pass__fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 18px;
+    margin: 0;
+  }
+  .pass__fields .wide {
     grid-column: 1 / -1;
   }
-  .billet dt,
-  .billet__stack {
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .billet dd {
-    margin: 4px 0 0;
+  .pass__fields dd {
+    margin: 3px 0 0;
     font-size: 15px;
-    line-height: 1.45;
+    font-weight: 500;
+    line-height: 1.4;
   }
-  .billet__stack {
+  .pass__bags {
     margin: 0 0 10px;
   }
-  .billet__code {
+  .pass__read {
     align-self: flex-start;
   }
-  .souche {
-    position: relative;
+  .pass__gate {
     display: flex;
-    flex: none;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     gap: 14px;
-    width: 92px;
-    border-left: 2px dashed var(--line);
+    box-sizing: border-box;
+    height: var(--gate);
+    margin: 0;
+    padding: 0 24px;
+    border-top: 2px dashed rgba(36, 30, 24, 0.3);
+    background: var(--brass);
+    color: var(--on-brass);
+    text-decoration: none;
+    transition: filter 0.2s;
   }
-  /* Les deux encoches de la découpe, couleur du papier. */
-  .souche::before,
-  .souche::after {
-    content: "";
-    position: absolute;
-    left: -12px;
-    width: 22px;
-    height: 22px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
+  a.pass__gate:hover {
+    filter: brightness(1.08);
+  }
+  a.pass__gate:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: -6px;
+  }
+  .pass__gate--off {
     background: var(--paper);
-  }
-  .souche::before {
-    top: -12px;
-    clip-path: inset(50% 0 0 0);
-  }
-  .souche::after {
-    bottom: -12px;
-    clip-path: inset(0 0 50% 0);
-  }
-  .souche span {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-  }
-  .souche__num {
-    color: var(--brass-text);
-    font-size: 44px;
-    line-height: 1;
-  }
-  .souche__name {
     color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
+  }
+  .pass__gate .pass__k {
+    color: inherit;
+  }
+  .pass__gate-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .pass__big {
+    font-size: 36px;
+    line-height: 0.95;
+    white-space: nowrap;
+  }
+  .pass__act {
+    font-size: 14px;
+    font-weight: 500;
+    text-align: right;
   }
 
   .pictures figure {
