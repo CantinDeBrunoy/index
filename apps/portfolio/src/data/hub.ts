@@ -1,7 +1,8 @@
 /**
- * Le hub, « Les apps » : un tableau des départs, une ligne par app, son statut vérifié en direct
- * (/api/status) et le bouton pour l'ouvrir. La liste, les liens et les sondes viennent de
- * @index/projects ; ici, seulement les textes. Brouillons, à relire.
+ * Le hub, « Les apps » : un écran de départs ambré, à points lumineux. Une ligne par app, son statut
+ * vérifié en direct (/api/status), le bouton pour embarquer ; les archives en arrivées ; un bandeau
+ * d'infos voyageurs qui défile. La liste, les liens et les sondes viennent de @index/projects ;
+ * ici, seulement les textes. Brouillons, à relire.
  */
 
 import type { Lang } from "../i18n/voyage";
@@ -13,67 +14,94 @@ export type FixedState = "download" | "here" | "archive" | "soon";
 interface HubStrings {
   pageTitle: string;
   description: string;
-  label: string;
-  /** Le titre, en HTML (l'italique du mot clé). */
-  title: string;
-  intro: string;
-  introShort: string;
   board: string;
+  /** Le titre dans l'autre langue, comme sur les écrans d'aéroport (masqué sur téléphone). */
+  boardAlt: string;
+  boardSub: string;
+  arrivals: string;
+  arrivalsSub: string;
+  /** Sous l'écran : comment ça marche. */
+  intro: string;
   checking: string;
   checkedNow: string;
   /** {n} : le nombre de minutes. */
   checkedAgo: string;
   unavailable: string;
-  cols: { num: string; app: string; dest: string; gate: string; status: string; action: string };
+  cols: { year: string; num: string; dest: string; gate: string; status: string; action: string };
   states: Record<LiveState | FixedState, string>;
   open: string;
   download: string;
   code: string;
   fiche: string;
-  archives: string;
-  archivesShort: string;
-  legend: [LiveState, string][];
-  /** Ce que fait chaque app, en quelques mots, par slug. */
+  arrivalsShort: string;
+  legend: [LiveState | FixedState, string, string][];
+  ticker: TickerStrings;
+  /** Ce que fait chaque app, en quelques mots, par slug (lecteurs d'écran et info-bulle). */
   dest: Record<string, string>;
+}
+
+/**
+ * Le bandeau d'infos voyageurs : {name} une app, {names} une liste d'apps (scripts/hub-ticker.ts).
+ * Style télégraphique, sans deux-points : celui de Doto, en graisse 800, ressemble à deux croix.
+ */
+export interface TickerStrings {
+  lead: string;
+  onTime: string;
+  asleep: string;
+  offline: string;
+  soon: string;
+  download: string;
+  back: string;
+  end: string;
 }
 
 export const HUB: Record<Lang, HubStrings> = {
   fr: {
     pageTitle: "Les apps",
     description: "Toutes les apps de Cantin Roquier, à ouvrir d'ici, avec leur statut vérifié en direct.",
-    label: "Index · le hub",
-    title: "Les <em>départs</em>",
-    intro:
-      "Mes apps tournent pour de vrai : ouvrez-en une d'ici. Dans chacune, l'onglet « ← Index » vous ramène. Le statut est vérifié toutes les heures.",
-    introShort: "Mes apps tournent pour de vrai : ouvrez-en une d'ici, l'onglet « ← Index » vous ramène.",
     board: "Départs",
+    boardAlt: "Departures",
+    boardSub: "Toutes mes apps",
+    arrivals: "Arrivées",
+    arrivalsSub: "· les archives",
+    intro: "Mes apps tournent pour de vrai : embarquez d'ici. Dans chacune, l'onglet « ← Index » vous ramène. Le statut est vérifié en direct, au plus toutes les cinq minutes.",
     checking: "Vérification du statut…",
     checkedNow: "Statut vérifié à l'instant",
     checkedAgo: "Statut vérifié il y a {n} min",
     unavailable: "Statut indisponible",
-    cols: { num: "N°", app: "App", dest: "Destination", gate: "Porte", status: "Statut", action: "Ouvrir" },
+    cols: { year: "Depuis", num: "Vol", dest: "Destination", gate: "Porte", status: "Remarque", action: "Embarquer" },
     states: {
       pending: "Vérification",
-      online: "En ligne",
-      asleep: "En veille",
-      offline: "Hors ligne",
+      online: "À l'heure",
+      asleep: "Retardé",
+      offline: "Annulé",
       unknown: "Non vérifié",
       download: "À télécharger",
       here: "Vous y êtes",
-      archive: "Archive",
+      archive: "Atterri",
       soon: "Bientôt",
     },
-    open: "Ouvrir →",
+    open: "Embarquer →",
     download: "Télécharger ↓",
     code: "Le code ↗",
     fiche: "La fiche →",
-    archives: "Archives · sans départ",
-    archivesShort: "Les archives : Métro Pathfinder, API REST .NET, Visit Match, Galaxy Escape →",
+    arrivalsShort: "Arrivées : Métro Pathfinder, API REST .NET, Visit Match, Galaxy Escape →",
     legend: [
-      ["online", "En ligne : l'app répond"],
-      ["asleep", "En veille : elle se réveille en quelques secondes"],
-      ["offline", "Hors ligne : je suis prévenu"],
+      ["online", "À l'heure", "l'app répond"],
+      ["asleep", "Retardé", "elle se réveille, quelques secondes"],
+      ["offline", "Annulé", "hors ligne, je suis prévenu"],
+      ["archive", "Atterri", "une archive, sa fiche raconte le voyage"],
     ],
+    ticker: {
+      lead: "Info voyageurs",
+      onTime: "{names} à l'heure",
+      asleep: "{name} retardé, l'app se réveille",
+      offline: "{name} annulé, je suis prévenu",
+      soon: "{names} bientôt au départ",
+      download: "{names} à télécharger, porte GitHub",
+      back: "Dans chaque app, l'onglet ← Index vous ramène ici",
+      end: "Bon voyage",
+    },
     dest: {
       magellan: "Le globe de mes voyages",
       cancionero: "L'espagnol en chansons",
@@ -91,38 +119,49 @@ export const HUB: Record<Lang, HubStrings> = {
   en: {
     pageTitle: "Apps",
     description: "All of Cantin Roquier's apps, ready to open from here, with their status checked live.",
-    label: "Index · the hub",
-    title: "<em>Departures</em>",
-    intro: "My apps run for real: open one from here. In each, the “← Index” tab brings you back. Status is checked every hour.",
-    introShort: "My apps run for real: open one from here, the “← Index” tab brings you back.",
     board: "Departures",
+    boardAlt: "Départs",
+    boardSub: "All my apps",
+    arrivals: "Arrivals",
+    arrivalsSub: "· the archives",
+    intro: "My apps run for real: board from here. In each, the “← Index” tab brings you back. Status is checked live, at most every five minutes.",
     checking: "Checking status…",
     checkedNow: "Status checked just now",
     checkedAgo: "Status checked {n} min ago",
     unavailable: "Status unavailable",
-    cols: { num: "No.", app: "App", dest: "Destination", gate: "Gate", status: "Status", action: "Open" },
+    cols: { year: "Since", num: "Flight", dest: "Destination", gate: "Gate", status: "Remarks", action: "Board" },
     states: {
       pending: "Checking",
-      online: "Live",
-      asleep: "Asleep",
-      offline: "Down",
+      online: "On time",
+      asleep: "Delayed",
+      offline: "Cancelled",
       unknown: "Unchecked",
       download: "Download",
       here: "You are here",
-      archive: "Archive",
+      archive: "Landed",
       soon: "Soon",
     },
-    open: "Open →",
+    open: "Board →",
     download: "Download ↓",
     code: "Code ↗",
-    fiche: "Project page →",
-    archives: "Archives · no departures",
-    archivesShort: "The archives: Métro Pathfinder, .NET REST API, Visit Match, Galaxy Escape →",
+    fiche: "Project →",
+    arrivalsShort: "Arrivals: Métro Pathfinder, .NET REST API, Visit Match, Galaxy Escape →",
     legend: [
-      ["online", "Live: the app responds"],
-      ["asleep", "Asleep: it wakes up in a few seconds"],
-      ["offline", "Down: I get alerted"],
+      ["online", "On time", "the app responds"],
+      ["asleep", "Delayed", "it's waking up, a few seconds"],
+      ["offline", "Cancelled", "down, I get alerted"],
+      ["archive", "Landed", "an archive, its page tells the story"],
     ],
+    ticker: {
+      lead: "Passenger information",
+      onTime: "{names} on time",
+      asleep: "{name} delayed, the app is waking up",
+      offline: "{name} cancelled, I get alerted",
+      soon: "{names} departing soon",
+      download: "{names} to download at gate GitHub",
+      back: "In every app, the ← Index tab brings you back here",
+      end: "Have a good trip",
+    },
     dest: {
       magellan: "My travels on a globe",
       cancionero: "Spanish through songs",

@@ -69,6 +69,7 @@ const ogImage = absolute(image);
     {canonical && <meta property="og:url" content={canonical} />}
     {ogImage && <meta property="og:image" content={ogImage} />}
     <meta name="twitter:card" content="summary_large_image" />
+    <slot name="head" />
   </head>
   <body class={`pal-${palette}`} style={`--page-bg: ${background}`}>
     <a class="skip-link" href="#contenu">{t.skip}</a>

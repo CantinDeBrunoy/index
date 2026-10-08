@@ -1,14 +1,19 @@
 ---
 /**
- * « Les apps », le hub : un tableau des départs. Une ligne par app (numéro en volets, destination,
- * porte, statut, bouton pour l'ouvrir), puis les archives, qui n'ont pas de départ.
- * Sur ordinateur, un vrai tableau ; sous 700 px, une liste compacte qui tient dans l'écran.
- * Le statut des apps sondées arrive de /api/status (scripts/hub-status.ts).
+ * « Les apps », le hub : un écran de départs ambré, à points lumineux, comme dans un hall d'aéroport.
+ * Une ligne par app (année, numéro de vol, destination, porte, remarque) et le bouton pour embarquer ;
+ * les archives en arrivées ; un bandeau d'infos voyageurs qui défile. Le statut des apps sondées, l'heure
+ * et le bandeau se mettent à jour dans la page (scripts/hub-status.ts, d'après /api/status).
+ * Sur ordinateur, un vrai tableau ; sous 900 px, une liste compacte qui tient dans l'écran du téléphone.
  */
+import "@index/ui/fonts-doto.css";
+
 import { getProject, projects, type Project } from "@index/projects";
+import dotoUrl from "@index/ui/fonts/doto-latin-wght-normal.woff2?url";
 import { FICHE_OF, GATES, HUB, NAMES_EN, type FixedState } from "../../data/hub";
 import { fichePath, ROUTES, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
+import { tickerText } from "../../scripts/hub-ticker";
 import Colophon from "./Colophon.astro";
 import SiteHeader from "./SiteHeader.astro";
 
@@ -34,41 +39,54 @@ function stateOf(p: Project): { live: true } | { live: false; state: FixedState 
   if (!p.links.demo) return { live: false, state: "soon" };
   return p.monitors.length > 0 ? { live: true } : { live: false, state: "soon" };
 }
+
+// Le bandeau, tel qu'il s'affiche avant le statut en direct ; le script le complète ensuite.
+const apps = live.map((p) => {
+  const s = stateOf(p);
+  return { slug: p.slug, name: nameOf(p), state: s.live ? "live" : s.state };
+});
+const ticker = tickerText(h.ticker, apps, lang);
 ---
 
-<Voyage lang={lang} title={h.pageTitle} description={h.description} alternates={alternates} palette="night">
+<Voyage lang={lang} title={h.pageTitle} description={h.description} alternates={alternates} palette="night" background="#08080a">
+  <link slot="head" rel="preload" href={dotoUrl} as="font" type="font/woff2" crossorigin />
   <div class="wrap">
     <SiteHeader lang={lang} current="apps" alternates={alternates} />
     <main id="contenu">
-      <section class="intro">
-        <p class="label">{h.label}</p>
-        <h1 class="serif" set:html={h.title} />
-        <p class="intro__text intro__text--long">{h.intro}</p>
-        <p class="intro__text intro__text--short">{h.introShort}</p>
-      </section>
-
       <section
-        class="board"
-        aria-labelledby="depart-titre"
+        class="panel"
+        aria-labelledby="departs"
         data-board
-        data-checking={h.checking}
+        data-lang={lang}
+        data-states={JSON.stringify(h.states)}
+        data-ticker={JSON.stringify({ ...h.ticker, apps })}
         data-checked-now={h.checkedNow}
         data-checked-ago={h.checkedAgo}
         data-unavailable={h.unavailable}
-        data-states={JSON.stringify(h.states)}
       >
-        <div class="board__top">
-          <h2 id="depart-titre">{h.board}</h2>
-          <p data-checked aria-live="polite">{h.checking}</p>
+        <div class="panel__top">
+          <div>
+            <h1 id="departs" class="led" style={`--chars: ${h.board.length}`}>{h.board}</h1>
+            <p class="led panel__sub">
+              <span class="panel__alt" lang={lang === "fr" ? "en" : "fr"}>{h.boardAlt} · </span>{h.boardSub}
+            </p>
+          </div>
+          <div class="panel__time">
+            <p class="led panel__clock" aria-hidden="true">
+              <span data-clock-h>--</span><i class="panel__colon"></i><span data-clock-m>--</span>
+            </p>
+            <p class="panel__checked" data-checked aria-live="polite">{h.checking}</p>
+          </div>
         </div>
-        <table class="dep">
-          <colgroup><col class="c-num" /><col class="c-app" /><col /><col class="c-gate" /><col class="c-stat" /><col class="c-act" /></colgroup>
+
+        <table class="dep led">
+          <colgroup><col class="c-year" /><col class="c-num" /><col /><col class="c-gate" /><col class="c-stat" /><col class="c-act" /></colgroup>
           <thead>
             <tr>
+              <th scope="col">{h.cols.year}</th>
               <th scope="col">{h.cols.num}</th>
-              <th scope="col">{h.cols.app}</th>
               <th scope="col">{h.cols.dest}</th>
-              <th scope="col">{h.cols.gate}</th>
+              <th scope="col" class="gate">{h.cols.gate}</th>
               <th scope="col">{h.cols.status}</th>
               <th scope="col"><span class="visually-hidden">{h.cols.action}</span></th>
             </tr>
@@ -80,12 +98,12 @@ function stateOf(p: Project): { live: true } | { live: false; state: FixedState 
                 const { demo, download, code } = p.links;
                 return (
                   <tr>
-                    <td class="num">
-                      <span class="flap" aria-hidden="true">{[...p.number].map((c) => <i>{c}</i>)}</span>
-                      <span class="visually-hidden">{p.number}</span>
+                    <td class="year">{p.year}</td>
+                    <td class="num">IDX{p.number}</td>
+                    <td class="dest">
+                      <a href={ficheOf(p)} title={h.dest[p.slug]}>{nameOf(p)}</a>
+                      <span class="visually-hidden"> — {h.dest[p.slug]}</span>
                     </td>
-                    <td class="app"><a href={ficheOf(p)}>{nameOf(p)}</a></td>
-                    <td class="dest">{h.dest[p.slug]}</td>
                     <td class="gate">{GATES[p.slug] ?? "—"}</td>
                     <td class="stat">
                       {s.live ? (
@@ -96,11 +114,11 @@ function stateOf(p: Project): { live: true } | { live: false; state: FixedState 
                     </td>
                     <td class="act">
                       {s.live ? (
-                        <a class="go" href={demo}>{h.open}</a>
+                        <a class="board-go board-go--solid" href={demo}>{h.open}</a>
                       ) : s.state === "download" && download ? (
-                        <a class="go" href={download}>{h.download}</a>
+                        <a class="board-go" href={download}>{h.download}</a>
                       ) : s.state === "here" && code ? (
-                        <a class="pill" href={code}>{h.code}</a>
+                        <a class="board-go" href={code}>{h.code}</a>
                       ) : null}
                     </td>
                   </tr>
@@ -110,38 +128,40 @@ function stateOf(p: Project): { live: true } | { live: false; state: FixedState 
           </tbody>
         </table>
 
-        <div class="archives">
-          <h3 class="archives__title">{h.archives}</h3>
-          <table class="dep dep--old">
-            <colgroup><col class="c-num" /><col class="c-app" /><col /><col class="c-gate" /><col class="c-stat" /><col class="c-act" /></colgroup>
+        <div class="arrivals">
+          <h2 class="led arrivals__title">{h.arrivals} <span class="arrivals__sub">{h.arrivalsSub}</span></h2>
+          <table class="dep dep--old led">
+            <colgroup><col class="c-year" /><col class="c-num" /><col /><col class="c-gate" /><col class="c-stat" /><col class="c-act" /></colgroup>
             <tbody>
               {
                 archives.map((p) => (
                   <tr>
-                    <td class="num">
-                      <span class="flap" aria-hidden="true">{[...p.number].map((c) => <i>{c}</i>)}</span>
-                      <span class="visually-hidden">{p.number}</span>
+                    <td class="year">{p.year}</td>
+                    <td class="num">IDX{p.number}</td>
+                    <td class="dest">
+                      <a href={ficheOf(p)} title={h.dest[p.slug]}>{nameOf(p)}</a>
+                      <span class="visually-hidden"> — {h.dest[p.slug]}</span>
                     </td>
-                    <td class="app"><a href={ficheOf(p)}>{nameOf(p)}</a></td>
-                    <td class="dest">{h.dest[p.slug]}</td>
                     <td class="gate">—</td>
                     <td class="stat"><span class="st" data-state="archive">{h.states.archive}</span></td>
-                    <td class="act"><a class="link" href={ficheOf(p)}>{h.fiche}</a></td>
+                    <td class="act"><a class="board-go" href={ficheOf(p)}>{h.fiche}</a></td>
                   </tr>
                 ))
               }
             </tbody>
           </table>
         </div>
-        <a class="archives-link" href={ROUTES.projets[lang]}>{h.archivesShort}</a>
+
+        <div class="ticker" aria-hidden="true"><p class="led" data-ticker-text>{ticker}</p></div>
       </section>
 
+      <a class="arrivals-link" href={ROUTES.projets[lang]}>{h.arrivalsShort}</a>
+      <p class="note">{h.intro}</p>
       <ul class="legend">
         {
-          h.legend.map(([state, text]) => (
+          h.legend.map(([, label, text]) => (
             <li>
-              <span class="dot" data-state={state} aria-hidden="true" />
-              {text}
+              <b>{label}</b> {text}
             </li>
           ))
         }
@@ -156,55 +176,86 @@ function stateOf(p: Project): { live: true } | { live: false; state: FixedState 
 </script>
 
 <style>
-  .intro {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    max-width: 780px;
-    padding: 40px 0;
+  .panel {
+    --led: #ffb020;
+    --led-dim: #b97d14;
+    --led-bright: #ffd27a;
+    --led-line: #1a1309;
+    position: relative;
+    margin-top: 8px;
+    padding: 26px 30px 0;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 1px solid #1e1a12;
+    background:
+      radial-gradient(circle, #1c1407 1px, transparent 1.6px) 0 0 / 6px 6px,
+      #050404;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+    color: var(--led);
   }
-  .intro h1 {
-    margin: 0;
-    font-size: clamp(56px, 7vw, 104px);
-    line-height: 0.95;
-  }
-  .intro__text {
-    margin: 0;
-    color: var(--muted);
-    font-size: 19px;
-    line-height: 1.6;
-  }
-  .intro__text--short {
-    display: none;
+  /* Les points lumineux : Doto, en capitales, avec leur halo. */
+  .led {
+    font-family: "Doto", var(--font-mono);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-shadow:
+      0 0 6px rgba(255, 176, 32, 0.55),
+      0 0 18px rgba(255, 140, 0, 0.25);
   }
 
-  .board {
-    padding: 6px 28px 14px;
-    border-radius: 22px;
-    border: 1px solid #262a36;
-    background: #15171f;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
-  }
-  .board__top {
+  .panel__top {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: 12px;
-    padding: 16px 0 12px;
+    gap: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px dashed #3a2a0c;
+  }
+  .panel__top h1 {
+    margin: 0;
+    font-size: 64px;
+    line-height: 1;
+  }
+  .panel__sub {
+    margin: 6px 0 0;
+    color: var(--led-dim);
+    font-size: 18px;
+  }
+  .panel__time {
+    text-align: right;
+  }
+  .panel__clock {
+    margin: 0;
+    font-size: 56px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  /* Le deux-points de Doto, en graisse 800, ressemble à deux croix : deux points carrés à la place,
+     sur la grille des chiffres (un point = 0,1 em, sept rangs), qui clignotent comme une horloge. */
+  .panel__colon {
+    display: inline-block;
+    width: 0.085em;
+    height: 0.7em;
+    margin: 0 0.16em 0 0.12em;
+    background:
+      linear-gradient(currentColor 0 0) 0 0.2em / 100% 0.085em no-repeat,
+      linear-gradient(currentColor 0 0) 0 0.4em / 100% 0.085em no-repeat;
+    filter: drop-shadow(0 0 5px rgba(255, 176, 32, 0.6));
+    animation: colon 2s steps(1, end) infinite;
+  }
+  @keyframes colon {
+    50% {
+      opacity: 0.2;
+    }
+  }
+  .panel__checked {
+    margin: 8px 0 0;
+    color: #8a5c12;
     font-family: var(--font-mono);
     font-size: 12px;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--muted);
-  }
-  .board__top h2,
-  .board__top p {
-    margin: 0;
-    font: inherit;
-  }
-  .board__top h2 {
-    font-weight: 500;
-    color: var(--brass-text);
   }
 
   .dep {
@@ -212,207 +263,227 @@ function stateOf(p: Project): { live: true } | { live: false; state: FixedState 
     border-collapse: collapse;
     table-layout: fixed;
   }
-  .c-num {
-    width: 104px;
+  .c-year {
+    width: 96px;
   }
-  .c-app {
-    width: 210px;
+  .c-num {
+    width: 120px;
   }
   .c-gate {
-    width: 130px;
+    width: 200px;
   }
-  .c-stat,
+  .c-stat {
+    width: 240px;
+  }
   .c-act {
-    width: 170px;
+    width: 160px;
   }
   .dep th {
-    padding: 12px 12px 10px;
-    border-top: 1px solid var(--line);
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.12em;
-    text-align: left;
-    text-transform: uppercase;
-  }
-  .dep td {
-    padding: 13px 12px;
-    border-top: 1px solid var(--line);
-    vertical-align: middle;
-  }
-
-  /* Le numéro en volets, comme sur un tableau d'aéroport : un trait sombre coupe chaque chiffre. */
-  .flap {
-    display: inline-flex;
-    gap: 3px;
-  }
-  .flap i {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 32px;
-    border-radius: 5px;
-    background: #0b0c12;
-    box-shadow: inset 0 0 0 1px #232634;
-    font-family: var(--font-mono);
-    font-size: 17px;
-    font-style: normal;
-  }
-  .flap i::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 50%;
-    height: 1px;
-    background: rgba(0, 0, 0, 0.6);
-  }
-
-  .app a {
-    font-family: var(--font-serif);
-    font-size: 30px;
-    line-height: 1;
-    text-decoration: none;
-  }
-  .app a:hover {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 5px;
-  }
-  .dest {
-    color: var(--muted);
-    font-size: 15px;
-    line-height: 1.45;
-  }
-  .gate {
-    color: var(--muted);
+    padding: 16px 0 8px;
+    color: #7d5410;
     font-family: var(--font-mono);
     font-size: 12px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-weight: 400;
+    letter-spacing: 0.16em;
+    text-align: left;
+    text-shadow: none;
   }
-  .act {
-    text-align: right;
+  .dep td {
+    height: 50px;
+    padding: 0;
+    border-bottom: 1px solid var(--led-line);
+    font-size: 26px;
+    white-space: nowrap;
   }
-  .act .go,
-  .act .pill {
-    min-height: 42px;
-    padding: 0 20px;
-    font-size: 14px;
+  .dep tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .year,
+  .num,
+  .gate {
+    color: var(--led-dim);
+  }
+  .dest {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dest a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .dest a:hover {
+    color: var(--led-bright);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
   }
 
   .st {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    color: var(--muted);
+    color: var(--led-bright);
   }
-  .st::before,
-  .dot {
-    content: "";
-    flex: none;
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: currentColor;
+  .st[data-state="pending"],
+  .st[data-state="unknown"],
+  .st[data-state="soon"],
+  .st[data-state="archive"] {
+    color: var(--led-dim);
   }
-  [data-state="online"] {
-    color: var(--live-on);
+  .st[data-state="pending"],
+  .st[data-state="asleep"],
+  .st[data-state="offline"] {
+    animation: blink 1s steps(2, start) infinite;
   }
-  .st[data-state="online"]::before {
-    box-shadow: 0 0 0 4px rgba(156, 197, 154, 0.16);
-    animation: live 2.4s ease-in-out infinite;
-  }
-  [data-state="asleep"] {
-    color: var(--live-asleep);
-  }
-  [data-state="offline"] {
-    color: var(--live-off);
-  }
-  [data-state="download"],
-  [data-state="here"] {
-    color: var(--brass-text);
-  }
-  .st[data-state="pending"]::before,
-  .st[data-state="unknown"]::before,
-  .st[data-state="soon"]::before,
-  .st[data-state="archive"]::before {
-    border: 1.5px solid currentColor;
-    background: transparent;
-  }
-  @keyframes live {
-    50% {
-      box-shadow: 0 0 0 7px rgba(156, 197, 154, 0);
+  @keyframes blink {
+    to {
+      opacity: 0.15;
     }
   }
 
-  .archives__title {
-    margin: 22px 0 0;
-    padding: 0 12px 4px;
-    color: var(--muted);
+  .act {
+    text-align: right;
+  }
+  .board-go {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 3px;
+    border: 1.5px solid var(--led);
+    color: var(--led);
     font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.14em;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-shadow: none;
     text-transform: uppercase;
+    white-space: nowrap;
+    transition: filter 0.2s;
   }
-  .dep--old .app a {
-    color: var(--muted);
-    font-size: 24px;
+  .board-go--solid {
+    background: var(--led);
+    color: #08080a;
   }
-  .archives-link {
-    display: none;
+  .board-go:hover {
+    filter: brightness(1.15);
   }
 
+  .arrivals__title {
+    margin: 8px 0 0;
+    padding: 22px 0 6px;
+    border-top: 1px dashed #3a2a0c;
+    font-size: 30px;
+  }
+  .arrivals__sub {
+    color: var(--led-dim);
+    font-size: 18px;
+  }
+  .dep--old .dest {
+    color: var(--led-dim);
+  }
+
+  /* Le bandeau d'infos voyageurs, qui défile de droite à gauche. Il part après un court délai :
+     le statut en direct a le temps d'arriver, et le script le glisse dans le texte avant le passage. */
+  .ticker {
+    margin: 18px -30px 0;
+    padding: 12px 0;
+    overflow: hidden;
+    border-top: 1px solid #2a1d08;
+    background: #0b0804;
+    white-space: nowrap;
+  }
+  .ticker p {
+    display: inline-block;
+    margin: 0;
+    padding-left: 100%;
+    font-size: 22px;
+    animation: tick 40s linear 1.5s infinite;
+  }
+  @keyframes tick {
+    to {
+      transform: translateX(-100%);
+    }
+  }
+
+  .arrivals-link {
+    display: none;
+  }
+  .note,
+  .legend {
+    color: #a0742a;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .note {
+    margin: 22px 4px 0;
+    line-height: 1.6;
+  }
   .legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 28px;
-    margin: 20px 6px 0;
+    gap: 10px 28px;
+    margin: 12px 4px 0;
     padding: 0 0 40px;
-    color: var(--muted);
-    font-size: 14px;
     list-style: none;
   }
-  .legend li {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
+  .legend b {
+    margin-right: 8px;
+    color: #ffb020;
+    font-weight: 500;
+    text-transform: uppercase;
   }
 
-  /* Sur tablette et petit écran d'ordinateur : la porte s'efface, les colonnes se resserrent. */
+  /* Écran moyen : la porte s'efface, les caractères se resserrent. */
   @media (max-width: 1100px) {
-    .board {
-      padding-inline: 20px;
+    .panel__top h1 {
+      font-size: 52px;
     }
-    .c-gate,
-    .dep th:nth-child(4),
-    .dep .gate {
-      display: none;
+    .panel__clock {
+      font-size: 44px;
+    }
+    .c-year {
+      width: 76px;
     }
     .c-num {
-      width: 96px;
+      width: 104px;
     }
-    .c-app {
-      width: 170px;
+    .c-stat {
+      width: 200px;
     }
-    .c-stat,
     .c-act {
       width: 150px;
     }
+    .c-gate,
+    .dep .gate {
+      display: none;
+    }
+    .dep td {
+      font-size: 22px;
+    }
   }
 
-  /* Sous 900 px : le tableau devient une liste, chaque ligne sur deux rangs, et les archives se
-     résument à un lien vers le carnet. */
+  /* Sous 900 px : une liste, chaque app sur deux rangs ; les archives se résument à un lien. */
   @media (max-width: 900px) {
+    .panel {
+      padding: 16px 14px 0;
+    }
+    .panel__top {
+      gap: 12px;
+    }
+    /* Le titre se règle sur sa longueur (« Départs », 7 signes ; « Departures », 10) pour laisser
+       sa place à l'heure : un signe de Doto avance de 0,625 em, espacement compris. */
+    .panel__top h1 {
+      font-size: clamp(22px, calc((110vw - 115px) / var(--chars)), 40px);
+    }
+    .panel__sub {
+      font-size: 12px;
+    }
+    .panel__alt,
+    .panel__checked {
+      display: none;
+    }
+    .panel__clock {
+      font-size: clamp(26px, 8.5vw, 34px);
+    }
     .dep {
       table-layout: auto;
     }
@@ -424,131 +495,113 @@ function stateOf(p: Project): { live: true } | { live: false; state: FixedState 
     .dep tbody {
       display: block;
     }
+    /* Premier rang : la destination et le bouton ; puis, à la ligne, le vol, la porte, la remarque. */
     .dep tr {
-      display: grid;
-      grid-template-columns: auto auto minmax(0, 1fr) auto;
-      grid-template-areas:
-        "num app app act"
-        "num stat dest dest";
+      display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: 3px 12px;
-      padding: 10px 0;
-      border-top: 1px solid var(--line);
+      gap: 2px 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--led-line);
+    }
+    .dep tr::after {
+      content: "";
+      flex-basis: 100%;
+      order: 3;
+    }
+    .dep tbody tr:last-child {
+      border-bottom: 0;
     }
     .dep td {
       display: block;
-      padding: 0;
+      height: auto;
       border: 0;
+      font-size: 15px;
     }
-    .num {
-      grid-area: num;
-    }
-    .app {
-      grid-area: app;
-    }
-    .app a {
-      font-size: 26px;
-    }
-    .stat {
-      grid-area: stat;
-    }
-    .dest {
-      grid-area: dest;
-      overflow: hidden;
-      font-size: 13px;
-      line-height: 1.35;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .act {
-      grid-area: act;
-    }
-    .act .go,
-    .act .pill {
-      min-height: 38px;
-      padding: 0 16px;
-      font-size: 13px;
-    }
-    .st {
-      gap: 6px;
-      font-size: 11px;
-      letter-spacing: 0.04em;
-    }
-    .archives {
+    .dep .year {
       display: none;
     }
-    .archives-link {
+    .dep .dest {
+      flex: 1 1 0;
+      min-width: 0;
+      font-size: 20px;
+    }
+    .dep .act {
+      order: 2;
+    }
+    .dep .num {
+      order: 4;
+    }
+    .dep .gate {
+      order: 5;
       display: block;
-      padding: 14px 0 6px;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
+    }
+    .dep .stat {
+      order: 6;
+    }
+    .dep .num::after,
+    .dep .gate::after {
+      content: " ·";
+    }
+    .board-go {
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: 11px;
+    }
+    .arrivals {
+      display: none;
+    }
+    .ticker {
+      margin: 12px -14px 0;
+      padding: 9px 0;
+    }
+    .ticker p {
+      font-size: 16px;
+      animation-duration: 28s;
+    }
+    .arrivals-link {
+      display: block;
+      margin: 14px 4px 0;
+      color: #a0742a;
+      font-family: var(--font-mono);
       font-size: 13px;
-      line-height: 1.45;
+      line-height: 1.5;
       text-decoration: none;
     }
-  }
-
-  /* Sur téléphone : tout se resserre pour que le tableau tienne dans l'écran. */
-  @media (max-width: 700px) {
-    .intro {
-      gap: 8px;
-      padding: 2px 0 14px;
-    }
-    .intro h1 {
-      font-size: 42px;
-    }
-    .intro__text {
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .intro__text--long {
-      display: none;
-    }
-    .intro__text--short {
-      display: block;
-    }
-    .board {
-      padding: 0 14px 4px;
-      border-radius: 18px;
-    }
-    .board__top {
-      padding: 12px 0 8px;
-      font-size: 10px;
-      letter-spacing: 0.1em;
-    }
-    .dep tr {
-      gap: 3px 10px;
-      padding: 8px 0;
-    }
-    .app a {
-      font-size: 24px;
-    }
-    .dest {
-      font-size: 12px;
-    }
-    .act .go,
-    .act .pill {
-      min-height: 36px;
-      padding: 0 14px;
-    }
-    .flap {
-      gap: 2px;
-    }
-    .flap i {
-      width: 16px;
-      height: 24px;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-    .st {
-      font-size: 10px;
-    }
-    .st::before {
-      width: 7px;
-      height: 7px;
+    .note {
+      padding-bottom: 32px;
     }
     .legend {
       display: none;
+    }
+  }
+
+  /* Petits téléphones : le second rang se resserre, puis la porte s'efface, comme sur écran moyen. */
+  @media (max-width: 400px) {
+    .dep td {
+      font-size: 14px;
+    }
+    .dep .dest {
+      font-size: 19px;
+    }
+  }
+  @media (max-width: 360px) {
+    .dep .gate {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .st,
+    .panel__colon {
+      animation: none !important;
+    }
+    .ticker {
+      white-space: normal;
+    }
+    .ticker p {
+      padding: 0 30px;
+      animation: none;
     }
   }
 </style>
