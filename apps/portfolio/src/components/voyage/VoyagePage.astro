@@ -495,6 +495,18 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     background: radial-gradient(farthest-side at 0% 100%, var(--stop-bg) 0%, var(--stop-bg) 38%, transparent 100%);
     pointer-events: none;
   }
+  /* Escale 1 : le cartel attend que le copilote ait fini son accueil (« Faire le voyage » ou la croix) ;
+     scripts/copilote.ts le rend inerte d'ici là. Ses éléments seulement : le cartel lui-même porte
+     l'animation d'arrivée de l'escale. */
+  .cartel > * {
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s ease;
+  }
+  .cartel[inert] > * {
+    opacity: 0;
+    transform: translateY(10px);
+  }
   .cartel {
     position: absolute;
     z-index: 2;

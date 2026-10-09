@@ -38,16 +38,19 @@ function start(root: HTMLElement) {
     open = wrap;
   };
 
-  /** L'accueil, à l'escale 1. */
+  /** L'accueil, à l'escale 1. Son cartel attend la fin de l'accueil : inerte, et masqué par le CSS. */
   const welcoming = () => !!welcome && !welcome.hidden;
+  const welcomeCard = welcome?.closest("[data-stop]")?.querySelector<HTMLElement>(".cartel") ?? null;
   const greet = () => {
     if (!welcome) return;
     welcome.classList.remove("bye");
     welcome.hidden = false;
     root.classList.add("copilote-accueil");
+    if (welcomeCard) welcomeCard.inert = true;
   };
   const dock = (animate: boolean) => {
     root.classList.remove("copilote-accueil");
+    if (welcomeCard) welcomeCard.inert = false;
     if (!animate) return;
     root.classList.add("copilote-arrive");
     window.setTimeout(() => root.classList.remove("copilote-arrive"), 900);
