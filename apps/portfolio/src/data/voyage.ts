@@ -78,7 +78,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "Dans l'avion",
       alt: "Dans l'avion : par le hublot, l'aile, son réacteur et son winglet de laiton, au-dessus d'une mer de nuages.",
       kind: "Robot et page web · 2026 · En ligne",
-      pitch: "Un robot guette pour moi le prix des vols depuis Paris et me prévient dès qu'un billet passe sous mon seuil.",
+      pitch: "Un robot surveille pour moi le prix des vols depuis Paris et me prévient dès qu'un billet passe sous mon seuil.",
       cta: "Regarder par le hublot",
     },
     "metro-pathfinder": {
@@ -217,7 +217,7 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     introLabel: "Index · depuis 2022",
     introTitle: `Un voyage en ${inWords("fr", STOPS.length)} <em>escales</em>.`,
     introText:
-      "Je fabrique les outils qui me manquent. Ici, chacun devient un objet du décor : la planète, l'avion, le hublot, la station… Clique dessus pour passer à l'escale suivante.",
+      "Je fabrique les outils qui me manquent. Ici, chaque projet devient un objet du décor : la planète, l'avion, le hublot, la station… Clique dessus pour passer à l'escale suivante.",
     takeOff: "Décoller →",
     openApp: "Ouvrir une app",
     seeAll: "Voir tous les projets",
@@ -245,7 +245,7 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     introLabel: "Index · since 2022",
     introTitle: `A journey in ${inWords("en", STOPS.length)} <em>stops</em>.`,
     introText:
-      "I build the tools I'm missing. Here, each one becomes part of the scenery: the planet, the plane, the window, the station… Click it to fly on to the next stop.",
+      "I build the tools I'm missing. Here, each project becomes part of the scenery: the planet, the plane, the window, the station… Click it to fly on to the next stop.",
     takeOff: "Take off →",
     openApp: "Open an app",
     seeAll: "See all projects",
