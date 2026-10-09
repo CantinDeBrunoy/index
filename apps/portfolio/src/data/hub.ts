@@ -85,7 +85,7 @@ export const HUB: Record<Lang, HubStrings> = {
     download: "Télécharger ↓",
     code: "Le code ↗",
     fiche: "La fiche →",
-    arrivalsShort: "Arrivées : Galactic Escape, Métro Pathfinder, API REST .NET, Visit Match →",
+    arrivalsShort: "Arrivées : Métro Pathfinder, API REST .NET, Visit Match →",
     legend: [
       ["online", "À l'heure", "l'app répond"],
       ["asleep", "Retardé", "elle se réveille, quelques secondes"],
@@ -145,7 +145,7 @@ export const HUB: Record<Lang, HubStrings> = {
     download: "Download ↓",
     code: "Code ↗",
     fiche: "Project →",
-    arrivalsShort: "Arrivals: Galactic Escape, Métro Pathfinder, .NET REST API, Visit Match →",
+    arrivalsShort: "Arrivals: Métro Pathfinder, .NET REST API, Visit Match →",
     legend: [
       ["online", "On time", "the app responds"],
       ["asleep", "Delayed", "it's waking up, a few seconds"],

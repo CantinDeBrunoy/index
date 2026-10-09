@@ -8,6 +8,7 @@ Le monorepo de mes projets, et leur catalogue : le portfolio présente chaque pr
 index/
   apps/
     portfolio/    le site INDEX (Astro) + Worker Cloudflare : /api/status et cron du keep-alive
+    galactic-escape/ 001 · Vite + React + Three.js (jeu d'école de 2022)
     magellan/     005 · Expo (export web statique)
     cancionero/   006 · Expo (PWA statique)
     mithril/      007 · C# WinForms (hors pnpm/Turborepo, CI Windows dédiée)
@@ -22,7 +23,7 @@ index/
   .github/workflows/
 ```
 
-Les entrées 001 à 004 sont des archives (projets antérieurs, sans démo en ligne) : elles n'existent que dans `packages/projects/src/projects.ts` et dans le portfolio.
+Les entrées 002 à 004 sont des archives (projets antérieurs, sans démo en ligne) : elles n'existent que dans `packages/projects/src/projects.ts` et dans le portfolio. Galactic Escape (001), un projet d'école de 2022, a été remis en ligne : son code est dans `apps/galactic-escape`, sans son historique, qui reste sur [run4urlife](https://github.com/CantinDeBrunoy/run4urlife).
 
 - **pnpm workspaces + Turborepo.** Chaque app garde ses propres dépendances et versions, et reste buildable seule : `pnpm turbo run build --filter=<app>`.
 - **Historique conservé.** Chaque projet a été importé avec `git filter-repo --to-subdirectory-filter apps/<app>` : `git log` et `git blame` remontent à ses premiers commits.
@@ -94,6 +95,7 @@ Les variables d'environnement de chaque app sont décrites dans son `.env.exampl
 | N° | App | Hébergement | URL | Déclenchement |
 |---|---|---|---|---|
 | — | portfolio | Cloudflare Workers `index` | https://index.cantin-roquier.workers.dev | `deploy-portfolio.yml` |
+| 001 | galactic-escape | Cloudflare Workers `galactic-escape` | https://galactic-escape.cantin-roquier.workers.dev | `deploy-galactic-escape.yml` |
 | 005 | magellan | Cloudflare Workers `magellan` | https://magellan.cantin-roquier.workers.dev | `deploy-magellan.yml` |
 | 006 | cancionero | Vercel `cancionero-cantin` | https://cancionero-cantin.vercel.app | intégration Git Vercel, *Root Directory* `apps/cancionero` |
 | 007 | mithril | GitHub Releases (tags `mithril-v*`) | — | à la main (skill `publier-release`), CI `mithril.yml` |

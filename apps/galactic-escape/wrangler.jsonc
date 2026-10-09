@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Le build Vite du jeu, servi tel quel (aucun code serveur). Les routes /game et /bonus sont celles
+  // de React Router : toute adresse inconnue renvoie l'app.
+  "name": "galactic-escape",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

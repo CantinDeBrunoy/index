@@ -2,6 +2,8 @@ packages:
   - apps/*
   - packages/*
 allowBuilds:
+  # Tiré par Sass (Galactic Escape) pour son mode watch, inutile au build : son script ne tourne pas.
+  "@parcel/watcher": false
   esbuild: true
   unrs-resolver: true
   workerd: true

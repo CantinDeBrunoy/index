@@ -1,0 +1,25 @@
+name: deploy-galactic-escape
+
+# Déploie apps/galactic-escape sur Cloudflare Workers, seulement quand son dossier (ou un package
+# partagé, ou le lockfile) change sur main.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/galactic-escape/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/deploy-galactic-escape.yml
+      - .github/workflows/_deploy-cloudflare.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-cloudflare.yml
+    with:
+      app: galactic-escape
+    secrets: inherit

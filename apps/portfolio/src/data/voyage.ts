@@ -63,7 +63,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
     "galactic-escape": {
       place: "L'espace",
       alt: "L'espace : une planète à l'anneau de laiton et aux bandes lavande, ses lunes, et la Terre au loin parmi les étoiles.",
-      kind: "Jeu 3D · 2022 · Archive",
+      kind: "Jeu 3D · 2022 · En ligne",
       pitch: "Un jeu de survie en 3D inspiré du jeu du plombier : poser des cases pour se tracer un chemin dans l'espace, entre les météores, un monstre aux trousses.",
       cta: "Descendre vers la Terre",
     },
@@ -138,7 +138,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
     "galactic-escape": {
       place: "Space",
       alt: "Space: a planet with a brass ring and lavender bands, its moons, and the Earth far off among the stars.",
-      kind: "3D game · 2022 · Archive",
+      kind: "3D game · 2022 · Live",
       pitch: "A 3D survival game inspired by Pipe Mania: lay tiles to carve a path through space, between the meteors, with a monster on your heels.",
       cta: "Descend to Earth",
     },

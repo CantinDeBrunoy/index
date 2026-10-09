@@ -31,6 +31,7 @@ const httpMonitor = (url: string | undefined) => (url ? [{ kind: "http" as const
 /** URL publique du portfolio (Worker « index »). */
 export const PORTFOLIO_URL = workersDev("index");
 
+const GALACTIC_ESCAPE_URL = workersDev("galactic-escape");
 const MAGELLAN_URL = workersDev("magellan");
 const TONALLI_URL = "https://teinte-du-jour-eight.vercel.app";
 const GYM_PICKER_URL = workersDev("gym-picker");
@@ -49,13 +50,17 @@ export const PROJECTS = [
     slug: "galactic-escape",
     name: "Galactic Escape",
     started: "2022-01",
-    kind: "archive",
+    kind: "web",
     badges: ["ecole"],
     pitch: {
       fr: "Un jeu de survie en 3D inspiré du jeu du plombier : poser des cases pour se tracer un chemin dans l'espace, entre les météores, un monstre aux trousses.",
     },
     stack: ["React", "Three.js", "JavaScript", "Sass"],
-    links: { code: `${GITHUB_URL}/run4urlife` },
+    app: "galactic-escape",
+    host: "Cloudflare Workers",
+    // Le code vit dans le monorepo depuis 2026 ; l'historique de l'équipe, lui, reste sur run4urlife.
+    links: { demo: GALACTIC_ESCAPE_URL, code: `${GITHUB_URL}/run4urlife` },
+    monitors: httpMonitor(GALACTIC_ESCAPE_URL),
   },
   {
     slug: "metro-pathfinder",
