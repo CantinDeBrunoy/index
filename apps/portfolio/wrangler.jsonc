@@ -7,10 +7,11 @@
   // drapeau, Cloudflare refuse un fetch d'un Worker vers un autre de la même zone (erreur 1042).
   "compatibility_flags": ["global_fetch_strictly_public"],
   "assets": {
-    // Le site (build Astro) est servi directement ; seul /api/* passe par le Worker.
+    // Le site (build Astro) est servi directement ; passent par le Worker /api/* et les vidéos, qu'il
+    // sert par morceaux (requêtes Range, sans quoi Safari ne les lit pas).
     "directory": "./dist",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"],
+    "run_worker_first": ["/api/*", "/demos/*.mp4", "/voyage/*.mp4"],
     "not_found_handling": "404-page"
   },
   // Keep-alive : les sondes de keep-alive.yml, chaque heure, sans dépendre des crons de GitHub.

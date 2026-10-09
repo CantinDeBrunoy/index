@@ -67,6 +67,34 @@ async function status(request: Request, env: Env, ctx: ExecutionContext): Promis
   return response;
 }
 
+/**
+ * Les vidéos (scènes du voyage, démos des fiches) servies par morceaux : Safari, sur iPhone surtout, ne lit
+ * une vidéo que si le serveur répond à ses requêtes Range par un 206, ce que les fichiers statiques ne font
+ * pas (ils renvoient le fichier entier). Les fichiers font quelques Mo : on les découpe en mémoire.
+ */
+async function video(request: Request, env: Env): Promise<Response> {
+  const response = await env.ASSETS.fetch(request);
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range")?.trim() ?? "");
+  if (response.status !== 200 || !range || (range[1] === "" && range[2] === "")) {
+    const headers = new Headers(response.headers);
+    headers.set("accept-ranges", "bytes");
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  }
+
+  const body = await response.arrayBuffer();
+  const size = body.byteLength;
+  // « bytes=-N » : les N derniers octets ; « bytes=A- » : de A à la fin.
+  const start = range[1] === "" ? Math.max(0, size - Number(range[2])) : Number(range[1]);
+  const end = range[1] !== "" && range[2] !== "" ? Math.min(Number(range[2]), size - 1) : size - 1;
+  if (start > end) return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
+
+  const headers = new Headers(response.headers);
+  headers.set("accept-ranges", "bytes");
+  headers.set("content-range", `bytes ${start}-${end}/${size}`);
+  headers.set("content-length", String(end - start + 1));
+  return new Response(request.method === "HEAD" ? null : body.slice(start, end + 1), { status: 206, headers });
+}
+
 async function keepAlive(env: Env): Promise<void> {
   // Un raté isolé ne doit pas ouvrir d'issue : chaque sonde en échec est relancée après 30 s.
   const checks = await runChecks(env, { retryDelayMs: 30_000 });
@@ -84,6 +112,7 @@ export default {
     const { pathname } = new URL(request.url);
     if (pathname === "/api/status") return status(request, env, ctx);
     if (pathname.startsWith("/api/")) return new Response("Introuvable", { status: 404 });
+    if (pathname.endsWith(".mp4")) return video(request, env);
     return env.ASSETS.fetch(request);
   },
 
