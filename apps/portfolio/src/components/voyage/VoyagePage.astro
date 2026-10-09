@@ -56,7 +56,14 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
         <nav aria-label={t.langAria} class="tabs lang">
           {
             LANGS.map((l) => (
-              <a href={alternates[l]} data-lang-link={alternates[l]} hreflang={l} lang={l} aria-label={t.langNames[l]} aria-current={l === lang ? "page" : undefined}>
+              <a
+                href={l === lang ? undefined : alternates[l]}
+                data-lang-link={l === lang ? undefined : alternates[l]}
+                hreflang={l === lang ? undefined : l}
+                lang={l}
+                aria-label={t.langNames[l]}
+                aria-current={l === lang ? "page" : undefined}
+              >
                 {l.toUpperCase()}
               </a>
             ))
@@ -67,7 +74,14 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
         <nav aria-label={t.langAria} class="tabs lang">
           {
             LANGS.map((l) => (
-              <a href={alternates[l]} data-lang-link={alternates[l]} hreflang={l} lang={l} aria-label={t.langNames[l]} aria-current={l === lang ? "page" : undefined}>
+              <a
+                href={l === lang ? undefined : alternates[l]}
+                data-lang-link={l === lang ? undefined : alternates[l]}
+                hreflang={l === lang ? undefined : l}
+                lang={l}
+                aria-label={t.langNames[l]}
+                aria-current={l === lang ? "page" : undefined}
+              >
                 {l.toUpperCase()}
               </a>
             ))

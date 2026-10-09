@@ -21,7 +21,6 @@ import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
 import { appOf, fill, kindOf, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, STRINGS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
-import Badges from "./Badges.astro";
 import Colophon from "./Colophon.astro";
 import SiteHeader from "./SiteHeader.astro";
 
@@ -148,11 +147,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
                     <span class="serif row__name">{s.project.name}</span>
                     <span class="row__kind">{s.kind}</span>
                   </span>
-                  {s.project.badges.length > 0 && (
-                    <span class="row__badges">
-                      <Badges project={s.project} lang={lang} />
-                    </span>
-                  )}
                 </a>
               </li>
             ))
@@ -172,14 +166,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
                     {f.stop} {s.n} · {s.text.place}
                   </p>
                   <h2 class="serif atlas__name">{s.project.name}</h2>
-                  <p class="atlas__kind">
-                    <span>{s.kind}</span>
-                    {s.project.badges.length > 0 && (
-                      <span class="atlas__badges">
-                        <Badges project={s.project} lang={lang} />
-                      </span>
-                    )}
-                  </p>
+                  <p class="atlas__kind">{s.kind}</p>
                   <p class="atlas__pitch">{typo(lang, s.text.pitch)}</p>
                   <div class="atlas__links">
                     <a class="go" href={fichePath(lang, s.project)}>
@@ -223,13 +210,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
                 </span>
                 <span class="serif card__name">{s.project.name}</span>
                 <span class="card__kind">{s.kind}</span>
-                {
-                  s.project.badges.length > 0 && (
-                    <span class="card__badges">
-                      <Badges project={s.project} lang={lang} />
-                    </span>
-                  )
-                }
                 {s.shelved.length > 0 && <span class="card__shelf">{typo(lang, fill(c.shelf, { list: s.shelved.join(", ") }))}</span>}
               </a>
               <a class="link card__revisit" href={`${ROUTES.voyage[lang]}#escale-${s.n}`} aria-label={fill(c.revisitAria, { n: s.n, place: s.text.place })}>
@@ -411,14 +391,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     color: var(--muted);
     font-size: 14px;
   }
-  .card__badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
   .card__shelf {
     color: var(--muted);
     font-size: 13px;
@@ -442,7 +414,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
   }
   .row {
     display: grid;
-    grid-template-columns: 36px 64px minmax(0, 1fr) auto;
+    grid-template-columns: 36px 64px minmax(0, 1fr);
     gap: 20px;
     align-items: center;
     padding: 12px 16px;
@@ -491,16 +463,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     color: var(--muted);
     font-size: 14px;
   }
-  .row__badges {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 6px;
-    margin: 0;
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
   .atlas__view {
     overflow: hidden;
     border: 1px solid var(--line);
@@ -544,13 +506,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
   }
   .atlas__panel[data-off] {
     visibility: hidden;
-  }
-  .atlas__badges {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    font-family: var(--font-mono);
-    font-size: 11px;
   }
   .atlas__stop {
     margin: 0;
@@ -645,13 +600,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
       }
     }
     .cards {
-      display: none;
-    }
-  }
-  /* Entre 1 280 et 1 600 px, la liste est étroite : ses pastilles laissent la place au type du projet, et
-     restent sur la scène, à côté. */
-  @media (min-width: 1280px) and (max-width: 1599px) {
-    .row .row__badges {
       display: none;
     }
   }

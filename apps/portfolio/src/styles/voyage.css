@@ -218,6 +218,10 @@ a {
   background: var(--ink);
   color: var(--card);
 }
+/* La langue de la page : marquée, mais plus un lien (pas de recharge au clic). */
+.tabs a:not([href]) {
+  cursor: default;
+}
 .lang a {
   min-width: 40px;
   justify-content: center;
