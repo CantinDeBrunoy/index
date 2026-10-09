@@ -35,4 +35,3 @@ Le jeu est entré dans le monorepo INDEX en octobre 2026, sans son historique :
 
 - Create React App, abandonné, a laissé la place à Vite ; les fichiers qui contiennent du JSX sont passés en `.jsx`.
 - Les tests, écrits au début du projet, décrivaient encore une grille de 5 lignes et des cases sans type : ils suivent maintenant les règles du jeu.
-- L'onglet « ← Index » ramène à sa fiche sur le portfolio.

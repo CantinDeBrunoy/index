@@ -17,8 +17,6 @@
   "dependencies": {
     "@expo-google-fonts/figtree": "^0.4.1",
     "@expo-google-fonts/fraunces": "^0.4.1",
-    "@index/projects": "workspace:*",
-    "@index/ui": "workspace:*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~54.0.35",
     "expo-constants": "~18.0.13",

@@ -1,4 +1,4 @@
-import { PORTFOLIO_URL, PROJECTS } from "./projects.ts";
+import { PROJECTS } from "./projects.ts";
 import type { Project, ProjectInput } from "./types.ts";
 
 export type * from "./types.ts";
@@ -23,13 +23,4 @@ export const projects: readonly Project[] = defineProjects(PROJECTS);
 
 export function getProject(slug: string): Project | undefined {
   return projects.find((p) => p.slug === slug);
-}
-
-/** Lien vers la fiche d'un projet sur le portfolio, pour l'onglet « ← INDEX » des apps. */
-export function portfolioLink(slug: string): { href: string | undefined; entry: string | undefined } {
-  const project = getProject(slug);
-  return {
-    href: project && PORTFOLIO_URL ? `${PORTFOLIO_URL}${project.path}` : PORTFOLIO_URL,
-    entry: project?.number,
-  };
 }

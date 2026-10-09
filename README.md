@@ -18,7 +18,7 @@ index/
   packages/
     projects/     @index/projects : la liste des entrées (source de vérité unique) et les sondes de statut
     auth/         @index/auth : la connexion du propriétaire (GitHub sur le hub, vérifiée par Magellan et Hublot)
-    ui/           @index/ui : palettes du voyage, polices, onglet « ← Index » des apps
+    ui/           @index/ui : palettes du voyage et polices
     config/       @index/config : tsconfig partagé
   scripts/        keep-alive.ts, screenshots.ts
   .github/workflows/
@@ -28,7 +28,7 @@ Les entrées 002 à 004 sont des archives (projets antérieurs, sans démo en li
 
 - **pnpm workspaces + Turborepo.** Chaque app garde ses propres dépendances et versions, et reste buildable seule : `pnpm turbo run build --filter=<app>`.
 - **Historique conservé.** Chaque projet a été importé avec `git filter-repo --to-subdirectory-filter apps/<app>` : `git log` et `git blame` remontent à ses premiers commits.
-- **Une seule source de vérité.** `packages/projects/src/projects.ts` alimente le portfolio (liste, fiches, statut live), l'onglet « ← Index » des apps, le keep-alive et le cron de Hublot.
+- **Une seule source de vérité.** `packages/projects/src/projects.ts` alimente le portfolio (liste, fiches, statut live), le keep-alive et le cron de Hublot.
 
 ## Lancer en local
 
@@ -85,11 +85,10 @@ Les variables d'environnement de chaque app sont décrites dans son `.env.exampl
    ```bash
    pnpm screenshots <slug>
    ```
-7. **Monter l'onglet « ← Index »** dans l'app (web) : `mountIndexBar({ ...portfolioLink("<slug>"), corner: "top-right" })`, avec `@index/ui` et `@index/projects` en dépendances.
-8. **Déployer** :
+7. **Déployer** :
    - sur Cloudflare : un `wrangler.jsonc` dans l'app et une copie de `.github/workflows/deploy-magellan.yml` en `deploy-<app>.yml` ;
    - sur Vercel : relier le projet au dépôt `index` avec *Root Directory* = `apps/<app>`.
-9. **Vérifier** : `pnpm turbo run lint typecheck test build --filter=<app>`.
+8. **Vérifier** : `pnpm turbo run lint typecheck test build --filter=<app>`.
 
 ## Déploiements
 
@@ -104,7 +103,7 @@ Les variables d'environnement de chaque app sont décrites dans son `.env.exampl
 | 009 | gym-picker | Cloudflare Workers `gym-picker` | https://gym-picker.cantin-roquier.workers.dev | `deploy-gym-picker.yml` |
 | 010 | hublot | GitHub Actions (cron, ancien dépôt jusqu'à la bascule) + Cloudflare Workers `hublot` (page) | https://hublot.cantin-roquier.workers.dev | `deploy-hublot-page.yml` ; `hublot-check.yml` à la bascule |
 
-Le sous-domaine workers.dev (`cantin-roquier`) est renseigné une seule fois, dans `WORKERS_SUBDOMAIN` (`packages/projects/src/projects.ts`). Toutes les URLs, le statut live et l'onglet « ← Index » en découlent.
+Le sous-domaine workers.dev (`cantin-roquier`) est renseigné une seule fois, dans `WORKERS_SUBDOMAIN` (`packages/projects/src/projects.ts`). Toutes les URLs et le statut live en découlent.
 
 Les déploiements Cloudflare passent par le workflow réutilisable `_deploy-cloudflare.yml` : build Turborepo de l'app et de ses packages, puis `wrangler deploy`. Chaque `deploy-<app>.yml` ne se déclenche que quand `apps/<app>/`, `packages/` ou le lockfile changent sur `main`.
 
@@ -199,4 +198,4 @@ La page de Hublot est déjà servie par le Worker `hublot` : on s'y connecte par
 
 ## Charte
 
-« Le voyage » : chaque projet est une escale, une scène 3D d'argile et de laiton, précalculée (`apps/portfolio/design/`). Instrument Serif, Geist et Geist Mono, auto-hébergées ; quatre palettes (nuit, jour, soir, kraft) dans `packages/ui/src/voyage.css`. Les apps gardent leur propre design ; seul l'onglet « ← Index » (`packages/ui/src/index-bar.js`) reprend la matière du voyage : une pilule de nuit, « Index » en italique, le numéro en laiton, sans police à charger.
+« Le voyage » : chaque projet est une escale, une scène 3D d'argile et de laiton, précalculée (`apps/portfolio/design/`). Instrument Serif, Geist et Geist Mono, auto-hébergées ; quatre palettes (nuit, jour, soir, kraft) dans `packages/ui/src/voyage.css`. Les apps gardent leur propre design, sans lien vers le portfolio : on y va depuis le hub.

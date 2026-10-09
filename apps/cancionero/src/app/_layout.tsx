@@ -12,8 +12,6 @@ import {
   Fraunces_700Bold_Italic,
   Fraunces_800ExtraBold_Italic,
 } from '@expo-google-fonts/fraunces';
-import { portfolioLink } from '@index/projects';
-import { mountIndexBar } from '@index/ui/index-bar';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -47,10 +45,6 @@ export default function RootLayout() {
   const ready = fontsLoaded || !!fontError;
 
   useEffect(setUpServiceWorker, []);
-  // Web uniquement : onglet « ← INDEX » vers la fiche du projet sur le portfolio (masqué dans la PWA installée).
-  useEffect(() => {
-    if (Platform.OS === 'web') mountIndexBar({ ...portfolioLink('cancionero'), corner: 'top-right' });
-  }, []);
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);

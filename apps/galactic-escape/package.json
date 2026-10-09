@@ -15,8 +15,6 @@
     "deploy": "pnpm run build && wrangler deploy"
   },
   "dependencies": {
-    "@index/projects": "workspace:*",
-    "@index/ui": "workspace:*",
     "framer-motion": "^4.1.17",
     "luxon": "^2.3.1",
     "prop-types": "^15.8.1",

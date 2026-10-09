@@ -6,7 +6,7 @@ Vérifie toutes les 6 h le prix des allers-retours depuis Paris (CDG / ORY) pour
 
 Hublot est l'entrée 010 d'[INDEX](../../README.md). Par rapport au dépôt d'origine :
 
-- **La page** n'est plus sur GitHub Pages : `pnpm --filter hublot build` la prépare dans `dist/page/` (avec l'onglet « ← INDEX ») et le Worker Cloudflare `hublot` la sert (`wrangler.jsonc`, `worker/`).
+- **La page** n'est plus sur GitHub Pages : `pnpm --filter hublot build` la prépare dans `dist/page/` et le Worker Cloudflare `hublot` la sert (`wrangler.jsonc`, `worker/`).
 - **Pour modifier**, on se connecte par le hub INDEX (bouton « Connexion » de la page) : seul le compte GitHub du propriétaire y a accès. La page n'a plus de clé : ses appels à GitHub passent par le Worker, qui y ajoute la sienne (secret `HUBLOT_GITHUB_TOKEN`, jeton à grain fin limité au dépôt des données, Contents et Actions en écriture) et ne laisse passer que les appels prévus (`worker/github.ts`).
 - **Le cron et l'état** restent pour l'instant dans l'ancien dépôt `CantinDeBrunoy/Hublot`, où la page lit et écrit. À la bascule (README d'INDEX), le cron devient `.github/workflows/hublot-check.yml` à la racine du monorepo (il ne tourne que si la variable de dépôt `HUBLOT_ENABLED` vaut `true`), et l'état (`config.json`, `data/*.json`) passe sur la branche **`hublot-data`**, pas sur `main` : les ~4 relevés par jour ne remplissent pas l'historique du monorepo. `config.example.json` montre le format.
 
