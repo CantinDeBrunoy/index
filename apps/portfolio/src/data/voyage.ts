@@ -121,8 +121,8 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
     tonalli: {
       place: "Le calendrier",
       alt: "Le calendrier collé au mur : chaque jour d'octobre a sa couleur d'émotion, un jour manqué est hachuré, la case d'aujourd'hui se remplit d'une couleur après l'autre ; à gauche, les photos des journées affichées au mur ; à droite, sous le calendrier, une pile de dossiers ouverts sur un banc.",
-      kind: "Application web à deux · 2026 · En ligne",
-      pitch: "Un rituel à deux, chaque jour : une émotion en couleur et deux photos.",
+      kind: "Application web · 2026 · En ligne",
+      pitch: "Un calendrier qui se colore jour après jour : chaque case garde une émotion et deux photos du moment.",
       cta: "Ouvrir les dossiers",
     },
     index: {
@@ -196,8 +196,8 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
     tonalli: {
       place: "The calendar",
       alt: "The calendar on the wall: each day of October has its emotion colour, a missed day is hatched, today's square fills with one colour after another; on the left, photos of the days pinned to the wall; on the right, below the calendar, a pile of open folders on a bench.",
-      kind: "Web app for two · 2026 · Live",
-      pitch: "A daily ritual for two: an emotion as a colour, and two photos.",
+      kind: "Web app · 2026 · Live",
+      pitch: "A calendar that fills with colour day by day: each square keeps an emotion and two photos of the moment.",
       cta: "Open the folders",
     },
     index: {

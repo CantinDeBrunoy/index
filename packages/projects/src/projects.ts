@@ -151,7 +151,7 @@ export const PROJECTS = [
     app: "tonalli",
     host: "Vercel + Supabase",
     pitch: {
-      fr: "Un rituel quotidien à deux : une émotion en couleur et deux photos, puis le calendrier de l'autre se dévoile.",
+      fr: "Un calendrier qui se colore jour après jour : chaque case garde une émotion et deux photos du moment.",
     },
     stack: ["React", "Vite", "TypeScript", "Supabase", "PWA", "Web Push"],
     links: { demo: TONALLI_URL, code: code("tonalli") },
