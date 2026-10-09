@@ -177,7 +177,7 @@ const T = (text: string) => typo(lang, text);
     {
       media && (
         <section class="pictures">
-          <h2 class="label">{video ? f.demo : f.pictures}</h2>
+          <h2 class:list={["label", { "visually-hidden": video }]}>{video ? f.demo : f.pictures}</h2>
           <div class="pictures__row">
           <figure>
             {video ? (
@@ -617,6 +617,10 @@ const T = (text: string) => typo(lang, text);
   }
   .pictures__row :global(.pass) {
     justify-self: center;
+  }
+  /* Sans titre visible au-dessus (la vidéo de démo se passe de légende) : rien à décaler. */
+  .visually-hidden + .pictures__row {
+    margin-top: 0;
   }
   .pictures figure {
     display: flex;

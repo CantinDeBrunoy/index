@@ -1,6 +1,6 @@
 ---
 /**
- * La carte d'embarquement d'une fiche : d'Index vers le projet, sur papier, posée de biais. Son bandeau est à
+ * La carte d'embarquement d'une fiche : d'Index vers le projet, sur papier. Son bandeau est à
  * l'encre de nuit ; son talon, détaché par une ligne pointillée et deux encoches, ouvre l'app (en laiton) ou
  * dit pourquoi il n'y en a pas. `compact` : la version réduite, posée à droite de la vidéo de démo.
  */
@@ -121,13 +121,12 @@ const gate = f.pass.gate["href" in app ? "open" : text.noApp ? "here" : project.
 </aside>
 
 <style>
-  /* La carte d'embarquement : d'Index vers le projet, sur papier, posée de biais. Son bandeau est à l'encre
-     de nuit ; son talon, détaché par une ligne pointillée et deux encoches, ouvre l'app (en laiton) ou dit
-     pourquoi il n'y en a pas. */
+  /* La carte d'embarquement : d'Index vers le projet, sur papier. Son bandeau est à l'encre de nuit ; son
+     talon, détaché par une ligne pointillée et deux encoches, ouvre l'app (en laiton) ou dit pourquoi il n'y en
+     a pas. Droite : posée de biais, son texte devenait flou. */
   .pass {
     flex: 0 1 430px;
     align-self: flex-start;
-    transform: rotate(-1deg);
     filter: drop-shadow(0 1px 0 rgba(36, 30, 24, 0.14)) drop-shadow(0 22px 30px rgba(20, 14, 8, 0.16));
   }
   .pass__paper {
