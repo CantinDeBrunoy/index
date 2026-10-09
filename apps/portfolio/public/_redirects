@@ -1,0 +1,10 @@
+# Les adresses d'avant la renumérotation du 2026-10-09 (Galactic Escape, de 2022, est passé en 001) :
+# les liens déjà partagés mènent à la bonne fiche. Lu par Cloudflare avec les fichiers du site.
+/004-galaxy-escape        /001-galactic-escape        301
+/001-metro-pathfinder     /002-metro-pathfinder       301
+/002-api-rest-dotnet      /007-mithril#api-rest-dotnet 301
+/003-visit-match          /004-visit-match            301
+/en/004-galaxy-escape     /en/001-galactic-escape     301
+/en/001-metro-pathfinder  /en/002-metro-pathfinder    301
+/en/002-api-rest-dotnet   /en/007-mithril#api-rest-dotnet 301
+/en/003-visit-match       /en/004-visit-match         301
