@@ -4,14 +4,17 @@
  * La carte ouvre la fiche du projet ; le lien du dessous rouvre son escale. Les projets racontés sur la
  * fiche d'un autre (l'API REST .NET, sur l'étagère de Mithril) sont nommés sur sa carte. Puis l'adresse où
  * m'écrire, et les crédits des modèles 3D des scènes.
+ * En tête, le hub : une pastille par app, qui l'ouvre directement, avec son statut vérifié en direct
+ * (scripts/app-status.ts, d'après /api/status). Sur téléphone, les pastilles défilent sur une ligne.
  * Les vignettes sont les images fixes des scènes (public/voyage/stills) : un carnet de cartes postales, et
- * une page légère, là où les dix boucles animées pèseraient près de 6 Mo.
+ * une page légère, là où les dix boucles animées pèseraient près de 6 Mo. Les pastilles prennent l'image
+ * du téléphone, cadrée sur l'objet de l'escale.
  */
 import { getProject, GITHUB_URL } from "@index/projects";
-import { CARNET } from "../../data/carnet";
+import { APPS_ANCHOR, CARNET, CHIP_FOCUS } from "../../data/carnet";
 import { CREDITS } from "../../data/credits";
 import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
-import { fill, kindOf, STOP_TEXTS, STOPS } from "../../data/voyage";
+import { appOf, fill, kindOf, STOP_TEXTS, STOPS } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, STRINGS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import Badges from "./Badges.astro";
@@ -37,6 +40,20 @@ const cards = STOPS.map((stop, i) => {
   return { ...stop, n: i + 1, project, text, kind: kindOf(project, text, lang).line, shelved };
 });
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
+
+// Les raccourcis, dans l'ordre du voyage : chaque app qui s'ouvre ou se télécharge (ni les archives, ni ce site).
+// Seules les apps sondées portent un point de statut.
+const apps = cards.flatMap((s) => {
+  const app = appOf(s.project, s.text, lang);
+  if (!("href" in app)) return [];
+  // La vignette, grossie puis recentrée sur l'objet de l'escale.
+  const { x, y, zoom } = CHIP_FOCUS[s.scene] ?? { x: 50, y: 50, zoom: 1.2 };
+  const focus = `transform: scale(${zoom}) translate(${50 - x}%, ${50 - y}%)`;
+  return [{ ...s, app, focus, name: nameOf(s.project, lang), live: s.project.kind === "web" && s.project.monitors.length > 0 }];
+});
+// Les textes du statut, lus par le script dans la langue de la page.
+const { states, checking, online, asleep, offline, checkedNow, checkedAgo, unavailable } = c;
+const statusStrings = { states, checking, online, asleep, offline, checkedNow, checkedAgo, unavailable };
 ---
 
 <Voyage lang={lang} title={c.pageTitle} description={c.description} alternates={alternates} palette="night">
@@ -48,6 +65,44 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
         <h1 class="serif" set:html={c.title} />
         <p class="intro__text">{typo(lang, c.intro)}</p>
       </section>
+
+      {
+        apps.length > 0 && (
+          <section class="quick" id={APPS_ANCHOR} aria-labelledby="apps-title" data-quick data-strings={JSON.stringify(statusStrings)}>
+            <h2 id="apps-title" class="quick__title">{c.quick}</h2>
+            <ul class="app-chips">
+              {apps.map((a) => (
+                <li>
+                  <a class="app-chip" href={a.app.href} target={a.app.target} rel={a.app.rel}>
+                    <span class="app-chip__img" style={`background: ${a.bg}`}>
+                      <img src={still(a.scene, "-mobile")} alt="" width="780" height="760" decoding="async" style={a.focus} />
+                    </span>
+                    <span>{a.name}</span>
+                    {a.live ? (
+                      <>
+                        <i class="live-dot" data-live={a.slug} data-state="pending" aria-hidden="true" />
+                        <span class="visually-hidden" data-live-text>
+                          , {c.states.pending}
+                        </span>
+                        <span class="app-chip__go" aria-hidden="true">
+                          ↗
+                        </span>
+                      </>
+                    ) : (
+                      <span class="app-chip__go">{a.project.kind === "desktop" ? c.quickDownload : "↗"}</span>
+                    )}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p class="quick__status" aria-live="polite">
+              <i class="live-dot" data-summary-dot data-state="pending" aria-hidden="true" />
+              <span data-summary>{c.checking}</span>
+              <span data-checked />
+            </p>
+          </section>
+        )
+      }
 
       <ol class="cards">
         {
@@ -101,6 +156,10 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
   </div>
 </Voyage>
 
+<script>
+  import "../../scripts/app-status";
+</script>
+
 <style>
   .intro {
     display: flex;
@@ -119,6 +178,112 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
     color: var(--muted);
     font-size: 19px;
     line-height: 1.6;
+  }
+
+  /* Les raccourcis : une pastille par app, qui l'ouvre directement ; son statut en direct, en point de couleur. */
+  .quick {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: -24px 0 72px;
+    scroll-margin-top: 24px;
+  }
+  .quick__title {
+    margin: 0;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 400;
+  }
+  .app-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* En position relative : le statut pour les lecteurs d'écran reste dans la pastille, et ne déborde pas de la ligne qui défile. */
+  .app-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 5px 18px 5px 5px;
+    box-sizing: border-box;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    color: var(--ink);
+    font-size: 15px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: border-color 0.2s;
+  }
+  .app-chip:hover {
+    border-color: var(--brass);
+  }
+  .app-chip__img {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+  }
+  .app-chip__img img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .app-chip__go {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .live-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--muted);
+    border-radius: var(--radius-pill);
+  }
+  .live-dot[data-state="online"] {
+    border-color: var(--live-on);
+    background: var(--live-on);
+  }
+  .live-dot[data-state="asleep"] {
+    border-color: var(--live-asleep);
+    background: var(--live-asleep);
+  }
+  .live-dot[data-state="offline"] {
+    border-color: var(--live-off);
+    background: var(--live-off);
+  }
+  /* En attente du statut, ou une app qui se réveille : le point respire. */
+  .live-dot[data-state="pending"],
+  .live-dot[data-state="asleep"] {
+    animation: dot-wait 1.2s ease-in-out infinite;
+  }
+  @keyframes dot-wait {
+    50% {
+      opacity: 0.3;
+    }
+  }
+  .quick__status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .quick__status [data-checked]:not(:empty)::before {
+    content: "·";
+    margin-right: 10px;
   }
 
   /* Les cartes postales : trois de front sur ordinateur, deux sur tablette, une par ligne sur téléphone. */
@@ -212,6 +377,41 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
     /* L'adresse, longue, tient sur la largeur du téléphone. */
     .foot__links .go {
       font-size: 15px;
+    }
+    /* Les pastilles défilent sur une ligne, jusqu'aux bords de l'écran. */
+    .quick {
+      margin: -12px 0 52px;
+    }
+    .app-chips {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      margin-inline: calc(-1 * clamp(16px, 4vw, 64px));
+      padding: 0 clamp(16px, 4vw, 64px) 6px;
+      scroll-padding-inline: clamp(16px, 4vw, 64px);
+    }
+    .app-chips li {
+      flex: none;
+      scroll-snap-align: start;
+    }
+    /* L'âge du statut passe à la ligne, aligné sur le résumé, sans le point qui les sépare. */
+    .quick__status [data-checked] {
+      flex-basis: 100%;
+      padding-left: 18px;
+    }
+    .quick__status [data-checked]:not(:empty)::before {
+      content: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app-chip {
+      transition: none;
+    }
+    .live-dot[data-state="pending"],
+    .live-dot[data-state="asleep"] {
+      animation: none;
     }
   }
 </style>

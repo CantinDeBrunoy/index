@@ -10,11 +10,10 @@ export const LANGS = ["fr", "en"] as const;
 export type Lang = (typeof LANGS)[number];
 
 /** Les pages du site. Une fiche a son adresse à part : celle du projet (/005-magellan). */
-export type PageKey = "voyage" | "apps" | "projets" | "apropos" | "mentions";
+export type PageKey = "voyage" | "projets" | "apropos" | "mentions";
 
 export const ROUTES: Record<PageKey, Record<Lang, string>> = {
   voyage: { fr: "/", en: "/en" },
-  apps: { fr: "/apps", en: "/en/apps" },
   projets: { fr: "/projets", en: "/en/projects" },
   apropos: { fr: "/a-propos", en: "/en/about" },
   mentions: { fr: "/mentions-legales", en: "/en/legal-notice" },
@@ -47,8 +46,11 @@ export function inWords(lang: Lang, n: number, upper = false): string {
   return upper ? word.charAt(0).toUpperCase() + word.slice(1) : word;
 }
 
-/** Les onglets de l'en-tête, dans l'ordre : le voyage, le hub, les projets, à propos. */
-export const TABS = ["voyage", "apps", "projets", "apropos"] as const satisfies readonly PageKey[];
+/**
+ * Les onglets de l'en-tête, dans l'ordre : le voyage, les projets, à propos. « Les projets » est aussi le
+ * hub : chaque app s'ouvre de sa rangée de raccourcis (l'ancienne page « Les apps » y redirige).
+ */
+export const TABS = ["voyage", "projets", "apropos"] as const satisfies readonly PageKey[];
 export type TabKey = (typeof TABS)[number];
 
 const fr = {
@@ -57,7 +59,7 @@ const fr = {
     "Le portfolio et le hub de Cantin Roquier, ingénieur développeur : chaque app s'ouvre d'ici, chaque projet a sa fiche.",
   skip: "Aller au contenu",
   tabsAria: "Le site",
-  tabs: { voyage: "Le voyage", apps: "Les apps", projets: "Les projets", apropos: "À propos" },
+  tabs: { voyage: "Le voyage", projets: "Les projets", apropos: "À propos" },
   langAria: "Langue",
   langNames: { fr: "Français", en: "English" },
   menu: "Ouvrir le menu",
@@ -81,7 +83,7 @@ const en: Strings = {
     "Cantin Roquier's portfolio and hub, a software engineer: every app opens from here, every project has its page.",
   skip: "Skip to content",
   tabsAria: "Site",
-  tabs: { voyage: "The journey", apps: "Apps", projets: "Projects", apropos: "About" },
+  tabs: { voyage: "The journey", projets: "Projects", apropos: "About" },
   langAria: "Language",
   langNames: { fr: "Français", en: "English" },
   menu: "Open the menu",

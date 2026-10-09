@@ -10,6 +10,7 @@
  * le retour et l'escale suivante au pouce.
  */
 import { getProject } from "@index/projects";
+import { APPS_ANCHOR } from "../../data/carnet";
 import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
@@ -129,7 +130,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
           <div class="intro__actions">
             <a class="go" href="#escale-1" data-go="1">{v.takeOff}</a>
             <div class="intro__more">
-              <a class="pill" href={ROUTES.apps[lang]}>{v.openApp}</a>
+              <a class="pill" href={`${ROUTES.projets[lang]}#${APPS_ANCHOR}`}>{v.openApp}</a>
               <a class="pill" href={ROUTES.projets[lang]}><span class="lg">{v.seeAll}</span><span class="sm">{v.allProjects}</span></a>
             </div>
           </div>

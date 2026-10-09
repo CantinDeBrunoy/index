@@ -8,3 +8,7 @@
 /en/001-metro-pathfinder  /en/002-metro-pathfinder    301
 /en/002-api-rest-dotnet   /en/007-mithril#api-rest-dotnet 301
 /en/003-visit-match       /en/004-visit-match         301
+
+# L'ancienne page « Les apps » (jusqu'au 2026-10-09) : ses raccourcis vivent désormais en tête du carnet.
+/apps                     /projets#apps               301
+/en/apps                  /en/projects#apps           301
