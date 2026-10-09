@@ -12,9 +12,7 @@ import { STOPS } from "./voyage";
 export const FICHE: Record<
   Lang,
   {
-    /** Le bouton qui ramène au voyage, à l'escale de la fiche. */
-    back: string;
-    /** Le même retour, dans le bouton qui suit la lecture une fois la pastille du haut passée. */
+    /** Le bouton qui ramène au voyage, à l'escale de la fiche, et suit la lecture. */
     resume: string;
     itinAria: string;
     /** La bande des escales, sous l'en-tête : avant la première escale, le départ. */
@@ -55,7 +53,6 @@ export const FICHE: Record<
   }
 > = {
   fr: {
-    back: "Revenir au voyage",
     resume: "Reprendre le voyage",
     itinAria: "Les fiches, escale par escale",
     stripAria: "Les escales voisines",
@@ -91,7 +88,6 @@ export const FICHE: Record<
     question: "Une question sur {name} ?",
   },
   en: {
-    back: "Back to the journey",
     resume: "Resume the journey",
     itinAria: "Project pages, stop by stop",
     stripAria: "Neighbouring stops",
