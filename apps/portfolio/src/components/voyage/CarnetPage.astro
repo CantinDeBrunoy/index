@@ -112,6 +112,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
       </div>
 
       <div class="atlas" data-atlas>
+        <p id="atlas-hint" class="visually-hidden">{c.listHint}</p>
         <ol class="atlas__list" aria-label={c.listAria}>
           {
             cards.map((s, k) => (
@@ -124,6 +125,8 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
                   data-still={still(s.scene)}
                   data-loop={`/voyage/${s.scene}.webp`}
                   data-on={k === 0 ? "" : undefined}
+                  aria-current={k === 0 ? "true" : undefined}
+                  aria-describedby="atlas-hint"
                 >
                   <span class="row__num">{String(s.n).padStart(2, "0")}</span>
                   <span class="row__img" style={`background: ${s.bg}`}>
@@ -148,7 +151,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
           <div class="atlas__media" data-atlas-media style={`background: ${cards[0]!.bg}`}>
             <img src={still(cards[0]!.scene)} alt="" width="1280" height="720" loading="lazy" decoding="async" />
           </div>
-          <div class="atlas__panels">
+          <div class="atlas__panels" aria-live="polite">
             {
               cards.map((s, k) => (
                 <div class="atlas__panel" data-atlas-panel data-off={k === 0 ? undefined : ""}>
@@ -411,7 +414,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     align-self: flex-start;
   }
 
-  /* — Sur grand écran : la liste des escales, et la scène de celle qu'on survole — */
+  /* — Sur grand écran : la liste des escales, et la scène de celle qu'on a choisie d'un clic — */
   .atlas {
     display: none;
   }
@@ -437,6 +440,10 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
   }
   .row[data-on] {
     background: var(--card);
+  }
+  /* Le survol ne change plus la scène : il montre seulement que la ligne se choisit d'un clic. */
+  .row:not([data-on]):hover {
+    background: color-mix(in srgb, var(--card) 55%, transparent);
   }
   .row__num {
     color: var(--muted);
