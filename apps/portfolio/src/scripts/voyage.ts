@@ -7,6 +7,8 @@
  *   FR / EN aussi. Sans ce script, les escales se lisent à la suite, une par écran.
  */
 
+import { animatePhoneScene } from "./phone-loop";
+
 const LEAVE_MS = 750;
 const LEAVE_SOFT_MS = 400;
 const SETTLE_MS = 1250;
@@ -106,7 +108,10 @@ function start(root: HTMLElement) {
     // La scène affichée se charge tout de suite (en différé dans la page), la suivante ensuite.
     for (const k of stops.keys()) if (k !== i) pause(k);
     play(i);
-    if (!desktop.matches) stop.querySelector("img")?.setAttribute("loading", "eager");
+    if (!desktop.matches) {
+      stop.querySelector("img")?.setAttribute("loading", "eager");
+      animatePhoneScene(stop);
+    }
     preloadLater(i + 1);
     // Le copilote suit le voyage (scripts/copilote.ts).
     root.dispatchEvent(new CustomEvent("voyage:escale", { detail: { i } }));

@@ -117,7 +117,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
             <source src={`/voyage/${START.scene}.mp4`} type='video/mp4; codecs="avc1.640034"' />
           </video>
           <picture>
-            <source media="(max-width: 700px)" srcset={`/voyage/${START.scene}-mobile.webp`} />
+            <source media="(max-width: 700px)" srcset={`/voyage/stills/${START.scene}-mobile.webp`} data-loop={`/voyage/${START.scene}-mobile.webp`} />
             <img class="scene scene--still" src={`/voyage/${START.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
           </picture>
         </div>
@@ -171,7 +171,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                   <source src={`/voyage/${s.scene}.mp4`} type='video/mp4; codecs="avc1.640034"' />
                 </video>
                 <picture>
-                  <source media="(max-width: 700px)" srcset={`/voyage/${s.scene}-mobile.webp`} />
+                  <source media="(max-width: 700px)" srcset={`/voyage/stills/${s.scene}-mobile.webp`} data-loop={`/voyage/${s.scene}-mobile.webp`} />
                   <img class="scene scene--still" src={`/voyage/${s.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
                 </picture>
                 <div class="poster-veil ui" aria-hidden="true" />

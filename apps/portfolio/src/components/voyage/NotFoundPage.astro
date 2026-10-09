@@ -33,7 +33,7 @@ const position = `--x: ${S.spot[0]}%; --y: ${S.spot[1]}%; --mx: ${S.spotMobile[0
         <source src={`/voyage/${S.scene}.mp4`} type='video/mp4; codecs="avc1.640034"' />
       </video>
       <picture>
-        <source media="(max-width: 700px)" srcset={`/voyage/${S.scene}-mobile.webp`} />
+        <source media="(max-width: 700px)" srcset={`/voyage/stills/${S.scene}-mobile.webp`} data-loop={`/voyage/${S.scene}-mobile.webp`} />
         <img class="scene scene--still" src={`/voyage/${S.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
       </picture>
       <a class="spot" href={home}>

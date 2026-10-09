@@ -134,7 +134,7 @@ const T = (text: string) => typo(lang, text);
           </video>
           <picture>
             <source media="(max-width: 700px) and (prefers-reduced-motion: reduce)" srcset={still(stop.scene, "-mobile")} />
-            <source media="(max-width: 700px)" srcset={`/voyage/${stop.scene}-mobile.webp`} />
+            <source media="(max-width: 700px)" srcset={still(stop.scene, "-mobile")} data-loop={`/voyage/${stop.scene}-mobile.webp`} />
             <source media="(prefers-reduced-motion: reduce)" srcset={still(stop.scene)} />
             <img class="scene--still" src={`/voyage/${stop.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
           </picture>
