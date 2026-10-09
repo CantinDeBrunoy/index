@@ -589,14 +589,17 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
       gap: 64px;
     }
     /* La liste défile dans la hauteur de la scène, au lieu de pousser la page : sans taille propre (contain), elle
-       prend celle de la rangée, que donne la scène. Un fondu en bas montre qu'il y a la suite. */
+       prend celle de la rangée, que donne la scène. Sans barre de défilement : le fondu en bas montre qu'il y a la
+       suite. */
     .atlas__list {
       contain: size;
       overflow-y: auto;
       padding-bottom: 36px;
-      scrollbar-color: var(--line) transparent;
-      scrollbar-width: thin;
+      scrollbar-width: none;
       mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent);
+    }
+    .atlas__list::-webkit-scrollbar {
+      display: none;
     }
     .cards {
       display: none;
