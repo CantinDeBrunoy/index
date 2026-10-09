@@ -11,6 +11,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 
 const SIZE = 560;
 const canvas = document.getElementById("c");
@@ -508,6 +509,354 @@ Object.assign(BUILD, {
       cloth.rotation.y = 0.35 * Math.sin(phi * 2);
     };
     g.userData.sway = 0.12;
+    return g;
+  },
+  // Escalade : un pan qui surplombe, sur son tapis ; une voie de prises en laiton, les autres en argile. Un
+  // grimpeur d'encre la monte et la redescend, encordé : la corde passe par le relais du haut.
+  escalade(M) {
+    const g = new THREE.Group();
+    const W = 1.3, H = 1.85, LEAN = 0.16, BACK = -0.1;
+    g.add(mesh(new RoundedBoxGeometry(1.7, 0.14, 0.95, 4, 0.06), M.clay, 0, 0.07, 0.4));
+    // Le pan est un repère penché : x et y sur le mur, z qui en sort.
+    const wall = new THREE.Group();
+    wall.position.z = BACK;
+    wall.rotation.x = LEAN;
+    wall.add(mesh(new RoundedBoxGeometry(W, H, 0.1, 3, 0.03), M.clay2, 0, H / 2, -0.05));
+    g.add(wall);
+    const toWall = (x, y, z) => [x, y * Math.cos(LEAN) + (z - BACK) * Math.sin(LEAN), -y * Math.sin(LEAN) + (z - BACK) * Math.cos(LEAN)];
+    // Une prise : une goutte bosselée, lisse, plate côté mur.
+    const hold = (r, seed) => {
+      let geo = new THREE.IcosahedronGeometry(r, 5);
+      geo.deleteAttribute("normal");
+      geo.deleteAttribute("uv");
+      geo = mergeVertices(geo);
+      const p = geo.attributes.position, v = new THREE.Vector3();
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i);
+        const n = v.clone().normalize();
+        v.multiplyScalar(1 + 0.22 * Math.sin(n.x * 3.1 + seed) * Math.cos(n.y * 2.7 - seed) + 0.1 * Math.sin(n.z * 4 + seed * 2));
+        p.setXYZ(i, v.x * 1.25, v.y, v.z > 0 ? v.z * 0.62 : v.z * 0.1);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    };
+    const route = [[-0.2, 0.3], [0.16, 0.56], [-0.14, 0.86], [0.2, 1.14], [-0.08, 1.42]];
+    route.forEach(([x, y], i) => {
+      const h = mesh(hold(0.07 + 0.012 * (i % 2), i * 1.7), M.accent, x, y, 0);
+      h.rotation.z = i * 1.3;
+      wall.add(h);
+    });
+    for (const [x, y, r, s] of [[0.46, 0.28, 0.06, 4], [-0.48, 0.62, 0.075, 5], [0.47, 0.9, 0.055, 6], [-0.44, 1.18, 0.065, 7], [0.42, 1.5, 0.07, 8], [0.05, 1.68, 0.05, 9], [-0.4, 1.7, 0.05, 10], [0.0, 0.16, 0.05, 11]]) {
+      const h = mesh(hold(r, s), M.clay, x, y, 0);
+      h.rotation.z = s;
+      wall.add(h);
+    }
+    // Le relais, en haut de la voie.
+    const ANCHOR = [0, H - 0.12, 0.06];
+    const ring = mesh(new THREE.TorusGeometry(0.04, 0.012, 10, 28), M.ink, ...ANCHOR);
+    wall.add(ring);
+    wall.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.03, 16), M.ink, 0, H - 0.08, 0.015).rotateX(Math.PI / 2));
+    // Le grimpeur : le dos tourné, bras levés vers la prise suivante, son sac à magnésie en laiton.
+    const climber = new THREE.Group();
+    climber.add(mesh(new THREE.CapsuleGeometry(0.03, 0.07, 6, 12), M.ink, 0, 0, 0));
+    climber.add(mesh(new THREE.SphereGeometry(0.027, 16, 12), M.ink, 0, 0.085, -0.005));
+    for (const s of [-1, 1]) {
+      const arm = mesh(new THREE.CapsuleGeometry(0.011, 0.08, 4, 8), M.ink, 0.04 * s, 0.075, -0.01);
+      arm.rotation.z = -0.55 * s;
+      climber.add(arm);
+      const leg = mesh(new THREE.CapsuleGeometry(0.013, 0.08, 4, 8), M.ink, 0.032 * s, -0.08, -0.01);
+      leg.rotation.z = 0.35 * s;
+      climber.add(leg);
+    }
+    climber.add(mesh(new THREE.CylinderGeometry(0.018, 0.016, 0.03, 12), M.accent, 0, -0.035, 0.03));
+    climber.scale.setScalar(1.4);
+    wall.add(climber);
+    const path = new THREE.CatmullRomCurve3(route.map(([x, y], i) => new THREE.Vector3(x * 0.55 + (i % 2 ? -0.05 : 0.05), y - 0.02, 0.085)));
+    const BELAY = toWall(0.6, 0.16, 0.7);
+    const rope = mesh(new THREE.BufferGeometry(), M.ink);
+    rope.castShadow = false;
+    wall.add(rope);
+    g.userData.animate = (phi) => {
+      const p = path.getPointAt(0.04 + 0.92 * pingpong(phi));
+      climber.position.copy(p);
+      climber.rotation.z = 0.12 * Math.sin(phi * 6);
+      const waist = p.clone().add(new THREE.Vector3(0, -0.02, 0.02));
+      const top = new THREE.Vector3(ANCHOR[0], ANCHOR[1] + 0.02, ANCHOR[2] + 0.03);
+      const down = new THREE.Vector3(...BELAY);
+      const pts = [waist, waist.clone().lerp(top, 0.5).add(new THREE.Vector3(0.02, 0, 0.03)), top, top.clone().lerp(down, 0.5).add(new THREE.Vector3(0.04, 0, 0)), down];
+      rope.geometry.dispose();
+      rope.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 80, 0.006, 8);
+    };
+    g.rotation.y = -0.22;
+    g.userData.sway = 0.1;
+    return g;
+  },
+  // Voyages : une valise d'argile debout, coins et boucles de laiton, deux sangles, des étiquettes de voyage ;
+  // l'étiquette à bagages se balance, un avion de papier en fait le tour.
+  valise(M) {
+    const g = new THREE.Group();
+    const W = 1.3, H = 0.92, D = 0.44;
+    const body = new THREE.Group();
+    body.position.y = 0.04 + H / 2;
+    body.add(mesh(new RoundedBoxGeometry(W, H, D, 4, 0.09), M.clay));
+    // Le joint du couvercle, tout autour.
+    body.add(mesh(new RoundedBoxGeometry(W + 0.02, H + 0.02, 0.03, 4, 0.014), M.clay2, 0, 0, 0.08));
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) body.add(mesh(new THREE.SphereGeometry(0.058, 20, 16), M.accent, sx * (W / 2 - 0.052), sy * (H / 2 - 0.052), sz * (D / 2 - 0.052)));
+    for (const sx of [-1, 1]) {
+      body.add(mesh(new RoundedBoxGeometry(0.11, H + 0.024, D + 0.024, 2, 0.04), M.clay2, sx * 0.34, 0, 0));
+      body.add(mesh(new RoundedBoxGeometry(0.14, 0.1, 0.03, 2, 0.012), M.accent, sx * 0.34, 0.12, D / 2 + 0.02));
+      body.add(mesh(new RoundedBoxGeometry(0.06, 0.05, 0.02, 1, 0.008), M.clay2, sx * 0.34, 0.12, D / 2 + 0.035));
+    }
+    // Les étiquettes de voyage collées sur la face.
+    const disc = mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.008, 40), M.accent, 0.52, 0.16, D / 2 + 0.004);
+    disc.rotation.x = Math.PI / 2;
+    body.add(disc);
+    const sticker = mesh(new RoundedBoxGeometry(0.26, 0.16, 0.008, 1, 0.003), M.label, -0.02, -0.14, D / 2 + 0.004);
+    sticker.rotation.z = 0.14;
+    body.add(sticker);
+    const stripe = mesh(new THREE.BoxGeometry(0.2, 0.025, 0.004), M.accent, -0.02, -0.14, D / 2 + 0.01);
+    stripe.rotation.z = 0.14;
+    body.add(stripe);
+    const oval = mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.008, 40), M.glass, -0.52, -0.2, D / 2 + 0.004);
+    oval.rotation.x = Math.PI / 2;
+    oval.scale.set(1, 1, 0.7);
+    body.add(oval);
+    // La poignée, sur le dessus.
+    const handle = mesh(new THREE.TorusGeometry(0.15, 0.032, 14, 40, Math.PI), M.clay2, 0, H / 2 + 0.02, 0);
+    body.add(handle);
+    for (const sx of [-1, 1]) body.add(mesh(new RoundedBoxGeometry(0.08, 0.05, 0.1, 2, 0.015), M.accent, sx * 0.15, H / 2 + 0.01, 0));
+    // L'étiquette à bagages, nouée à la poignée, pend sur la face.
+    const tag = new THREE.Group();
+    tag.position.set(0.17, H / 2 + 0.01, D / 2 + 0.03);
+    tag.add(tube(curve([[0, 0, 0], [0.004, -0.06, 0.004], [0.01, -0.12, 0.008]]), 0.006, M.ink, 16));
+    tag.add(mesh(new RoundedBoxGeometry(0.2, 0.3, 0.014, 1, 0.02), M.clay2, 0.01, -0.26, 0.012));
+    tag.add(mesh(new THREE.TorusGeometry(0.018, 0.006, 8, 20), M.accent, 0.01, -0.14, 0.02));
+    for (const [y, w] of [[-0.25, 0.13], [-0.3, 0.1], [-0.35, 0.12]]) tag.add(mesh(new THREE.BoxGeometry(w, 0.014, 0.004), M.ink, 0.01, y, 0.021));
+    body.add(tag);
+    body.add(tube(curve([[0.15, H / 2 + 0.07, 0], [0.165, H / 2 + 0.05, D / 4], [0.17, H / 2 + 0.01, D / 2 + 0.03]]), 0.006, M.ink, 24));
+    g.add(body);
+    // L'avion de papier : deux ailes et une quille.
+    const paper = new THREE.MeshStandardMaterial({ color: M.label.color, roughness: 0.8, side: THREE.DoubleSide });
+    const pg = new THREE.BufferGeometry();
+    pg.setAttribute("position", new THREE.Float32BufferAttribute([0.2, 0, 0, -0.12, 0, -0.11, -0.12, 0, 0, 0.2, 0, 0, -0.12, 0, 0, -0.12, 0, 0.11, 0.2, 0, 0, -0.12, 0, 0, -0.12, -0.05, 0], 3));
+    pg.computeVertexNormals();
+    const plane = mesh(pg, paper);
+    const flight = new THREE.Group();
+    flight.add(plane);
+    g.add(flight);
+    g.userData.animate = (phi) => {
+      tag.rotation.x = 0.06 + 0.06 * Math.sin(phi * 2);
+      tag.rotation.z = 0.14 * Math.sin(phi * 2 + 0.6);
+      const a = -phi;
+      plane.position.set(Math.cos(a) * 0.78, 1.2 + 0.06 * Math.sin(phi * 2), Math.sin(a) * 0.55);
+      plane.rotation.set(0.35, Math.atan2(Math.cos(a) * 0.55, Math.sin(a) * 0.78), 0, "YXZ");
+    };
+    g.rotation.y = -0.3;
+    g.userData.sway = 0.1;
+    return g;
+  },
+  // Tennis : une raquette debout, cordage d'argile et manche de laiton ; une balle rebondit à côté.
+  tennis(M) {
+    const g = new THREE.Group();
+    const rk = new THREE.Group();
+    const A = 0.34, B = 0.45, CY = 1.29;
+    const rim = [];
+    for (let i = 0; i < 96; i++) {
+      const t = (i / 96) * Math.PI * 2;
+      rim.push(new THREE.Vector3(Math.cos(t) * A, CY + Math.sin(t) * B, 0));
+    }
+    rk.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rim, true), 160, 0.038, 14, true), M.clay));
+    for (let k = -4; k <= 4; k++) {
+      const x = (k * A) / 5.1;
+      const h = B * Math.sqrt(1 - (x / A) ** 2);
+      rk.add(mesh(new THREE.CylinderGeometry(0.006, 0.006, 2 * h, 6), M.clay2, x, CY, 0));
+    }
+    for (let k = -5; k <= 5; k++) {
+      const y = (k * B) / 6.2;
+      const w = A * Math.sqrt(1 - (y / B) ** 2);
+      const s = mesh(new THREE.CylinderGeometry(0.006, 0.006, 2 * w, 6), M.clay2, 0, CY + y, 0);
+      s.rotation.z = Math.PI / 2;
+      rk.add(s);
+    }
+    const yb = CY - B;
+    for (const s of [-1, 1]) rk.add(tube(curve([[s * 0.2, CY - B * 0.81, 0], [s * 0.1, yb - 0.1, 0], [s * 0.035, yb - 0.3, 0]]), 0.032, M.clay, 32));
+    rk.add(mesh(new THREE.CylinderGeometry(0.05, 0.046, yb - 0.33, 8), M.clay, 0, (yb - 0.33) / 2 + 0.04, 0));
+    rk.add(mesh(new THREE.CylinderGeometry(0.053, 0.05, yb - 0.5, 8), M.accent, 0, (yb - 0.5) / 2 + 0.06, 0));
+    rk.add(mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.05, 8), M.clay2, 0, 0.025, 0));
+    rk.rotation.set(-0.08, 0.3, 0.1);
+    g.add(rk);
+    // La balle, en laiton, sa couture crème.
+    const R = 0.12;
+    const ball = new THREE.Group();
+    ball.add(mesh(new THREE.SphereGeometry(R, 40, 32), M.accent));
+    const seam = [];
+    for (let i = 0; i < 120; i++) {
+      const t = (i / 120) * Math.PI * 2;
+      seam.push(new THREE.Vector3(0.7 * Math.cos(t) + 0.3 * Math.cos(3 * t), 0.7 * Math.sin(t) - 0.3 * Math.sin(3 * t), 2 * Math.sqrt(0.21) * Math.sin(2 * t)).normalize().multiplyScalar(R * 1.005));
+    }
+    ball.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(seam, true), 160, 0.009, 8, true), M.label));
+    const spin = new THREE.Group();
+    spin.add(ball);
+    g.add(spin);
+    g.userData.animate = (phi) => {
+      const k = Math.abs(Math.sin(phi));
+      const squash = 1 - 0.14 * Math.max(0, 1 - k * 9);
+      spin.position.set(0.5, R * squash + 0.62 * k, 0.32);
+      spin.scale.set(1 + (1 - squash) * 0.6, squash, 1 + (1 - squash) * 0.6);
+      ball.rotation.set(phi * 2, 0, -phi);
+    };
+    g.rotation.y = -0.15;
+    g.userData.sway = 0.1;
+    return g;
+  },
+  // Natation : un bassin d'argile, deux lignes d'eau aux flotteurs de laiton qui suivent la houle, une échelle
+  // de laiton et trois plots de départ.
+  natation(M) {
+    const g = new THREE.Group();
+    const L = 2.0, Wd = 1.25, Hh = 0.3, RIM = 0.12, r = 0.14;
+    const outer = roundRect(L, Wd, r + RIM);
+    outer.holes.push(roundRect(L - 2 * RIM, Wd - 2 * RIM, r));
+    const walls = new THREE.ExtrudeGeometry(outer, { depth: Hh, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3, curveSegments: 24 });
+    walls.rotateX(-Math.PI / 2);
+    g.add(mesh(walls, M.clay));
+    g.add(mesh(new THREE.BoxGeometry(L - 2 * RIM, 0.04, Wd - 2 * RIM), M.clay2, 0, 0.02, 0));
+    const IL = L - 2 * RIM, IW = Wd - 2 * RIM, Y = Hh - 0.07;
+    const wave = (x, z, phi) => Y + 0.014 * Math.sin(x * 6 - phi * 2) + 0.006 * Math.sin(z * 9 + x * 3 + phi * 3);
+    const waterGeo = new THREE.PlaneGeometry(IL, IW, 90, 56);
+    waterGeo.rotateX(-Math.PI / 2);
+    const water = mesh(waterGeo, M.glass);
+    water.castShadow = false;
+    g.add(water);
+    // Les lignes d'eau : des flotteurs de laiton aux deux bouts, d'argile au milieu.
+    const floats = [];
+    const fg = new THREE.SphereGeometry(0.03, 16, 12);
+    for (const z of [-IW / 6, IW / 6]) {
+      for (let x = -IL / 2 + 0.05; x <= IL / 2 - 0.05; x += 0.062) {
+        const end = Math.abs(x) > IL / 2 - 0.3;
+        const f = mesh(fg, end ? M.accent : M.clay, x, 0, z);
+        f.scale.set(1.25, 0.8, 0.8);
+        g.add(f);
+        floats.push(f);
+      }
+    }
+    // L'échelle, sur le grand côté du fond.
+    const zb = -IW / 2;
+    for (const s of [-1, 1]) g.add(tube(curve([[0.5 + s * 0.1, Hh + 0.02, zb - 0.09], [0.5 + s * 0.1, Hh + 0.22, zb - 0.07], [0.5 + s * 0.1, Hh + 0.26, zb + 0.02], [0.5 + s * 0.1, Hh + 0.12, zb + 0.07], [0.5 + s * 0.1, 0.05, zb + 0.07]]), 0.017, M.accent, 48));
+    for (const y of [Hh - 0.02, Hh - 0.13]) g.add(mesh(new RoundedBoxGeometry(0.2, 0.025, 0.05, 1, 0.008), M.accent, 0.5, y, zb + 0.07));
+    // Les plots de départ, sur le petit côté gauche.
+    for (const [k, z] of [[0, -IW / 3], [1, 0], [2, IW / 3]]) {
+      const block = new THREE.Group();
+      block.add(mesh(new RoundedBoxGeometry(0.15, 0.14, 0.19, 2, 0.02), M.clay2, 0, Hh + 0.09, 0));
+      const top = mesh(new RoundedBoxGeometry(0.2, 0.03, 0.22, 2, 0.01), k === 1 ? M.accent : M.clay, 0.01, Hh + 0.17, 0);
+      top.rotation.z = -0.14;
+      block.add(top);
+      block.position.set(-L / 2 + 0.07, 0, z);
+      g.add(block);
+    }
+    g.userData.animate = (phi) => {
+      const p = waterGeo.attributes.position;
+      for (let i = 0; i < p.count; i++) p.setY(i, wave(p.getX(i), p.getZ(i), phi));
+      p.needsUpdate = true;
+      waterGeo.computeVertexNormals();
+      for (const f of floats) {
+        f.position.y = wave(f.position.x, f.position.z, phi) + 0.012;
+        f.rotation.z = 0.25 * Math.cos(f.position.x * 6 - phi * 2);
+      }
+    };
+    g.rotation.y = 0.12;
+    g.userData.sway = 0.1;
+    return g;
+  },
+  // Course à pied : une paire de baskets d'argile, semelle crème, lacets de laiton ; elles déroulent le pas
+  // chacune son tour, le talon qui se lève sur la pointe.
+  course(M) {
+    const g = new THREE.Group();
+    const side = [[-0.5, 0], [-0.46, 0.1], [-0.35, 0.135], [-0.15, 0.122], [0.05, 0.14], [0.25, 0.165], [0.4, 0.15], [0.48, 0.09], [0.51, 0]];
+    const inner = [[0.48, -0.09], [0.4, -0.15], [0.25, -0.158], [0.05, -0.115], [-0.15, -0.105], [-0.35, -0.128], [-0.46, -0.1]];
+    const halfWidth = (x, pts) => {
+      for (let i = 1; i < pts.length; i++) {
+        const [x0, w0] = pts[i - 1], [x1, w1] = pts[i];
+        if ((x - x0) * (x - x1) <= 0) return Math.abs(w0 + ((w1 - w0) * (x - x0)) / (x1 - x0 || 1));
+      }
+      return 0.05;
+    };
+    const smooth = (a, b, x) => {
+      const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+    const shoe = (mirror) => {
+      const s = new THREE.Group();
+      const outline = new THREE.CatmullRomCurve3([...side, ...inner].map(([x, z]) => new THREE.Vector3(x, z * mirror, 0)), true);
+      const shape = new THREE.Shape(outline.getPoints(140).map((v) => new THREE.Vector2(v.x, -v.y)));
+      const mid = new THREE.ExtrudeGeometry(shape, { depth: 0.08, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.022, bevelSegments: 4, curveSegments: 60 });
+      mid.rotateX(-Math.PI / 2);
+      s.add(mesh(mid, M.label, 0, 0.055, 0));
+      const out = new THREE.ExtrudeGeometry(shape, { depth: 0.03, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.024, bevelSegments: 2, curveSegments: 60 });
+      out.rotateX(-Math.PI / 2);
+      s.add(mesh(out, M.accent, 0, 0.01, 0));
+      // L'empeigne : une sphère étirée sur la semelle, haute et carrée au talon, basse et ronde à la pointe ; le
+      // col coupé à plat.
+      // Les pôles de la sphère aux deux bouts : ses anneaux sont des coupes de la chaussure, le bord du col reste net.
+      const geo = new THREE.SphereGeometry(1, 128, 96).rotateZ(Math.PI / 2);
+      const p = geo.attributes.position;
+      const BASE = 0.15;
+      const ux = (x) => (x + 0.005) / 0.475;
+      const prof = (u) => {
+        const a = Math.min(1, Math.abs(u)), pw = u < 0 ? 5 : 2.6;
+        return Math.pow(1 - Math.pow(a, pw), 1 / pw);
+      };
+      const ht = (x) => 0.1 + 0.22 * smooth(0.5, -0.12, x);
+      const top = (x) => BASE + prof(ux(x)) * ht(x);
+      const collar = (x) => BASE + 0.235 + 0.08 * smooth(-0.08, -0.5, x);
+      const colors = [];
+      const skin = M.clay.color, dark = M.ink.color;
+      for (let i = 0; i < p.count; i++) {
+        const u = p.getX(i), uy = Math.max(0, p.getY(i)), uz = p.getZ(i);
+        const circ = Math.sqrt(Math.max(0, 1 - u * u));
+        const k = circ < 1e-6 ? 0 : prof(u) / circ;
+        const x = u * 0.475 - 0.005;
+        const w = ((uz >= 0) === (mirror > 0) ? halfWidth(x, side) : halfWidth(x, inner)) - 0.012;
+        let y = BASE + uy * k * ht(x);
+        const cut = x < 0 && y > collar(x);
+        if (cut) y = collar(x);
+        p.setXYZ(i, x, y, uz * k * w);
+        const c = cut ? dark : skin;
+        colors.push(c.r, c.g, c.b);
+      }
+      geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+      geo.computeVertexNormals();
+      s.add(mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62 })));
+      // L'ouverture du col, la languette, les lacets, la tirette du talon.
+      const tongue = mesh(new RoundedBoxGeometry(0.03, 0.15, 0.11, 2, 0.014), M.clay2, -0.035, collar(-0.035) + 0.035, 0);
+      tongue.rotation.z = 0.6;
+      s.add(tongue);
+      for (const x of [0.05, 0.12, 0.19, 0.26]) {
+        const lace = mesh(new THREE.CapsuleGeometry(0.014, 0.15, 4, 10), M.accent, x, top(x) + 0.006, 0);
+        lace.rotation.x = Math.PI / 2;
+        lace.rotation.y = -0.12 * mirror;
+        s.add(lace);
+      }
+      const tab = mesh(new RoundedBoxGeometry(0.04, 0.12, 0.07, 2, 0.016), M.accent, -0.475, top(-0.43) - 0.01, 0);
+      tab.rotation.z = 0.25;
+      s.add(tab);
+      // Le pivot sur la pointe : la basket déroule le pas autour de son bout.
+      const pivot = new THREE.Group();
+      s.position.x = -0.5;
+      pivot.add(s);
+      return pivot;
+    };
+    const right = shoe(1), left = shoe(-1);
+    right.position.set(0.58, 0, 0.25);
+    left.position.set(0.42, 0, -0.25);
+    right.rotation.y = -0.05;
+    left.rotation.y = 0.07;
+    g.add(right, left);
+    g.userData.animate = (phi) => {
+      right.rotation.z = -0.32 * Math.max(0, Math.sin(phi * 2)) ** 1.5;
+      left.rotation.z = -0.32 * Math.max(0, Math.sin(phi * 2 + Math.PI)) ** 1.5;
+    };
+    g.rotation.y = -0.55;
+    g.userData.sway = 0.1;
     return g;
   },
 });

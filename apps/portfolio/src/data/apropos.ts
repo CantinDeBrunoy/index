@@ -51,7 +51,7 @@ export const LANG_LINES = [
 export const BAG_LINES = ["#346885", "#4f6d3a", "#7a3b5c", "#84652f", "#a54e22", "#6a5f52"] as const;
 
 /** En dehors du code : les objets du cabinet, en boucle (public/voyage) et en image fixe (stills). */
-export const AWAY = ["randonnee", "book", "gloves"] as const;
+export const AWAY = ["randonnee", "book", "gloves", "valise", "escalade", "tennis", "natation", "course"] as const;
 
 interface Leg {
   title: string;
@@ -76,7 +76,7 @@ interface AproposStrings {
   cv?: { href: string; file: string; label: string };
   linkedin: string;
   alt: string;
-  labels: { route: string; langs: string; bag: string; away: string; also: string };
+  labels: { route: string; langs: string; bag: string; away: string };
   /** Sous l'en-tête, quatre chiffres : [le chiffre, ce qu'il compte]. */
   stats: [string, string][];
   /** Les titres des rubriques. */
@@ -96,7 +96,6 @@ interface AproposStrings {
   bag: [string, string[]][];
   /** Dans l'ordre d'AWAY. `text` : une phrase de Cantin, à écrire (les questions sont en commentaire). */
   away: { title: string; alt: string; text?: string }[];
-  also: string[];
   /** Le carrousel « en dehors du code » : ses boutons. */
   carousel: { prev: string; next: string; pause: string; play: string; slide: string };
 }
@@ -119,7 +118,6 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       langs: "Les langues",
       bag: "Dans mon sac",
       away: "En dehors du code",
-      also: "Et aussi",
     },
     stats: [
       ["5 ans", "d'alternance : l'école et la STIME en même temps"],
@@ -183,15 +181,20 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       ["Tests et IA", ["Playwright", "GitHub Copilot", "Claude Code"]],
       ["Méthodes", ["Scrum", "SAFe", "Kanban"]],
     ],
-    // Mis en avant à sa demande : la randonnée, l'histoire, les sports de combat. Les phrases à écrire, à la
-    // première personne : pour la randonnée, son plus beau sentier ou celui qui l'attend ; pour l'histoire, la
-    // période ou le livre qui l'a marqué ; pour les sports de combat, ce que le combat lui apporte.
+    // Mis en avant à sa demande : la randonnée, l'histoire, les sports de combat ; puis les autres loisirs, qui
+    // étaient en pastilles sous le carrousel (« Et aussi »). Les phrases à écrire, à la première personne : pour
+    // la randonnée, son plus beau sentier ou celui qui l'attend ; pour l'histoire, la période ou le livre qui l'a
+    // marqué ; pour les sports de combat, ce que le combat lui apporte.
     away: [
       { title: "Randonnée", alt: "Une petite montagne d'argile, son sentier de laiton en lacets jusqu'au fanion du sommet ; un randonneur y monte." },
       { title: "Histoire", alt: "Une pile de livres d'histoire, celui du dessus qui s'entrouvre, un signet en laiton." },
       { title: "Sports de combat", alt: "Une paire de gants de boxe en argile, le laçage en laiton.", text: "Boxe française, MMA, jiu-jitsu brésilien." },
+      { title: "Voyages", alt: "Une valise d'argile aux coins de laiton, couverte d'étiquettes de voyage ; son étiquette à bagages se balance, un avion de papier en fait le tour." },
+      { title: "Escalade", alt: "Un pan d'escalade qui surplombe son tapis, une voie de prises en laiton ; un grimpeur encordé la monte et la redescend." },
+      { title: "Tennis", alt: "Une raquette d'argile debout, le manche en laiton ; une balle de laiton rebondit à côté." },
+      { title: "Natation", alt: "Un bassin d'argile, deux lignes d'eau qui suivent la houle, une échelle de laiton et trois plots de départ." },
+      { title: "Course à pied", alt: "Une paire de baskets d'argile à semelle de laiton, qui déroulent le pas chacune son tour." },
     ],
-    also: ["Voyages", "Escalade", "Tennis", "Natation", "Course à pied"],
     carousel: { prev: "Loisir précédent", next: "Loisir suivant", pause: "Mettre le carrousel en pause", play: "Relancer le carrousel", slide: "Loisir {n} sur {count}" },
   },
   en: {
@@ -211,7 +214,6 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       langs: "Languages",
       bag: "In my bag",
       away: "Away from the code",
-      also: "And also",
     },
     stats: [
       ["5 years", "of work-study: school and STIME at the same time"],
@@ -281,8 +283,12 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       { title: "Hiking", alt: "A small clay mountain, its brass trail switching back up to the summit flag; a hiker climbs it." },
       { title: "History", alt: "A stack of history books, the top one falling open, with a brass bookmark." },
       { title: "Combat sports", alt: "A pair of clay boxing gloves with brass lacing.", text: "Savate (French kickboxing), MMA, Brazilian jiu-jitsu." },
+      { title: "Travel", alt: "A clay suitcase with brass corners, covered in travel stickers; its luggage tag swings and a paper plane circles it." },
+      { title: "Climbing", alt: "An overhanging climbing wall above its crash pad, a route of brass holds; a roped climber goes up and back down." },
+      { title: "Tennis", alt: "A clay racket standing upright with a brass grip; a brass ball bounces beside it." },
+      { title: "Swimming", alt: "A clay pool, two lane ropes riding the swell, a brass ladder and three starting blocks." },
+      { title: "Running", alt: "A pair of clay sneakers with brass soles, taking turns to roll through a stride." },
     ],
-    also: ["Travel", "Climbing", "Tennis", "Swimming", "Running"],
     carousel: { prev: "Previous hobby", next: "Next hobby", pause: "Pause the carousel", play: "Play the carousel", slide: "Hobby {n} of {count}" },
   },
 };

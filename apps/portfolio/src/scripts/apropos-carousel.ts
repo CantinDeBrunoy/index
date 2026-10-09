@@ -1,6 +1,7 @@
-// Le carrousel « en dehors du code » (AproposPage.astro) : un loisir au centre, les deux autres de côté, et il
+// Le carrousel « en dehors du code » (AproposPage.astro) : un loisir au centre, ses deux voisins de côté, et il
 // tourne seul toutes les 4 s quand il est à l'écran. Il s'arrête au survol, au focus et avec le bouton pause ; en
 // mouvement réduit, il ne tourne pas. Les flèches, les points ou un clic sur un loisir de côté le font avancer.
+// Chaque loisir s'affiche d'abord en image fixe ; sa boucle animée ne se charge qu'en arrivant à côté du centre.
 const carousel = document.querySelector<HTMLElement>("[data-carousel]");
 
 if (carousel) {
@@ -20,6 +21,11 @@ if (carousel) {
       let pos = (k - cur + n) % n;
       if (pos > n / 2) pos -= n;
       slide.dataset.pos = String(pos);
+      const img = slide.querySelector<HTMLImageElement>("img[data-loop]");
+      if (img && Math.abs(pos) <= 1) {
+        img.src = img.dataset.loop!;
+        delete img.dataset.loop;
+      }
       // Les loisirs de côté restent cliquables, mais les lecteurs d'écran n'entendent que celui du centre.
       if (pos === 0) slide.removeAttribute("aria-hidden");
       else slide.setAttribute("aria-hidden", "true");
