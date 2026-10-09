@@ -97,7 +97,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "Sur la route",
       alt: "Sur la route : des voitures circulent dans les deux sens, quelques toits de tuile, quatre salles de sport ; une voiture de laiton suit le trajet le plus rapide, de la maison à la salle la moins embouteillée.",
       kind: "App web · 2026 · En ligne",
-      pitch: "Mes quatre salles de sport classées selon les bouchons ; un geste et Waze m'y emmène.",
+      pitch: "Mes quatre salles de sport classées selon les bouchons. Un geste et Waze m'y emmène.",
       cta: "Rentrer à la maison",
     },
     mithril: {
@@ -172,7 +172,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "On the road",
       alt: "On the road: cars drive both ways, a few tiled roofs, four gyms; a brass car takes the fastest route, from home to the least congested gym.",
       kind: "Web app · 2026 · Live",
-      pitch: "My four gyms ranked by traffic; one tap and Waze takes me there.",
+      pitch: "My four gyms ranked by traffic. One tap and Waze takes me there.",
       cta: "Head home",
     },
     mithril: {
