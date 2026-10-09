@@ -2,9 +2,10 @@
  * « À propos », le passeport : d'après les CV de Cantin (octobre 2026) et ses projets. Employeur et ville
  * affichés à sa demande ; ni téléphone, ni photo, ni nom de projet interne. Brouillons, à relire.
  *
- * L'itinéraire est une frise à trois voies (l'école, l'entreprise, l'étranger), puis le détail de chaque voie.
+ * L'itinéraire est un plan de ligne : la ligne de l'école et celle de la STIME, côte à côte pendant les cinq ans
+ * d'alternance, la correspondance du diplôme, l'embranchement de l'Espagne ; puis le détail de chaque ligne.
  * Les dates sont en années décimales (septembre 2020 = 2020 + 8 / 12) ; aujourd'hui, c'est le jour de la
- * construction du site : la frise et le poste actuel suivent sans qu'on y touche.
+ * construction du site : le plan et le poste actuel suivent sans qu'on y touche.
  */
 
 import { projects } from "@index/projects";
@@ -14,29 +15,40 @@ const built = new Date();
 /** Aujourd'hui, en année décimale. */
 export const NOW = built.getFullYear() + (built.getMonth() + (built.getDate() - 1) / 31) / 12;
 
-/** La frise : ses années, la bande de l'alternance, et chaque barre, rangée sur sa voie. */
-export const ROUTE = {
+/** Le plan de ligne : l'axe des années, la bande de l'alternance, les stations de chaque ligne. */
+export const LINES = {
   axis: [2019, Math.max(2027, Math.ceil(NOW))] as const,
   band: { from: 2020 + 8 / 12, to: 2025 + 8 / 12 },
-  bars: [
-    { id: "dut", lane: 0, from: 2019 + 8 / 12, to: 2021.5 },
-    { id: "licence", lane: 0, from: 2021 + 8 / 12, to: 2022 + 8 / 12 },
-    { id: "ingenieur", lane: 0, from: 2022 + 8 / 12, to: 2025 + 8 / 12 },
-    { id: "alternance", lane: 1, from: 2020 + 8 / 12, to: 2025 + 8 / 12, tone: "alt" },
-    { id: "cdi", lane: 1, from: 2025 + 8 / 12, to: NOW, tone: "now" },
-    // Trop courte pour son titre : il se lit à côté.
-    { id: "espagne", lane: 2, from: 2024 + 7.5 / 12, to: 2024 + 10.5 / 12, tone: "trip", outside: true },
+  school: [
+    { id: "dut", at: 2019 + 8 / 12 },
+    { id: "licence", at: 2021 + 8 / 12 },
+    { id: "ingenieur", at: 2022 + 8 / 12 },
   ],
+  work: [
+    { id: "frontend", at: 2020 + 8 / 12 },
+    { id: "fullstack", at: 2021 + 8 / 12 },
+    { id: "mobile", at: 2025 + 8 / 12 },
+    { id: "today", at: NOW },
+  ],
+  /** Le diplôme : la ligne de l'école s'arrête, correspondance avec celle de la STIME. */
+  interchange: 2025 + 8 / 12,
+  /** Le stage en Espagne, un embranchement de la ligne de l'école. */
+  branch: 2024 + 9 / 12,
 } as const;
 
-export type BarId = (typeof ROUTE.bars)[number]["id"];
+export type StationId = "dut" | "licence" | "ingenieur" | "diplome" | "espagne" | "frontend" | "fullstack" | "mobile" | "today";
+/** Les lignes du plan, et la couleur de chaque étape du détail. */
+export type LineId = "school" | "work" | "branch";
 
-/** Les langues en visas : l'encre de chaque tampon (4,5:1 au moins sur le papier) et son inclinaison. */
-export const VISAS = [
-  { ink: "#84652f", rot: -4 },
-  { ink: "#346885", rot: 3 },
-  { ink: "#9e5530", rot: -2, fiche: "cancionero" },
+/** Les langues en pastilles de ligne : leur code et leur couleur (4,5:1 au moins avec le papier). */
+export const LANG_LINES = [
+  { code: "FR", ink: "#84652f" },
+  { code: "EN", ink: "#346885" },
+  { code: "ES", ink: "#9e5530", fiche: "cancionero" },
 ] as const;
+
+/** Le sac en lignes de bus : une couleur par famille d'outils, dans l'ordre de `bag`. */
+export const BAG_LINES = ["#346885", "#4f6d3a", "#7a3b5c", "#84652f", "#a54e22", "#6a5f52"] as const;
 
 /** En dehors du code : les objets du cabinet, en boucle (public/voyage) et en image fixe (stills). */
 export const AWAY = ["randonnee", "book", "gloves"] as const;
@@ -44,8 +56,8 @@ export const AWAY = ["randonnee", "book", "gloves"] as const;
 interface Leg {
   title: string;
   sub: string;
-  /** [quand, quoi, où, ce que j'y ai fait] */
-  items: [string, string, string, string][];
+  /** [quand, quoi, où, ce que j'y ai fait (une ligne), la ligne du plan] */
+  items: [string, string, string, string, LineId][];
 }
 
 interface AproposStrings {
@@ -64,35 +76,36 @@ interface AproposStrings {
   cv?: { href: string; file: string; label: string };
   linkedin: string;
   alt: string;
-  labels: { words: string; route: string; langs: string; ways: string; team: string; bag: string; away: string; also: string };
-  words: string;
-  more: string;
+  labels: { route: string; langs: string; bag: string; away: string; also: string };
+  /** Sous l'en-tête, quatre chiffres : [le chiffre, ce qu'il compte]. */
+  stats: [string, string][];
+  /** Les titres des rubriques. */
+  titles: { route: string; langs: string; bag: string; away: string };
   route: {
-    intro: string;
     band: string;
-    now: string;
-    lanes: [string, string, string];
-    bars: Record<BarId, [string, string?]>;
+    /** Les lettres des deux lignes, dans leur pastille. */
+    codes: [string, string];
+    stations: Record<StationId, [string, string]>;
     school: Leg;
     work: Leg;
     projects: string;
     projectsLink: string;
   };
-  /** Dans l'ordre des VISAS : la langue, le niveau, et le lien de l'espagnol vers Cancionero. */
+  /** Dans l'ordre de LANG_LINES : la langue, le niveau, et le lien de l'espagnol vers Cancionero. */
   langs: { name: string; level: string; link?: string }[];
-  ways: [string, string][];
-  team: string[];
   bag: [string, string[]][];
   /** Dans l'ordre d'AWAY. `text` : une phrase de Cantin, à écrire (les questions sont en commentaire). */
   away: { title: string; alt: string; text?: string }[];
   also: string[];
+  /** Le carrousel « en dehors du code » : ses boutons. */
+  carousel: { prev: string; next: string; pause: string; play: string; slide: string };
 }
 
 export const APROPOS: Record<Lang, AproposStrings> = {
   fr: {
     pageTitle: "À propos",
     description:
-      "Cantin Roquier, ingénieur développeur fullstack et mobile à la DSI du Groupement Les Mousquetaires : son itinéraire, ses langues, sa façon de faire.",
+      "Cantin Roquier, ingénieur développeur fullstack et mobile à la DSI du Groupement Les Mousquetaires : son itinéraire, ses langues, ses outils.",
     label: "À propos · le passeport",
     role: "Ingénieur développeur fullstack & mobile",
     where: "Brunoy (91), près de Paris",
@@ -102,70 +115,56 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     linkedin: "https://fr.linkedin.com/in/cantin-roquier-2a0a50228",
     alt: "Mon passeport sur le bureau : à gauche, la page d'identité et mon monogramme ; à droite, un visa par projet, chacun à l'encre de son escale. Le tampon de laiton passe par l'encreur et pose un nouveau visa : INDEX 2026.",
     labels: {
-      words: "En quelques mots",
       route: "L'itinéraire",
       langs: "Les langues",
-      ways: "Ma façon de faire",
-      team: "En équipe",
       bag: "Dans mon sac",
       away: "En dehors du code",
       also: "Et aussi",
     },
-    words:
-      "J'aime les outils qui servent dès le premier jour : ceux que je construis pour les autres, et ceux que je fabrique quand il m'en manque un.",
-    more: "À la DSI des Mousquetaires, j'ai contribué à l'application mobile des collaborateurs de plus de 3 000 points de vente Intermarché, construit de zéro deux applications React pour le service après-vente et participé au BFF Node.js qui les alimente. Aujourd'hui en CDI, je développe l'application React Native de commande des produits frais de 1 700 magasins. Chez moi, je fabrique un globe pour mes voyages, un radar à billets d'avion, un coffre à mots de passe, une façon d'apprendre l'espagnol en chanson.",
+    stats: [
+      ["5 ans", "d'alternance : l'école et la STIME en même temps"],
+      ["3 000+", "points de vente utilisent l'app mobile à laquelle j'ai contribué en alternance"],
+      ["1 700", "magasins commandent leurs produits frais sur l'app que je développe aujourd'hui"],
+      [String(projects.length), "projets à moi, à côté : chaque escale de ce site"],
+    ],
+    titles: {
+      route: "Deux lignes, une correspondance",
+      langs: "Trois lignes parlées",
+      bag: "Six lignes de bus",
+      away: "Ce que je fais quand l'écran s'éteint",
+    },
     route: {
-      intro:
-        "De 2020 à 2025, j'ai fait mes études en alternance : l'école et l'entreprise en même temps. Diplômé en 2025, je suis resté chez la STIME comme ingénieur, aujourd'hui en CDI.",
-      band: "Cinq ans d'alternance : l'école et la STIME en même temps",
-      now: "Aujourd'hui",
-      lanes: ["À l'école", "Chez la STIME", "À l'étranger"],
-      bars: {
-        dut: ["DUT Informatique", "UPEC"],
-        licence: ["Licence pro", "CY Gennevilliers"],
-        ingenieur: ["Diplôme d'ingénieur", "EFREI Paris"],
-        alternance: ["Développeur, en alternance", "frontend et fullstack"],
-        cdi: ["Ingénieur développeur", "fullstack et web"],
-        espagne: ["Stage en Espagne · 3 mois"],
+      band: "Cinq ans d'alternance : les deux lignes en même temps",
+      codes: ["É", "S"],
+      stations: {
+        dut: ["DUT Informatique", "UPEC · 2019"],
+        licence: ["Licence pro", "CY Gennevilliers · 2021"],
+        ingenieur: ["École d'ingénieurs", "EFREI Paris · 2022"],
+        diplome: ["Diplômé", "correspondance · 2025"],
+        espagne: ["Espagne · 3 mois", "Krakento, Cullera · 2024"],
+        frontend: ["Frontend", "en alternance · 2020"],
+        fullstack: ["Fullstack", "en alternance, jusqu'en 2025"],
+        mobile: ["Ingénieur diplômé", "mobile · 2025"],
+        today: ["Aujourd'hui", "fullstack mobile, en CDI"],
       },
       school: {
         title: "À l'école",
         sub: "En alternance de 2020 à 2025",
         items: [
-          ["2019 – 2021", "DUT Informatique", "UPEC", "Première année à temps plein, la seconde en alternance."],
-          ["2021 – 2022", "Licence pro Développement web et mobile", "CY Cergy Paris Université · Gennevilliers", "En alternance."],
-          ["2022 – 2025", "Diplôme d'ingénieur", "EFREI Paris", "En alternance, filière Logiciels et systèmes d'information."],
-          [
-            "2024",
-            "Stage ingénieur à l'étranger",
-            "Krakento · Cullera, Espagne",
-            "Trois mois pendant l'alternance : des sites e-commerce sous Odoo pour des restaurants, des artistes, des golfeurs, et leurs maquettes sur Figma.",
-          ],
+          ["2019 – 2021", "DUT Informatique", "UPEC", "", "school"],
+          ["2021 – 2022", "Licence pro Développement web et mobile", "CY Cergy Paris Université · Gennevilliers", "", "school"],
+          ["2022 – 2025", "Diplôme d'ingénieur", "EFREI Paris · filière Logiciels et systèmes d'information", "", "school"],
+          ["2024", "Stage ingénieur à l'étranger", "Krakento · Cullera, Espagne · 3 mois", "Des sites e-commerce sous Odoo, et leurs maquettes sur Figma.", "branch"],
         ],
       },
       work: {
         title: "Chez la STIME",
         sub: "DSI du Groupement Les Mousquetaires · Paris",
         items: [
-          ["2020 – 2021", "Développeur frontend, en alternance", "", "Une application web mobile-first de flex office, pendant la crise sanitaire."],
-          [
-            "2020 – 2025",
-            "Développeur fullstack, en alternance",
-            "",
-            "L'application mobile des collaborateurs de plus de 3 000 points de vente (inventaires, dates limites, mise en rayon), deux applications React construites de zéro pour le service après-vente, et le BFF Node.js qui alimente les trois.",
-          ],
-          [
-            "2025 – 2026",
-            "Développeur mobile, ingénieur diplômé",
-            "",
-            "Une application React Native pour que les adhérents Intermarché pilotent la performance de leur point de vente : indicateurs clés, tableaux de bord, migration d'API.",
-          ],
-          [
-            "Depuis 2026",
-            "Développeur fullstack mobile",
-            "",
-            "Une application React Native / Expo (Android, iOS, web) de commande des produits frais pour 1 700 points de vente Intermarché, et son back-office React : refonte du panier, module d'actualités, front du module de déstockage.",
-          ],
+          ["2020 – 2021", "Développeur frontend, en alternance", "", "Une application web mobile-first de flex office.", "work"],
+          ["2020 – 2025", "Développeur fullstack, en alternance", "", "L'app mobile de plus de 3 000 points de vente, deux apps React pour le SAV et leur BFF Node.js.", "work"],
+          ["2025 – 2026", "Développeur mobile, ingénieur diplômé", "", "Une app React Native de pilotage pour les adhérents Intermarché.", "work"],
+          ["Depuis 2026", "Développeur fullstack mobile", "", "L'app React Native / Expo de commande des produits frais de 1 700 magasins, et son back-office React.", "work"],
         ],
       },
       projects: `Et en parallèle, ${inWords("fr", projects.length)} projets à moi depuis 2022 : chaque escale de ce site, et le site lui-même.`,
@@ -176,13 +175,6 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       { name: "Anglais", level: "C1 · TOEIC 900" },
       { name: "Espagnol", level: "B1, en progrès", link: "Avec Cancionero →" },
     ],
-    ways: [
-      ["Partir d'un vrai besoin", "Chaque projet de ce voyage répond à une question que je me posais : quelle salle, vu les bouchons ? Quand acheter ce billet ?"],
-      ["Rien à installer", "Quand c'est possible, un lien suffit : Tonalli, Cancionero et gym-picker s'ouvrent dans le navigateur et s'installent sur l'écran d'accueil."],
-      ["Les données restent chez soi", "Magellan garde les voyages sur le téléphone, Mithril se passe du cloud, gym-picker ne connaît pas mon adresse."],
-      ["Des garanties qu'on vérifie", "La réciprocité de Tonalli est écrite dans la base ; les règles de sécurité de Mithril sont revérifiées à chaque modification."],
-    ],
-    team: ["Autonomie", "Pédagogie", "Esprit d'équipe", "Discipline", "Sociabilité", "Fédérateur"],
     bag: [
       ["Front-end et mobile", ["React", "React Native", "Expo", "TypeScript", "JavaScript", "HTML", "CSS"]],
       ["Back-end et données", ["Node.js", "Supabase", "PostgreSQL", "C# et .NET", "Java", "SQL", "Couchbase"]],
@@ -200,11 +192,12 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       { title: "Sports de combat", alt: "Une paire de gants de boxe en argile, le laçage en laiton.", text: "Boxe française, MMA, jiu-jitsu brésilien." },
     ],
     also: ["Voyages", "Escalade", "Tennis", "Natation", "Course à pied"],
+    carousel: { prev: "Loisir précédent", next: "Loisir suivant", pause: "Mettre le carrousel en pause", play: "Relancer le carrousel", slide: "Loisir {n} sur {count}" },
   },
   en: {
     pageTitle: "About",
     description:
-      "Cantin Roquier, full-stack and mobile software engineer in the IT department of Les Mousquetaires Group: his itinerary, his languages, how he works.",
+      "Cantin Roquier, full-stack and mobile software engineer in the IT department of Les Mousquetaires Group: his itinerary, his languages, his tools.",
     label: "About · the passport",
     role: "Full-stack & mobile software engineer",
     where: "Brunoy, Paris area, France",
@@ -214,70 +207,56 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     linkedin: "https://www.linkedin.com/in/cantin-roquier-2a0a50228",
     alt: "My passport on the desk: on the left, the identity page and my monogram; on the right, one visa per project, each in the ink of its stop. The brass stamp dips into the ink pad and adds a new visa: INDEX 2026.",
     labels: {
-      words: "In a few words",
       route: "The itinerary",
       langs: "Languages",
-      ways: "How I work",
-      team: "In a team",
       bag: "In my bag",
       away: "Away from the code",
       also: "And also",
     },
-    words: "I like tools that are useful from day one: the ones I build for others, and the ones I make when I'm missing one.",
-    more: "In the IT department of Les Mousquetaires, I worked on the mobile app used by staff in over 3,000 Intermarché stores, built two React apps from scratch for the after-sales support team and contributed to the Node.js back-for-front behind them. Today, on a permanent contract, I'm building the React Native app that 1,700 stores use to order fresh products. At home, I make a globe for my travels, a flight-price radar, a password vault, a way to learn Spanish through songs.",
+    stats: [
+      ["5 years", "of work-study: school and STIME at the same time"],
+      ["3,000+", "stores use the mobile app I worked on as an apprentice"],
+      ["1,700", "stores order their fresh products on the app I build today"],
+      [String(projects.length), "projects of my own, on the side: every stop on this site"],
+    ],
+    titles: {
+      route: "Two lines, one interchange",
+      langs: "Three spoken lines",
+      bag: "Six bus routes",
+      away: "What I do when the screen goes dark",
+    },
     route: {
-      intro:
-        "From 2020 to 2025, I studied on a work-study programme: school and work at the same time. After graduating in 2025, I stayed on at STIME as an engineer, now on a permanent contract.",
-      band: "Five years of work-study: school and STIME at the same time",
-      now: "Today",
-      lanes: ["At school", "At STIME", "Abroad"],
-      bars: {
-        dut: ["Technical degree (DUT)", "UPEC"],
-        licence: ["Bachelor's", "CY Gennevilliers"],
-        ingenieur: ["Engineering degree", "EFREI Paris"],
-        alternance: ["Developer, work-study", "front end and full-stack"],
-        // Trait d'union insécable : « full-stack » ne se coupe pas en fin de ligne dans la barre étroite.
-        cdi: ["Software engineer", "full‑stack and web"],
-        espagne: ["Internship in Spain · 3 months"],
+      band: "Five years of work-study: both lines at the same time",
+      codes: ["S", "W"],
+      stations: {
+        dut: ["Technical degree", "UPEC · 2019"],
+        licence: ["Bachelor's", "CY Gennevilliers · 2021"],
+        ingenieur: ["Engineering school", "EFREI Paris · 2022"],
+        diplome: ["Graduated", "interchange · 2025"],
+        espagne: ["Spain · 3 months", "Krakento, Cullera · 2024"],
+        frontend: ["Front end", "work-study · 2020"],
+        fullstack: ["Full-stack", "work-study, until 2025"],
+        mobile: ["Graduate engineer", "mobile · 2025"],
+        today: ["Today", "full-stack mobile, permanent"],
       },
       school: {
         title: "At school",
         sub: "Work-study from 2020 to 2025",
         items: [
-          ["2019 – 2021", "Two-year technical degree (DUT) in computer science", "UPEC", "First year full-time, second year as an apprentice."],
-          ["2021 – 2022", "Professional bachelor's in web and mobile development", "CY Cergy Paris University · Gennevilliers", "Work-study."],
-          ["2022 – 2025", "Master's-level engineering degree", "EFREI Paris", "Work-study, Software and Information Systems track."],
-          [
-            "2024",
-            "Engineering internship abroad",
-            "Krakento · Cullera, Spain",
-            "Three months during the work-study: e-commerce websites on Odoo for restaurants, artists and golfers, with their mockups in Figma.",
-          ],
+          ["2019 – 2021", "Two-year technical degree (DUT) in computer science", "UPEC", "", "school"],
+          ["2021 – 2022", "Professional bachelor's in web and mobile development", "CY Cergy Paris University · Gennevilliers", "", "school"],
+          ["2022 – 2025", "Master's-level engineering degree", "EFREI Paris · Software and Information Systems track", "", "school"],
+          ["2024", "Engineering internship abroad", "Krakento · Cullera, Spain · 3 months", "E-commerce websites on Odoo, with their mockups in Figma.", "branch"],
         ],
       },
       work: {
         title: "At STIME",
         sub: "IT department of Les Mousquetaires Group · Paris",
         items: [
-          ["2020 – 2021", "Front-end developer, work-study", "", "A mobile-first flex-office web app, during the COVID-19 crisis."],
-          [
-            "2020 – 2025",
-            "Full-stack developer, work-study",
-            "",
-            "The mobile app used by staff in over 3,000 stores (inventory, expiry dates, shelf stocking), two React apps built from scratch for the after-sales support team, and the Node.js back-for-front powering all three.",
-          ],
-          [
-            "2025 – 2026",
-            "Mobile developer, graduate engineer",
-            "",
-            "A React Native app for Intermarché store owners to track their store's performance: key indicators, dashboards, API migration.",
-          ],
-          [
-            "Since 2026",
-            "Full-stack mobile developer",
-            "",
-            "A React Native / Expo app (Android, iOS, web) for ordering fresh products in 1,700 Intermarché stores, and its React back office: shopping cart redesign, news module, clearance-stock front end.",
-          ],
+          ["2020 – 2021", "Front-end developer, work-study", "", "A mobile-first flex-office web app.", "work"],
+          ["2020 – 2025", "Full-stack developer, work-study", "", "The mobile app of over 3,000 stores, two React apps for after-sales support and their Node.js back-for-front.", "work"],
+          ["2025 – 2026", "Mobile developer, graduate engineer", "", "A React Native app for Intermarché store owners to track their store's performance.", "work"],
+          ["Since 2026", "Full-stack mobile developer", "", "The React Native / Expo app 1,700 stores use to order fresh products, and its React back office.", "work"],
         ],
       },
       projects: `And alongside, ${inWords("en", projects.length)} projects of my own since 2022: every stop on this site, and the site itself.`,
@@ -288,13 +267,6 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       { name: "English", level: "C1 · TOEIC 900" },
       { name: "Spanish", level: "B1, improving", link: "With Cancionero →" },
     ],
-    ways: [
-      ["Start from a real need", "Every project on this journey answers a question I kept asking myself: which gym, given the traffic? When should I buy this ticket?"],
-      ["Nothing to install", "Whenever possible, a link is enough: Tonalli, Cancionero and gym-picker open in the browser and install on the home screen."],
-      ["Data stays at home", "Magellan keeps trips on the phone, Mithril does without the cloud, gym-picker doesn't know my address."],
-      ["Guarantees you can check", "Tonalli's reciprocity is written into the database; Mithril's security rules are checked again on every change."],
-    ],
-    team: ["Autonomy", "Teaching", "Team spirit", "Discipline", "Sociability", "Bringing people together"],
     bag: [
       ["Front end and mobile", ["React", "React Native", "Expo", "TypeScript", "JavaScript", "HTML", "CSS"]],
       ["Back end and data", ["Node.js", "Supabase", "PostgreSQL", "C# and .NET", "Java", "SQL", "Couchbase"]],
@@ -311,5 +283,6 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       { title: "Combat sports", alt: "A pair of clay boxing gloves with brass lacing.", text: "Savate (French kickboxing), MMA, Brazilian jiu-jitsu." },
     ],
     also: ["Travel", "Climbing", "Tennis", "Swimming", "Running"],
+    carousel: { prev: "Previous hobby", next: "Next hobby", pause: "Pause the carousel", play: "Play the carousel", slide: "Hobby {n} of {count}" },
   },
 };

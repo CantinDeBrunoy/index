@@ -1,13 +1,15 @@
 ---
 /**
  * « À propos », le passeport. L'en-tête de nuit, comme le départ et le carnet : le passeport ouvert sur le
- * bureau, que le tampon de laiton vise. Puis, sur papier crème : quelques mots, l'itinéraire (une frise sur
- * ordinateur, puis le détail de chaque voie), les langues en visas, la façon de faire, le sac à outils, et ce
- * qui se passe en dehors du code. Les textes et la frise : data/apropos.ts.
+ * bureau, que le tampon de laiton vise ; dessous, quatre chiffres. Puis, sur papier crème : l'itinéraire en plan
+ * de ligne (la ligne de l'école, celle de la STIME, la correspondance du diplôme) et le détail des deux lignes,
+ * les langues en pastilles de ligne et le sac en lignes de bus, puis un carrousel de ce qui se passe en dehors
+ * du code, qui tourne seul (scripts/apropos-carousel.ts). Les textes et le plan : data/apropos.ts.
  * Les objets tournent en boucle sur ordinateur ; sur téléphone et en mouvement réduit, leur image fixe.
  */
 import { getProject, GITHUB_URL } from "@index/projects";
-import { APROPOS, AWAY, NOW, ROUTE, VISAS } from "../../data/apropos";
+import { APROPOS, AWAY, BAG_LINES, LANG_LINES, LINES, NOW, type LineId, type StationId } from "../../data/apropos";
+import { fill } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, STRINGS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import Colophon from "./Colophon.astro";
@@ -23,16 +25,21 @@ const R = a.route;
 const alternates = { fr: ROUTES.apropos.fr, en: ROUTES.apropos.en };
 const T = (text: string) => typo(lang, text);
 
-// La frise : une colonne par année, chaque date placée en % de l'axe.
-const [from, to] = ROUTE.axis;
+// Le plan de ligne : chaque date en % de l'axe, les étiquettes placées pour ne pas se chevaucher.
+const [from, to] = LINES.axis;
 const years = Array.from({ length: to - from }, (_, k) => from + k);
 const pct = (v: number) => +(((v - from) / (to - from)) * 100).toFixed(3);
-const span = (start: number, end: number) => `left: ${pct(start)}%; width: ${(pct(end) - pct(start)).toFixed(3)}%`;
-const cell = `background-size: ${(100 / (to - from)).toFixed(3)}% 100%`;
-const lanes = R.lanes.map((label, lane) => ({ label, bars: ROUTE.bars.filter((b) => b.lane === lane) }));
+const INK: Record<LineId, string> = { school: "#346885", work: "var(--brass)", branch: "#c0612b" };
+type Place = "below" | "shift" | "right" | "left";
+const PLACE: Partial<Record<StationId, Place>> = { ingenieur: "shift", fullstack: "shift", mobile: "left" };
+const stops = [
+  ...LINES.school.map((s) => ({ ...s, line: "school" as const })),
+  ...LINES.work.map((s) => ({ ...s, line: "work" as const })),
+].map((s) => ({ ...s, x: pct(s.at), place: PLACE[s.id] ?? "below", label: R.stations[s.id] }));
+const today = pct(NOW);
 
 const legs = [R.school, R.work];
-const visas = VISAS.map((v, k) => ({ ...v, ...a.langs[k]! }));
+const langs = LANG_LINES.map((l, k) => ({ ...l, ...a.langs[k]! }));
 const away = AWAY.map((object, k) => ({ object, ...a.away[k]! }));
 const still = (name: string) => `/voyage/stills/${name}.webp`;
 ---
@@ -67,63 +74,63 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
         </picture>
       </div>
     </div>
+    <ul class="stats wrap-read">
+      {
+        a.stats.map(([n, text]) => (
+          <li>
+            <span class="serif stats__n">{n}</span>
+            <span class="stats__text">{T(text)}</span>
+          </li>
+        ))
+      }
+    </ul>
   </div>
 
   <main id="contenu" class="wrap-read">
-    <section class="row words">
-      <h2 class="label">{a.labels.words}</h2>
-      <div class="row__body">
-        <p class="serif words__lead">{T(a.words)}</p>
-        <p class="words__more">{T(a.more)}</p>
-      </div>
-    </section>
-
-    <section class="block">
-      <h2 class="label">{a.labels.route}</h2>
-      <p class="route__intro">{T(R.intro)}</p>
-      <!-- La frise, sur ordinateur : décorative pour les lecteurs d'écran, le détail des voies, dessous, dit tout. -->
-      <div class="route__frise">
-        <div class="gantt" aria-hidden="true">
-          <div class="axis" style="grid-column: 2; grid-row: 1">
-            {years.map((y, k) => <span style={`left: ${pct(from + k)}%; width: ${pct(from + 1) - pct(from)}%`}>{y}</span>)}
-          </div>
-          <div class="brace" style="grid-column: 2; grid-row: 2">
-            <i style={span(ROUTE.band.from, ROUTE.band.to)}></i>
-            <span style={`left: ${((pct(ROUTE.band.from) + pct(ROUTE.band.to)) / 2).toFixed(3)}%`}>{R.band}</span>
-          </div>
-          <div class="tint" style="grid-column: 2; grid-row: 3 / 5"><i style={span(ROUTE.band.from, ROUTE.band.to)}></i></div>
+    <section class="block route">
+      <p class="label">{a.labels.route}</p>
+      <h2 class="serif title">{a.titles.route}</h2>
+      <!-- Le plan, sur grand écran : décoratif pour les lecteurs d'écran, le détail des deux lignes, dessous, dit tout. -->
+      <div class="metro" aria-hidden="true">
+        <span class="metro__code" style={`top: 190px; background: ${INK.school}`}>{R.codes[0]}</span>
+        <span class="metro__code metro__code--work" style="top: 380px">{R.codes[1]}</span>
+        <div class="metro__plan">
+          <i class="metro__band" style={`left: ${pct(LINES.band.from)}%; width: ${pct(LINES.band.to) - pct(LINES.band.from)}%`}></i>
+          <span class="metro__band-label" style={`left: ${pct(LINES.band.from)}%`}>{R.band}</span>
+          <i class="metro__line" style={`top: 190px; left: ${pct(LINES.school[0].at)}%; width: ${pct(LINES.interchange) - pct(LINES.school[0].at)}%; background: ${INK.school}`}></i>
+          <i class="metro__line" style={`top: 380px; left: ${pct(LINES.work[0].at)}%; width: ${today - pct(LINES.work[0].at)}%; background: ${INK.work}`}></i>
+          <i class="metro__arrow" style={`left: ${today}%`}></i>
+          <i class="metro__branch" style={`left: ${pct(LINES.branch)}%`}></i>
+          <i class="metro__stop" style={`top: 90px; left: ${pct(LINES.branch)}%; --c: ${INK.branch}`}></i>
+          <span class="metro__label metro__label--right" style={`top: 60px; left: ${pct(LINES.branch)}%`}>
+            <b>{R.stations.espagne[0]}</b><small>{R.stations.espagne[1]}</small>
+          </span>
+          <i class="metro__interchange" style={`left: ${pct(LINES.interchange)}%`}></i>
+          <span class="metro__label metro__label--right" style={`top: 176px; left: ${pct(LINES.interchange)}%`}>
+            <b>{R.stations.diplome[0]}</b><small>{R.stations.diplome[1]}</small>
+          </span>
           {
-            lanes.map((ln, k) => (
+            stops.map((s) => (
               <>
-                <span class="lane" style={`grid-column: 1; grid-row: ${3 + k}`}>
-                  {ln.label}
+                <i
+                  class:list={["metro__stop", { "metro__stop--today": s.id === "today" }]}
+                  style={`top: ${s.line === "school" ? 190 : 380}px; left: ${s.x}%; --c: ${INK[s.line]}`}
+                />
+                <span class:list={["metro__label", `metro__label--${s.place}`]} style={`top: ${(s.line === "school" ? 190 : 380) + 22}px; left: ${s.x}%`}>
+                  <b>{s.label[0]}</b>
+                  <small>{s.label[1]}</small>
                 </span>
-                <div class="track" style={`grid-column: 2; grid-row: ${3 + k}; ${cell}`}>
-                  {ln.bars.map((b) => {
-                    const [title, sub] = R.bars[b.id];
-                    const tone = "tone" in b ? b.tone : undefined;
-                    return "outside" in b ? (
-                      <>
-                        <span class:list={["bar", tone]} style={span(b.from, b.to)} />
-                        <span class="out" style={`left: ${pct(b.to)}%`}>
-                          {title}
-                        </span>
-                      </>
-                    ) : (
-                      <span class:list={["bar", tone]} style={span(b.from, b.to)}>
-                        <b>{title}</b>
-                        {sub && <small>{sub}</small>}
-                      </span>
-                    );
-                  })}
-                </div>
               </>
             ))
           }
-          <div class="today" style="grid-column: 2; grid-row: 1 / 6">
-            <i style={`left: ${pct(NOW)}%`}></i>
-            <span style={`left: ${pct(NOW)}%`}>{R.now}</span>
-          </div>
+          <i class="metro__axis"></i>
+          {
+            years.map((y) => (
+              <span class="metro__year" style={`left: ${pct(y)}%`}>
+                {y}
+              </span>
+            ))
+          }
         </div>
       </div>
 
@@ -134,13 +141,14 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
               <h3 class="serif">{leg.title}</h3>
               <p class="legs__sub">{leg.sub}</p>
               <ol>
-                {leg.items.map(([when, title, where, text]) => (
+                {leg.items.map(([when, title, where, text, line]) => (
                   <li>
+                    <i class="legs__dot" style={`background: ${INK[line]}`} />
                     <span class="legs__when">{when}</span>
                     <div>
                       <p class="legs__title">{title}</p>
                       {where && <p class="legs__where">{where}</p>}
-                      <p class="legs__text">{T(text)}</p>
+                      {text && <p class="legs__text">{T(text)}</p>}
                     </div>
                   </li>
                 ))}
@@ -154,77 +162,99 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
       </p>
     </section>
 
-    <section class="row langs">
-      <h2 class="label">{a.labels.langs}</h2>
-      <ul class="row__body visas">
-        {
-          visas.map((v) => (
-            <li>
-              <div class="visa" style={`color: ${v.ink}; transform: rotate(${v.rot}deg)`}>
-                <span class="serif visa__name">{v.name}</span>
-                <span class="visa__level">{v.level}</span>
-              </div>
-              {"fiche" in v && v.link && (
-                <a class="link" href={fichePath(lang, getProject(v.fiche)!)}>
-                  {v.link}
-                </a>
-              )}
-            </li>
-          ))
-        }
-      </ul>
-    </section>
-
-    <section class="block">
-      <h2 class="label">{a.labels.ways}</h2>
-      <ol class="cards">
-        {
-          a.ways.map(([title, text], k) => (
-            <li class="card">
-              <span class="card__num">{String(k + 1).padStart(2, "0")}</span>
-              <h3 class="serif">{T(title)}</h3>
-              <p>{T(text)}</p>
-            </li>
-          ))
-        }
-      </ol>
-      <div class="tagline">
-        <span class="tagline__label">{a.labels.team}</span>
-        <ul class="chips">{a.team.map((s) => <li class="chip">{s}</li>)}</ul>
+    <section class="block lines">
+      <div>
+        <p class="label">{a.labels.langs}</p>
+        <h2 class="serif title">{a.titles.langs}</h2>
+        <ul class="roundels">
+          {
+            langs.map((l) => (
+              <li>
+                <span class="serif roundel" style={`background: ${l.ink}`} aria-hidden="true">
+                  {l.code}
+                </span>
+                <span>
+                  <span class="serif roundel__name">{l.name}</span>
+                  <span class="roundel__level">{l.level}</span>
+                  {"fiche" in l && l.link && (
+                    <a class="link" href={fichePath(lang, getProject(l.fiche)!)}>
+                      {l.link}
+                    </a>
+                  )}
+                </span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div>
+        <p class="label">{a.labels.bag}</p>
+        <h2 class="serif title">{a.titles.bag}</h2>
+        <ol class="buses">
+          {
+            a.bag.map(([group, items], k) => (
+              <li class="bus" style={`--c: ${BAG_LINES[k]}`}>
+                <span class="bus__num" aria-hidden="true">
+                  {k + 1}
+                </span>
+                <h3 class="serif bus__name">{group}</h3>
+                <ul class="bus__stops">
+                  {items.map((tool) => (
+                    <li>
+                      <i aria-hidden="true" />
+                      <span>{tool}</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))
+          }
+        </ol>
       </div>
     </section>
 
-    <section class="block">
-      <h2 class="label">{a.labels.bag}</h2>
-      <div class="bag">
-        {
-          a.bag.map(([group, items]) => (
-            <div class="bag__group">
-              <h3 class="serif">{group}</h3>
-              <ul class="chips">{items.map((s) => <li class="chip">{s}</li>)}</ul>
-            </div>
-          ))
-        }
+    <section class="block away" aria-labelledby="away-title">
+      <p class="label">{a.labels.away}</p>
+      <h2 id="away-title" class="serif title">{a.titles.away}</h2>
+      <div class="carousel" data-carousel>
+        <script is:inline>document.currentScript.parentElement.classList.add("js");</script>
+        <ul class="carousel__track">
+          {
+            away.map((o, k) => (
+              <li class="slide" data-slide data-pos={k === 0 ? "0" : k === 1 ? "1" : "-1"} role="group" aria-label={fill(a.carousel.slide, { n: k + 1, count: away.length })}>
+                <picture class="slide__img">
+                  <source media="(prefers-reduced-motion: reduce)" srcset={still(o.object)} />
+                  <source media="(max-width: 700px)" srcset={still(o.object)} />
+                  <img src={`/voyage/${o.object}.webp`} alt={o.alt} width="560" height="560" loading="lazy" decoding="async" />
+                </picture>
+                <div class="slide__text">
+                  <h3 class="serif">{o.title}</h3>
+                  {o.text && <p>{T(o.text)}</p>}
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="carousel__nav">
+          <button type="button" class="carousel__btn" data-step="-1" aria-label={a.carousel.prev}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 12H5M11 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <span class="carousel__dots">
+            {away.map((o, k) => <button type="button" data-dot aria-label={o.title} aria-current={k === 0 ? "true" : undefined} />)}
+          </span>
+          <button type="button" class="carousel__btn" data-step="1" aria-label={a.carousel.next}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </button>
+          <button type="button" class="carousel__btn carousel__pause" data-pause data-pause-label={a.carousel.pause} data-play-label={a.carousel.play} aria-label={a.carousel.pause}>
+            <svg class="carousel__icon-pause" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /></svg>
+            <svg class="carousel__icon-play" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" /></svg>
+          </button>
+        </div>
       </div>
-    </section>
-
-    <section class="block">
-      <h2 class="label">{a.labels.away}</h2>
-      <ul class="away">
-        {
-          away.map((o) => (
-            <li>
-              <picture class="away__img">
-                <source media="(prefers-reduced-motion: reduce)" srcset={still(o.object)} />
-                <source media="(max-width: 700px)" srcset={still(o.object)} />
-                <img src={`/voyage/${o.object}.webp`} alt={o.alt} width="560" height="560" loading="lazy" decoding="async" />
-              </picture>
-              <h3 class="serif">{o.title}</h3>
-              {o.text && <p>{T(o.text)}</p>}
-            </li>
-          ))
-        }
-      </ul>
       <div class="tagline">
         <span class="tagline__label">{a.labels.also}</span>
         <ul class="chips">{a.also.map((s) => <li class="chip">{s}</li>)}</ul>
@@ -243,6 +273,10 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
   </main>
 </Voyage>
 
+<script>
+  import "../../scripts/apropos-carousel";
+</script>
+
 <style>
   /* — L'en-tête de nuit : qui je suis, et le passeport — */
   .hero {
@@ -254,7 +288,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     flex-wrap: wrap;
     align-items: center;
     gap: 32px 48px;
-    padding: 24px 0 72px;
+    padding: 24px 0 56px;
   }
   .hero__text {
     display: flex;
@@ -314,205 +348,212 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     border-radius: var(--radius-l);
   }
 
-  /* — Le papier : les rubriques, séparées d'un filet. Une rubrique « en ligne » met son étiquette à
-     gauche du texte, une rubrique « en bloc » au-dessus — */
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px 56px;
-    padding: 56px 0;
-    border-bottom: 1px solid var(--line);
+  /* Quatre chiffres, sous l'en-tête : une bande de nuit, séparée d'un filet. */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-block: 0;
+    list-style: none;
   }
-  .row > .label {
-    flex: 1 1 200px;
-  }
-  .row__body {
-    flex: 3 1 560px;
-  }
-  .words {
-    padding-top: 88px;
-  }
-  .words .row__body {
+  .stats li {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 14px;
+    padding: 40px 28px 48px;
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line);
   }
-  .words__lead {
-    margin: 0;
-    font-size: clamp(26px, 2.6vw, 36px);
-    line-height: 1.3;
+  .stats li:last-child {
+    border-right: 1px solid var(--line);
   }
-  .words__more {
-    margin: 0;
+  .stats__n {
+    color: var(--brass-text);
+    font-size: clamp(52px, 5.4vw, 76px);
+    line-height: 0.9;
+  }
+  .stats__text {
     color: var(--muted);
-    font-size: 17px;
-    line-height: 1.7;
-  }
-  .block {
-    padding: 56px 0;
-    border-bottom: 1px solid var(--line);
+    font-size: 15px;
+    line-height: 1.5;
   }
 
-  /* L'itinéraire : la frise, puis le détail des deux voies. */
-  .route__intro {
-    max-width: 780px;
-    margin: 16px 0 0;
-    font-size: 17px;
-    line-height: 1.7;
+  /* — Le papier : des rubriques séparées d'un filet, une étiquette puis un titre — */
+  .block {
+    padding: 72px 0;
+    border-bottom: 1px solid var(--line);
   }
-  .route__frise {
+  .route {
+    padding-top: 88px;
+  }
+  .title {
+    margin: 10px 0 0;
+    font-size: clamp(40px, 4.4vw, 56px);
+    line-height: 1;
+  }
+
+  /* L'itinéraire en plan de ligne : la ligne de l'école (bleue) et celle de la STIME (laiton), côte à côte pendant
+     l'alternance, la correspondance du diplôme, l'embranchement de l'Espagne. Les dates en % de l'axe. */
+  .metro {
+    position: relative;
+    height: 600px;
     margin-top: 36px;
-    overflow-x: auto;
-  }
-  /* Les deux voies principales tiennent une barre de deux lignes de titre et deux de sous-titre : les
-     barres étroites (la licence, le poste actuel) en ont besoin sous 1440 px, et en anglais. */
-  .gantt {
-    display: grid;
-    grid-template-columns: 132px minmax(0, 1fr);
-    grid-template-rows: 22px 34px 108px 108px 64px;
-    gap: 6px 16px;
-    min-width: 860px;
-  }
-  .lane {
-    display: flex;
-    align-items: center;
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
-  .axis,
-  .brace,
-  .track {
-    position: relative;
-  }
-  .track {
-    background-image: linear-gradient(to right, var(--line) 1px, transparent 1px);
-  }
-  .axis span {
-    position: absolute;
-    top: 0;
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    text-align: center;
-  }
-  .brace i {
-    position: absolute;
-    bottom: 0;
-    height: 16px;
-    border: 2px solid var(--brass);
-    border-bottom: 0;
-    border-radius: 10px 10px 0 0;
-  }
-  .brace span {
-    position: absolute;
-    top: 0;
-    padding: 0 10px;
-    background: var(--paper);
-    color: var(--brass-text);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    white-space: nowrap;
-    transform: translateX(-50%);
-  }
-  .tint {
-    position: relative;
-    pointer-events: none;
-  }
-  .tint i {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    border-radius: 14px;
-    background: rgba(176, 138, 79, 0.11);
-  }
-  .bar {
-    position: absolute;
-    top: 8px;
-    bottom: 8px;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 3px;
     overflow: hidden;
-    padding: 8px 12px;
-    border-radius: 12px;
     border: 1px solid var(--line);
+    border-radius: 24px;
     background: var(--card);
   }
-  .bar b {
+  .metro__plan {
+    position: absolute;
+    inset: 0 120px 0 96px;
+  }
+  .metro__code {
+    position: absolute;
+    left: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-top: -22px;
+    border-radius: 999px;
+    color: #fbf7f0;
+    font-family: var(--font-serif);
+    font-size: 24px;
+  }
+  .metro__code--work {
+    background: var(--brass);
+    color: var(--on-brass);
+  }
+  .metro__band {
+    position: absolute;
+    top: 150px;
+    height: 270px;
+    border: 1px dashed rgba(176, 138, 79, 0.45);
+    border-radius: 22px;
+    background: rgba(176, 138, 79, 0.08);
+  }
+  .metro__band-label {
+    position: absolute;
+    top: 277px;
+    padding-left: 16px;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .metro__line {
+    position: absolute;
+    height: 12px;
+    margin-top: -6px;
+    border-radius: 999px;
+  }
+  .metro__arrow {
+    position: absolute;
+    top: 364px;
+    margin-left: 22px;
+    border-top: 16px solid transparent;
+    border-bottom: 16px solid transparent;
+    border-left: 22px solid var(--brass);
+  }
+  .metro__branch {
+    position: absolute;
+    top: 90px;
+    width: 12px;
+    height: 100px;
+    margin-left: -6px;
+    border-radius: 999px;
+    background: #c0612b;
+  }
+  .metro__interchange {
+    position: absolute;
+    top: 170px;
+    width: 40px;
+    height: 230px;
+    margin-left: -20px;
+    border: 6px solid var(--ink);
+    border-radius: 999px;
+    background: var(--card);
+  }
+  .metro__stop {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border: 5px solid var(--c);
+    border-radius: 999px;
+    background: var(--card);
+  }
+  .metro__stop--today {
+    width: 34px;
+    height: 34px;
+    margin: -17px 0 0 -17px;
+    border-width: 6px;
+    animation: today 2.4s ease-in-out infinite;
+  }
+  @keyframes today {
+    50% {
+      box-shadow: 0 0 0 12px rgba(176, 138, 79, 0.18);
+    }
+  }
+  .metro__label {
+    position: absolute;
+    width: 150px;
+    text-align: center;
+    transform: translateX(-50%);
+  }
+  .metro__label b {
+    display: block;
     font-family: var(--font-serif);
     font-size: 20px;
     font-weight: 400;
     line-height: 1.05;
   }
-  .bar small {
+  .metro__label small {
+    display: block;
+    margin-top: 3px;
     color: var(--muted);
     font-family: var(--font-mono);
     font-size: 11px;
-    line-height: 1.35;
   }
-  .bar.alt {
-    border-color: var(--brass);
-    background: #f4ebdc;
+  .metro__label--shift {
+    transform: translateX(calc(-50% + 50px));
   }
-  .bar.now {
-    border-color: var(--brass);
-    background: var(--brass);
-    color: var(--on-brass);
+  .metro__label--right {
+    text-align: left;
+    transform: translateX(28px);
   }
-  .bar.now small {
-    color: var(--on-brass);
+  .metro__label--left {
+    text-align: right;
+    transform: translateX(calc(-100% - 30px));
   }
-  .bar.trip {
-    top: 16px;
-    bottom: 16px;
-    padding: 0;
-    border-color: #c08a66;
-    background: #e7c3ac;
-  }
-  .out {
+  .metro__axis {
     position: absolute;
-    top: 50%;
-    z-index: 1;
-    padding-left: 12px;
-    font-size: 15px;
-    white-space: nowrap;
-    transform: translateY(-50%);
+    top: 545px;
+    right: -60px;
+    left: -40px;
+    border-top: 1px solid var(--line);
   }
-  .today {
-    position: relative;
-    z-index: 2;
-    pointer-events: none;
-  }
-  .today i {
+  .metro__year {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    border-left: 2px dashed var(--brass);
-  }
-  .today span {
-    position: absolute;
-    top: 34px;
-    padding: 0 6px;
-    background: var(--paper);
-    color: var(--brass-text);
+    top: 556px;
+    color: var(--muted);
     font-family: var(--font-mono);
     font-size: 12px;
-    white-space: nowrap;
-    transform: translateX(calc(-100% - 8px));
+    transform: translateX(-50%);
   }
 
+  /* Le détail des deux lignes, côte à côte : une puce à la couleur de la ligne, une ligne par étape. */
   .legs {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
     gap: 40px 56px;
-    margin-top: 48px;
+    margin-top: 56px;
   }
   .legs h3 {
     margin: 0;
-    font-size: 30px;
+    font-size: 32px;
     line-height: 1.1;
   }
   .legs__sub,
@@ -523,20 +564,26 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     font-size: 12px;
   }
   .legs__where {
-    margin-top: 4px;
+    margin-top: 3px;
   }
   .legs ol {
     display: flex;
     flex-direction: column;
     gap: 18px;
-    margin: 20px 0 0;
+    margin: 22px 0 0;
     padding: 0;
     list-style: none;
   }
   .legs li {
     display: grid;
-    grid-template-columns: 104px minmax(0, 1fr);
-    gap: 4px 16px;
+    grid-template-columns: 14px 104px minmax(0, 1fr);
+    gap: 4px 14px;
+  }
+  .legs__dot {
+    width: 14px;
+    height: 14px;
+    margin-top: 4px;
+    border-radius: 4px;
   }
   .legs__when {
     padding-top: 2px;
@@ -551,10 +598,10 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     line-height: 1.4;
   }
   .legs__text {
-    margin: 6px 0 0;
+    margin: 4px 0 0;
     color: var(--muted);
     font-size: 15px;
-    line-height: 1.6;
+    line-height: 1.55;
   }
   .route__projects {
     display: flex;
@@ -567,149 +614,279 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     line-height: 1.6;
   }
 
-  /* Les langues en visas, des tampons d'encre un peu de travers. */
-  .langs {
-    align-items: center;
-    gap: 28px 56px;
+  /* Les langues en pastilles de ligne, le sac en lignes de bus. */
+  .lines {
+    display: grid;
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+    gap: 56px 72px;
+    align-items: start;
   }
-  .visas {
+  .roundels {
     display: flex;
-    flex-wrap: wrap;
-    gap: 28px 40px;
-    margin: 0;
+    flex-direction: column;
+    gap: 22px;
+    margin: 32px 0 0;
     padding: 0;
     list-style: none;
   }
-  .visas li {
+  .roundels li {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 20px;
   }
-  .visa {
+  .roundel {
     display: flex;
-    flex-direction: column;
+    flex: none;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    width: 196px;
-    height: 196px;
+    width: 84px;
+    height: 84px;
     border-radius: 999px;
-    border: 3px solid currentColor;
-    outline: 1.5px solid currentColor;
-    outline-offset: -14px;
-    text-align: center;
+    color: #fbf7f0;
+    font-size: 36px;
   }
-  .visa__name {
-    font-size: 34px;
+  .roundel__name {
+    display: block;
+    font-size: 30px;
     line-height: 1;
   }
-  .visa__level {
-    max-width: 130px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.04em;
-    line-height: 1.4;
-    text-transform: uppercase;
-  }
-
-  /* Ma façon de faire : quatre cartes, puis les qualités en équipe. */
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-    gap: 20px;
-    margin: 28px 0 0;
-    padding: 0;
-    list-style: none;
-  }
-  .card {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 24px;
-    border-radius: var(--radius-m);
-    border: 1px solid var(--line);
-    background: var(--card);
-  }
-  .card__num {
-    color: var(--brass-text);
+  .roundel__level {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
     font-family: var(--font-mono);
     font-size: 12px;
   }
-  .card h3 {
-    margin: 0;
-    font-size: 28px;
-    line-height: 1.1;
+  .roundels .link {
+    min-height: 0;
+    margin-top: 4px;
   }
-  .card p {
+  .buses {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    margin: 36px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .bus {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 12px 16px;
+    align-items: center;
+  }
+  .bus__num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--c);
+    color: #fbf7f0;
+    font-family: var(--font-mono);
+    font-size: 16px;
+  }
+  .bus__name {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.05;
+  }
+  /* Les arrêts : sur la ligne, répartis ; quand la place manque, ils passent à la ligne en pastilles. */
+  .bus__stops {
+    position: relative;
+    display: flex;
+    grid-column: 2;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .bus__stops::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    left: 8px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--c);
+    opacity: 0.55;
+  }
+  .bus__stops li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .bus__stops i {
+    width: 18px;
+    height: 18px;
+    border: 4px solid var(--c);
+    border-radius: 999px;
+    background: var(--paper);
+  }
+  .bus__stops span {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* En dehors du code : un carrousel. Avec le script, un loisir au centre, les deux autres de côté, plus petits ;
+     sans, les trois côte à côte. */
+  .carousel {
+    margin-top: 40px;
+  }
+  .carousel__track {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .slide__img img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    background: #efe7da;
+  }
+  .slide__text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+    text-align: center;
+  }
+  .slide__text h3 {
+    margin: 0;
+    font-size: 36px;
+    line-height: 1;
+  }
+  .slide__text p {
     margin: 0;
     color: var(--muted);
     font-size: 15px;
-    line-height: 1.6;
+  }
+  .carousel__nav {
+    display: none;
+  }
+  .carousel:global(.js) .carousel__track {
+    position: relative;
+    display: block;
+    height: calc(clamp(240px, 34vw, 440px) + 110px);
+  }
+  .carousel:global(.js) .slide {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: clamp(240px, 34vw, 440px);
+    transition:
+      transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+      opacity 0.7s;
+  }
+  .carousel:global(.js) .slide[data-pos="0"] {
+    z-index: 2;
+    transform: translateX(-50%);
+  }
+  .carousel:global(.js) .slide[data-pos="-1"],
+  .carousel:global(.js) .slide[data-pos="1"] {
+    z-index: 1;
+    opacity: 0.5;
+    cursor: pointer;
+  }
+  .carousel:global(.js) .slide[data-pos="-1"] {
+    transform: translateX(-122%) scale(0.62);
+  }
+  .carousel:global(.js) .slide[data-pos="1"] {
+    transform: translateX(22%) scale(0.62);
+  }
+  .carousel:global(.js) .slide:not([data-pos="0"]) .slide__text {
+    visibility: hidden;
+  }
+  .carousel:global(.js) .carousel__nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .carousel__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 1.5px solid var(--brass);
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .carousel__btn:hover {
+    background: var(--ink);
+    color: var(--card);
+  }
+  .carousel__pause {
+    margin-left: 10px;
+    border-color: var(--line);
+  }
+  .carousel__icon-play,
+  .carousel__pause[data-state="paused"] .carousel__icon-pause {
+    display: none;
+  }
+  .carousel__pause[data-state="paused"] .carousel__icon-play {
+    display: block;
+  }
+  .carousel__dots {
+    display: flex;
+    gap: 6px;
+  }
+  .carousel__dots button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+  .carousel__dots button::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--brass);
+    border-radius: 999px;
+    transition: all 0.25s;
+  }
+  .carousel__dots button[aria-current="true"]::before {
+    width: 14px;
+    height: 14px;
+    background: var(--brass);
   }
   .tagline {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
     gap: 10px 14px;
-    margin-top: 28px;
+    margin-top: 36px;
   }
   .tagline__label {
     color: var(--muted);
     font-family: var(--font-mono);
     font-size: 12px;
-  }
-
-  .bag {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
-    gap: 28px 56px;
-    margin-top: 28px;
-  }
-  .bag__group {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .bag h3 {
-    margin: 0;
-    font-size: 26px;
-    line-height: 1.1;
-  }
-
-  /* En dehors du code : les objets du cabinet. */
-  .away {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-    gap: 28px;
-    margin: 28px 0 0;
-    padding: 0;
-    list-style: none;
-  }
-  .away li {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .away__img img {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 4 / 3;
-    object-fit: cover;
-    border-radius: var(--radius-m);
-    border: 1px solid var(--line);
-    background: #efe7da;
-  }
-  .away h3 {
-    margin: 4px 0 0;
-    font-size: 30px;
-    line-height: 1.05;
-  }
-  .away p {
-    margin: 0;
-    font-size: 15px;
-    line-height: 1.6;
   }
 
   .foot {
@@ -736,39 +913,89 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     min-height: 52px;
   }
 
-  /* Sous 1180 px, une barre d'une année ne tient plus son texte (« CY Gennevilliers ») : la frise s'efface,
-     le détail des deux voies, dessous, dit tout. */
-  @media (max-width: 1180px) {
-    .route__frise {
-      display: none;
+  @media (prefers-reduced-motion: reduce) {
+    .metro__stop--today {
+      animation: none;
+    }
+    .carousel:global(.js) .slide,
+    .carousel__dots button::before {
+      transition: none;
     }
   }
 
-  /* Sous 700 px : les visas se serrent deux par ligne. */
+  /* Sous 1 100 px, les étiquettes du plan se chevaucheraient : il s'efface, le détail des deux lignes dit tout.
+     Les langues passent au-dessus du sac. */
+  @media (max-width: 1099px) {
+    .metro {
+      display: none;
+    }
+    .lines {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  /* Sous 900 px, deux chiffres par ligne. */
+  @media (max-width: 899px) {
+    .stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .stats li:nth-child(2n) {
+      border-right: 1px solid var(--line);
+    }
+  }
+
+  /* Sur téléphone : les arrêts du bus en pastilles, sans la ligne. */
   @media (max-width: 700px) {
     .hero__body {
-      padding: 12px 0 48px;
+      padding: 12px 0 40px;
     }
-    .words {
+    .stats li {
+      padding: 28px 16px 32px;
+    }
+    .stats__text {
+      font-size: 13px;
+    }
+    .block {
+      padding: 48px 0;
+    }
+    .route {
       padding-top: 56px;
     }
-    .row,
-    .block {
-      padding: 40px 0;
+    .legs li {
+      grid-template-columns: 14px 88px minmax(0, 1fr);
     }
-    .visas {
-      gap: 24px;
-    }
-    .visa {
-      width: 150px;
-      height: 150px;
-      outline-offset: -11px;
-    }
-    .visa__name {
+    .roundel {
+      width: 64px;
+      height: 64px;
       font-size: 28px;
     }
-    .visa__level {
-      max-width: 104px;
+    .bus {
+      grid-template-columns: 36px minmax(0, 1fr);
+    }
+    .bus__num {
+      width: 36px;
+      height: 36px;
+    }
+    .bus__stops {
+      justify-content: flex-start;
+    }
+    .bus__stops::before,
+    .bus__stops i {
+      display: none;
+    }
+    .bus__stops span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-pill);
+      background: var(--card);
+    }
+    .carousel:global(.js) .slide[data-pos="-1"] {
+      transform: translateX(-104%) scale(0.5);
+    }
+    .carousel:global(.js) .slide[data-pos="1"] {
+      transform: translateX(4%) scale(0.5);
     }
     .foot {
       padding: 64px 0 48px;

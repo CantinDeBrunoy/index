@@ -1,0 +1,62 @@
+// Le carrousel « en dehors du code » (AproposPage.astro) : un loisir au centre, les deux autres de côté, et il
+// tourne seul toutes les 4 s quand il est à l'écran. Il s'arrête au survol, au focus et avec le bouton pause ; en
+// mouvement réduit, il ne tourne pas. Les flèches, les points ou un clic sur un loisir de côté le font avancer.
+const carousel = document.querySelector<HTMLElement>("[data-carousel]");
+
+if (carousel) {
+  const slides = [...carousel.querySelectorAll<HTMLElement>("[data-slide]")];
+  const dots = [...carousel.querySelectorAll<HTMLButtonElement>("[data-dot]")];
+  const pause = carousel.querySelector<HTMLButtonElement>("[data-pause]");
+  const calm = matchMedia("(prefers-reduced-motion: reduce)");
+  const n = slides.length;
+  let cur = 0;
+  let paused = calm.matches;
+  let held = false;
+  let visible = false;
+
+  const show = (i: number) => {
+    cur = (i + n) % n;
+    slides.forEach((slide, k) => {
+      let pos = (k - cur + n) % n;
+      if (pos > n / 2) pos -= n;
+      slide.dataset.pos = String(pos);
+      // Les loisirs de côté restent cliquables, mais les lecteurs d'écran n'entendent que celui du centre.
+      if (pos === 0) slide.removeAttribute("aria-hidden");
+      else slide.setAttribute("aria-hidden", "true");
+    });
+    dots.forEach((dot, k) => {
+      if (k === cur) dot.setAttribute("aria-current", "true");
+      else dot.removeAttribute("aria-current");
+    });
+  };
+
+  window.setInterval(() => {
+    if (!paused && !held && visible && !document.hidden) show(cur + 1);
+  }, 4000);
+  new IntersectionObserver(([entry]) => {
+    visible = !!entry?.isIntersecting;
+  }).observe(carousel);
+
+  carousel.querySelectorAll<HTMLButtonElement>("[data-step]").forEach((button) => button.addEventListener("click", () => show(cur + Number(button.dataset.step))));
+  dots.forEach((dot, k) => dot.addEventListener("click", () => show(k)));
+  slides.forEach((slide, k) =>
+    slide.addEventListener("click", () => {
+      if (k !== cur) show(k);
+    }),
+  );
+  carousel.addEventListener("mouseenter", () => (held = true));
+  carousel.addEventListener("mouseleave", () => (held = carousel.contains(document.activeElement)));
+  carousel.addEventListener("focusin", () => (held = true));
+  carousel.addEventListener("focusout", (event) => (held = carousel.contains(event.relatedTarget as Node | null)));
+
+  if (pause) {
+    // En mouvement réduit, rien ne tourne : pas de bouton pause.
+    pause.hidden = calm.matches;
+    pause.addEventListener("click", () => {
+      paused = !paused;
+      pause.dataset.state = paused ? "paused" : "";
+      pause.setAttribute("aria-label", (paused ? pause.dataset.playLabel : pause.dataset.pauseLabel) ?? "");
+    });
+  }
+  show(0);
+}
