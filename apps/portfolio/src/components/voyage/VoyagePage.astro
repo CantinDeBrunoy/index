@@ -248,10 +248,15 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
 </script>
 
 <style>
+  /* Le voyage se regarde comme une affiche : ses textes ne se sélectionnent pas et la souris garde sa
+     flèche (les liens et les boutons, eux, gardent leur main). Les fiches restent du texte à lire. */
   .voyage {
     position: relative;
     background: var(--bg);
     color: var(--ink);
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: default;
   }
 
   /* — L'en-tête : la marque, les points des escales, les onglets et la langue — */
