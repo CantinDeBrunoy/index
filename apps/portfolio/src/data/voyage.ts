@@ -13,8 +13,6 @@ export type Palette = "night" | "day" | "dusk" | "kraft";
 export interface Stop {
   /** Le projet de l'escale (slug de @index/projects). */
   slug: string;
-  /** Son code, à la façon des aéroports : la carte d'embarquement de la fiche va d'Index (IDX) jusqu'à lui. */
-  code: string;
   /** Le rendu : /voyage/<scene>.webp (ordinateur, 16:9) et /voyage/<scene>-mobile.webp (téléphone). */
   scene: string;
   bg: string;
@@ -27,16 +25,16 @@ export interface Stop {
 }
 
 export const STOPS: Stop[] = [
-  { slug: "galactic-escape", code: "GLX", scene: "espace", bg: "#0b0c14", palette: "night", spot: [66.2, 21.7], spotMobile: [83.9, 34.6] },
-  { slug: "magellan", code: "MGL", scene: "terre", bg: "#10131c", palette: "night", spot: [83, 43.8], spotMobile: [82.1, 46.4] },
-  { slug: "hublot", code: "HBL", scene: "avion", bg: "#dce9f0", palette: "day", spot: [52.9, 56], spotMobile: [51, 56.4] },
-  { slug: "metro-pathfinder", code: "MTR", scene: "paris", bg: "#dce3ea", palette: "day", spot: [79.5, 55.7], spotMobile: [77.9, 52.2] },
-  { slug: "visit-match", code: "VSM", scene: "monuments", bg: "#e0e8da", palette: "day", spot: [68.2, 57], spotMobile: [71.7, 56.2] },
-  { slug: "gym-picker", code: "GYM", scene: "route", bg: "#f2dfd3", palette: "day", spot: [53.4, 70.3], spotMobile: [52.2, 59.3] },
-  { slug: "mithril", code: "MTH", scene: "maison", bg: "#f1e7da", palette: "day", spot: [78.2, 89.6], spotMobile: [74.8, 75.6], tag: [72.3, 57.8] },
-  { slug: "cancionero", code: "CNC", scene: "salon", bg: "#f3d5b5", palette: "day", spot: [39.6, 34.8], spotMobile: [30.7, 37.7] },
-  { slug: "tonalli", code: "TNL", scene: "calendrier", bg: "#d8c2c6", palette: "dusk", spot: [71.6, 72.8], spotMobile: [78.9, 67.6] },
-  { slug: "index", code: "IDX", scene: "dossiers", bg: "#e6d5b8", palette: "kraft", spot: [65.8, 44.1], spotMobile: [71, 45.4] },
+  { slug: "galactic-escape", scene: "espace", bg: "#0b0c14", palette: "night", spot: [66.2, 21.7], spotMobile: [83.9, 34.6] },
+  { slug: "magellan", scene: "terre", bg: "#10131c", palette: "night", spot: [83, 43.8], spotMobile: [82.1, 46.4] },
+  { slug: "hublot", scene: "avion", bg: "#dce9f0", palette: "day", spot: [52.9, 56], spotMobile: [51, 56.4] },
+  { slug: "metro-pathfinder", scene: "paris", bg: "#dce3ea", palette: "day", spot: [79.5, 55.7], spotMobile: [77.9, 52.2] },
+  { slug: "visit-match", scene: "monuments", bg: "#e0e8da", palette: "day", spot: [68.2, 57], spotMobile: [71.7, 56.2] },
+  { slug: "gym-picker", scene: "route", bg: "#f2dfd3", palette: "day", spot: [53.4, 70.3], spotMobile: [52.2, 59.3] },
+  { slug: "mithril", scene: "maison", bg: "#f1e7da", palette: "day", spot: [78.2, 89.6], spotMobile: [74.8, 75.6], tag: [72.3, 57.8] },
+  { slug: "cancionero", scene: "salon", bg: "#f3d5b5", palette: "day", spot: [39.6, 34.8], spotMobile: [30.7, 37.7] },
+  { slug: "tonalli", scene: "calendrier", bg: "#d8c2c6", palette: "dusk", spot: [71.6, 72.8], spotMobile: [78.9, 67.6] },
+  { slug: "index", scene: "dossiers", bg: "#e6d5b8", palette: "kraft", spot: [65.8, 44.1], spotMobile: [71, 45.4] },
 ];
 
 /** Le départ : la scène de l'espace, de nuit. */
@@ -122,7 +120,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "Le calendrier",
       alt: "Le calendrier collé au mur : chaque jour d'octobre a sa couleur d'émotion, un jour manqué est hachuré, la case d'aujourd'hui se remplit d'une couleur après l'autre ; à gauche, les photos des journées affichées au mur ; à droite, sous le calendrier, une pile de dossiers ouverts sur un banc.",
       kind: "Application web · 2026 · En ligne",
-      pitch: "Un calendrier qui se colore jour après jour : chaque case garde une émotion et deux photos du moment.",
+      pitch: "Chaque jour prend la couleur de son émotion.",
       cta: "Ouvrir les dossiers",
     },
     index: {
@@ -197,7 +195,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "The calendar",
       alt: "The calendar on the wall: each day of October has its emotion colour, a missed day is hatched, today's square fills with one colour after another; on the left, photos of the days pinned to the wall; on the right, below the calendar, a pile of open folders on a bench.",
       kind: "Web app · 2026 · Live",
-      pitch: "A calendar that fills with colour day by day: each square keeps an emotion and two photos of the moment.",
+      pitch: "Every day takes on the colour of its emotion.",
       cta: "Open the folders",
     },
     index: {

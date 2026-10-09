@@ -2,8 +2,8 @@
 /**
  * Une fiche projet, une par escale du voyage. L'en-tête prend la couleur et la scène de l'escale : la vidéo
  * haute définition sur ordinateur, la boucle du téléphone sous 700 px, une image fixe en mouvement réduit.
- * Le reste est sur papier crème : pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait à côté de
- * la carte d'embarquement (d'Index vers le projet ; son talon ouvre l'app), les captures, l'étagère (les
+ * Le reste est sur papier crème : la démo et, à côté, « En bref » (la pile, l'hébergeur, le statut, le
+ * bouton de l'app), pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait, l'étagère (les
  * projets racontés ici), puis l'escale suivante, qui reprend le voyage ; après la dernière, le carnet.
  * Les textes viennent de la collection de contenu (src/content/projets) ; le décor et l'accroche, de
  * data/voyage.ts ; les liens, la pile et l'hébergeur, de @index/projects.
@@ -17,7 +17,7 @@ import { EMAIL, fichePath, ROUTES, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import { getShot } from "../../lib/shots";
 import Badges from "./Badges.astro";
-import BoardingPass from "./BoardingPass.astro";
+import ProjectBrief from "./ProjectBrief.astro";
 import Colophon from "./Colophon.astro";
 import FichePoints from "./FichePoints.astro";
 import SiteHeader from "./SiteHeader.astro";
@@ -51,8 +51,7 @@ const shot = capture ? getShot(slug, "desktop") : undefined;
 const shotPhone = capture ? getShot(slug, "mobile") : undefined;
 const shotSet = shot && (await getImage({ src: shot, widths: [640, 1040, 1440], format: "webp" }));
 const shotPhoneSet = shotPhone && (await getImage({ src: shotPhone, widths: [390, 780], format: "webp" }));
-// Avec une vidéo ou une capture, la carte d'embarquement se pose à sa droite, en petit ; sans, elle reste
-// seule sous la ligne de vol.
+// Avec une vidéo ou une capture, « En bref » se pose à sa droite ; sans, il reste seul sous la ligne de vol.
 const media = Boolean(video || (capture && shot && shotSet));
 
 // L'étagère : les projets sans fiche à eux, racontés sur celle-ci.
@@ -200,7 +199,7 @@ const T = (text: string) => typo(lang, text);
             )}
             <figcaption>{T(video ? video.caption : (capture?.caption ?? ""))}</figcaption>
           </figure>
-          <BoardingPass lang={lang} project={project} stop={stop} n={n} text={text} compact />
+          <ProjectBrief lang={lang} project={project} text={text} />
           </div>
         </section>
       )
@@ -220,7 +219,7 @@ const T = (text: string) => typo(lang, text);
     {
       !media && (
         <section class="boarding">
-          <BoardingPass lang={lang} project={project} stop={stop} n={n} text={text} />
+          <ProjectBrief lang={lang} project={project} text={text} level={2} />
         </section>
       )
     }
@@ -598,7 +597,7 @@ const T = (text: string) => typo(lang, text);
     border-bottom: 1px solid var(--line);
   }
 
-  /* La carte d'embarquement, seule sous la ligne de vol. */
+  /* « En bref », seul sous la ligne de vol, quand la fiche n'a ni démo ni capture. */
   .boarding {
     display: flex;
     justify-content: center;
@@ -606,8 +605,7 @@ const T = (text: string) => typo(lang, text);
     border-bottom: 1px solid var(--line);
   }
 
-  /* La démo (ou la capture) sur les trois quarts ; la carte d'embarquement, en petit, à sa droite. Plus
-     étroit, la carte passe dessous. */
+  /* La démo (ou la capture) sur les trois quarts ; « En bref » à sa droite. Plus étroit, il passe dessous. */
   .pictures__row {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
@@ -615,7 +613,7 @@ const T = (text: string) => typo(lang, text);
     gap: 36px 48px;
     margin-top: 28px;
   }
-  .pictures__row :global(.pass) {
+  .pictures__row :global(.brief) {
     justify-self: center;
   }
   /* Sans titre visible au-dessus (la vidéo de démo se passe de légende) : rien à décaler. */

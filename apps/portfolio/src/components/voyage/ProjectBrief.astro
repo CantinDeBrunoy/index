@@ -1,0 +1,194 @@
+---
+/**
+ * « En bref », à côté de la démo d'une fiche : ce que l'en-tête ne dit pas (avec quoi c'est fait, où ça
+ * tourne), le statut de l'app en direct, le code, et le bouton pour l'ouvrir ; sans app, la raison.
+ * `level` : le niveau du titre, 3 sous la démo, 2 quand le bloc est seul.
+ */
+import type { Project } from "@index/projects";
+import { FICHE } from "../../data/fiches";
+import { appOf, kindOf, VOYAGE, type StopText } from "../../data/voyage";
+import type { Lang } from "../../i18n/voyage";
+
+interface Props {
+  lang: Lang;
+  project: Project;
+  text: StopText;
+  level?: 2 | 3;
+}
+
+const { lang, project, text, level = 3 } = Astro.props;
+const b = FICHE[lang].brief;
+const app = appOf(project, text, lang);
+const status = kindOf(project, text, lang).status;
+const code = project.links.code;
+// Seule une app web en ligne a un statut en direct (sondé par le Worker, /api/status).
+const live = project.kind === "web" && "href" in app;
+const Title = level === 2 ? "h2" : "h3";
+const titleId = `en-bref-${project.slug}`;
+---
+
+<aside class="brief" aria-labelledby={titleId}>
+  <Title id={titleId} class="serif brief__title">{b.title}</Title>
+  <dl class="brief__facts">
+    <div>
+      <dt>{b.madeWith}</dt>
+      <dd><ul class="chips">{project.stack.map((tech) => <li class="chip">{tech}</li>)}</ul></dd>
+    </div>
+    {
+      project.host && (
+        <div>
+          <dt>{b.host}</dt>
+          <dd>{project.host}</dd>
+        </div>
+      )
+    }
+  </dl>
+  {
+    ("href" in app || code) && (
+      <div class="brief__row">
+        {"href" in app && (
+          <p class="brief__status" data-brief-live={live ? project.slug : undefined} data-states={live ? JSON.stringify(b.states) : undefined}>
+            {live && <i class="live-dot" data-state="pending" aria-hidden="true" hidden />}
+            <span data-live-text>{status}</span>
+          </p>
+        )}
+        {code && (
+          <a class="link" href={code} target="_blank" rel="noopener">
+            {VOYAGE[lang].code}
+          </a>
+        )}
+      </div>
+    )
+  }
+  {
+    "href" in app ? (
+      <a class="go brief__go" href={app.href} target={app.target} rel={app.rel}>
+        {app.label}
+      </a>
+    ) : (
+      <p class="brief__note">{app.note}</p>
+    )
+  }
+</aside>
+
+<script>
+  import "../../scripts/brief-status";
+</script>
+
+<style>
+  .brief {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 340px;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--card);
+    /* Les couleurs du statut, plus sombres que celles du carnet de nuit : elles tiennent sur le papier. */
+    --live-on: #4f8a4c;
+    --live-asleep: #a8741c;
+    --live-off: #b4553f;
+  }
+  .brief__title {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1;
+  }
+  .brief__facts {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 0;
+  }
+  .brief__facts dt {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .brief__facts dd {
+    margin: 6px 0 0;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+  .brief__facts .chips {
+    margin-top: 10px;
+  }
+  .brief__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+  }
+  .brief__row .link {
+    min-height: 0;
+  }
+  .brief__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .brief__go {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .brief__note {
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--paper);
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  /* Le point du statut en direct, comme dans le carnet. */
+  .live-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--muted);
+    border-radius: var(--radius-pill);
+  }
+  .live-dot[hidden] {
+    display: none;
+  }
+  .live-dot[data-state="online"] {
+    border-color: var(--live-on);
+    background: var(--live-on);
+  }
+  .live-dot[data-state="asleep"] {
+    border-color: var(--live-asleep);
+    background: var(--live-asleep);
+  }
+  .live-dot[data-state="offline"] {
+    border-color: var(--live-off);
+    background: var(--live-off);
+  }
+  /* En attente du statut, ou une app qui se réveille : le point respire. */
+  .live-dot[data-state="pending"],
+  .live-dot[data-state="asleep"] {
+    animation: dot-wait 1.2s ease-in-out infinite;
+  }
+  @keyframes dot-wait {
+    50% {
+      opacity: 0.3;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .live-dot {
+      animation: none !important;
+    }
+  }
+</style>

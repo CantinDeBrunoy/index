@@ -30,18 +30,12 @@ export const FICHE: Record<
     why: string;
     what: string;
     how: string;
-    /**
-     * La carte d'embarquement, d'Index vers le projet. {n} : le numéro du projet. Son talon ouvre l'app ;
-     * sans app, il dit pourquoi : une archive, une app pas encore en ligne, ou ce site même.
-     */
-    pass: {
+    /** « En bref », à côté de la démo : avec quoi c'est fait, où ça tourne, et le statut en direct de l'app. */
+    brief: {
       title: string;
-      flight: string;
-      from: string;
-      to: string;
-      fields: { passenger: string; you: string; stop: string; type: string; year: string; status: string; gate: string; bags: string };
-      readCode: string;
-      gate: Record<"open" | "archive" | "soon" | "here", { kicker: string; big: string; act?: string }>;
+      madeWith: string;
+      host: string;
+      states: Record<"online" | "asleep" | "offline", string>;
     };
     pictures: string;
     shelf: string;
@@ -69,19 +63,11 @@ export const FICHE: Record<
     why: "Pourquoi je l'ai fabriqué",
     what: "Ce que ça fait",
     how: "Comment c'est fait",
-    pass: {
-      title: "Carte d'embarquement",
-      flight: "Vol {n}",
-      from: "Départ",
-      to: "Arrivée",
-      fields: { passenger: "Passager", you: "Vous", stop: "Escale", type: "Type", year: "Année", status: "Statut", gate: "Porte", bags: "Bagages en soute" },
-      readCode: "Lire le code ↗",
-      gate: {
-        open: { kicker: "Embarquement immédiat", big: "Embarquer" },
-        archive: { kicker: "Vol terminé", big: "Atterri" },
-        soon: { kicker: "Prochain départ", big: "Bientôt" },
-        here: { kicker: "À bord", big: "Vous y êtes", act: "C'est ce site" },
-      },
+    brief: {
+      title: "En bref",
+      madeWith: "Fait avec",
+      host: "Hébergé sur",
+      states: { online: "En ligne", asleep: "Se réveille", offline: "Hors ligne" },
     },
     pictures: "En images",
     shelf: "Sur l'étagère aussi",
@@ -106,19 +92,11 @@ export const FICHE: Record<
     why: "Why I built it",
     what: "What it does",
     how: "How it's made",
-    pass: {
-      title: "Boarding pass",
-      flight: "Flight {n}",
-      from: "From",
-      to: "To",
-      fields: { passenger: "Passenger", you: "You", stop: "Stop", type: "Type", year: "Year", status: "Status", gate: "Gate", bags: "Checked baggage" },
-      readCode: "Read the code ↗",
-      gate: {
-        open: { kicker: "Now boarding", big: "Board" },
-        archive: { kicker: "Flight completed", big: "Landed" },
-        soon: { kicker: "Next departure", big: "Soon" },
-        here: { kicker: "On board", big: "You're here", act: "This very site" },
-      },
+    brief: {
+      title: "At a glance",
+      madeWith: "Built with",
+      host: "Hosted on",
+      states: { online: "Live", asleep: "Waking up", offline: "Offline" },
     },
     pictures: "In pictures",
     shelf: "Also on the shelf",
