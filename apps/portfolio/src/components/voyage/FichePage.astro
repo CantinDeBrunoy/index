@@ -12,7 +12,7 @@ import { getProject, GITHUB_URL } from "@index/projects";
 import { getImage } from "astro:assets";
 import { getEntry } from "astro:content";
 import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
-import { appOf, fill, kindOf, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
+import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import { getShot } from "../../lib/shots";
@@ -36,7 +36,7 @@ if (!stop || !project || !entry?.data.why) throw new Error(`Fiche incomplète : 
 
 const n = i + 1;
 const text = STOP_TEXTS[lang][slug]!;
-const { why, features, choices, capture } = entry.data;
+const { why, features, choices, capture, video } = entry.data;
 const kind = kindOf(project, text, lang);
 const app = appOf(project, text, lang);
 const code = project.links.code;
@@ -69,6 +69,21 @@ const shelf = await Promise.all(
 const after = STOPS[i + 1];
 const next = after && { ...after, n: n + 1, project: getProject(after.slug)!, text: STOP_TEXTS[lang][after.slug]! };
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
+
+// La bande des escales, sous l'en-tête : la fiche d'avant et celle d'après, dans l'ordre du voyage ;
+// avant la première escale, le départ ; après la dernière, le carnet.
+const before = STOPS[i - 1];
+const cellOf = (s: (typeof STOPS)[number], k: number) => ({
+  href: fichePath(lang, getProject(s.slug)!),
+  label: `${f.stop} ${k}`,
+  place: STOP_TEXTS[lang][s.slug]!.place as string | undefined,
+  name: getProject(s.slug)!.name,
+  scene: s.scene as string | undefined,
+  bg: s.bg,
+});
+const prevCell = before ? cellOf(before, n - 1) : { href: ROUTES.voyage[lang], label: f.departLabel, place: undefined, name: f.depart, scene: START.scene, bg: START.bg };
+const nextCell = after ? cellOf(after, n + 1) : { href: ROUTES.projets[lang], label: f.end, place: undefined, name: f.journal, scene: undefined, bg: "" };
+const ARROW = { prev: "M19 12H5M11 18l-6-6 6-6", next: "M5 12h14M13 6l6 6-6 6" };
 // Les textes en prose, à la typographie de la langue (les espaces insécables du français).
 const T = (text: string) => typo(lang, text);
 ---
@@ -95,8 +110,10 @@ const T = (text: string) => typo(lang, text);
     <div class="wrap-read">
       <div class="hero__body">
         <div class="hero__text">
-          <a class="link hero__back" href={`${ROUTES.voyage[lang]}#escale-${n}`}>{f.back}</a>
-          <p class="label">{f.stop} {n} · {text.place}</p>
+          <a class="backpill" href={`${ROUTES.voyage[lang]}#escale-${n}`}>
+            <span class="backpill__thumb" style={`background: ${stop.bg}`}><img src={still(stop.scene, "-640")} alt="" width="640" height="360" decoding="async" /></span>
+            <span class="backpill__text"><b>{f.back}</b><small>{f.stop} {n} · {text.place}</small></span>
+          </a>
           <h1 class="serif">{project.name}</h1>
           <p class="hero__kind">
             <span>{kind.line}</span>
@@ -143,7 +160,66 @@ const T = (text: string) => typo(lang, text);
     </div>
   </div>
 
+  <nav class="strip" aria-label={f.stripAria}>
+    {
+      [["prev", prevCell], ["next", nextCell]].map(([side, c]) => {
+        const cell = c as typeof prevCell;
+        return (
+          <a class:list={["strip__cell", `strip__${side}`]} href={cell.href} rel={side as string}>
+            <svg class="strip__arrow" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d={ARROW[side as "prev" | "next"]} />
+            </svg>
+            {cell.scene && (
+              <span class="strip__thumb" style={`background: ${cell.bg}`}>
+                <img src={still(cell.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
+              </span>
+            )}
+            <span class="strip__text">
+              <span class="strip__label">
+                {cell.label}
+                {cell.place && <span class="strip__place"> · {cell.place}</span>}
+              </span>
+              <span class="serif strip__name">{cell.name}</span>
+            </span>
+          </a>
+        );
+      })
+    }
+    <div class="strip__mid" aria-hidden="true">
+      <span class="strip__label">{fill(f.stopOf, { i: n, n: STOPS.length })}</span>
+      <span class="strip__dots">{STOPS.map((_, k) => <i class:list={[{ done: k < i, now: k === i }]} />)}</span>
+    </div>
+  </nav>
+
   <main id="contenu" class="wrap-read">
+    {
+      capture && shot && shotSet && (
+        <section class="pictures">
+          <h2 class="label">{video ? f.demo : f.pictures}</h2>
+          <figure>
+            {video ? (
+              <video class="shot" src={video.src} poster={shotSet.src} controls playsinline preload="none" width={shot.width} height={shot.height} />
+            ) : (
+            <picture>
+              {shotPhone && shotPhoneSet && (
+                <source
+                  media="(max-width: 700px)"
+                  srcset={shotPhoneSet.srcSet.attribute}
+                  sizes="300px"
+                  width={shotPhone.width}
+                  height={shotPhone.height}
+                  type="image/webp"
+                />
+              )}
+              <source srcset={shotSet.srcSet.attribute} sizes="(min-width: 1140px) 1040px, calc(100vw - 40px)" type="image/webp" />
+              <img class="shot" src={shotSet.src} width={shot.width} height={shot.height} alt={capture.alt} loading="lazy" decoding="async" />
+            </picture>
+            )}
+            <figcaption>{T(video ? video.caption : capture.caption)}</figcaption>
+          </figure>
+        </section>
+      )
+    }
     <section class="why">
       <h2 class="label">{f.why}</h2>
       <p class="serif why__text">{T(why)}</p>
@@ -271,30 +347,6 @@ const T = (text: string) => typo(lang, text);
       </aside>
     </section>
 
-    {
-      capture && shot && shotSet && (
-        <section class="pictures">
-          <h2 class="label">{f.pictures}</h2>
-          <figure>
-            <picture>
-              {shotPhone && shotPhoneSet && (
-                <source
-                  media="(max-width: 700px)"
-                  srcset={shotPhoneSet.srcSet.attribute}
-                  sizes="300px"
-                  width={shotPhone.width}
-                  height={shotPhone.height}
-                  type="image/webp"
-                />
-              )}
-              <source srcset={shotSet.srcSet.attribute} sizes="(min-width: 1140px) 1040px, calc(100vw - 40px)" type="image/webp" />
-              <img class="shot" src={shotSet.src} width={shot.width} height={shot.height} alt={capture.alt} loading="lazy" decoding="async" />
-            </picture>
-            <figcaption>{T(capture.caption)}</figcaption>
-          </figure>
-        </section>
-      )
-    }
 
     {
       shelf.length > 0 && (
@@ -402,10 +454,63 @@ const T = (text: string) => typo(lang, text);
     flex-direction: column;
     gap: 16px;
   }
-  .hero__back {
+  /* Le retour au voyage : un vrai bouton, avec la vignette de l'escale et son nom. */
+  .backpill {
+    display: inline-flex;
     align-self: flex-start;
-    min-height: 32px;
-    margin-bottom: -4px;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    margin-bottom: 4px;
+    padding: 6px 22px 6px 6px;
+    border: 1.5px solid var(--brass);
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    color: var(--ink);
+    text-decoration: none;
+    transition:
+      background 0.2s,
+      color 0.2s;
+  }
+  .backpill:hover {
+    background: var(--ink);
+    color: var(--card);
+  }
+  .backpill__thumb,
+  .strip__thumb {
+    flex: none;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+  }
+  .backpill__thumb {
+    width: 44px;
+    height: 44px;
+  }
+  .backpill__thumb img,
+  .strip__thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .backpill__text,
+  .strip__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .backpill b {
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .backpill small {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .backpill:hover small {
+    color: inherit;
   }
   .hero h1 {
     margin: 0;
@@ -477,6 +582,93 @@ const T = (text: string) => typo(lang, text);
     .hero__scene:global(.js.no-video) .scene--still {
       display: block;
     }
+  }
+
+  /* — La bande des escales, sous l'en-tête : celle d'avant, où on en est, celle d'après — */
+  .strip {
+    display: grid;
+    grid-template-areas: "prev mid next";
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    border-bottom: 1px solid var(--line);
+    background: var(--card);
+  }
+  .strip__cell {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-height: 120px;
+    padding: 22px clamp(20px, 4vw, 48px);
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .strip__cell:hover {
+    background: color-mix(in srgb, var(--brass) 10%, var(--card));
+  }
+  .strip__prev {
+    grid-area: prev;
+  }
+  .strip__next {
+    grid-area: next;
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+  .strip__arrow {
+    flex: none;
+    color: var(--brass-text);
+    transition: transform 0.2s;
+  }
+  .strip__prev:hover .strip__arrow {
+    transform: translateX(-4px);
+  }
+  .strip__next:hover .strip__arrow {
+    transform: translateX(4px);
+  }
+  .strip__thumb {
+    width: 72px;
+    height: 72px;
+  }
+  .strip__label {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .strip__name {
+    font-size: clamp(24px, 2.4vw, 32px);
+    line-height: 1.05;
+  }
+  .strip__mid {
+    grid-area: mid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 40px;
+    border-inline: 1px solid var(--line);
+  }
+  .strip__dots {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .strip__dots i {
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid var(--muted);
+    border-radius: var(--radius-pill);
+    box-sizing: border-box;
+  }
+  .strip__dots i.done,
+  .strip__dots i.now {
+    border-color: var(--brass);
+    background: var(--brass);
+  }
+  .strip__dots i.now {
+    width: 13px;
+    height: 13px;
   }
 
   /* — Le papier : les rubriques, séparées d'un filet — */
@@ -833,6 +1025,32 @@ const T = (text: string) => typo(lang, text);
 
   /* Sous 700 px : la scène dans le cadre du téléphone, sous le texte. */
   @media (max-width: 700px) {
+    /* La bande : l'escale d'avant et celle d'après, côte à côte ; la position est déjà dans l'en-tête. */
+    .strip {
+      grid-template-areas: "prev next";
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    /* Sur un téléphone, « Escale 1 » suffit : le lieu ferait passer l'étiquette sur deux lignes. */
+    .strip__mid,
+    .strip__arrow,
+    .strip__place {
+      display: none;
+    }
+    .strip__cell {
+      gap: 12px;
+      min-height: 88px;
+      padding: 16px 20px;
+    }
+    .strip__prev {
+      border-right: 1px solid var(--line);
+    }
+    .strip__thumb {
+      width: 44px;
+      height: 44px;
+    }
+    .strip__name {
+      font-size: 22px;
+    }
     .hero__body {
       gap: 28px;
       padding: 12px 0 48px;

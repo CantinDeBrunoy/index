@@ -12,8 +12,15 @@ import { STOPS } from "./voyage";
 export const FICHE: Record<
   Lang,
   {
+    /** Le bouton qui ramène au voyage, à l'escale de la fiche. */
     back: string;
     itinAria: string;
+    /** La bande des escales, sous l'en-tête : avant la première escale, le départ. */
+    stripAria: string;
+    departLabel: string;
+    depart: string;
+    /** La vidéo de démo, quand le projet en a une (sinon, la capture « En images »). */
+    demo: string;
     /** {i} : l'escale de la fiche ; {n} : le nombre d'escales. */
     stopOf: string;
     stop: string;
@@ -46,8 +53,12 @@ export const FICHE: Record<
   }
 > = {
   fr: {
-    back: "← Revenir à l'escale",
+    back: "Revenir au voyage",
     itinAria: "Les fiches, escale par escale",
+    stripAria: "Les escales voisines",
+    departLabel: "Avant le décollage",
+    depart: "Le départ",
+    demo: "La démo",
     stopOf: "Escale {i} / {n}",
     stop: "Escale",
     why: "Pourquoi je l'ai fabriqué",
@@ -77,8 +88,12 @@ export const FICHE: Record<
     question: "Une question sur {name} ?",
   },
   en: {
-    back: "← Back to the stop",
+    back: "Back to the journey",
     itinAria: "Project pages, stop by stop",
+    stripAria: "Neighbouring stops",
+    departLabel: "Before take-off",
+    depart: "The departure",
+    demo: "The demo",
     stopOf: "Stop {i} / {n}",
     stop: "Stop",
     why: "Why I built it",
