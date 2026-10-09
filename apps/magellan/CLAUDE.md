@@ -13,11 +13,12 @@ comportement par défaut.
 (colorés en vert) et les **villes visitées** (drapeaux sur leurs coordonnées).
 
 - **Expo ~54** / **React Native 0.81** / **React 19**, TypeScript, **expo-router 6**.
-- **Une seule base de code → iOS, Android et Web** (`react-native-web`). App _local-first_,
-  pas de backend.
+- **Une seule base de code → iOS, Android et Web** (`react-native-web`). App _local-first_ :
+  seule exception, sur le web, le propriétaire connecté sur le hub INDEX retrouve ses voyages sur
+  son compte (`worker/index.ts`, D1). Ses vrais voyages ne vont jamais dans le dépôt.
 - Globe rendu via **`globe.gl`** : dans une `react-native-webview` sur mobile, monté
   directement dans la page sur web (`GlobeView.web.tsx`). Cf. README › Architecture.
-- Persistance locale via **AsyncStorage**.
+- Persistance locale via **AsyncStorage** (ou le compte du propriétaire, `features/trips/account.ts`).
 
 Voir [README.md](README.md) pour la vision, l'architecture détaillée et la feuille de route.
 

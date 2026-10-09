@@ -54,6 +54,9 @@ navigateur.
 - **[globe.gl](https://globe.gl)** (basé sur three-globe) — rendu du globe 3D, coloration
   des pays au GeoJSON, marqueurs en lat/lng
 - **AsyncStorage** — persistance locale des voyages
+- **Worker Cloudflare + D1** (web) — sert l'export ; une fois le propriétaire connecté sur le hub
+  INDEX, ses voyages viennent de son compte (une ligne D1, versionnée) au lieu du stockage local.
+  Les visiteurs gardent les voyages de démo, dans leur navigateur.
 
 > Choix de rendu : **globe.gl**, monté dans une **WebView** sur mobile et **directement
 > dans la page** sur web (`GlobeView.web.tsx`). La logique de données est partagée ; seul
@@ -74,7 +77,8 @@ features/
     globe.html.ts          # template HTML/JS (globe.gl), partagé
     bridge.ts              # types des messages échangés
   trips/
-    store.ts               # état des voyages + persistance
+    store.tsx              # état des voyages + persistance (stockage local, ou compte du propriétaire)
+    account.ts             # web : session (via le hub INDEX) et voyages du compte, /api/trips
     types.ts               # VisitedCountry (ISO3), VisitedCity {name,country,lat,lng}
     dates.ts               # dates d'étape en texte libre → période, année, libellé court
   voyages/
@@ -91,6 +95,8 @@ data/
   countries.geo.json       # frontières des pays (Natural Earth, simplifié)
   countries.ts             # ISO3 → { nom, drapeau, centroïde }
 components/ hooks/ constants/   # primitives UI & thème
+worker/
+  index.ts                 # Worker Cloudflare : l'export web + /api/trips (D1) pour le propriétaire connecté
 ```
 
 ### Le bridge WebView (point central)

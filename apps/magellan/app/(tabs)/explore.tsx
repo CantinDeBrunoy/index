@@ -11,7 +11,7 @@ import {
   useWoodLayout,
 } from '@/features/detail/WoodKit';
 import { tripWhen } from '@/features/trips/dates';
-import { useTrips } from '@/features/trips/store';
+import { syncLabel, useTrips } from '@/features/trips/store';
 import type { Trip } from '@/features/trips/types';
 import { TripCard } from '@/features/voyages/TripCard';
 
@@ -64,7 +64,7 @@ function sections(trips: Trip[], filter: Filter): { key: string; title: string; 
 
 export default function VoyagesScreen() {
   const router = useRouter();
-  const { trips, cities, visitedCountries, addTrip, removeTrip, addStop, removeStop } = useTrips();
+  const { trips, cities, visitedCountries, addTrip, removeTrip, addStop, removeStop, sync } = useTrips();
   const { wide, contentWidth } = useWoodLayout();
   const [filter, setFilter] = useState<Filter>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -102,14 +102,14 @@ export default function VoyagesScreen() {
       {wide ? (
         <View style={styles.headerWide}>
           <View style={styles.labelWide}>
-            <KraftLabel big eyebrow="Magellan" title="Mes voyages" />
+            <KraftLabel big eyebrow="Magellan" title="Mes voyages" subtitle={syncLabel(sync)} />
           </View>
           <StatPostits items={stats} width={contentWidth} big />
           {actions}
         </View>
       ) : (
         <>
-          <KraftLabel eyebrow="Magellan" title="Mes voyages" />
+          <KraftLabel eyebrow="Magellan" title="Mes voyages" subtitle={syncLabel(sync)} />
           <StatPostits items={stats} width={contentWidth} />
           {actions}
         </>

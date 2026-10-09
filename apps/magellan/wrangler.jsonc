@@ -1,12 +1,28 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  // Export web statique d'Expo (expo export -p web), servi tel quel : aucun code serveur.
+  // Export web statique d'Expo (expo export -p web), servi tel quel ; seul /api/* passe par le Worker :
+  // les voyages du propriétaire, une fois connecté sur le hub (worker/index.ts).
   "name": "magellan",
+  "main": "./worker/index.ts",
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./dist",
-    // Les fiches voyage et étape (/trip/<id>, /stop/<id>) n'existent que dans le stockage local :
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    // Les fiches voyage et étape (/trip/<id>, /stop/<id>) n'existent que dans les données :
     // toute URL inconnue renvoie l'app, et expo-router affiche la bonne page côté client.
     "not_found_handling": "single-page-application"
-  }
+  },
+  // Les voyages du propriétaire : une seule ligne (TripsState en JSON), jamais dans le dépôt.
+  // Retour en arrière possible sur 30 jours (D1 Time Travel : wrangler d1 time-travel).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "magellan",
+      "database_id": "e59b2cd0-742a-40d8-b868-431f7c3b5650"
+    }
+  ],
+  // Le hub dit si le cookie reçu est celui du propriétaire : le secret de session ne quitte pas le hub.
+  "services": [{ "binding": "HUB", "service": "index" }],
+  "observability": { "enabled": true }
 }

@@ -44,3 +44,9 @@ app-example
 
 # Outils de debug locaux (dépendances non déclarées)
 scripts/debug-globe.js
+
+# Types du runtime Workers, régénérés par wrangler types (postinstall)
+worker-configuration.d.ts
+# Cloudflare : état local de wrangler et secrets de dev
+.wrangler
+.dev.vars*

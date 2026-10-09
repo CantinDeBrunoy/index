@@ -5,13 +5,13 @@ import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 're
 import { ThemedText } from '@/components/themed-text';
 import { alpha3ToAlpha2, flagEmoji } from '@/data/isoCodes';
 import { GlobeView } from '@/features/globe/GlobeView';
-import { useTrips } from '@/features/trips/store';
+import { syncLabel, useTrips } from '@/features/trips/store';
 import type { Trip } from '@/features/trips/types';
 
 type SelectedCountry = { iso: string; name: string; lat: number | null; lng: number | null };
 
 export default function GlobeScreen() {
-  const { visitedCountries, cities, trips } = useTrips();
+  const { visitedCountries, cities, trips, sync } = useTrips();
   const { width } = useWindowDimensions();
   const router = useRouter();
   const [country, setCountry] = useState<SelectedCountry | null>(null);
@@ -67,6 +67,7 @@ export default function GlobeScreen() {
           <ThemedText style={styles.badgeText}>
             {trips.length} voyages · {cities.length} villes · {visitedCountries.length} pays
           </ThemedText>
+          {sync.mode === 'account' && <ThemedText style={styles.syncText}>{syncLabel(sync)}</ThemedText>}
         </View>
       </View>
 
@@ -154,6 +155,7 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
   badgeText: { color: '#fff', fontWeight: '600' },
+  syncText: { color: 'rgba(255, 255, 255, 0.75)', fontSize: 12, lineHeight: 16, textAlign: 'center' },
   panel: {
     backgroundColor: '#11162a',
     borderLeftWidth: StyleSheet.hairlineWidth,
