@@ -279,6 +279,22 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
   .vhead__end {
     justify-self: end;
   }
+  /* Sous 1366 px, les onglets et la langue ne tiennent plus dans un tiers de l'écran : leur colonne prend
+     la largeur de son contenu, sans revenir à la ligne, et les points se centrent dans ce qui reste.
+     Plus étroit encore (tablette en portrait), rien ne tient sur une ligne : la langue passe dessous. */
+  @media (min-width: 961px) and (max-width: 1365px) {
+    .vhead {
+      grid-template-columns: auto 1fr auto;
+    }
+    .vhead__end {
+      flex-wrap: nowrap;
+    }
+  }
+  @media (min-width: 961px) and (max-width: 1120px) {
+    .vhead .brand__who {
+      display: none;
+    }
+  }
   .vdots {
     display: flex;
     flex-direction: column;
