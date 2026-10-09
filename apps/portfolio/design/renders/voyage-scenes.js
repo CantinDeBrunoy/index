@@ -1811,11 +1811,12 @@ const SCENES = {
     cityBlocks(g, M, 120, [5.2, 5.2], 23, taken, (v) => (v > 0.85 ? M.clay2 : v < 0.18 ? tile : M.clay));
     // De vraies voitures, sur leur voie de droite, dans les deux sens ; la voiture de laiton,
     // la mienne, fait l'aller-retour sur le meilleur trajet.
+    // Quatre voitures plutôt que six : la route reste lisible, et l'oeil suit la mienne.
     const traffic = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
       const c = car(M, i, M.clay);
       g.add(c);
-      traffic.push({ c, road: roads[i % 2], offset: i / 6, dir: i % 3 === 2 ? -1 : 1 });
+      traffic.push({ c, road: roads[i % 2], offset: i / 4, dir: i % 3 === 2 ? -1 : 1 });
     }
     const mine = car(M, 1, M.accent);
     g.add(mine);
@@ -1943,7 +1944,7 @@ const SCENES = {
     const stem = new THREE.CylinderGeometry(0.012, 0.012, 0.32, 8);
     const flagGeo = new RoundedBoxGeometry(0.14, 0.03, 0.025, 2, 0.01);
     const notes = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
       const n = new THREE.Group();
       const h = mesh(head, M.accent);
       h.scale.set(1.25, 0.9, 0.9);
@@ -1957,8 +1958,9 @@ const SCENES = {
       }
       n.rotation.y = 0.25;
       g.add(n);
-      // Deux notes sur six partent vers le calendrier du mur : le lien vers l'escale suivante, sans rien ajouter.
-      notes.push({ n, k: i / 6, drift: (i % 3) - 1, toCalendar: i % 3 === 0 });
+      // Quatre notes (six au départ, c'était trop) ; deux partent vers le calendrier du mur : le lien vers
+      // l'escale suivante, sans rien ajouter.
+      notes.push({ n, k: i / 4, drift: (i % 3) - 1, toCalendar: i % 3 === 0 });
     }
     const from = new THREE.Vector3(0.1, 0.45, 0.05), to = cal.position.clone().add(new THREE.Vector3(0.1, -0.05, 0.14));
     g.userData.animate = (phi) => {

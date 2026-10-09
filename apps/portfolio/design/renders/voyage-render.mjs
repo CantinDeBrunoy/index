@@ -24,7 +24,8 @@ const BG = {
 // La carte du monde est riche en détails : 9 images/s et une qualité plus basse la gardent légère (2,1 Mo).
 // Le passeport : le tampon s'encre, traverse, tamponne et revient ; 6 s pour que le geste reste posé.
 // La maison : le coffre se ferme, se verrouille et se rouvre ; 8 s pour qu'il reste fermé un moment.
-const LOOPS = { terre: [72, 8000, 45], passeport: [120, 6000, 72], maison: [192, 8000] };
+// L'espace, l'avion et la route : 8 s plutôt que 4, pour que tout y bouge deux fois moins vite (2026-10-09).
+const LOOPS = { terre: [72, 8000, 45], passeport: [120, 6000, 72], maison: [192, 8000], espace: [120, 8000], avion: [120, 8000], route: [120, 8000] };
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".glb": "model/gltf-binary", ".geojson": "application/json" };
 const server = createServer(async (req, res) => {

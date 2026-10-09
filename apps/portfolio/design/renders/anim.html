@@ -174,9 +174,10 @@ const BUILD = {
     g.add(m1, m2);
     g.userData.animate = (phi) => {
       m1.position.set(Math.cos(phi) * 1.45, 1.0 + Math.sin(phi) * 0.35, Math.sin(phi) * 1.0);
-      m1.rotation.set(phi, phi * 2, 0);
-      m2.position.set(Math.cos(-phi * 2 + 1) * 1.05, 1.0 + Math.cos(phi * 2) * 0.55, Math.sin(-phi * 2 + 1) * 0.8);
-      m2.rotation.set(phi * 2, 0, phi);
+      // Un tour par boucle pour chaque lune (la petite en faisait deux) : la scène de l'espace reste calme.
+      m1.rotation.set(phi, phi, 0);
+      m2.position.set(Math.cos(-phi + 1) * 1.05, 1.0 + Math.cos(phi) * 0.55, Math.sin(-phi + 1) * 0.8);
+      m2.rotation.set(phi, 0, phi);
       ring.rotation.z = 0.2 + 0.08 * Math.sin(phi);
     };
     return g;
