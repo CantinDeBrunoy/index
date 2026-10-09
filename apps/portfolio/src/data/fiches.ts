@@ -14,7 +14,6 @@ export const FICHE: Record<
   {
     /** Le bouton qui ramène au voyage, à l'escale de la fiche, et suit la lecture. */
     resume: string;
-    itinAria: string;
     /** La bande des escales, sous l'en-tête : avant la première escale, le départ. */
     stripAria: string;
     departLabel: string;
@@ -54,7 +53,6 @@ export const FICHE: Record<
 > = {
   fr: {
     resume: "Reprendre le voyage",
-    itinAria: "Les fiches, escale par escale",
     stripAria: "Les escales voisines",
     departLabel: "Avant le décollage",
     depart: "Le départ",
@@ -89,7 +87,6 @@ export const FICHE: Record<
   },
   en: {
     resume: "Resume the journey",
-    itinAria: "Project pages, stop by stop",
     stripAria: "Neighbouring stops",
     departLabel: "Before take-off",
     depart: "The departure",

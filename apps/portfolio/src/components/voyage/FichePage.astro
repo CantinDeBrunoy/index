@@ -51,9 +51,6 @@ const shotPhone = capture ? getShot(slug, "mobile") : undefined;
 const shotSet = shot && (await getImage({ src: shot, widths: [640, 1040, 1440], format: "webp" }));
 const shotPhoneSet = shotPhone && (await getImage({ src: shotPhone, widths: [390, 780], format: "webp" }));
 
-// L'itinéraire : chaque escale ouvre sa fiche.
-const itinerary = STOPS.map((s) => getProject(s.slug)!);
-
 // L'étagère : les projets sans fiche à eux, racontés sur celle-ci.
 const shelf = await Promise.all(
   Object.entries(FICHE_OF)
@@ -90,22 +87,7 @@ const T = (text: string) => typo(lang, text);
 
 <Voyage lang={lang} title={project.name} description={text.pitch} alternates={alternates} type="article" palette="day">
   <div class={`hero pal-${stop.palette}`} style={`--stop-bg: ${stop.bg}`}>
-    <SiteHeader lang={lang} current="projets" exact={false} alternates={alternates}>
-      <nav class="itin" aria-label={f.itinAria}>
-        <span class="itin__of">{fill(f.stopOf, { i: n, n: STOPS.length })}</span>
-        <ol class="dots">
-          {
-            itinerary.map((p, k) => (
-              <li>
-                <a class:list={["dot", { done: k < i }]} href={fichePath(lang, p)} aria-label={p.name} aria-current={k === i ? "page" : undefined}>
-                  <span />
-                </a>
-              </li>
-            ))
-          }
-        </ol>
-      </nav>
-    </SiteHeader>
+    <SiteHeader lang={lang} current="projets" exact={false} alternates={alternates} />
 
     <div class="wrap-read">
       <div class="hero__body">
@@ -432,17 +414,6 @@ const T = (text: string) => typo(lang, text);
   }
   .hero.pal-day {
     --muted: #5f5447;
-  }
-
-  .itin {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .itin__of {
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
   }
 
   .hero__body {
@@ -1063,16 +1034,9 @@ const T = (text: string) => typo(lang, text);
     color: var(--brass-text);
   }
 
-  /* Les points des escales tiennent dans l'en-tête à partir de 1100 px. */
-  @media (max-width: 1100px) {
-    .itin {
-      display: none;
-    }
-  }
-
   /* Sous 700 px : la scène dans le cadre du téléphone, sous le texte. */
   @media (max-width: 700px) {
-    /* La bande : l'escale d'avant et celle d'après, côte à côte ; la position est déjà dans l'en-tête. */
+    /* La bande : l'escale d'avant et celle d'après, côte à côte, sans la position du milieu. */
     .strip {
       grid-template-areas: "prev next";
       grid-template-columns: repeat(2, minmax(0, 1fr));
