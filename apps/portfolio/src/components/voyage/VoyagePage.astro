@@ -201,16 +201,16 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                 <p class="cartel__pitch">{typo(lang, s.text.pitch)}</p>
                 {s.text.extra && <p class="cartel__extra">{typo(lang, s.text.extra)}</p>}
                 <div class="cartel__links">
+                  <a class="go" href={fichePath(lang, s.project)}>
+                    <span class="lg">{v.fiche}</span>
+                    <span class="sm">{v.ficheShort}</span>
+                  </a>
                   {"href" in app ? (
-                    <a class="go" href={app.href} target={app.target} rel={app.rel}>
+                    <a class="link" href={app.href} target={app.target} rel={app.rel}>
                       <span class="lg">{app.label}</span>
                       <span class="sm">{app.short}</span>
                     </a>
                   ) : null}
-                  <a class="link" href={fichePath(lang, s.project)}>
-                    <span class="lg">{v.fiche}</span>
-                    <span class="sm">{v.ficheShort}</span>
-                  </a>
                   {s.project.links.code && (
                     <a class="link" href={s.project.links.code} target="_blank" rel="noopener">
                       <span class="lg">{v.code}</span>
@@ -861,7 +861,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
       gap: 0 18px;
       padding-top: 4px;
     }
-    /* Le bouton du bas (l'escale suivante) reste le seul en laiton : celui de l'app passe à l'encre. */
+    /* Le bouton du bas (l'escale suivante) reste le seul en laiton : celui de la fiche passe à l'encre. */
     .cartel__links .go {
       min-height: 44px;
       padding: 0 18px;
