@@ -105,8 +105,8 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       alt: "À la maison : le bureau, l'ordinateur, le coffre-fort de Mithril à molette de laiton, la lampe, le petit serveur, une plante et un tapis vert sauge et, par terre, une platine.",
       kind: "Logiciel Windows · 2026",
       pitch: "Mon coffre à mots de passe pour Windows : chiffré, sans installation, et sans cloud.",
-      extra: "Sur l'étagère aussi : 003 API REST .NET, des microservices C# écrits en TDD et lancés dans Docker (2023).",
-      tag: "003 · API REST .NET · 2023",
+      extra: "Sur l'étagère aussi : l'API REST .NET, des microservices C# écrits en TDD et lancés dans Docker (2023).",
+      tag: "API REST .NET · 2023",
       cta: "Mettre un disque",
     },
     cancionero: {
@@ -180,8 +180,8 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       alt: "At home: the desk, the computer, Mithril's safe with its brass dial, the lamp, the small server, a plant, a sage-green rug and, on the floor, a record player.",
       kind: "Windows software · 2026",
       pitch: "My password vault for Windows: encrypted, nothing to install, no cloud.",
-      extra: "Also on the shelf: 003 .NET REST API, C# microservices written test-first and run in Docker (2023).",
-      tag: "003 · .NET REST API · 2023",
+      extra: "Also on the shelf: the .NET REST API, C# microservices written test-first and run in Docker (2023).",
+      tag: ".NET REST API · 2023",
       cta: "Put on a record",
     },
     cancionero: {
@@ -286,8 +286,8 @@ export function appOf(
 /**
  * Le type, l'année et le statut d'une escale, d'après son « Type · année · statut ». Une app dont
  * l'adresse n'est pas encore connue est « bientôt en ligne » ; un logiciel, sans statut, « à télécharger ».
- * `line` : la ligne de la fiche et du carnet, numéro en tête ; elle ne se coupe qu'entre ses éléments.
- * `meta` : la même sans le numéro, que le cartel du voyage pose à part, dans sa pastille de laiton.
+ * `line` : la ligne du cartel, de la fiche et du carnet, sans numéro de projet ; elle ne se coupe qu'entre ses
+ * éléments.
  */
 export function kindOf(project: Project, text: StopText, lang: Lang) {
   const v = VOYAGE[lang];
@@ -300,7 +300,6 @@ export function kindOf(project: Project, text: StopText, lang: Lang) {
     type,
     year,
     status: shown ?? v.statusDownload,
-    line: join([project.number, ...meta]),
-    meta: join(meta),
+    line: join(meta),
   };
 }

@@ -208,7 +208,7 @@ const T = (text: string) => typo(lang, text);
             {shelf.map((s) => (
               <article class="shelf__item" id={s.project.slug}>
                 <h3 class="serif shelf__name">
-                  {s.project.number} · {s.name}
+                  {s.name}
                 </h3>
                 <p class="shelf__text">{T(s.text)}</p>
                 <ul class="chips">{s.project.stack.map((tech) => <li class="chip">{tech}</li>)}</ul>

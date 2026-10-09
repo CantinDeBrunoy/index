@@ -193,8 +193,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
               </div>
               <article class="cartel ui">
                 <p class="cartel__kind">
-                  <span class="cartel__num">{s.project.number}</span>
-                  <span>{kindOf(s.project, s.text, lang).meta}</span>
+                  <span>{kindOf(s.project, s.text, lang).line}</span>
                 </p>
                 <h2 class="serif" id={`escale-${s.n}-titre`} tabindex="-1" data-focus>
                   {s.project.name}
@@ -520,16 +519,6 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     color: var(--brass-text);
     font-family: var(--font-mono);
     font-size: max(12px, calc(13 * var(--u)));
-  }
-  .cartel__num {
-    display: inline-flex;
-    align-items: center;
-    height: 2em;
-    padding: 0 0.8em;
-    border-radius: var(--radius-pill);
-    background: var(--brass);
-    color: var(--on-brass);
-    font-weight: 500;
   }
   .cartel h2 {
     margin: 0;

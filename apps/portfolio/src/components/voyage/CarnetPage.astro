@@ -39,7 +39,7 @@ const cards = STOPS.map((stop, i) => {
   const shelved = Object.entries(FICHE_OF)
     .filter(([, host]) => host === stop.slug)
     .map(([slug]) => getProject(slug)!)
-    .map((p) => `${p.number} ${nameOf(p, lang)}`);
+    .map((p) => nameOf(p, lang));
   return { ...stop, n: i + 1, project, text, kind: kindOf(project, text, lang).line, shelved, app: appOf(project, text, lang) };
 });
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
