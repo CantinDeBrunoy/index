@@ -9,12 +9,15 @@
  * Les vignettes sont les images fixes des scènes (public/voyage/stills) : un carnet de cartes postales, et
  * une page légère, là où les dix boucles animées pèseraient près de 6 Mo. Les pastilles prennent l'image
  * du téléphone, cadrée sur l'objet de l'escale.
+ * Sur grand écran (1 280 px et plus), la page s'élargit : le titre et les raccourcis côte à côte, puis les
+ * escales en liste, et à côté la scène de celle qu'on survole, en grand, avec son accroche et ses liens
+ * (scripts/carnet-scene.ts : l'image fixe tout de suite, la boucle animée si on s'y attarde).
  */
 import { getProject, GITHUB_URL } from "@index/projects";
 import { APPS_ANCHOR, CARNET, CHIP_FOCUS } from "../../data/carnet";
 import { CREDITS } from "../../data/credits";
 import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
-import { appOf, fill, kindOf, STOP_TEXTS, STOPS } from "../../data/voyage";
+import { appOf, fill, kindOf, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, STRINGS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import Badges from "./Badges.astro";
@@ -37,19 +40,21 @@ const cards = STOPS.map((stop, i) => {
     .filter(([, host]) => host === stop.slug)
     .map(([slug]) => getProject(slug)!)
     .map((p) => `${p.number} ${nameOf(p, lang)}`);
-  return { ...stop, n: i + 1, project, text, kind: kindOf(project, text, lang).line, shelved };
+  return { ...stop, n: i + 1, project, text, kind: kindOf(project, text, lang).line, shelved, app: appOf(project, text, lang) };
 });
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
+// Une vignette ronde, grossie puis recentrée sur l'objet de l'escale.
+const focusOf = (scene: string) => {
+  const { x, y, zoom } = CHIP_FOCUS[scene] ?? { x: 50, y: 50, zoom: 1.2 };
+  return `transform: scale(${zoom}) translate(${50 - x}%, ${50 - y}%)`;
+};
 
 // Les raccourcis, dans l'ordre du voyage : chaque app qui s'ouvre ou se télécharge (ni les archives, ni ce site).
 // Seules les apps sondées portent un point de statut.
 const apps = cards.flatMap((s) => {
-  const app = appOf(s.project, s.text, lang);
+  const { app } = s;
   if (!("href" in app)) return [];
-  // La vignette, grossie puis recentrée sur l'objet de l'escale.
-  const { x, y, zoom } = CHIP_FOCUS[s.scene] ?? { x: 50, y: 50, zoom: 1.2 };
-  const focus = `transform: scale(${zoom}) translate(${50 - x}%, ${50 - y}%)`;
-  return [{ ...s, app, focus, name: nameOf(s.project, lang), live: s.project.kind === "web" && s.project.monitors.length > 0 }];
+  return [{ ...s, app, focus: focusOf(s.scene), name: nameOf(s.project, lang), live: s.project.kind === "web" && s.project.monitors.length > 0 }];
 });
 // Les textes du statut, lus par le script dans la langue de la page.
 const { states, checking, online, asleep, offline, checkedNow, checkedAgo, unavailable } = c;
@@ -58,8 +63,9 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
 
 <Voyage lang={lang} title={c.pageTitle} description={c.description} alternates={alternates} palette="night">
   <SiteHeader lang={lang} current="projets" alternates={alternates} />
-  <div class="wrap">
+  <div class="wrap carnet">
     <main id="contenu">
+      <div class="top">
       <section class="intro">
         <p class="label">{c.label}</p>
         <h1 class="serif" set:html={c.title} />
@@ -103,6 +109,80 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
           </section>
         )
       }
+      </div>
+
+      <div class="atlas" data-atlas>
+        <ol class="atlas__list" aria-label={c.listAria}>
+          {
+            cards.map((s, k) => (
+              <li>
+                <a
+                  class="row"
+                  href={fichePath(lang, s.project)}
+                  data-atlas-row
+                  data-bg={s.bg}
+                  data-still={still(s.scene)}
+                  data-loop={`/voyage/${s.scene}.webp`}
+                  data-on={k === 0 ? "" : undefined}
+                >
+                  <span class="row__num">{String(s.n).padStart(2, "0")}</span>
+                  <span class="row__img" style={`background: ${s.bg}`}>
+                    <img src={still(s.scene, "-mobile")} alt="" width="780" height="760" loading="lazy" decoding="async" style={focusOf(s.scene)} />
+                  </span>
+                  <span class="row__text">
+                    <span class="serif row__name">{s.project.name}</span>
+                    <span class="row__kind">{s.kind}</span>
+                  </span>
+                  {s.project.badges.length > 0 && (
+                    <span class="row__badges">
+                      <Badges project={s.project} lang={lang} />
+                    </span>
+                  )}
+                </a>
+              </li>
+            ))
+          }
+        </ol>
+
+        <section class="atlas__view" aria-label={c.previewAria}>
+          <div class="atlas__media" data-atlas-media style={`background: ${cards[0]!.bg}`}>
+            <img src={still(cards[0]!.scene)} alt="" width="1280" height="720" loading="lazy" decoding="async" />
+          </div>
+          <div class="atlas__panels">
+            {
+              cards.map((s, k) => (
+                <div class="atlas__panel" data-atlas-panel data-off={k === 0 ? undefined : ""}>
+                  <p class="atlas__stop">
+                    {f.stop} {s.n} · {s.text.place}
+                  </p>
+                  <h2 class="serif atlas__name">{s.project.name}</h2>
+                  <p class="atlas__kind">{s.kind}</p>
+                  {s.project.badges.length > 0 && (
+                    <p class="row__badges">
+                      <Badges project={s.project} lang={lang} />
+                    </p>
+                  )}
+                  <p class="atlas__pitch">{typo(lang, s.text.pitch)}</p>
+                  {s.shelved.length > 0 && <p class="card__shelf">{typo(lang, fill(c.shelf, { list: s.shelved.join(", ") }))}</p>}
+                  <div class="atlas__links">
+                    <a class="go" href={fichePath(lang, s.project)}>
+                      {VOYAGE[lang].fiche}
+                    </a>
+                    {"href" in s.app && (
+                      <a class="link" href={s.app.href} target={s.app.target} rel={s.app.rel}>
+                        {s.app.label}
+                      </a>
+                    )}
+                    <a class="link atlas__revisit" href={`${ROUTES.voyage[lang]}#escale-${s.n}`} aria-label={fill(c.revisitAria, { n: s.n, place: s.text.place })}>
+                      {c.revisit}
+                    </a>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </section>
+      </div>
 
       <ol class="cards">
         {
@@ -158,6 +238,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
 
 <script>
   import "../../scripts/app-status";
+  import "../../scripts/carnet-scene";
 </script>
 
 <style>
@@ -330,6 +411,181 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     align-self: flex-start;
   }
 
+  /* — Sur grand écran : la liste des escales, et la scène de celle qu'on survole — */
+  .atlas {
+    display: none;
+  }
+  .atlas__list {
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+    list-style: none;
+  }
+  .atlas__list li {
+    border-bottom: 1px solid var(--line);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 36px 64px minmax(0, 1fr) auto;
+    gap: 20px;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: var(--radius-m);
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .row[data-on] {
+    background: var(--card);
+  }
+  .row__num {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .row[data-on] .row__num {
+    color: var(--brass-text);
+  }
+  .row__img {
+    width: 64px;
+    height: 64px;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+  }
+  .row__img img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .row__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .row__name {
+    font-size: 30px;
+    line-height: 1.05;
+  }
+  .row__kind {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .row__badges {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .atlas__view {
+    position: sticky;
+    top: 24px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: var(--card);
+  }
+  .atlas__media {
+    aspect-ratio: 16 / 9;
+    transition: background 0.3s;
+  }
+  .atlas__media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  /* Les textes des dix escales, superposés : la plus longue donne la hauteur, rien ne saute au survol. */
+  .atlas__panels {
+    display: grid;
+    padding: 32px 40px 36px;
+  }
+  .atlas__panel {
+    display: flex;
+    grid-area: 1 / 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .atlas__panel[data-off] {
+    visibility: hidden;
+  }
+  .atlas__panel .row__badges {
+    justify-content: flex-start;
+  }
+  .atlas__stop {
+    margin: 0;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .atlas__name {
+    margin: 0;
+    font-size: clamp(48px, 4vw, 68px);
+    line-height: 1;
+  }
+  .atlas__kind {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .atlas__pitch {
+    max-width: 640px;
+    margin: 6px 0 0;
+    font-size: 19px;
+    line-height: 1.55;
+  }
+  .atlas__links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 24px;
+    margin-top: 12px;
+  }
+  .atlas__revisit {
+    color: var(--muted);
+  }
+
+  @media (min-width: 1280px) {
+    .carnet {
+      max-width: 1840px;
+    }
+    .top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 64px;
+      align-items: end;
+      padding-bottom: 64px;
+    }
+    .top .intro {
+      padding-bottom: 0;
+    }
+    .top .quick {
+      margin: 0;
+    }
+    .atlas {
+      display: grid;
+      grid-template-columns: minmax(440px, 0.85fr) minmax(0, 1fr);
+      gap: 64px;
+      align-items: start;
+    }
+    .cards {
+      display: none;
+    }
+  }
+  /* Entre 1 280 et 1 600 px, la liste est étroite : ses pastilles laissent la place au type du projet, et
+     restent sur la scène, à côté. */
+  @media (min-width: 1280px) and (max-width: 1599px) {
+    .row .row__badges {
+      display: none;
+    }
+  }
+
   .foot {
     display: flex;
     flex-wrap: wrap;
@@ -406,7 +662,9 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .app-chip {
+    .app-chip,
+    .row,
+    .atlas__media {
       transition: none;
     }
     .live-dot[data-state="pending"],

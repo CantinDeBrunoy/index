@@ -41,6 +41,9 @@ export interface CarnetStrings {
   revisit: string;
   /** Pour les lecteurs d'écran : {n} l'escale, {place} son lieu. */
   revisitAria: string;
+  /** Sur grand écran, la liste des escales et la scène de celle qu'on survole. */
+  listAria: string;
+  previewAria: string;
   /** {list} : les projets racontés sur la fiche de l'escale. */
   shelf: string;
   /** Le titre de la rangée des raccourcis. */
@@ -69,6 +72,8 @@ export const CARNET: Record<Lang, CarnetStrings> = {
     intro: `Les ${inWords("fr", projects.length)} projets, escale par escale : chaque carte ouvre sa fiche.`,
     revisit: "Revoir l'escale →",
     revisitAria: "Revoir l'escale {n} : {place}",
+    listAria: "Les escales du voyage",
+    previewAria: "L'escale survolée, en grand",
     shelf: "Sur l'étagère aussi : {list}",
     quick: "Ouvrir une app directement",
     quickDownload: "Windows ↓",
@@ -95,6 +100,8 @@ export const CARNET: Record<Lang, CarnetStrings> = {
     intro: `All ${inWords("en", projects.length)} projects, stop by stop: each card opens its page.`,
     revisit: "Back to the stop →",
     revisitAria: "Back to stop {n}: {place}",
+    listAria: "The journey's stops",
+    previewAria: "The stop you're pointing at, up close",
     shelf: "Also on the shelf: {list}",
     quick: "Open an app directly",
     quickDownload: "Windows ↓",
