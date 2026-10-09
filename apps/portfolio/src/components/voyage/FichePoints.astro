@@ -1,0 +1,381 @@
+---
+// Le projet en points, sur une ligne de vol : le pourquoi, ce que ça fait, comment c'est fait. On choisit un
+// point (au clic, aux flèches du clavier, ou avec précédent / suivant), son texte s'affiche dessous et l'avion
+// se pose dessus (scripts/fiche-points.ts). Les textes sont superposés : la hauteur reste celle du plus long,
+// rien ne saute en changeant de point. Sans script, la ligne disparaît et tous les points se lisent à la suite.
+export interface Point {
+  title: string;
+  text: string;
+  /** Le pourquoi : le texte en grande citation. */
+  quote?: boolean;
+}
+interface Props {
+  groups: { label: string; points: Point[] }[];
+  /** Préfixe des id des onglets et des panneaux. */
+  id: string;
+  aria: string;
+  prev: string;
+  next: string;
+}
+const { groups, id, aria, prev, next } = Astro.props;
+
+let count = 0;
+const stops = groups
+  .filter((g) => g.points.length)
+  .map((g) => ({ label: g.label, points: g.points.map((p) => ({ ...p, group: g.label, i: count, n: String(++count).padStart(2, "0") })) }));
+const flat = stops.flatMap((g) => g.points);
+const ARROW = { prev: "M19 12H5M11 18l-6-6 6-6", next: "M5 12h14M13 6l6 6-6 6" };
+---
+
+{
+  flat.length > 0 && (
+    <section class="points" data-points aria-label={aria}>
+      <script is:inline>document.currentScript.parentElement.classList.add("js");</script>
+      <div class="route">
+        <span class="route__line" aria-hidden="true" />
+        <span class="route__done" aria-hidden="true" />
+        <svg class="route__plane" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" transform="rotate(90 12 12)" />
+        </svg>
+        <div class="route__groups" role="tablist" aria-label={aria}>
+          {
+            stops.map((g) => (
+              <div class="route__group" role="presentation">
+                <span class="route__label" aria-hidden="true">
+                  {g.label}
+                </span>
+                <div class="route__stops" role="presentation">
+                  {g.points.map((p) => (
+                    <button
+                      type="button"
+                      role="tab"
+                      class="route__stop"
+                      id={`${id}-tab-${p.i}`}
+                      aria-controls={`${id}-panel-${p.i}`}
+                      aria-selected={p.i === 0 ? "true" : "false"}
+                      aria-label={`${p.n} · ${p.group} · ${p.title}`}
+                      tabindex={p.i === 0 ? 0 : -1}
+                    >
+                      <span class="route__dot" />
+                      <span class="route__num" aria-hidden="true">
+                        {p.n}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="points__body">
+        <div class="panels">
+          {flat.map((p) => (
+            <div class="panel" role="tabpanel" id={`${id}-panel-${p.i}`} aria-labelledby={`${id}-tab-${p.i}`} data-off={p.i === 0 ? undefined : ""}>
+              <div>
+                <p class="panel__kicker">
+                  {p.n} · {p.group}
+                </p>
+                <h3 class="serif panel__title">{p.title}</h3>
+              </div>
+              <p class:list={[p.quote ? "serif panel__quote" : "panel__text"]}>{p.text}</p>
+            </div>
+          ))}
+        </div>
+        <div class="points__nav">
+          <button type="button" class="points__btn" data-step="-1" aria-label={prev}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d={ARROW.prev} />
+            </svg>
+          </button>
+          <span class="points__pos" aria-hidden="true">
+            <span data-pos>1</span> / {flat.length}
+          </span>
+          <button type="button" class="points__btn" data-step="1" aria-label={next}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d={ARROW.next} />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<script>
+  import "../../scripts/fiche-points";
+</script>
+
+<style>
+  .points {
+    padding: 72px 0 56px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* — La ligne de vol : les points d'un groupe serrés, les groupes répartis sur la largeur, pour qu'on voie
+     les trois temps ; le trait, son tronçon parcouru et l'avion sont placés par le script — */
+  .route {
+    position: relative;
+    padding-bottom: 26px;
+  }
+  .route__groups {
+    display: flex;
+    justify-content: space-between;
+    gap: 48px;
+  }
+  .route__group {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+  }
+  .route__label {
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .route__stops {
+    display: flex;
+    gap: 64px;
+  }
+  .route__stop {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    cursor: pointer;
+  }
+  .route__dot {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--brass);
+    border-radius: var(--radius-pill);
+    background: var(--paper);
+    transition:
+      width 0.25s,
+      height 0.25s,
+      background 0.25s,
+      box-shadow 0.25s;
+  }
+  .route__stop:global(.done) .route__dot {
+    background: var(--brass);
+  }
+  .route__stop[aria-selected="true"] .route__dot {
+    width: 22px;
+    height: 22px;
+    background: var(--brass);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--brass) 24%, transparent);
+  }
+  .route__stop:hover .route__dot {
+    background: var(--brass);
+  }
+  .route__num {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    transform: translateX(-50%);
+  }
+  .route__stop[aria-selected="true"] .route__num {
+    color: var(--brass-text);
+  }
+  .route__line,
+  .route__done {
+    position: absolute;
+    bottom: 47px;
+    left: 22px;
+  }
+  .route__line {
+    right: 22px;
+    border-top: 2px dashed color-mix(in srgb, var(--brass) 45%, var(--paper));
+  }
+  .route__done {
+    width: 0;
+    height: 2px;
+    background: var(--brass);
+    transition: width 0.4s;
+  }
+  .route__plane {
+    position: absolute;
+    bottom: 76px;
+    left: 0;
+    margin-left: -15px;
+    color: var(--brass);
+    transform: translateX(22px);
+    transition: transform 0.4s;
+  }
+
+  /* — Le texte du point choisi : les panneaux superposés, seul le choisi visible — */
+  .points__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    column-gap: 64px;
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid var(--line);
+  }
+  .panels {
+    grid-column: 1 / -1;
+  }
+  .panel {
+    display: grid;
+    grid-template-columns: subgrid;
+    align-content: start;
+    align-items: start;
+  }
+  .panel + .panel {
+    margin-top: 48px;
+  }
+  .panel__kicker {
+    margin: 0 0 14px;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .panel__title {
+    margin: 0;
+    font-size: clamp(36px, 3.8vw, 52px);
+    line-height: 1.02;
+  }
+  .panel__text {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.6;
+  }
+  .panel__quote {
+    margin: 0;
+    font-size: clamp(24px, 2.3vw, 30px);
+    line-height: 1.3;
+  }
+  .points__nav {
+    display: flex;
+    grid-column: 2;
+    align-items: center;
+    gap: 14px;
+    margin-top: 28px;
+  }
+  .points__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 1.5px solid var(--brass);
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      color 0.2s;
+  }
+  .points__btn:hover {
+    background: var(--ink);
+    color: var(--card);
+  }
+  .points__pos {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  /* Avec le script : les panneaux dans la même case, la plus haute donne la hauteur ; sans, à la suite. */
+  .points:global(.js) .panels {
+    display: grid;
+    grid-template-columns: subgrid;
+  }
+  .points:global(.js) .panel {
+    grid-area: 1 / 1 / 2 / -1;
+  }
+  .points:global(.js) .panel + .panel {
+    margin-top: 0;
+  }
+  .points:global(.js) .panel[data-off] {
+    visibility: hidden;
+  }
+  .points:not(:global(.js)) .route,
+  .points:not(:global(.js)) .points__nav {
+    display: none;
+  }
+  .points:not(:global(.js)) .points__body {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .route__dot,
+    .route__done,
+    .route__plane {
+      transition: none;
+    }
+  }
+
+  /* Sur téléphone : les groupes resserrés, sans leur nom (le panneau le dit), le texte sous le titre. */
+  @media (max-width: 700px) {
+    .points {
+      padding: 48px 0 40px;
+    }
+    .route__groups {
+      gap: 12px;
+    }
+    .route__group {
+      gap: 0;
+    }
+    .route__label {
+      display: none;
+    }
+    .route__stops {
+      gap: 6px;
+      padding-top: 44px;
+    }
+    .route__stop {
+      width: 36px;
+      height: 36px;
+    }
+    .route__num {
+      font-size: 10px;
+    }
+    .route__line,
+    .route__done {
+      bottom: 43px;
+      left: 18px;
+    }
+    .route__line {
+      right: 18px;
+    }
+    .route__plane {
+      bottom: 66px;
+      transform: translateX(18px);
+    }
+    .points__body {
+      grid-template-columns: minmax(0, 1fr);
+      margin-top: 28px;
+      padding-top: 28px;
+    }
+    .panel {
+      gap: 14px;
+    }
+    .points__nav {
+      grid-column: 1;
+    }
+    .panel__text {
+      font-size: 17px;
+    }
+  }
+</style>

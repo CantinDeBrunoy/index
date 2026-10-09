@@ -16,6 +16,10 @@ export const FICHE: Record<
     resume: string;
     /** La bande des escales, sous l'en-tête : avant la première escale, le départ. */
     stripAria: string;
+    /** La ligne de vol : le pourquoi, ce que ça fait et comment c'est fait, un point à la fois. */
+    pointsAria: string;
+    prevPoint: string;
+    nextPoint: string;
     departLabel: string;
     depart: string;
     /** La vidéo de démo, quand le projet en a une (sinon, la capture « En images »). */
@@ -54,6 +58,9 @@ export const FICHE: Record<
   fr: {
     resume: "Reprendre le voyage",
     stripAria: "Les escales voisines",
+    pointsAria: "Le projet, point par point",
+    prevPoint: "Point précédent",
+    nextPoint: "Point suivant",
     departLabel: "Avant le décollage",
     depart: "Le départ",
     demo: "La démo",
@@ -88,6 +95,9 @@ export const FICHE: Record<
   en: {
     resume: "Resume the journey",
     stripAria: "Neighbouring stops",
+    pointsAria: "The project, point by point",
+    prevPoint: "Previous point",
+    nextPoint: "Next point",
     departLabel: "Before take-off",
     depart: "The departure",
     demo: "The demo",
