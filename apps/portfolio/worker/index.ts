@@ -1,3 +1,4 @@
+import { handleAuth } from "@index/auth/hub";
 import { projects } from "@index/projects";
 import { createGitHubClient, projectAlerts, syncIssues, workflowAlerts } from "@index/projects/alerts";
 import { checkProject, type CheckOptions, type Health, type ProjectCheck } from "@index/projects/check";
@@ -6,13 +7,15 @@ import { checkProject, type CheckOptions, type Health, type ProjectCheck } from 
  * Worker du portfolio :
  * - sert le site statique (build Astro) ;
  * - GET /api/status : statut live de chaque entrée, sondé côté serveur ;
+ * - /api/auth/* : la connexion du propriétaire par GitHub (@index/auth/hub), qui ouvre ses vraies données
+ *   dans Magellan et Hublot ;
  * - cron Cloudflare (toutes les heures) : les mêmes sondes que keep-alive.yml, donc Supabase
  *   reste éveillé même si GitHub coupe ses crons, et une issue s'ouvre quand un service tombe
  *   ou quand GitHub désactive un workflow planifié (à réactiver à la main).
  *
  * Secrets (facultatifs) : TONALLI_SUPABASE_ANON_KEY pour sonder la base de Tonalli,
  * GITHUB_ALERTS_TOKEN (jeton à grain fin sur CantinDeBrunoy/index : Issues en écriture,
- * Actions en lecture) pour les issues.
+ * Actions en lecture) pour les issues, GITHUB_CLIENT_SECRET et SESSION_SECRET pour la connexion.
  */
 
 const TTL_SECONDS = 300;
@@ -25,6 +28,8 @@ export interface StatusPayload {
 interface Secrets {
   TONALLI_SUPABASE_ANON_KEY?: string;
   GITHUB_ALERTS_TOKEN?: string;
+  GITHUB_CLIENT_SECRET?: string;
+  SESSION_SECRET?: string;
 }
 
 let memo: { at: number; body: string } | undefined;
@@ -111,6 +116,8 @@ export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
     if (pathname === "/api/status") return status(request, env, ctx);
+    const auth = await handleAuth(request, secrets(env), ctx);
+    if (auth) return auth;
     if (pathname.startsWith("/api/")) return new Response("Introuvable", { status: 404 });
     if (pathname.endsWith(".mp4")) return video(request, env);
     return env.ASSETS.fetch(request);

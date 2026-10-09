@@ -51,6 +51,8 @@ export interface CarnetStrings {
   quick: string;
   /** La pastille du logiciel à télécharger, à la place du statut. */
   quickDownload: string;
+  /** Sous les pastilles, quand le propriétaire est connecté (@index/auth). */
+  owner: string;
   /** Pour les lecteurs d'écran, après le nom de l'app : son statut. */
   states: Record<LiveState, string>;
   /** Sous les pastilles : le résumé du statut, puis son âge. */
@@ -78,6 +80,7 @@ export const CARNET: Record<Lang, CarnetStrings> = {
     shelf: "Sur l'étagère aussi : {list}",
     quick: "Ouvrir une app directement",
     quickDownload: "Windows ↓",
+    owner: "Connecté : Magellan et Hublot s'ouvrent sur mes vraies données.",
     states: {
       pending: "vérification du statut",
       online: "en ligne",
@@ -106,6 +109,7 @@ export const CARNET: Record<Lang, CarnetStrings> = {
     shelf: "Also on the shelf: {list}",
     quick: "Open an app directly",
     quickDownload: "Windows ↓",
+    owner: "Signed in: Magellan and Hublot open on my real data.",
     states: {
       pending: "checking status",
       online: "online",

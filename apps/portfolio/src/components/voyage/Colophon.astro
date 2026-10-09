@@ -1,5 +1,5 @@
 ---
-/** Le bas de page : le lien vers les mentions légales. */
+/** Le bas de page : le lien vers les mentions légales, et la connexion du propriétaire (scripts/owner.ts). */
 import { ROUTES, STRINGS, type Lang } from "../../i18n/voyage";
 
 interface Props {
@@ -7,6 +7,15 @@ interface Props {
 }
 
 const { lang } = Astro.props;
+const t = STRINGS[lang];
 ---
 
-<p class="colophon"><a href={ROUTES.mentions[lang]}>{STRINGS[lang].legal}</a></p>
+<p class="colophon">
+  <a href={ROUTES.mentions[lang]}>{t.legal}</a>
+  <span aria-hidden="true">·</span>
+  <a href="/api/auth/login" rel="nofollow" data-auth={JSON.stringify({ logout: t.logout, signedIn: t.signedIn })}>{t.login}</a>
+</p>
+
+<script>
+  import "../../scripts/owner";
+</script>

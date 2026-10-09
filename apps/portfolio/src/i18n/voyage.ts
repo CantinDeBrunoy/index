@@ -64,6 +64,11 @@ const fr = {
   langNames: { fr: "Français", en: "English" },
   menu: "Ouvrir le menu",
   legal: "Mentions légales",
+  /** Au pied des pages : la connexion du propriétaire (@index/auth), qui ouvre ses vraies données dans les apps. */
+  login: "Connexion",
+  logout: "Déconnexion",
+  /** {login} : le compte GitHub connecté. */
+  signedIn: "Connecté : {login}",
   /** Au pied du carnet et d'« À propos », avant l'adresse où m'écrire. En HTML : l'italique. */
   nextIdea: "Une idée pour la prochaine <em>escale</em> ?",
   /** Les pastilles d'un projet (Badge de @index/projects), et leur explication au survol. */
@@ -88,6 +93,9 @@ const en: Strings = {
   langNames: { fr: "Français", en: "English" },
   menu: "Open the menu",
   legal: "Legal notice",
+  login: "Sign in",
+  logout: "Sign out",
+  signedIn: "Signed in: {login}",
   nextIdea: "An idea for the next <em>stop</em>?",
   badges: { ecole: "School", ia: "AI-assisted", "ia-refonte": "AI-assisted rebuild" },
   badgeTitles: {

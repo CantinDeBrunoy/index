@@ -104,6 +104,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
               <span data-summary>{c.checking}</span>
               <span data-checked />
             </p>
+            <p class="quick__owner" data-owner-note hidden>{c.owner}</p>
           </section>
         )
       }
@@ -354,6 +355,12 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     gap: 6px 10px;
     margin: 0;
     color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .quick__owner {
+    margin: 0;
+    color: var(--brass-text);
     font-family: var(--font-mono);
     font-size: 13px;
   }

@@ -1,0 +1,24 @@
+{
+  "name": "@index/auth",
+  "version": "0.0.0",
+  "private": true,
+  "description": "La connexion du propriétaire : GitHub sur le hub, une session signée que Magellan et Hublot vérifient auprès du hub",
+  "type": "module",
+  "exports": {
+    ".": "./src/session.ts",
+    "./hub": "./src/hub.ts",
+    "./app": "./src/app.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@index/projects": "workspace:*"
+  },
+  "devDependencies": {
+    "@index/config": "workspace:*",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}

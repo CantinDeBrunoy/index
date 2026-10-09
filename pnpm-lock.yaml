@@ -330,7 +330,7 @@ importers:
     devDependencies:
       '@cloudflare/vite-plugin':
         specifier: ^1.60.2
-        version: 1.62.5(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))(wrangler@4.147.0(@types/node@24.19.1))
+        version: 1.62.5(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(wrangler@4.147.0(@types/node@24.19.1))
       '@types/node':
         specifier: ^24.19.0
         version: 24.19.1
@@ -342,7 +342,7 @@ importers:
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
         specifier: ^6.1.1
-        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))
+        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))
       oxlint:
         specifier: ^1.85.0
         version: 1.87.0
@@ -351,16 +351,19 @@ importers:
         version: 7.0.2
       vite:
         specifier: ^8.3.1
-        version: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)
+        version: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
       vitest:
         specifier: ^5.0.1
-        version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))
+        version: 5.0.3(@types/node@24.19.1)(jsdom@27.4.0(supports-color@10.2.2))(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))
       wrangler:
         specifier: ^4.141.0
         version: 4.147.0(@types/node@24.19.1)
 
   apps/hublot:
     devDependencies:
+      '@index/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@index/projects':
         specifier: workspace:*
         version: link:../../packages/projects
@@ -375,7 +378,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@20.19.43)(vite@8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))
+        version: 4.1.11(@types/node@20.19.43)(jsdom@27.4.0(supports-color@10.2.2))(vite@8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))
       wrangler:
         specifier: ^4.147.0
         version: 4.147.0(@types/node@20.19.43)
@@ -485,6 +488,9 @@ importers:
         specifier: ~5.9.2
         version: 5.9.3
     devDependencies:
+      '@index/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@types/react':
         specifier: ~19.1.0
         version: 19.1.17
@@ -502,10 +508,13 @@ importers:
     dependencies:
       '@astrojs/mdx':
         specifier: ^8.0.2
-        version: 8.0.2(@astrojs/markdown-satteri@0.4.2)(astro@7.3.5(@types/node@24.19.1)(idb-keyval@6.3.0)(terser@5.51.2)(yaml@2.9.1))
+        version: 8.0.2(@astrojs/markdown-satteri@0.4.2)(astro@7.3.5(@types/node@24.19.1)(idb-keyval@6.3.0)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))
       '@astrojs/sitemap':
         specifier: ^3.7.4
         version: 3.7.4
+      '@index/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@index/projects':
         specifier: workspace:*
         version: link:../../packages/projects
@@ -514,7 +523,7 @@ importers:
         version: link:../../packages/ui
       astro:
         specifier: ^7.3.5
-        version: 7.3.5(@types/node@24.19.1)(idb-keyval@6.3.0)(terser@5.51.2)(yaml@2.9.1)
+        version: 7.3.5(@types/node@24.19.1)(idb-keyval@6.3.0)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
       sharp:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@24.19.1)
@@ -567,7 +576,7 @@ importers:
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
         specifier: ^6.1.0
-        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))
+        version: 6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))
       oxlint:
         specifier: ^1.79.0
         version: 1.87.0
@@ -576,7 +585,23 @@ importers:
         version: 6.0.3
       vite:
         specifier: ^8.2.2
-        version: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)
+        version: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
+
+  packages/auth:
+    dependencies:
+      '@index/projects':
+        specifier: workspace:*
+        version: link:../projects
+    devDependencies:
+      '@index/config':
+        specifier: workspace:*
+        version: link:../config
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.3
+        version: 5.0.3(@types/node@24.19.1)(jsdom@27.4.0(supports-color@10.2.2))(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))
 
   packages/config: {}
 
@@ -7699,11 +7724,11 @@ snapshots:
       github-slugger: 2.0.0
       satteri: 0.10.5
 
-  '@astrojs/mdx@8.0.2(@astrojs/markdown-satteri@0.4.2)(astro@7.3.5(@types/node@24.19.1)(idb-keyval@6.3.0)(terser@5.51.2)(yaml@2.9.1))':
+  '@astrojs/mdx@8.0.2(@astrojs/markdown-satteri@0.4.2)(astro@7.3.5(@types/node@24.19.1)(idb-keyval@6.3.0)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))':
     dependencies:
       '@astrojs/internal-helpers': 0.11.0
       '@astrojs/markdown-satteri': 0.4.2
-      astro: 7.3.5(@types/node@24.19.1)(idb-keyval@6.3.0)(terser@5.51.2)(yaml@2.9.1)
+      astro: 7.3.5(@types/node@24.19.1)(idb-keyval@6.3.0)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
       es-module-lexer: 2.3.2
 
   '@astrojs/prism@4.0.2':
@@ -8391,12 +8416,12 @@ snapshots:
     optionalDependencies:
       workerd: 1.20261001.1
 
-  '@cloudflare/vite-plugin@1.62.5(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))(wrangler@4.147.0(@types/node@24.19.1))':
+  '@cloudflare/vite-plugin@1.62.5(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))(wrangler@4.147.0(@types/node@24.19.1))':
     dependencies:
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261001.1)
       miniflare: 5.20261001.0-alpha(@types/node@24.19.1)
       unenv: 2.0.0-rc.24
-      vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)
+      vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
       workerd: 1.20261001.1
       wrangler: 4.147.0(@types/node@24.19.1)
       ws: 8.21.0
@@ -10357,13 +10382,6 @@ snapshots:
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
 
-  '@vitejs/plugin-react@6.1.2(babel-plugin-react-compiler@1.0.0)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))':
-    dependencies:
-      '@rolldown/pluginutils': 1.0.1
-      vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)
-    optionalDependencies:
-      babel-plugin-react-compiler: 1.0.0
-
   '@vitest/expect@4.1.11':
     dependencies:
       '@standard-schema/spec': 1.1.0
@@ -10373,13 +10391,13 @@ snapshots:
       chai: 6.3.0
       tinyrainbow: 3.2.0
 
-  '@vitest/mocker@4.1.11(vite@8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))':
+  '@vitest/mocker@4.1.11(vite@8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))':
     dependencies:
       '@vitest/spy': 4.1.11
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)
+      vite: 8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
 
   '@vitest/mocker@5.0.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))':
     dependencies:
@@ -10389,15 +10407,6 @@ snapshots:
       magic-string: 1.4.3
     optionalDependencies:
       vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
-
-  '@vitest/mocker@5.0.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))':
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      '@vitest/spy': 5.0.3
-      estree-walker: 3.0.3
-      magic-string: 1.4.3
-    optionalDependencies:
-      vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)
 
   '@vitest/pretty-format@4.1.11':
     dependencies:
@@ -10651,7 +10660,7 @@ snapshots:
 
   assertion-error@2.0.1: {}
 
-  astro@7.3.5(@types/node@24.19.1)(idb-keyval@6.3.0)(terser@5.51.2)(yaml@2.9.1):
+  astro@7.3.5(@types/node@24.19.1)(idb-keyval@6.3.0)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1):
     dependencies:
       '@astrojs/compiler-rs': 0.5.1
       '@astrojs/internal-helpers': 0.11.0
@@ -10701,8 +10710,8 @@ snapshots:
       unifont: 0.7.5
       unstorage: 1.17.5(idb-keyval@6.3.0)
       verkit: 0.4.1
-      vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)
-      vitefu: 1.1.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))
+      vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
+      vitefu: 1.1.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))
       xxhash-wasm: 1.1.0
       yargs-parser: 22.0.0
       zod: 4.6.5
@@ -14815,7 +14824,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite@8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1):
+  vite@8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -14826,6 +14835,7 @@ snapshots:
       '@types/node': 20.19.43
       esbuild: 0.28.1
       fsevents: 2.3.3
+      sass: 1.105.1
       terser: 5.51.2
       yaml: 2.9.1
 
@@ -14844,28 +14854,14 @@ snapshots:
       terser: 5.51.2
       yaml: 2.9.1
 
-  vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1):
-    dependencies:
-      lightningcss: 1.33.0
-      picomatch: 4.0.7
-      postcss: 8.5.29
-      rolldown: 1.2.12
-      tinyglobby: 0.2.17
+  vitefu@1.1.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)):
     optionalDependencies:
-      '@types/node': 24.19.1
-      esbuild: 0.28.1
-      fsevents: 2.3.3
-      terser: 5.51.2
-      yaml: 2.9.1
+      vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
 
-  vitefu@1.1.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)):
-    optionalDependencies:
-      vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)
-
-  vitest@4.1.11(@types/node@20.19.43)(vite@8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)):
+  vitest@4.1.11(@types/node@20.19.43)(jsdom@27.4.0(supports-color@10.2.2))(vite@8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(vite@8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))
+      '@vitest/mocker': 4.1.11(vite@8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -14882,10 +14878,11 @@ snapshots:
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       tinyrainbow: 3.2.0
-      vite: 8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)
+      vite: 8.3.2(@types/node@20.19.43)(esbuild@0.28.1)(sass@1.105.1)(terser@5.51.2)(yaml@2.9.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.43
+      jsdom: 27.4.0(supports-color@10.2.2)
     transitivePeerDependencies:
       - msw
 
@@ -14908,27 +14905,6 @@ snapshots:
     optionalDependencies:
       '@types/node': 24.19.1
       jsdom: 27.4.0(supports-color@10.2.2)
-    transitivePeerDependencies:
-      - msw
-
-  vitest@5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)):
-    dependencies:
-      '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1))
-      chai: 6.3.0
-      es-module-lexer: 2.3.2
-      expect-type: 1.4.0
-      magic-string: 1.4.3
-      obug: 2.2.1
-      picomatch: 4.0.7
-      std-env: 4.3.0
-      tinybench: 6.2.0
-      tinyexec: 1.3.1
-      tinyglobby: 0.2.17
-      vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.1)(terser@5.51.2)(yaml@2.9.1)
-      why-is-node-running: 3.2.1
-    optionalDependencies:
-      '@types/node': 24.19.1
     transitivePeerDependencies:
       - msw
 

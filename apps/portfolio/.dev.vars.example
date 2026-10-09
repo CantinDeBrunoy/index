@@ -4,3 +4,7 @@ TONALLI_SUPABASE_ANON_KEY=
 # Jeton GitHub à grain fin, dépôt CantinDeBrunoy/index seulement : Issues (lecture/écriture),
 # Actions (lecture). Laisser vide en local pour ne pas créer d'issues.
 GITHUB_ALERTS_TOKEN=
+# Connexion du propriétaire (/api/auth/*) : secret de l'application OAuth GitHub et secret de session
+# (une longue valeur aléatoire). Sans eux, la connexion répond « pas encore configurée ».
+GITHUB_CLIENT_SECRET=
+SESSION_SECRET=

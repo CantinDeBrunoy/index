@@ -18,6 +18,12 @@
   "triggers": { "crons": ["47 * * * *"] },
   // Secrets facultatifs (local : .dev.vars ; production : pnpm exec wrangler secret put <NOM>) :
   // - TONALLI_SUPABASE_ANON_KEY : sonde aussi la base Supabase de Tonalli (et la garde éveillée) ;
-  // - GITHUB_ALERTS_TOKEN : ouvre et ferme les issues d'alerte sur CantinDeBrunoy/index.
+  // - GITHUB_ALERTS_TOKEN : ouvre et ferme les issues d'alerte sur CantinDeBrunoy/index ;
+  // - GITHUB_CLIENT_SECRET et SESSION_SECRET : la connexion du propriétaire (/api/auth/*), avec
+  //   GITHUB_CLIENT_ID ci-dessous. Magellan et Hublot la vérifient auprès de ce Worker (liaison HUB).
+  "vars": {
+    // L'identifiant de l'application OAuth GitHub « INDEX » : public, il figure dans l'adresse de connexion.
+    "GITHUB_CLIENT_ID": ""
+  },
   "observability": { "enabled": true }
 }
