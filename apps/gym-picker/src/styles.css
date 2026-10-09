@@ -68,6 +68,18 @@ h1 {
   font-size: 0.95rem;
 }
 
+/* Mode démo : rappelle à l'écran que rien n'est réel. */
+.demo-tag {
+  display: inline-block;
+  margin: 0.5rem 0 0;
+  padding: 0.125rem 0.625rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .notice,
 .error {
   margin: 0;

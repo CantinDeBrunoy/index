@@ -1,4 +1,5 @@
 import type { LatLng } from '../shared/api';
+import { DEMO, DEMO_POSITION, pause } from './demo';
 
 export type GeoFailure = 'denied' | 'unavailable' | 'timeout' | 'unsupported';
 
@@ -34,6 +35,7 @@ export const PRECISE_FIX: PositionOptions = {
 const REASONS: Record<number, GeoFailure> = { 1: 'denied', 2: 'unavailable', 3: 'timeout' };
 
 export function getPosition(options: PositionOptions): Promise<LatLng> {
+  if (DEMO) return demoPosition(options);
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) {
       reject(new GeoError('unsupported'));
@@ -45,4 +47,11 @@ export function getPosition(options: PositionOptions): Promise<LatLng> {
       options,
     );
   });
+}
+
+/** Mode démo : une position inventée, après le temps d'un vrai relevé. Le GPS n'est jamais sollicité. */
+async function demoPosition({ enableHighAccuracy }: PositionOptions): Promise<LatLng> {
+  await pause(enableHighAccuracy ? 1_500 : 600);
+  if (DEMO === 'domicile') throw new GeoError('timeout');
+  return DEMO_POSITION;
 }

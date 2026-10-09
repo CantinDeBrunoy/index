@@ -1,4 +1,5 @@
 import type { ApiError, EtaResponse, LatLng } from '../shared/api';
+import { DEMO, demoEtaResponse } from './demo';
 
 // Filet de sécurité si le réseau ne répond plus : le Worker, lui, abandonne
 // TomTom au bout de 4 s.
@@ -13,6 +14,8 @@ export class ApiFailure extends Error {
 }
 
 export async function fetchEtas({ lat, lng }: LatLng, signal: AbortSignal): Promise<EtaResponse> {
+  // Mode démo : des temps inventés, calculés dans la page. Le Worker n'est jamais appelé.
+  if (DEMO) return demoEtaResponse({ lat, lng }, signal);
   const response = await fetch('/api/etas', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -72,6 +72,15 @@ cache. Il est désactivé en dev. Si sa stratégie change, incrémenter `CACHE`.
 La précision Wi-Fi ou antenne suffit pour un temps de trajet et répond bien plus
 vite. La haute précision ne sert qu'à enregistrer le domicile.
 
+**Mode démo** (`/?demo`, [src/demo.ts](src/demo.ts)), pour filmer l'app sans
+montrer les vraies salles ni le domicile : quatre salles fictives au centre de
+Paris, une position inventée, des temps calculés dans la page, qui changent à
+chaque actualisation. Ni GPS ni appel au Worker : un `dist/client` servi seul
+suffit. Il tient le temps de l'onglet (sessionStorage) ; `?demo=domicile`
+simule un GPS en panne. Les branchements sont en bas de pile (`getPosition`,
+`fetchEtas`, `home.ts`) : en démo, rien n'atteint le vrai GPS, l'API ni le
+domicile enregistré.
+
 ## 4. Pièges
 
 - **Node 22.12 minimum** : wrangler 4 et Vitest 5 refusent Node 20. Avec
@@ -106,8 +115,8 @@ vite. La haute précision ne sert qu'à enregistrer le domicile.
 ## 5. Tester
 
 `npm test` couvre les fonctions pures : lecture de la matrice TomTom, tri,
-validation, formats, liens. Pour l'API de bout en bout, avec une clé dans
-`.dev.vars` :
+validation, formats, liens, temps de démo. Pour l'API de bout en bout, avec
+une clé dans `.dev.vars` :
 
 ```bash
 npm run dev

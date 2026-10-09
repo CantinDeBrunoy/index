@@ -79,6 +79,13 @@ Le HTTPS est obligatoire : sans lui, le navigateur refuse la géolocalisation.
 3. Une fois chez toi, dans « Domicile de secours », appuyer sur « Utiliser ma
    position actuelle ». Ce point de secours reste sur le téléphone.
 
+## Mode démo
+
+`/?demo` montre l'app avec des salles et des trajets inventés, au centre de
+Paris, sans GPS ni clé TomTom : de quoi la filmer sans révéler où tu habites.
+`/?demo=domicile` joue le GPS en panne. Le mode tient jusqu'à la fermeture de
+l'onglet.
+
 ## Changer les salles
 
 Tout est dans [`shared/gyms.ts`](shared/gyms.ts) : nom, adresse (pour

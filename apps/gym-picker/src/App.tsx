@@ -1,11 +1,14 @@
 import type { Leg } from '../shared/api';
 import { GYMS, type Gym } from '../shared/gyms';
+import { DEMO, DEMO_GYMS } from './demo';
 import { formatClock, formatDistance, formatDuration, formatElapsed, NBSP } from './format';
 import { HomeSettings } from './HomeSettings';
 import { googleMapsUrl, wazeUrl } from './links';
 import { useEtas, type EtasState } from './useEtas';
 
-const gymsById = new Map(GYMS.map((gym) => [gym.id, gym]));
+// En démo, des salles fictives : les vraies n'apparaissent jamais à l'écran.
+const gyms = DEMO ? DEMO_GYMS : GYMS;
+const gymsById = new Map(gyms.map((gym) => [gym.id, gym]));
 
 /** `leg` : `undefined` tant que rien n'est calculé, `null` si aucun itinéraire. */
 type Row = { gym: Gym; leg: Leg | null | undefined };
@@ -20,12 +23,13 @@ export function App() {
         const gym = gymsById.get(gymId);
         return gym ? [{ gym, leg }] : [];
       })
-    : GYMS.map((gym) => ({ gym, leg: undefined }));
+    : gyms.map((gym) => ({ gym, leg: undefined }));
 
   return (
     <main className="app">
       <header>
         <h1>Quelle salle&nbsp;?</h1>
+        {DEMO && <p className="demo-tag">Démo · salles et trajets fictifs</p>}
         <p className="status" aria-live="polite">
           {statusLine(state)}
         </p>
