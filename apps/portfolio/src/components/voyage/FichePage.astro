@@ -448,16 +448,20 @@ const T = (text: string) => typo(lang, text);
     border-bottom: 1px solid var(--line);
   }
 
-  /* La démo (ou la capture) sur les trois quarts ; la carte d'embarquement à sa droite. Plus étroit,
-     elle passe dessous. */
+  /* La démo (ou la capture) sur les trois quarts ; la carte d'embarquement à sa droite, centrée sur la démo
+     elle-même, pas sur sa légende : la démo et la légende occupent deux rangées (une sous-grille), la carte la
+     première. Plus étroit, elle passe dessous. */
   .pictures__row {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
-    align-items: start;
-    gap: 36px 48px;
+    grid-template-rows: auto auto;
+    gap: 14px 48px;
     margin-top: 28px;
   }
   .pictures__row :global(.pass) {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
     justify-self: center;
   }
   /* Sans titre visible au-dessus (la vidéo de démo se passe de légende) : rien à décaler. */
@@ -465,18 +469,27 @@ const T = (text: string) => typo(lang, text);
     margin-top: 0;
   }
   .pictures figure {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
+    display: grid;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    grid-template-rows: subgrid;
+    justify-items: start;
     margin: 0;
+  }
+  .pictures figure .shot {
+    align-self: center;
   }
   @media (max-width: 1000px) {
     .pictures__row {
       grid-template-columns: minmax(0, 1fr);
     }
+    .pictures__row :global(.pass) {
+      grid-column: 1;
+      grid-row: 3;
+      margin-top: 22px;
+    }
     .pictures figure {
-      align-items: center;
+      justify-items: center;
     }
   }
   .shot {
