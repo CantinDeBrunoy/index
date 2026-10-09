@@ -23,8 +23,10 @@ dist/
 !apps/portfolio/public/voyage/*.mp4
 # Et les démos des fiches (scripts/demo-videos.ts, 1280 × 800, 4 à 7 Mo chacune), pour la même raison.
 !apps/portfolio/public/demos/*.mp4
-# Les planches de vignettes des démos, pour les relire, restent en local.
+# Les planches de vignettes des démos, pour les relire, restent en local, comme les enregistrements sources
+# des montages (scripts/demo-montage.ts), trop lourds pour le dépôt.
 scripts/.demo-sheets/
+scripts/.demo-sources/
 
 # Divers
 .DS_Store

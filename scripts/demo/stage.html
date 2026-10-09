@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Plateau</title>
+<!--
+  Le plateau des montages (scripts/demo-montage.ts), d'après les démos de Tonalli et de Magellan montées par
+  Cantin : un titre d'ouverture, des chapitres (une étiquette, un titre, un texte) à gauche avec l'app dans un
+  téléphone ou une fenêtre à droite, « Sous le capot », puis le générique. 1280 × 720.
+  Le script pilote tout par window.stage : le thème, les scènes, et ce qui passe dans l'appareil (une vidéo
+  source recadrée, une image fixe qu'on parcourt, ou l'app elle-même dans un cadre).
+-->
+<style>
+  @font-face { font-family: "Geist"; src: url("/fonts/geist.woff2") format("woff2-variations"); font-weight: 100 900; }
+  @font-face { font-family: "Geist Mono"; src: url("/fonts/geist-mono.woff2") format("woff2-variations"); font-weight: 100 900; }
+  :root {
+    --bg: #fbf7f2; --ink: #1f2430; --muted: #5b6270; --accent: #e19a2f; --card: #ffffff; --line: rgba(0, 0, 0, 0.08);
+    --bezel: #1d1a18; --shadow: 0 30px 70px rgba(20, 16, 12, 0.22);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; background: var(--bg); color: var(--ink);
+    font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .scene { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; pointer-events: none; }
+  .scene.on { opacity: 1; pointer-events: auto; }
+
+  /* Les textes */
+  .kicker { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--muted); font-family: "Geist Mono", monospace;
+    font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .kicker::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .rule { width: 56px; height: 3px; border-radius: 2px; background: var(--accent); }
+  h1, h2 { margin: 0; font-weight: 700; letter-spacing: -0.02em; }
+  b { font-weight: 650; color: var(--ink); }
+
+  /* Le titre et le générique */
+  #title, #outro { display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 0 120px; }
+  #title h1, #outro h1 { font-size: 92px; line-height: 0.95; }
+  #title .tag { margin: 0; max-width: 760px; color: var(--muted); font-size: 28px; line-height: 1.35; }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+  .meta span { padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--muted);
+    font-family: "Geist Mono", monospace; font-size: 13px; }
+  #outro .tag { margin: 0; color: var(--muted); font-size: 22px; }
+
+  /* Un chapitre : le texte à gauche, l'appareil à droite */
+  #chapter { display: grid; grid-template-columns: 520px 1fr; align-items: center; gap: 40px; padding: 0 80px 0 96px; }
+  .copy { display: flex; flex-direction: column; gap: 18px; transition: opacity 0.35s ease, transform 0.35s ease; }
+  .copy.out { opacity: 0; transform: translateY(8px); }
+  .copy h2 { font-size: 44px; line-height: 1.05; }
+  .copy p.text { margin: 0; color: var(--muted); font-size: 21px; line-height: 1.5; }
+  .holder { position: relative; display: flex; align-items: center; justify-content: center; height: 720px; }
+
+  .device { position: relative; transform: translateX(60px); opacity: 0; transition: transform 0.8s cubic-bezier(.2,.8,.2,1), opacity 0.6s ease; }
+  .device.in { transform: none; opacity: 1; }
+  .device.phone { width: 304px; height: 628px; padding: 12px; border-radius: 48px; background: var(--bezel); box-shadow: var(--shadow); }
+  .device.phone .screen { width: 280px; height: 604px; border-radius: 36px; }
+  .device.window { width: 600px; height: 588px; border-radius: 14px; background: var(--card); box-shadow: var(--shadow); overflow: hidden; }
+  .device.window .bar { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; background: #ece8e1; }
+  .device.window .bar i { width: 11px; height: 11px; border-radius: 50%; background: #d5cfc6; }
+  .device.window .screen { width: 600px; height: 554px; }
+  .screen { position: relative; overflow: hidden; background: #fff; }
+  .screen > * { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .screen video, .screen img { display: block; }
+  .screen iframe { border: 0; background: #fff; }
+  .pan { transition: transform var(--pan, 4s) cubic-bezier(.3,.1,.3,1); }
+
+  /* Sous le capot */
+  #capot { display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: 0 96px; }
+  #capot h2 { font-size: 48px; }
+  #capot .sub { margin: 0 0 8px; color: var(--muted); font-size: 21px; }
+  .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .card { display: flex; flex-direction: column; gap: 10px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 18px; background: var(--card);
+    opacity: 0; transform: translateY(14px); transition: opacity 0.5s ease, transform 0.5s ease; }
+  .card.in { opacity: 1; transform: none; }
+  .card h3 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 21px; }
+  .card h3::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dot, var(--accent)); }
+  .card p { margin: 0; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; line-height: 1.45; }
+  #capot .meta { margin-top: 14px; }
+
+  /* La bande de couleurs du bas, comme les émotions de Tonalli */
+  .strip { position: absolute; left: 0; right: 0; bottom: 0; display: flex; height: 6px; }
+  .strip i { flex: 1; }
+</style>
+</head>
+<body>
+<section class="scene" id="title"><div class="rule"></div><h1></h1><p class="tag"></p><div class="meta"></div></section>
+<section class="scene" id="chapter">
+  <div class="copy"><p class="kicker"></p><h2></h2><p class="text"></p></div>
+  <div class="holder"><div class="device"><div class="bar"><i></i><i></i><i></i></div><div class="screen"></div></div></div>
+</section>
+<section class="scene" id="capot"><p class="kicker"></p><h2></h2><p class="sub"></p><div class="cards"></div><div class="meta"></div></section>
+<section class="scene" id="outro"><div class="rule"></div><h1></h1><p class="tag"></p></section>
+<div class="strip"></div>
+<script>
+  const $ = (s) => document.querySelector(s);
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const chips = (el, list) => el.replaceChildren(...(list ?? []).map((t) => Object.assign(document.createElement("span"), { textContent: t })));
+  let media = null;
+  const stills = {};
+
+  window.stage = {
+    theme(vars, strip = []) {
+      for (const [k, v] of Object.entries(vars)) document.documentElement.style.setProperty(`--${k}`, v);
+      $(".strip").replaceChildren(...strip.map((c) => Object.assign(document.createElement("i"), { style: `background:${c}` })));
+    },
+    /** Change de scène : l'ancienne s'efface d'abord, puis la nouvelle paraît (sans que les textes se superposent). */
+    async show(id) {
+      const current = document.querySelector(".scene.on");
+      if (current && current.id === id) return;
+      if (current) { current.classList.remove("on"); await wait(520); }
+      $(`#${id}`).classList.add("on");
+    },
+    async title({ name, tag, meta }) {
+      $("#title h1").textContent = name;
+      $("#title .tag").textContent = tag ?? "";
+      chips($("#title .meta"), meta);
+      await this.show("title");
+    },
+    async outro({ name, tag }) {
+      $("#outro h1").textContent = name;
+      $("#outro .tag").textContent = tag ?? "";
+      await this.show("outro");
+    },
+    /** Le texte d'un chapitre ; l'appareil, lui, reste en place d'un chapitre à l'autre. */
+    async chapter({ kicker, title, text }) {
+      const copy = $(".copy");
+      const first = !$("#chapter").classList.contains("on");
+      if (!first) { copy.classList.add("out"); await wait(350); }
+      $(".copy .kicker").textContent = kicker;
+      $(".copy h2").textContent = title;
+      $(".copy .text").innerHTML = text;
+      await this.show("chapter");
+      copy.classList.remove("out");
+      if (first) { await wait(200); $(".device").classList.add("in"); }
+    },
+    async capot({ kicker, title, sub, cards, meta }) {
+      $("#capot .kicker").textContent = kicker ?? "Sous le capot";
+      $("#capot h2").textContent = title;
+      $("#capot .sub").textContent = sub ?? "";
+      $("#capot .cards").replaceChildren(...cards.map((c) => {
+        const el = document.createElement("div");
+        el.className = "card";
+        if (c.dot) el.style.setProperty("--dot", c.dot);
+        el.innerHTML = `<h3>${c.name}</h3>` + c.lines.map((l) => `<p>${l}</p>`).join("");
+        return el;
+      }));
+      chips($("#capot .meta"), meta);
+      await this.show("capot");
+      for (const card of document.querySelectorAll("#capot .card")) { await wait(220); card.classList.add("in"); }
+    },
+    /** L'appareil : « phone » (280 × 604 d'écran) ou « window » (600 × 554). */
+    device(kind) {
+      const d = $(".device");
+      d.className = `device ${kind}`;
+      $(".device .bar").style.display = kind === "window" ? "flex" : "none";
+      $(".screen").replaceChildren();
+    },
+    /** Une vidéo source, recadrée sur `crop` (en pixels de la source) pour remplir l'écran. */
+    async video({ src, crop, from = 0, rate = 1 }) {
+      const screen = $(".screen");
+      const s = screen.clientWidth / crop.w;
+      const v = document.createElement("video");
+      Object.assign(v, { muted: true, playsInline: true, preload: "auto", src });
+      await new Promise((r) => { v.onloadedmetadata = r; });
+      v.style.width = `${v.videoWidth * s}px`;
+      v.style.height = `${v.videoHeight * s}px`;
+      v.style.transform = `translate(${-crop.x * s}px, ${-crop.y * s}px)`;
+      screen.replaceChildren(v);
+      media = v;
+      v.currentTime = from;
+      await new Promise((r) => { v.onseeked = r; });
+      v.playbackRate = rate;
+      await v.play();
+    },
+    /** Saute dans la vidéo en cours (un plan coupé), à la vitesse donnée. */
+    async cut(t, rate) {
+      if (!media) return;
+      media.currentTime = t;
+      await new Promise((r) => { media.onseeked = r; });
+      if (rate) media.playbackRate = rate;
+      if (media.paused) await media.play();
+    },
+    pause() { media?.pause(); },
+    /** Tire d'avance des plans arrêtés d'une vidéo source (`t` en secondes), pour les montrer sans attendre. */
+    async prepare(list) {
+      for (const { key, src, t } of list) {
+        const v = document.createElement("video");
+        Object.assign(v, { muted: true, preload: "auto", src });
+        await new Promise((r) => { v.onloadedmetadata = r; });
+        v.currentTime = t;
+        await new Promise((r) => { v.onseeked = r; });
+        await wait(250);
+        const c = document.createElement("canvas");
+        c.width = v.videoWidth;
+        c.height = v.videoHeight;
+        c.getContext("2d").drawImage(v, 0, 0);
+        stills[key] = c.toDataURL("image/jpeg", 0.93);
+      }
+    },
+    /** Une image fixe (un plan arrêté, ou un fichier), recadrée sur `crop`, qu'on peut ensuite parcourir. */
+    async image({ still, src, crop }) {
+      const screen = $(".screen");
+      const wrap = document.createElement("div");
+      wrap.className = "pan";
+      const img = new Image();
+      img.src = still ? stills[still] : src;
+      await img.decode();
+      const s = screen.clientWidth / crop.w;
+      img.style.width = `${img.naturalWidth * s}px`;
+      img.style.transform = `translate(${-crop.x * s}px, ${-crop.y * s}px)`;
+      wrap.append(img);
+      wrap.dataset.base = String(s);
+      const old = screen.firstElementChild;
+      wrap.style.opacity = "0";
+      wrap.style.transition = "opacity 0.6s ease, transform var(--pan, 4s) cubic-bezier(.3,.1,.3,1)";
+      screen.append(wrap);
+      await wait(30);
+      wrap.style.opacity = "1";
+      await wait(650);
+      old?.remove();
+      media = null;
+    },
+    /** Parcourt l'image en cours : grossit `zoom` fois autour du point (x, y), en pixels de l'écran, en `ms`. */
+    pan({ x, y, zoom, ms = 4000 }) {
+      const wrap = $(".screen .pan:last-child");
+      if (!wrap) return;
+      wrap.style.setProperty("--pan", `${ms}ms`);
+      const screen = $(".screen");
+      wrap.style.transform = `translate(${screen.clientWidth / 2 - x * zoom}px, ${screen.clientHeight / 2 - y * zoom}px) scale(${zoom})`;
+    },
+    /** L'app elle-même, dans un cadre à sa taille de téléphone, réduite à la largeur de l'écran. */
+    async app({ src, width, height }) {
+      const screen = $(".screen");
+      const f = document.createElement("iframe");
+      f.id = "app";
+      f.width = width;
+      f.height = height;
+      f.style.transform = `scale(${screen.clientWidth / width})`;
+      f.src = src;
+      screen.replaceChildren(f);
+      await new Promise((r) => { f.onload = r; });
+      media = null;
+    },
+  };
+  window.ready = true;
+</script>
+</body>
+</html>
