@@ -395,6 +395,26 @@ a {
 .colophon span {
   color: var(--muted);
 }
+/* La connexion, pour moi seul : invisible, elle apparaît quand le pointeur passe sur le bas de page, ou au
+   clavier. Sans survol (téléphone), elle reste à peine visible. */
+.colophon__owner {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.colophon:hover .colophon__owner,
+.colophon__owner:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  .colophon__owner {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .colophon__owner {
+    transition: none;
+  }
+}
 
 @media (max-width: 700px) {
   .site-header {
