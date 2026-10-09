@@ -148,6 +148,13 @@ section > h2,
   white-space: nowrap;
 }
 
+/* Mode démo (?demo) : à la place du bouton de la clé GitHub. */
+.badge.demo {
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-weight: 600;
+}
+
 .empty {
   display: grid;
   gap: 8px;

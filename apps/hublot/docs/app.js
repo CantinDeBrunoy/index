@@ -2,6 +2,7 @@
 // fare-radar web page: current deals + management of the watches (config.json of the repository).
 // Reads the repository files; writes config.json through the GitHub API with the viewer's token.
 
+import { DEMO_SEARCH_MS, DEMO_SNAPSHOT_FILE, demoCities, demoConfig, demoReading, isDemo, shiftSnapshot } from "./demo.js";
 import { createGitHub, GitHubError } from "./github.js";
 import {
   MAX_STAY_DAYS,
@@ -57,7 +58,8 @@ const state = {
   configSha: null,
   /** @type {Snapshot | null} */
   snapshot: null,
-  token: readToken(),
+  // En démo, la clé enregistrée sur l'appareil n'est jamais lue : rien ne peut partir vers GitHub.
+  token: site.demo ? null : readToken(),
   /** Watch ids whose prices are being searched right now. */
   searching: new Set(),
 };
@@ -100,6 +102,8 @@ setUpWatchDialog();
 setUpSettingsDialog();
 ui.addWatch.addEventListener("click", () => openWatchDialog(null));
 ui.openSettings.addEventListener("click", () => openSettings());
+// Démo : un badge le dit, et la clé GitHub n'a plus de raison d'être demandée.
+if (site.demo) ui.openSettings.replaceWith(el("span", { class: "badge demo", text: "Démo · données fictives" }));
 void refresh();
 
 async function refresh() {
@@ -116,6 +120,11 @@ async function refresh() {
 
 /** @returns {Promise<{ config: Config, sha: string | null, snapshot: Snapshot | null }>} */
 async function loadData() {
+  if (site.demo) {
+    // Le relevé fictif livré avec la page, et jamais les fichiers du dépôt.
+    const snapshot = shiftSnapshot(await fetchJson(DEMO_SNAPSHOT_FILE), new Date());
+    return { config: demoConfig(snapshot), sha: null, snapshot };
+  }
   if (state.token && !site.local) {
     try {
       const github = gitHub();
@@ -353,7 +362,7 @@ async function suggestCities(term) {
   citySearch = new AbortController();
   try {
     const url = `${AUTOCOMPLETE_URL}?term=${encodeURIComponent(term)}&locale=fr&types[]=city`;
-    const cities = parseCities(await fetchJson(url, citySearch.signal)).slice(0, 6);
+    const cities = (site.demo ? demoCities(term) : parseCities(await fetchJson(url, citySearch.signal))).slice(0, 6);
     if (cities.length === 0) {
       ui.citySuggestions.replaceChildren(el("li", { class: "muted", text: "Aucune ville trouvée" }));
     } else {
@@ -426,6 +435,7 @@ async function deleteWatch(watch) {
  * @returns {Promise<string | null>} why the configuration was not saved, null once saved
  */
 async function saveConfig(next, message, searchFor) {
+  if (site.demo) return saveDemoConfig(next, searchFor);
   if (site.local) return "Aperçu local : les modifications se font depuis la page publiée.";
   if (!state.token || !state.configSha) {
     openSettings("Pour enregistrer une modification, la page a besoin de ta clé GitHub.");
@@ -449,6 +459,32 @@ async function saveConfig(next, message, searchFor) {
     } catch (error) {
       showBanner(`Enregistré, mais la recherche n'a pas pu être lancée (${describeError(error)}). Elle se fera au prochain passage automatique.`, "warning");
     }
+  } else {
+    showBanner("Enregistré.", "success");
+  }
+  render();
+  return null;
+}
+
+/**
+ * Démo : la modification reste dans la page, et la recherche des prix lancée après un ajout ou une
+ * modification rend en quelques secondes un relevé inventé.
+ * @param {Config} next @param {string | null} searchFor
+ */
+function saveDemoConfig(next, searchFor) {
+  state.config = next;
+  const watch = next.watches.find((candidate) => candidate.id === searchFor);
+  if (watch) {
+    state.searching.add(watch.id);
+    showBanner("Démo : enregistré dans cette page seulement. Recherche des prix lancée…", "info");
+    window.setTimeout(() => {
+      const reading = demoReading(watch, next.origins, localToday());
+      const others = state.snapshot?.watches.filter((read) => read.id !== watch.id) ?? [];
+      state.snapshot = { version: 1, currency: next.currency, origins: next.origins, ...state.snapshot, generatedAt: new Date().toISOString(), watches: [...others, reading] };
+      state.searching.delete(watch.id);
+      render();
+      showBanner("Prix à jour.", "success");
+    }, DEMO_SEARCH_MS);
   } else {
     showBanner("Enregistré.", "success");
   }
@@ -620,10 +656,14 @@ function writeToken(token) {
   }
 }
 
-/** Dépôt servi par cette page ; sur localhost, aperçu en lecture seule des données publiées. @param {Location} where */
+/**
+ * Dépôt servi par cette page ; sur localhost, aperçu en lecture seule des données publiées ; avec
+ * « ?demo », données fictives (demo.js) partout.
+ * @param {Location} where
+ */
 function locateSite(where) {
   const local = where.hostname === "localhost" || where.hostname === "127.0.0.1";
-  return { ...REPOSITORY, local };
+  return { ...REPOSITORY, local, demo: isDemo(where.search) };
 }
 
 /**

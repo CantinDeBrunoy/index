@@ -1,0 +1,569 @@
+{
+  "_comment": "Relevé FICTIF du mode démo de la page (?demo) : destinations, dates et prix inventés, sans rapport avec les vraies surveillances. La page le ramène au mois en cours.",
+  "version": 1,
+  "generatedAt": "2026-10-09T05:52:00.000Z",
+  "currency": "eur",
+  "origins": [
+    "CDG",
+    "ORY"
+  ],
+  "watches": [
+    {
+      "id": "lisbonne",
+      "label": "Lisbonne",
+      "to": "LIS",
+      "maxPrice": 120,
+      "departFrom": "2026-11-01",
+      "departTo": "2027-03-31",
+      "minDays": 3,
+      "maxDays": 7,
+      "deals": [
+        {
+          "price": 84,
+          "departDate": "2027-01-13",
+          "returnDate": "2027-01-17",
+          "stayDays": 4,
+          "originAirport": "ORY",
+          "destinationAirport": "LIS",
+          "airline": "TP",
+          "transfers": 0,
+          "returnTransfers": 0,
+          "link": "https://www.aviasales.fr/search/PAR1301LIS17011"
+        },
+        {
+          "price": 91,
+          "departDate": "2027-01-27",
+          "returnDate": "2027-02-01",
+          "stayDays": 5,
+          "originAirport": "ORY",
+          "destinationAirport": "LIS",
+          "airline": "VY",
+          "transfers": 1,
+          "returnTransfers": 1,
+          "link": "https://www.aviasales.fr/search/PAR2701LIS01021"
+        },
+        {
+          "price": 96,
+          "departDate": "2026-11-18",
+          "returnDate": "2026-11-23",
+          "stayDays": 5,
+          "originAirport": "CDG",
+          "destinationAirport": "LIS",
+          "airline": "U2",
+          "transfers": 0,
+          "returnTransfers": 0,
+          "link": "https://www.aviasales.fr/search/PAR1811LIS23111"
+        },
+        {
+          "price": 109,
+          "departDate": "2027-02-04",
+          "returnDate": "2027-02-10",
+          "stayDays": 6,
+          "originAirport": "ORY",
+          "destinationAirport": "LIS",
+          "airline": "TP",
+          "transfers": 0,
+          "returnTransfers": 0,
+          "link": "https://www.aviasales.fr/search/PAR0402LIS10021"
+        }
+      ],
+      "months": [
+        {
+          "month": "2026-11",
+          "best": {
+            "price": 96,
+            "departDate": "2026-11-18",
+            "returnDate": "2026-11-23",
+            "stayDays": 5,
+            "originAirport": "CDG",
+            "destinationAirport": "LIS",
+            "airline": "U2",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR1811LIS23111"
+          },
+          "offers": 14,
+          "failed": false
+        },
+        {
+          "month": "2026-12",
+          "best": {
+            "price": 142,
+            "departDate": "2026-12-27",
+            "returnDate": "2026-12-31",
+            "stayDays": 4,
+            "originAirport": "ORY",
+            "destinationAirport": "LIS",
+            "airline": "TP",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR2712LIS31121"
+          },
+          "offers": 9,
+          "failed": false
+        },
+        {
+          "month": "2027-01",
+          "best": {
+            "price": 84,
+            "departDate": "2027-01-13",
+            "returnDate": "2027-01-17",
+            "stayDays": 4,
+            "originAirport": "ORY",
+            "destinationAirport": "LIS",
+            "airline": "TP",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR1301LIS17011"
+          },
+          "offers": 17,
+          "failed": false
+        },
+        {
+          "month": "2027-02",
+          "best": {
+            "price": 109,
+            "departDate": "2027-02-04",
+            "returnDate": "2027-02-10",
+            "stayDays": 6,
+            "originAirport": "ORY",
+            "destinationAirport": "LIS",
+            "airline": "TP",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR0402LIS10021"
+          },
+          "offers": 12,
+          "failed": false
+        },
+        {
+          "month": "2027-03",
+          "best": {
+            "price": 124,
+            "departDate": "2027-03-10",
+            "returnDate": "2027-03-15",
+            "stayDays": 5,
+            "originAirport": "CDG",
+            "destinationAirport": "LIS",
+            "airline": "VY",
+            "transfers": 1,
+            "returnTransfers": 1,
+            "link": "https://www.aviasales.fr/search/PAR1003LIS15031"
+          },
+          "offers": 11,
+          "failed": false
+        }
+      ]
+    },
+    {
+      "id": "rome",
+      "label": "Rome",
+      "to": "ROM",
+      "maxPrice": 150,
+      "departFrom": "2026-11-15",
+      "departTo": "2027-02-28",
+      "minDays": 3,
+      "maxDays": 5,
+      "deals": [
+        {
+          "price": 129,
+          "departDate": "2027-02-11",
+          "returnDate": "2027-02-14",
+          "stayDays": 3,
+          "originAirport": "ORY",
+          "destinationAirport": "FCO",
+          "airline": "AZ",
+          "transfers": 0,
+          "returnTransfers": 0,
+          "link": "https://www.aviasales.fr/search/PAR1102ROM14021"
+        },
+        {
+          "price": 150,
+          "departDate": "2027-01-21",
+          "returnDate": "2027-01-25",
+          "stayDays": 4,
+          "originAirport": "CDG",
+          "destinationAirport": "FCO",
+          "airline": "AF",
+          "transfers": 0,
+          "returnTransfers": 0,
+          "link": "https://www.aviasales.fr/search/PAR2101ROM25011"
+        }
+      ],
+      "months": [
+        {
+          "month": "2026-11",
+          "best": {
+            "price": 164,
+            "departDate": "2026-11-26",
+            "returnDate": "2026-11-30",
+            "stayDays": 4,
+            "originAirport": "CDG",
+            "destinationAirport": "FCO",
+            "airline": "AF",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR2611ROM30111"
+          },
+          "offers": 6,
+          "failed": false
+        },
+        {
+          "month": "2026-12",
+          "best": {
+            "price": 187,
+            "departDate": "2026-12-04",
+            "returnDate": "2026-12-07",
+            "stayDays": 3,
+            "originAirport": "ORY",
+            "destinationAirport": "FCO",
+            "airline": "VY",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR0412ROM07121"
+          },
+          "offers": 8,
+          "failed": false
+        },
+        {
+          "month": "2027-01",
+          "best": {
+            "price": 150,
+            "departDate": "2027-01-21",
+            "returnDate": "2027-01-25",
+            "stayDays": 4,
+            "originAirport": "CDG",
+            "destinationAirport": "FCO",
+            "airline": "AF",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR2101ROM25011"
+          },
+          "offers": 10,
+          "failed": false
+        },
+        {
+          "month": "2027-02",
+          "best": {
+            "price": 129,
+            "departDate": "2027-02-11",
+            "returnDate": "2027-02-14",
+            "stayDays": 3,
+            "originAirport": "ORY",
+            "destinationAirport": "FCO",
+            "airline": "AZ",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR1102ROM14021"
+          },
+          "offers": 7,
+          "failed": false
+        }
+      ]
+    },
+    {
+      "id": "marrakech",
+      "label": "Marrakech",
+      "to": "RAK",
+      "maxPrice": 180,
+      "departFrom": "2026-11-01",
+      "departTo": "2027-04-30",
+      "minDays": 4,
+      "maxDays": 8,
+      "deals": [
+        {
+          "price": 139,
+          "departDate": "2027-01-20",
+          "returnDate": "2027-01-26",
+          "stayDays": 6,
+          "originAirport": "ORY",
+          "destinationAirport": "RAK",
+          "airline": "TO",
+          "transfers": 0,
+          "returnTransfers": 0,
+          "link": "https://www.aviasales.fr/search/PAR2001RAK26011"
+        },
+        {
+          "price": 151,
+          "departDate": "2027-02-03",
+          "returnDate": "2027-02-08",
+          "stayDays": 5,
+          "originAirport": "ORY",
+          "destinationAirport": "RAK",
+          "airline": "AT",
+          "transfers": 0,
+          "returnTransfers": 0,
+          "link": "https://www.aviasales.fr/search/PAR0302RAK08021"
+        }
+      ],
+      "months": [
+        {
+          "month": "2026-11",
+          "best": {
+            "price": 186,
+            "departDate": "2026-11-24",
+            "returnDate": "2026-11-29",
+            "stayDays": 5,
+            "originAirport": "CDG",
+            "destinationAirport": "RAK",
+            "airline": "U2",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR2411RAK29111"
+          },
+          "offers": 11,
+          "failed": false
+        },
+        {
+          "month": "2026-12",
+          "best": {
+            "price": 214,
+            "departDate": "2026-12-19",
+            "returnDate": "2026-12-26",
+            "stayDays": 7,
+            "originAirport": "ORY",
+            "destinationAirport": "RAK",
+            "airline": "TO",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR1912RAK26121"
+          },
+          "offers": 6,
+          "failed": false
+        },
+        {
+          "month": "2027-01",
+          "best": {
+            "price": 139,
+            "departDate": "2027-01-20",
+            "returnDate": "2027-01-26",
+            "stayDays": 6,
+            "originAirport": "ORY",
+            "destinationAirport": "RAK",
+            "airline": "TO",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR2001RAK26011"
+          },
+          "offers": 15,
+          "failed": false
+        },
+        {
+          "month": "2027-02",
+          "best": {
+            "price": 151,
+            "departDate": "2027-02-03",
+            "returnDate": "2027-02-08",
+            "stayDays": 5,
+            "originAirport": "ORY",
+            "destinationAirport": "RAK",
+            "airline": "AT",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR0302RAK08021"
+          },
+          "offers": 13,
+          "failed": false
+        },
+        {
+          "month": "2027-03",
+          "best": {
+            "price": 192,
+            "departDate": "2027-03-17",
+            "returnDate": "2027-03-24",
+            "stayDays": 7,
+            "originAirport": "ORY",
+            "destinationAirport": "RAK",
+            "airline": "AT",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR1703RAK24031"
+          },
+          "offers": 9,
+          "failed": false
+        },
+        {
+          "month": "2027-04",
+          "best": {
+            "price": 233,
+            "departDate": "2027-04-14",
+            "returnDate": "2027-04-20",
+            "stayDays": 6,
+            "originAirport": "ORY",
+            "destinationAirport": "RAK",
+            "airline": "TO",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR1404RAK20041"
+          },
+          "offers": 5,
+          "failed": false
+        }
+      ]
+    },
+    {
+      "id": "montreal",
+      "label": "Montréal",
+      "to": "YMQ",
+      "maxPrice": 450,
+      "departFrom": "2026-12-01",
+      "departTo": "2027-04-30",
+      "minDays": 10,
+      "maxDays": 21,
+      "deals": [],
+      "months": [
+        {
+          "month": "2026-12",
+          "best": {
+            "price": 688,
+            "departDate": "2026-12-19",
+            "returnDate": "2027-01-02",
+            "stayDays": 14,
+            "originAirport": "CDG",
+            "destinationAirport": "YUL",
+            "airline": "AC",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR1912YMQ02011"
+          },
+          "offers": 4,
+          "failed": false
+        },
+        {
+          "month": "2027-01",
+          "best": {
+            "price": 497,
+            "departDate": "2027-01-12",
+            "returnDate": "2027-01-24",
+            "stayDays": 12,
+            "originAirport": "CDG",
+            "destinationAirport": "YUL",
+            "airline": "TS",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR1201YMQ24011"
+          },
+          "offers": 7,
+          "failed": false
+        },
+        {
+          "month": "2027-02",
+          "best": {
+            "price": 472,
+            "departDate": "2027-02-09",
+            "returnDate": "2027-02-23",
+            "stayDays": 14,
+            "originAirport": "CDG",
+            "destinationAirport": "YUL",
+            "airline": "AF",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR0902YMQ23021"
+          },
+          "offers": 9,
+          "failed": false
+        },
+        {
+          "month": "2027-03",
+          "best": {
+            "price": 489,
+            "departDate": "2027-03-16",
+            "returnDate": "2027-03-29",
+            "stayDays": 13,
+            "originAirport": "CDG",
+            "destinationAirport": "YUL",
+            "airline": "TS",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR1603YMQ29031"
+          },
+          "offers": 6,
+          "failed": false
+        },
+        {
+          "month": "2027-04",
+          "best": null,
+          "offers": 0,
+          "failed": false
+        }
+      ]
+    },
+    {
+      "id": "seoul",
+      "label": "Séoul",
+      "to": "SEL",
+      "maxPrice": 680,
+      "departFrom": "2027-03-01",
+      "departTo": "2027-05-15",
+      "minDays": 12,
+      "maxDays": 21,
+      "deals": [
+        {
+          "price": 652,
+          "departDate": "2027-03-04",
+          "returnDate": "2027-03-19",
+          "stayDays": 15,
+          "originAirport": "CDG",
+          "destinationAirport": "ICN",
+          "airline": "KL",
+          "transfers": 1,
+          "returnTransfers": 1,
+          "link": "https://www.aviasales.fr/search/PAR0403SEL19031"
+        }
+      ],
+      "months": [
+        {
+          "month": "2027-03",
+          "best": {
+            "price": 652,
+            "departDate": "2027-03-04",
+            "returnDate": "2027-03-19",
+            "stayDays": 15,
+            "originAirport": "CDG",
+            "destinationAirport": "ICN",
+            "airline": "KL",
+            "transfers": 1,
+            "returnTransfers": 1,
+            "link": "https://www.aviasales.fr/search/PAR0403SEL19031"
+          },
+          "offers": 8,
+          "failed": false
+        },
+        {
+          "month": "2027-04",
+          "best": {
+            "price": 794,
+            "departDate": "2027-04-02",
+            "returnDate": "2027-04-16",
+            "stayDays": 14,
+            "originAirport": "CDG",
+            "destinationAirport": "ICN",
+            "airline": "KE",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR0204SEL16041"
+          },
+          "offers": 5,
+          "failed": false
+        },
+        {
+          "month": "2027-05",
+          "best": {
+            "price": 701,
+            "departDate": "2027-05-06",
+            "returnDate": "2027-05-22",
+            "stayDays": 16,
+            "originAirport": "CDG",
+            "destinationAirport": "ICN",
+            "airline": "AF",
+            "transfers": 0,
+            "returnTransfers": 0,
+            "link": "https://www.aviasales.fr/search/PAR0605SEL22051"
+          },
+          "offers": 6,
+          "failed": false
+        }
+      ]
+    }
+  ]
+}

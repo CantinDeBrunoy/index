@@ -30,6 +30,7 @@ Adresse : celle du Worker Cloudflare `hublot` (voir le tableau des déploiements
 - **Bons plans** : toutes les offres sous ton seuil, avec un bouton vers Aviasales.
 - **Mes surveillances** : ajouter (avec recherche de la ville), modifier, supprimer ; meilleur prix actuel et par mois de départ.
 - Après un ajout ou une modification, la page lance tout de suite une vérification des prix : résultats en 2 minutes environ.
+- **Démo** : avec `?demo` à la fin de l'adresse, la page montre des surveillances et des prix fictifs (`docs/demo/latest.json`, ramené au mois en cours) au lieu des vrais, pour la montrer ou la filmer. Rien ne part vers GitHub ni vers l'API des villes : ajouts, modifications et suppressions restent dans la page, et la recherche des prix est simulée en quelques secondes.
 - Pour modifier, la page a besoin d'une **clé GitHub** (⚙️ en haut à droite) : un formulaire GitHub pré-rempli est proposé, il faut y choisir *Only select repositories* puis ce dépôt. La clé n'a accès qu'à ce dépôt, expire au bout d'un an et reste enregistrée uniquement sur ton appareil.
 
 ## Configuration (`config.json`)
