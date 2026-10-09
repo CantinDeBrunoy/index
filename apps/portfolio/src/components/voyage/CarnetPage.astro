@@ -67,15 +67,13 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     <main id="contenu">
       <div class="top">
       <section class="intro">
-        <p class="label">{c.label}</p>
         <h1 class="serif" set:html={c.title} />
         <p class="intro__text">{typo(lang, c.intro)}</p>
       </section>
 
       {
         apps.length > 0 && (
-          <section class="quick" id={APPS_ANCHOR} aria-labelledby="apps-title" data-quick data-strings={JSON.stringify(statusStrings)}>
-            <h2 id="apps-title" class="quick__title">{c.quick}</h2>
+          <section class="quick" id={APPS_ANCHOR} aria-label={c.quick} data-quick data-strings={JSON.stringify(statusStrings)}>
             <ul class="app-chips">
               {apps.map((a) => (
                 <li>
@@ -271,13 +269,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     gap: 14px;
     margin: -24px 0 72px;
     scroll-margin-top: 24px;
-  }
-  .quick__title {
-    margin: 0;
-    color: var(--brass-text);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 400;
   }
   .app-chips {
     display: flex;

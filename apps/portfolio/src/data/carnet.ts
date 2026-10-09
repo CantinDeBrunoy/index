@@ -34,7 +34,6 @@ type Count = { one: string; other: string };
 export interface CarnetStrings {
   pageTitle: string;
   description: string;
-  label: string;
   /** En HTML : l'italique du mot clé. */
   title: string;
   intro: string;
@@ -48,7 +47,7 @@ export interface CarnetStrings {
   listHint: string;
   /** {list} : les projets racontés sur la fiche de l'escale. */
   shelf: string;
-  /** Le titre de la rangée des raccourcis. */
+  /** Le nom de la rangée des raccourcis, pour les lecteurs d'écran. */
   quick: string;
   /** La pastille du logiciel à télécharger, à la place du statut. */
   quickDownload: string;
@@ -69,7 +68,6 @@ export const CARNET: Record<Lang, CarnetStrings> = {
   fr: {
     pageTitle: "Le carnet de voyage",
     description: `Les ${inWords("fr", projects.length)} projets de Cantin Roquier, escale par escale : chaque carte ouvre la fiche du projet, et chaque app s'ouvre d'ici.`,
-    label: "Fin du voyage",
     title: "Le carnet de <em>voyage</em>",
     intro: `Les ${inWords("fr", projects.length)} projets, escale par escale : chaque carte ouvre sa fiche.`,
     revisit: "Revoir l'escale →",
@@ -98,7 +96,6 @@ export const CARNET: Record<Lang, CarnetStrings> = {
   en: {
     pageTitle: "The travel journal",
     description: `Cantin Roquier's ${inWords("en", projects.length)} projects, stop by stop: each card opens the project page, and every app opens from here.`,
-    label: "End of the journey",
     title: "The travel <em>journal</em>",
     intro: `All ${inWords("en", projects.length)} projects, stop by stop: each card opens its page.`,
     revisit: "Back to the stop →",
