@@ -4,4 +4,4 @@
  * il figure dans le code de chaque page (dashboard Cloudflare → Web Analytics → le site). Vide, aucun
  * script ne se charge, et les mentions légales disent que le site ne mesure pas l'audience.
  */
-export const WEB_ANALYTICS_TOKEN: string | undefined = undefined;
+export const WEB_ANALYTICS_TOKEN: string | undefined = "1be70f0781094e0f84db8d4111943908";
