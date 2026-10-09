@@ -13,6 +13,7 @@ import { getProject } from "@index/projects";
 import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
+import Badges from "./Badges.astro";
 import Copilote from "./Copilote.astro";
 import CopiloteAccueil from "./CopiloteAccueil.astro";
 
@@ -191,6 +192,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                 <p class="cartel__kind">
                   <span class="cartel__num">{s.project.number}</span>
                   <span>{kindOf(s.project, s.text, lang).meta}</span>
+                  <Badges project={s.project} lang={lang} />
                 </p>
                 <h2 class="serif" id={`escale-${s.n}-titre`} tabindex="-1" data-focus>
                   {s.project.name}
@@ -494,6 +496,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     --muted: #574a3e;
   }
   .cartel__kind {
+    --badge-bg: var(--stop-bg);
     display: flex;
     flex-wrap: wrap;
     align-items: center;

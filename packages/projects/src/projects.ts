@@ -50,6 +50,7 @@ export const PROJECTS = [
     name: "Galactic Escape",
     started: "2022-01",
     kind: "archive",
+    badges: ["ecole"],
     pitch: {
       fr: "Un jeu de survie en 3D inspiré du jeu du plombier : poser des cases pour se tracer un chemin dans l'espace, entre les météores, un monstre aux trousses.",
     },
@@ -61,6 +62,7 @@ export const PROJECTS = [
     name: "Métro Pathfinder",
     started: "2022-10",
     kind: "archive",
+    badges: ["ecole"],
     pitch: {
       fr: "Le trajet le plus court entre deux stations du métro parisien, calculé avec Dijkstra sur le graphe du réseau.",
     },
@@ -72,6 +74,7 @@ export const PROJECTS = [
     name: "API REST .NET",
     started: "2023-01",
     kind: "archive",
+    badges: ["ecole"],
     pitch: {
       fr: "Une API REST en microservices C# .NET, développée en TDD et conteneurisée avec Docker.",
     },
@@ -83,6 +86,7 @@ export const PROJECTS = [
     name: "Visit Match",
     started: "2023-01",
     kind: "archive",
+    badges: ["ecole"],
     pitch: {
       fr: "Une app mobile qui met en relation des voyageurs solo partageant destinations et centres d'intérêt.",
     },
@@ -94,6 +98,7 @@ export const PROJECTS = [
     name: "Magellan",
     started: "2026-01",
     kind: "web",
+    badges: ["ia-refonte"],
     app: "magellan",
     host: "Cloudflare Workers",
     pitch: {
@@ -108,6 +113,7 @@ export const PROJECTS = [
     name: "Cancionero",
     started: "2026-07",
     kind: "web",
+    badges: ["ia"],
     app: "cancionero",
     host: "Vercel",
     pitch: {
@@ -122,6 +128,7 @@ export const PROJECTS = [
     name: "Mithril",
     started: "2026-08",
     kind: "desktop",
+    badges: ["ia"],
     app: "mithril",
     host: "GitHub Releases",
     pitch: {
@@ -136,6 +143,7 @@ export const PROJECTS = [
     name: "Tonalli",
     started: "2026-08",
     kind: "web",
+    badges: ["ia"],
     app: "tonalli",
     host: "Vercel + Supabase",
     pitch: {
@@ -158,6 +166,7 @@ export const PROJECTS = [
     name: "gym-picker",
     started: "2026-09",
     kind: "web",
+    badges: ["ia"],
     app: "gym-picker",
     host: "Cloudflare Workers",
     pitch: {
@@ -172,6 +181,7 @@ export const PROJECTS = [
     name: "Hublot",
     started: "2026-09",
     kind: "web",
+    badges: ["ia"],
     app: "hublot",
     host: HUBLOT_MIGRATED ? "GitHub Actions + Cloudflare Workers" : "GitHub Actions + GitHub Pages",
     pitch: {
@@ -191,6 +201,7 @@ export const PROJECTS = [
     name: "INDEX",
     started: "2026-10",
     kind: "web",
+    badges: ["ia"],
     app: "portfolio",
     host: "Cloudflare Workers",
     pitch: {

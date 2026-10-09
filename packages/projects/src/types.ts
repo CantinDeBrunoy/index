@@ -10,6 +10,14 @@ export type Localized = { fr: string } & Partial<Record<Exclude<Locale, "fr">, s
  */
 export type ProjectKind = "web" | "desktop" | "archive";
 
+/**
+ * Les pastilles d'un projet sur le portfolio :
+ * - `ecole` : un projet de cours ;
+ * - `ia` : un projet codé avec un assistant de code IA (Claude) ;
+ * - `ia-refonte` : une première version sans IA, puis une refonte avec (Magellan).
+ */
+export type Badge = "ecole" | "ia" | "ia-refonte";
+
 /** Ce que le portfolio (statut live) et keep-alive.yml vérifient pour une entrée. */
 export type Monitor =
   /** L'URL répond (2xx ou 3xx). */
@@ -41,6 +49,7 @@ export interface ProjectInput {
   /** Hébergement de la démo, pour la doc et la fiche. */
   host?: string;
   monitors?: readonly Monitor[];
+  badges?: readonly Badge[];
 }
 
 export interface Project extends ProjectInput {
@@ -50,4 +59,5 @@ export interface Project extends ProjectInput {
   path: string;
   year: number;
   monitors: readonly Monitor[];
+  badges: readonly Badge[];
 }

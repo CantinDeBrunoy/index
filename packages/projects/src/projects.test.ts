@@ -36,6 +36,14 @@ describe("liste des entrées", () => {
     for (const p of projects.filter((p) => p.kind !== "web")) expect(p.monitors, p.slug).toHaveLength(0);
   });
 
+  it("porte au plus une pastille d'IA, sans doublon", () => {
+    for (const p of projects) {
+      expect(new Set(p.badges).size, p.slug).toBe(p.badges.length);
+      expect(p.badges.filter((b) => b.startsWith("ia")).length, p.slug).toBeLessThanOrEqual(1);
+    }
+    expect(defineProjects([{ ...projects[0]!, badges: undefined }])[0]!.badges).toEqual([]);
+  });
+
   it("attribue le numéro suivant à une nouvelle entrée", () => {
     const next = defineProjects([
       ...projects,

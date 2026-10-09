@@ -1,0 +1,38 @@
+---
+/**
+ * Les pastilles d'un projet (« École », « Assisté par IA »…), à poser dans une ligne de méta : elles en
+ * prennent la couleur et la police, cerclées plutôt que pleines pour ne pas concurrencer le numéro.
+ */
+import type { Project } from "@index/projects";
+import { STRINGS, type Lang } from "../../i18n/voyage";
+
+interface Props {
+  project: Pick<Project, "badges">;
+  lang: Lang;
+}
+
+const { project, lang } = Astro.props;
+const s = STRINGS[lang];
+---
+
+{
+  project.badges.map((b) => (
+    <span class="badge" title={s.badgeTitles[b]}>
+      {s.badges[b]}
+    </span>
+  ))
+}
+
+<style>
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    height: 2em;
+    padding: 0 0.8em;
+    border: 1px solid currentColor;
+    /* Sur une scène, le fond de l'escale (--badge-bg) garde le texte lisible quand la pastille déborde sur un objet. */
+    background: var(--badge-bg, transparent);
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+  }
+</style>

@@ -16,6 +16,7 @@ import { appOf, fill, kindOf, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyag
 import { EMAIL, fichePath, ROUTES, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import { getShot } from "../../lib/shots";
+import Badges from "./Badges.astro";
 import Colophon from "./Colophon.astro";
 import SiteHeader from "./SiteHeader.astro";
 
@@ -97,7 +98,10 @@ const T = (text: string) => typo(lang, text);
           <a class="link hero__back" href={`${ROUTES.voyage[lang]}#escale-${n}`}>{f.back}</a>
           <p class="label">{f.stop} {n} · {text.place}</p>
           <h1 class="serif">{project.name}</h1>
-          <p class="hero__kind">{kind.line}</p>
+          <p class="hero__kind">
+            <span>{kind.line}</span>
+            <Badges project={project} lang={lang} />
+          </p>
           <p class="hero__pitch">{T(text.pitch)}</p>
           <div class="hero__links">
             {"href" in app ? <a class="go" href={app.href}>{app.label}</a> : <span class="hero__note">{app.note}</span>}
@@ -409,6 +413,10 @@ const T = (text: string) => typo(lang, text);
     line-height: 0.95;
   }
   .hero__kind {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
     margin: 0;
     color: var(--muted);
     font-family: var(--font-mono);

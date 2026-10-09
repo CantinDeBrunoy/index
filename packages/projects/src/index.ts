@@ -14,6 +14,7 @@ export function defineProjects(list: readonly ProjectInput[]): Project[] {
       path: `/${number}-${input.slug}`,
       year: Number(input.started.slice(0, 4)),
       monitors: input.monitors ?? [],
+      badges: input.badges ?? [],
     };
   });
 }

@@ -64,6 +64,13 @@ const fr = {
   legal: "Mentions légales",
   /** Au pied du carnet et d'« À propos », avant l'adresse où m'écrire. En HTML : l'italique. */
   nextIdea: "Une idée pour la prochaine <em>escale</em> ?",
+  /** Les pastilles d'un projet (Badge de @index/projects), et leur explication au survol. */
+  badges: { ecole: "École", ia: "Assisté par IA", "ia-refonte": "Refonte assistée par IA" },
+  badgeTitles: {
+    ecole: "Un projet de cours",
+    ia: "Codé avec un assistant de code IA (Claude)",
+    "ia-refonte": "Une première version sans IA, puis une refonte avec un assistant de code IA (Claude)",
+  },
 } as const;
 
 type Strings = { [K in keyof typeof fr]: (typeof fr)[K] extends string ? string : { [P in keyof (typeof fr)[K]]: string } };
@@ -80,6 +87,12 @@ const en: Strings = {
   menu: "Open the menu",
   legal: "Legal notice",
   nextIdea: "An idea for the next <em>stop</em>?",
+  badges: { ecole: "School", ia: "AI-assisted", "ia-refonte": "AI-assisted rebuild" },
+  badgeTitles: {
+    ecole: "A school project",
+    ia: "Built with an AI coding assistant (Claude)",
+    "ia-refonte": "A first version without AI, then a rebuild with an AI coding assistant (Claude)",
+  },
 };
 
 export const STRINGS: Record<Lang, Strings> = { fr, en };

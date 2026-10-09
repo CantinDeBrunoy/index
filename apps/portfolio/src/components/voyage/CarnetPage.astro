@@ -14,6 +14,7 @@ import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
 import { fill, kindOf, STOP_TEXTS, STOPS } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, STRINGS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
+import Badges from "./Badges.astro";
 import Colophon from "./Colophon.astro";
 import SiteHeader from "./SiteHeader.astro";
 
@@ -70,6 +71,13 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
                 </span>
                 <span class="serif card__name">{s.project.name}</span>
                 <span class="card__kind">{s.kind}</span>
+                {
+                  s.project.badges.length > 0 && (
+                    <span class="card__badges">
+                      <Badges project={s.project} lang={lang} />
+                    </span>
+                  )
+                }
                 {s.shelved.length > 0 && <span class="card__shelf">{typo(lang, fill(c.shelf, { list: s.shelved.join(", ") }))}</span>}
               </a>
               <a class="link card__revisit" href={`${ROUTES.voyage[lang]}#escale-${s.n}`} aria-label={fill(c.revisitAria, { n: s.n, place: s.text.place })}>
@@ -140,6 +148,14 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
   .card__kind {
     color: var(--muted);
     font-size: 14px;
+  }
+  .card__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
   }
   .card__shelf {
     color: var(--muted);
