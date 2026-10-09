@@ -6,6 +6,7 @@
 
 import { projects } from "@index/projects";
 import { EMAIL, inWords, NBSP, type Lang } from "../i18n/voyage";
+import { WEB_ANALYTICS_TOKEN } from "./stats";
 
 /** La scène de la 404 : le fond du terminal de nuit et la valise à cliquer, en % de chaque rendu. */
 export const NOT_FOUND_SCENE = {
@@ -62,7 +63,8 @@ export const NOT_FOUND: Record<Lang, NotFoundStrings> = {
  * l'adresse et le téléphone de l'hébergeur. Cantin signe de son nom, avec son e-mail : ni adresse ni
  * téléphone à lui. L'hébergeur, d'après ses rapports à la SEC et cloudflare.com (octobre 2026).
  * Les affirmations sur les données restent vraies tant que le site ne dépose aucun cookie, ne charge rien
- * d'un autre site (les polices sont auto-hébergées) et n'a aucun formulaire.
+ * d'un autre site (les polices sont auto-hébergées), sauf le script de mesure d'audience sans cookie quand
+ * il est actif (data/stats.ts), et n'a aucun formulaire.
  */
 
 const mail = `<a href="mailto:${EMAIL}">${EMAIL}</a>`;
@@ -102,7 +104,9 @@ export const LEGAL: Record<Lang, LegalStrings> = {
       [
         "Vos données",
         [
-          "Ce site ne dépose aucun cookie, ne mesure pas l'audience et n'a aucun formulaire. Si vous m'écrivez, votre adresse sert seulement à vous répondre.",
+          WEB_ANALYTICS_TOKEN
+            ? "Ce site ne dépose aucun cookie et n'a aucun formulaire. Il compte ses visites avec Cloudflare Web Analytics, sans cookie ni identifiant : seulement des chiffres d'ensemble (pages vues, pays, navigateur). Si vous m'écrivez, votre adresse sert seulement à vous répondre."
+            : "Ce site ne dépose aucun cookie, ne mesure pas l'audience et n'a aucun formulaire. Si vous m'écrivez, votre adresse sert seulement à vous répondre.",
           "Comme tout hébergeur, Cloudflare tient des journaux techniques, dont l'adresse IP, pour faire fonctionner et protéger le service.",
           `Une question sur vos données ? Écrivez-moi. Vous pouvez aussi vous adresser à la <a href="https://www.cnil.fr" target="_blank" rel="noopener">CNIL</a>.`,
         ],
@@ -137,7 +141,9 @@ export const LEGAL: Record<Lang, LegalStrings> = {
       [
         "Your data",
         [
-          "This site sets no cookies, runs no analytics and has no forms. If you write to me, your address is only used to reply.",
+          WEB_ANALYTICS_TOKEN
+            ? "This site sets no cookies and has no forms. It counts its visits with Cloudflare Web Analytics, with no cookies and no identifiers: only overall figures (page views, countries, browsers). If you write to me, your address is only used to reply."
+            : "This site sets no cookies, runs no analytics and has no forms. If you write to me, your address is only used to reply.",
           "Like any host, Cloudflare keeps technical logs, including IP addresses, to run and protect the service.",
           `A question about your data? Write to me. You can also contact the <a href="https://www.cnil.fr/en" target="_blank" rel="noopener">CNIL</a>, the French data protection authority.`,
         ],

@@ -12,6 +12,7 @@ import sansUrl from "@index/ui/fonts/geist-latin-wght-normal.woff2?url";
 import monoUrl from "@index/ui/fonts/geist-mono-latin-wght-normal.woff2?url";
 import serifUrl from "@index/ui/fonts/instrument-serif-latin-400-normal.woff2?url";
 import { ogImageFor } from "../data/apercus";
+import { WEB_ANALYTICS_TOKEN } from "../data/stats";
 import { LANGS, STRINGS, type Lang } from "../i18n/voyage";
 
 interface Props {
@@ -73,6 +74,12 @@ const ogImage = absolute(image);
     {ogImage && <meta property="og:image:width" content="1200" />}
     {ogImage && <meta property="og:image:height" content="630" />}
     <meta name="twitter:card" content="summary_large_image" />
+    {
+      /* La mesure d'audience sans cookie (data/stats.ts), en production seulement. */
+      import.meta.env.PROD && WEB_ANALYTICS_TOKEN && (
+        <script is:inline defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: WEB_ANALYTICS_TOKEN })} />
+      )
+    }
     <slot name="head" />
   </head>
   <body class={`pal-${palette}`} style={`--page-bg: ${background}`}>
