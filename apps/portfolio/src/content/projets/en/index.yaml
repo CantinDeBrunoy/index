@@ -2,7 +2,7 @@
 why: "My projects each lived in their own corner, and some fell asleep on free tiers. INDEX gathers them in a single repository, keeps them awake, and shows them here, numbered, like the stops of a journey."
 features:
   - title: "One repository"
-    text: "All ten projects imported with their full history, each in its own folder."
+    text: "All the projects imported with their full history, each in its own folder."
   - title: "Nothing falls asleep"
     text: "A bot keeps Tonalli's database awake, checks every site each hour and opens an issue if one goes down."
   - title: "Every project in its place"

@@ -5,15 +5,9 @@ features:
     text: "Every gym ranked by driving time, traffic included."
   - title: "One tap and off you go"
     text: "Tapping a gym opens Waze or Google Maps with the route."
-  - title: "A fallback home"
-    text: "If GPS is slow, the route starts from an address saved on the phone."
 choices:
-  - title: "TomTom rather than Google"
-    text: "No credit card: past the free quota, the API refuses instead of billing."
   - title: "A Cloudflare Worker in front of the API"
     text: "The key never leaves the server, and each IP address is limited to 20 calls a minute."
-  - title: "Home stays on the phone"
-    text: "The position travels in the request body, never in the URL: URLs end up in logs."
 video:
   src: "/demos/gym-picker.mp4"
   caption: "Gyms ranked by driving time, the ranking that follows the traffic, then the fallback home. With fictional gyms and trips."

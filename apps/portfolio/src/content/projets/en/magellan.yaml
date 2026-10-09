@@ -12,8 +12,6 @@ choices:
     text: "Expo and React Native: iOS, Android and the web from the same code."
   - title: "globe.gl for the Earth"
     text: "A proven 3D globe, in a WebView on phones and right in the page on the web: only the data is shared."
-  - title: "A version per platform when needed"
-    text: ".web and .native files rather than a hack that would break one of them."
 video:
   src: "/demos/magellan.mp4"
   caption: "The globe, the list of trips, then two of them: Tokyo, Kyoto and Osaka, and Marrakech. With the demo trips."

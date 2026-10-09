@@ -14,5 +14,3 @@ choices:
     text: "Paired with a six-digit code, it syncs over the local network, each side verifying the other."
   - title: "Unbiased randomness"
     text: "Windows' cryptographic generator, rejecting biased draws: every character has exactly the same chance."
-  - title: "A security audit in CI"
-    text: "37 rules check on every change that the promised guarantees still hold; all networking lives in a single file."

@@ -210,7 +210,7 @@ const T = (text: string) => typo(lang, text);
       prev={f.prevPoint}
       next={f.nextPoint}
       groups={[
-        { label: f.depart, points: [{ title: f.why, text: T(why), quote: true }] },
+        { label: f.depart, points: [{ title: f.why, text: T(why) }] },
         { label: f.what, points: features.map((item) => ({ title: T(item.title), text: T(item.text) })) },
         { label: f.how, points: choices.map((item) => ({ title: T(item.title), text: T(item.text) })) },
       ]}

@@ -3,10 +3,6 @@ why: "Un projet d'école d'ingénieur, mené jusqu'au business plan. Voyager seu
 features:
   - title: "Ses envies en commun"
     text: "On indique ses destinations et ses centres d'intérêt."
-  - title: "Les bonnes rencontres"
-    text: "L'app rapproche les voyageurs qui ont le plus en commun."
-  - title: "Se retrouver sur place"
-    text: "Une fois d'accord, il ne reste qu'à se donner rendez-vous."
 choices:
   - title: "Flutter"
     text: "Une seule base de code pour iOS et Android."

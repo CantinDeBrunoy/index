@@ -14,5 +14,3 @@ choices:
     text: "Appairé par un code à six chiffres, il se synchronise sur le réseau local, chaque côté vérifiant l'autre."
   - title: "Un tirage sans biais"
     text: "Le générateur cryptographique de Windows, en rejetant les tirages biaisés : chaque caractère a exactement la même chance."
-  - title: "Un audit de sécurité dans la CI"
-    text: "37 règles vérifient à chaque modification que les garanties annoncées restent vraies ; tout le réseau tient dans un seul fichier."
