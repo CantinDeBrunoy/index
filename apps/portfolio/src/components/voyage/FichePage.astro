@@ -110,7 +110,7 @@ const T = (text: string) => typo(lang, text);
     <div class="wrap-read">
       <div class="hero__body">
         <div class="hero__text">
-          <a class="backpill" href={`${ROUTES.voyage[lang]}#escale-${n}`}>
+          <a class="backpill" href={`${ROUTES.voyage[lang]}#escale-${n}`} data-resume-hides>
             <span class="backpill__thumb" style={`background: ${stop.bg}`}><img src={still(stop.scene, "-640")} alt="" width="640" height="360" decoding="async" /></span>
             <span class="backpill__text"><b>{f.back}</b><small>{f.stop} {n} · {text.place}</small></span>
           </a>
@@ -367,7 +367,7 @@ const T = (text: string) => typo(lang, text);
       )
     }
 
-    <section class="next">
+    <section class="next" data-resume-hides>
       {
         next ? (
           <a class="post next-card" href={`${ROUTES.voyage[lang]}#escale-${next.n}`}>
@@ -400,7 +400,7 @@ const T = (text: string) => typo(lang, text);
       }
     </section>
 
-    <footer class="foot">
+    <footer class="foot" data-resume-hides>
       <p>
         {T(fill(f.question, { name: project.name }))} <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
       </p>
@@ -408,10 +408,18 @@ const T = (text: string) => typo(lang, text);
     </footer>
     <Colophon lang={lang} />
   </main>
+
+  <a class="resume pal-night" href={`${ROUTES.voyage[lang]}#escale-${n}`} data-resume>
+    <span class="resume__thumb" style={`background: ${stop.bg}`}>
+      <img src={still(stop.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
+    </span>
+    <span class="resume__text"><b>{f.resume}</b><small>{f.stop} {n} · {text.place}</small></span>
+  </a>
 </Voyage>
 
 <script>
   import "../../scripts/scene-video";
+  import "../../scripts/resume-button";
 </script>
 
 <style>
@@ -511,6 +519,92 @@ const T = (text: string) => typo(lang, text);
   }
   .backpill:hover small {
     color: inherit;
+  }
+  /* Le même retour, qui suit la lecture une fois la pastille passée (scripts/resume-button.ts) : de nuit,
+     en bas à droite ; sur téléphone, en bas, de toute la largeur. */
+  .resume {
+    position: fixed;
+    right: 32px;
+    bottom: 32px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 64px;
+    padding: 8px 28px 8px 8px;
+    border: 1.5px solid var(--brass);
+    border-radius: var(--radius-pill);
+    background: var(--night);
+    box-shadow: 0 14px 36px rgba(14, 16, 24, 0.35);
+    color: var(--ink);
+    text-decoration: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(12px);
+    transition:
+      opacity 0.25s,
+      transform 0.25s,
+      visibility 0s linear 0.25s,
+      background 0.2s;
+  }
+  .resume:global(.is-shown) {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 0.25s,
+      transform 0.25s,
+      visibility 0s,
+      background 0.2s;
+  }
+  .resume:hover {
+    background: var(--card);
+  }
+  .resume__thumb {
+    flex: none;
+    width: 48px;
+    height: 48px;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 0 0 2px var(--brass);
+  }
+  .resume__thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .resume__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .resume b {
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .resume small {
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .resume {
+      transform: none;
+    }
+  }
+  @media (max-width: 700px) {
+    .resume {
+      right: 16px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      left: 16px;
+    }
+  }
+  @media print {
+    .resume {
+      display: none;
+    }
   }
   .hero h1 {
     margin: 0;
