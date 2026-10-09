@@ -1,5 +1,5 @@
 /**
- * Le statut en direct de l'app, dans « En bref » de la fiche : son point et son texte, d'après /api/status
+ * Le statut en direct de l'app, sur la carte d'embarquement de la fiche : son point et son texte, d'après /api/status
  * (le Worker sonde les apps et garde le résultat 5 minutes). Sans réponse, le texte de la page reste, sans point.
  */
 

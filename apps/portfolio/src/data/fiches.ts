@@ -30,12 +30,19 @@ export const FICHE: Record<
     why: string;
     what: string;
     how: string;
-    /** « En bref », à côté de la démo : avec quoi c'est fait, où ça tourne, et le statut en direct de l'app. */
-    brief: {
+    /**
+     * La carte d'embarquement, à côté de la démo : d'Index vers le projet, avec ce que l'en-tête ne dit pas
+     * (avec quoi c'est fait, où ça tourne) et le statut en direct de l'app. Son talon ouvre l'app ; sans app,
+     * il dit pourquoi : une archive, une app pas encore en ligne, ou ce site même.
+     */
+    pass: {
       title: string;
+      from: string;
+      to: string;
       madeWith: string;
       host: string;
       states: Record<"online" | "asleep" | "offline", string>;
+      gate: Record<"open" | "archive" | "soon" | "here", { kicker: string; big: string; act?: string }>;
     };
     pictures: string;
     shelf: string;
@@ -59,11 +66,19 @@ export const FICHE: Record<
     why: "Pourquoi je l'ai fabriqué",
     what: "Ce que ça fait",
     how: "Comment c'est fait",
-    brief: {
-      title: "En bref",
+    pass: {
+      title: "Carte d'embarquement",
+      from: "Départ",
+      to: "Arrivée",
       madeWith: "Fait avec",
       host: "Hébergé sur",
       states: { online: "En ligne", asleep: "Se réveille", offline: "Hors ligne" },
+      gate: {
+        open: { kicker: "Embarquement immédiat", big: "Embarquer" },
+        archive: { kicker: "Vol terminé", big: "Atterri" },
+        soon: { kicker: "Prochain départ", big: "Bientôt" },
+        here: { kicker: "À bord", big: "Vous y êtes", act: "C'est ce site" },
+      },
     },
     pictures: "En images",
     shelf: "Sur l'étagère aussi",
@@ -85,11 +100,19 @@ export const FICHE: Record<
     why: "Why I built it",
     what: "What it does",
     how: "How it's made",
-    brief: {
-      title: "At a glance",
+    pass: {
+      title: "Boarding pass",
+      from: "From",
+      to: "To",
       madeWith: "Built with",
       host: "Hosted on",
       states: { online: "Live", asleep: "Waking up", offline: "Offline" },
+      gate: {
+        open: { kicker: "Now boarding", big: "Board" },
+        archive: { kicker: "Flight completed", big: "Landed" },
+        soon: { kicker: "Next departure", big: "Soon" },
+        here: { kicker: "On board", big: "You're here", act: "This very site" },
+      },
     },
     pictures: "In pictures",
     shelf: "Also on the shelf",

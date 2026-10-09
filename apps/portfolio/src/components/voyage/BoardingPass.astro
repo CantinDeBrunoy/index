@@ -1,0 +1,383 @@
+---
+/**
+ * La carte d'embarquement d'une fiche, à côté de la démo : d'Index vers le projet, avec ce que l'en-tête ne
+ * dit pas (avec quoi c'est fait, où ça tourne), le statut de l'app en direct et le code. Son bandeau est à
+ * l'encre de nuit ; son talon, détaché par une ligne pointillée et deux encoches, ouvre l'app (en laiton) ou
+ * dit pourquoi il n'y en a pas. `compact` : la version réduite, posée à droite de la démo ; `level` : le
+ * niveau du titre, 3 sous la démo, 2 quand la carte est seule.
+ */
+import type { Project } from "@index/projects";
+import { FICHE } from "../../data/fiches";
+import { appOf, kindOf, STOPS, VOYAGE, type Stop, type StopText } from "../../data/voyage";
+import type { Lang } from "../../i18n/voyage";
+
+interface Props {
+  lang: Lang;
+  project: Project;
+  stop: Stop;
+  text: StopText;
+  compact?: boolean;
+  level?: 2 | 3;
+}
+
+const { lang, project, stop, text, compact = false, level = 3 } = Astro.props;
+const p = FICHE[lang].pass;
+const app = appOf(project, text, lang);
+const status = kindOf(project, text, lang).status;
+const code = project.links.code;
+// Seule une app web en ligne a un statut en direct (sondé par le Worker, /api/status).
+const live = project.kind === "web" && "href" in app;
+// La carte part d'Index ; son talon ouvre l'app, ou dit pourquoi il n'y en a pas.
+const HOME_CODE = STOPS.find((s) => s.slug === "index")!.code;
+const gate = p.gate["href" in app ? "open" : text.noApp ? "here" : project.kind === "archive" ? "archive" : "soon"];
+const Title = level === 2 ? "h2" : "h3";
+const titleId = `carte-${project.slug}`;
+---
+
+<aside class:list={["pass", { "pass--compact": compact }]} aria-labelledby={titleId}>
+  <div class="pass__paper">
+    <Title id={titleId} class="pass__band pal-night">{p.title}</Title>
+    <div class="pass__body">
+      <div class="pass__route">
+        <p class="pass__port">
+          <span class="pass__k">{p.from}</span>
+          <span class="serif pass__code" aria-hidden="true">{HOME_CODE}</span>
+          <span class="pass__city">Index</span>
+        </p>
+        <span class="pass__path" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24">
+            <path
+              fill="currentColor"
+              d="M3.5 12c0-1 1-1.2 2.5-1.2h13c1.4 0 2.2.6 2.2 1.2s-.8 1.2-2.2 1.2H6c-1.5 0-2.5-.2-2.5-1.2zM10.5 10.8 8 3.5h2l5 7.3zM10.5 13.2 8 20.5h2l5-7.3zM4.6 10.8 3.4 7.5h1.2l2.2 3.3zM4.6 13.2l-1.2 3.3h1.2l2.2-3.3z"
+            ></path>
+          </svg>
+        </span>
+        <p class="pass__port pass__port--to">
+          <span class="pass__k">{p.to}</span>
+          <span class="serif pass__code" aria-hidden="true">{stop.code}</span>
+          <span class="pass__city">{project.name}</span>
+        </p>
+      </div>
+      <dl class="pass__facts">
+        <div>
+          <dt>{p.madeWith}</dt>
+          <dd><ul class="chips">{project.stack.map((tech) => <li class="chip">{tech}</li>)}</ul></dd>
+        </div>
+        {
+          project.host && (
+            <div>
+              <dt>{p.host}</dt>
+              <dd>{project.host}</dd>
+            </div>
+          )
+        }
+      </dl>
+      {
+        ("href" in app || code) && (
+          <div class="pass__row">
+            {"href" in app && (
+              <p class="pass__status" data-brief-live={live ? project.slug : undefined} data-states={live ? JSON.stringify(p.states) : undefined}>
+                {live && <i class="live-dot" data-state="pending" aria-hidden="true" hidden />}
+                <span data-live-text>{status}</span>
+              </p>
+            )}
+            {code && (
+              <a class="link" href={code} target="_blank" rel="noopener">
+                {VOYAGE[lang].code}
+              </a>
+            )}
+          </div>
+        )
+      }
+    </div>
+    {
+      "href" in app ? (
+        <a class="pass__gate" href={app.href} target={app.target} rel={app.rel}>
+          <span class="pass__gate-text">
+            <span class="pass__k">{gate.kicker}</span>
+            <span class="serif pass__big">{gate.big}</span>
+          </span>
+          <span class="pass__act">{app.label}</span>
+        </a>
+      ) : (
+        <p class="pass__gate pass__gate--off">
+          <span class="pass__gate-text">
+            <span class="pass__k">{gate.kicker}</span>
+            <span class="serif pass__big">{gate.big}</span>
+          </span>
+          <span class="pass__act">{gate.act ?? app.note}</span>
+        </p>
+      )
+    }
+  </div>
+</aside>
+
+<script>
+  import "../../scripts/brief-status";
+</script>
+
+<style>
+  .pass {
+    flex: 0 1 430px;
+    align-self: flex-start;
+    filter: drop-shadow(0 1px 0 rgba(36, 30, 24, 0.14)) drop-shadow(0 22px 30px rgba(20, 14, 8, 0.16));
+    /* Les couleurs du statut, plus sombres que celles du carnet de nuit : elles tiennent sur le papier. */
+    --live-on: #4f8a4c;
+    --live-asleep: #a8741c;
+    --live-off: #b4553f;
+  }
+  .pass__paper {
+    --gate: 80px;
+    overflow: hidden;
+    border-radius: 18px;
+    background: var(--card);
+    /* Les encoches : un demi-cercle découpé de chaque côté de la ligne pointillée. */
+    mask:
+      radial-gradient(circle at 0 calc(100% - var(--gate)), transparent 12px, #000 12.5px) left / 51% 100% no-repeat,
+      radial-gradient(circle at 100% calc(100% - var(--gate)), transparent 12px, #000 12.5px) right / 51% 100% no-repeat;
+  }
+  .pass__band {
+    display: flex;
+    align-items: center;
+    min-height: 38px;
+    margin: 0;
+    padding: 0 22px;
+    background: var(--card);
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .pass__body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 22px 24px 18px;
+  }
+  .pass__route {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+  }
+  .pass__port {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    margin: 0;
+  }
+  .pass__port--to {
+    align-items: flex-end;
+    text-align: right;
+  }
+  .pass__k,
+  .pass__facts dt {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .pass__code {
+    font-size: 56px;
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+  }
+  .pass__city {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .pass__path {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 30px;
+    color: var(--brass);
+  }
+  .pass__path::before,
+  .pass__path::after {
+    content: "";
+    flex: 1;
+    border-top: 2px dotted var(--brass);
+  }
+  .pass__path svg {
+    flex: none;
+  }
+  .pass__facts {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 0;
+  }
+  .pass__facts dd {
+    margin: 6px 0 0;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+  .pass__facts .chips {
+    margin-top: 10px;
+  }
+  .pass__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+  }
+  .pass__row .link {
+    min-height: 0;
+  }
+  .pass__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .pass__gate {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    box-sizing: border-box;
+    height: var(--gate);
+    margin: 0;
+    padding: 0 24px;
+    border-top: 2px dashed rgba(36, 30, 24, 0.3);
+    background: var(--brass);
+    color: var(--on-brass);
+    text-decoration: none;
+    transition: filter 0.2s;
+  }
+  a.pass__gate:hover {
+    filter: brightness(1.08);
+  }
+  a.pass__gate:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: -6px;
+  }
+  .pass__gate--off {
+    background: var(--paper);
+    color: var(--muted);
+  }
+  .pass__gate .pass__k {
+    color: inherit;
+  }
+  .pass__gate-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .pass__big {
+    font-size: 36px;
+    line-height: 0.95;
+    white-space: nowrap;
+  }
+  .pass__act {
+    font-size: 14px;
+    font-weight: 500;
+    text-align: right;
+  }
+
+  /* La version compacte, à côté de la démo : les mêmes infos, en plus petit. */
+  .pass--compact {
+    flex: none;
+    width: 100%;
+    max-width: 340px;
+  }
+  .pass--compact .pass__paper {
+    --gate: 64px;
+  }
+  .pass--compact .pass__band {
+    min-height: 32px;
+    padding: 0 16px;
+    font-size: 10px;
+  }
+  .pass--compact .pass__body {
+    gap: 16px;
+    padding: 16px 18px 16px;
+  }
+  .pass--compact .pass__route {
+    gap: 10px;
+  }
+  .pass--compact .pass__k,
+  .pass--compact .pass__facts dt {
+    font-size: 10px;
+  }
+  .pass--compact .pass__code {
+    font-size: 40px;
+  }
+  .pass--compact .pass__city {
+    font-size: 12px;
+  }
+  .pass--compact .pass__path {
+    padding-bottom: 22px;
+  }
+  .pass--compact .pass__facts {
+    gap: 12px;
+  }
+  .pass--compact .pass__facts dd {
+    font-size: 14px;
+  }
+  .pass--compact .chip {
+    min-height: 26px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .pass--compact .pass__gate {
+    gap: 10px;
+    padding: 0 18px;
+  }
+  .pass--compact .pass__big {
+    font-size: 26px;
+  }
+  .pass--compact .pass__act {
+    font-size: 13px;
+  }
+
+  /* Le point du statut en direct, comme dans le carnet. */
+  .live-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--muted);
+    border-radius: var(--radius-pill);
+  }
+  .live-dot[hidden] {
+    display: none;
+  }
+  .live-dot[data-state="online"] {
+    border-color: var(--live-on);
+    background: var(--live-on);
+  }
+  .live-dot[data-state="asleep"] {
+    border-color: var(--live-asleep);
+    background: var(--live-asleep);
+  }
+  .live-dot[data-state="offline"] {
+    border-color: var(--live-off);
+    background: var(--live-off);
+  }
+  /* En attente du statut, ou une app qui se réveille : le point respire. */
+  .live-dot[data-state="pending"],
+  .live-dot[data-state="asleep"] {
+    animation: dot-wait 1.2s ease-in-out infinite;
+  }
+  @keyframes dot-wait {
+    50% {
+      opacity: 0.3;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .live-dot {
+      animation: none !important;
+    }
+  }
+</style>
