@@ -14,3 +14,8 @@ choices:
     text: "Quatre relevés par jour, rangés à part : l'historique du code reste lisible."
   - title: "ntfy pour les alertes"
     text: "Une notification sur le téléphone, sans application à écrire."
+video:
+  src: "/demos/hublot.mp4"
+  caption: "Les bons plans sous le seuil, les surveillances, puis une nouvelle vers Reykjavik. Avec des surveillances et des prix fictifs."
+  width: 1280
+  height: 720

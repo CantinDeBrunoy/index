@@ -12,3 +12,8 @@ choices:
     text: "Le plus court chemin dans un graphe aux distances positives : exact, et simple à vérifier à la main."
   - title: "Java et Swing"
     text: "Un langage et une interface que je connaissais : tout l'effort allait à l'algorithme."
+video:
+  src: "/demos/metro-pathfinder.mp4"
+  caption: "Le plan du métro en graphe, un trajet calculé, puis Dijkstra et le code. Monté d'après l'enregistrement de 2022."
+  width: 1280
+  height: 720

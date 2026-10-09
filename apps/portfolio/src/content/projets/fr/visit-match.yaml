@@ -14,3 +14,8 @@ choices:
     text: "Les comptes et les données sans serveur à maintenir."
   - title: "Figma d'abord"
     text: "Les écrans dessinés et discutés avant la première ligne de code."
+video:
+  src: "/demos/visit-match.mp4"
+  caption: "L'inscription, les lieux à garder ou à passer, les carnets, les likes, la carte et le profil, avec un compte de test."
+  width: 1280
+  height: 720

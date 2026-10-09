@@ -12,3 +12,8 @@ choices:
     text: "The shortest path in a graph with positive distances: exact, and easy to check by hand."
   - title: "Java and Swing"
     text: "A language and a toolkit I already knew: all the effort went into the algorithm."
+video:
+  src: "/demos/metro-pathfinder.mp4"
+  caption: "The metro map as a graph, a computed route, then Dijkstra and the code. Edited from the 2022 recording."
+  width: 1280
+  height: 720

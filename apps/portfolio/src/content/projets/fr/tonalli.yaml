@@ -14,6 +14,11 @@ choices:
     text: "La date d'une entrée se calcule dans le fuseau de celui qui l'écrit, jamais en UTC : sinon, le soir, la journée se décale."
   - title: "Un site plutôt qu'une app"
     text: "Tonalli a commencé en app mobile, puis est devenu un site installable : il ne fallait rien avoir à installer."
+video:
+  src: "/demos/tonalli.mp4"
+  caption: "Le concept, l'émotion du jour, les deux photos, la journée de l'autre qui se découvre, le calendrier et le personnage. Avec un compte de démonstration."
+  width: 1280
+  height: 720
 capture:
   alt: "Capture de Tonalli : l'écran d'accueil, le personnage-goutte et les boutons de connexion."
   caption: "L'écran d'accueil."

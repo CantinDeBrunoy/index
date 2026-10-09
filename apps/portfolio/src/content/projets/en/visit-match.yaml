@@ -14,3 +14,8 @@ choices:
     text: "Accounts and data with no server to maintain."
   - title: "Figma first"
     text: "Screens designed and discussed before the first line of code."
+video:
+  src: "/demos/visit-match.mp4"
+  caption: "Sign-up, places to keep or skip, trip notebooks, likes, the map and the profile, with a test account."
+  width: 1280
+  height: 720

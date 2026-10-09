@@ -14,3 +14,8 @@ choices:
     text: "The key never leaves the server, and each IP address is limited to 20 calls a minute."
   - title: "Home stays on the phone"
     text: "The position travels in the request body, never in the URL: URLs end up in logs."
+video:
+  src: "/demos/gym-picker.mp4"
+  caption: "Gyms ranked by driving time, the ranking that follows the traffic, then the fallback home. With fictional gyms and trips."
+  width: 1280
+  height: 720

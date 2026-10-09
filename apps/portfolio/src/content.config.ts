@@ -21,8 +21,13 @@ const projets = defineCollection({
     features: z.array(item).default([]),
     /** « Comment c'est fait » : un choix, et sa raison. */
     choices: z.array(item).default([]),
-    /** La vidéo de démo (public/demos/<slug>.mp4), sans son ni donnée personnelle ; la capture lui sert d'affiche. */
-    video: z.object({ src: z.string(), caption: z.string() }).optional(),
+    /**
+     * La vidéo de démo (public/demos/<slug>.mp4, son affiche <slug>.webp à côté), sans son ni donnée personnelle.
+     * Sa taille : 1280 × 800 pour celles filmées par scripts/demo-videos.ts, 1280 × 720 pour les montages.
+     */
+    video: z
+      .object({ src: z.string(), caption: z.string(), width: z.number().int().default(1280), height: z.number().int().default(800) })
+      .optional(),
     /** La capture d'écran (src/assets/shots/<slug>-desktop.jpg), sans donnée personnelle. */
     capture: z.object({ alt: z.string(), caption: z.string() }).optional(),
     /** Un projet raconté sur la fiche d'un autre (l'API REST .NET, sur l'étagère de Mithril) : ce qu'en dit l'étagère. */

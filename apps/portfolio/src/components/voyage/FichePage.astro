@@ -44,8 +44,7 @@ const app = appOf(project, text, lang);
 const code = project.links.code;
 const alternates = { fr: fichePath("fr", project), en: fichePath("en", project) };
 
-// La vidéo de démo (scripts/demo-videos.ts) : 1280 × 800, son affiche à côté d'elle (<slug>.webp).
-const DEMO = { width: 1280, height: 800 };
+// La vidéo de démo : son affiche est à côté d'elle (<slug>.webp), sa taille dans la fiche.
 const demoPoster = (src: string) => src.replace(/\.mp4$/, ".webp");
 // La capture : celle d'ordinateur, et sous 700 px celle du téléphone, s'il y en a une.
 const shot = capture ? getShot(slug, "desktop") : undefined;
@@ -182,7 +181,7 @@ const T = (text: string) => typo(lang, text);
           <div class="pictures__row">
           <figure>
             {video ? (
-              <video class="shot shot--video" src={video.src} poster={demoPoster(video.src)} controls muted playsinline preload="none" width={DEMO.width} height={DEMO.height} />
+              <video class="shot shot--video" src={video.src} poster={demoPoster(video.src)} controls muted playsinline preload="none" width={video.width} height={video.height} />
             ) : (
             shot && shotSet && capture && <picture>
               {shotPhone && shotPhoneSet && (

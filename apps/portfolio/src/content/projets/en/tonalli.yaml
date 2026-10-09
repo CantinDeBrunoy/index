@@ -14,6 +14,11 @@ choices:
     text: "An entry's date is computed in its author's time zone, never in UTC: otherwise, in the evening, the day shifts."
   - title: "A website rather than an app"
     text: "Tonalli started as a mobile app, then became an installable website: there had to be nothing to install."
+video:
+  src: "/demos/tonalli.mp4"
+  caption: "The concept, the day's emotion, the two photos, the other's day revealed, the calendar and the character. With a demo account."
+  width: 1280
+  height: 720
 capture:
   alt: "Screenshot of Tonalli: the home screen, the drop character and the sign-in buttons."
   caption: "The home screen."

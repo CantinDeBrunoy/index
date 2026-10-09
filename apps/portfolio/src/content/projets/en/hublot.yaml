@@ -14,3 +14,8 @@ choices:
     text: "Four checks a day, kept apart: the code history stays readable."
   - title: "ntfy for alerts"
     text: "A notification on my phone, without writing an app."
+video:
+  src: "/demos/hublot.mp4"
+  caption: "Deals under the threshold, the watches, then a new one to Reykjavik. With fictional watches and prices."
+  width: 1280
+  height: 720
