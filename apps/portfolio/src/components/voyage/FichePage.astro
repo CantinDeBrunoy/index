@@ -104,7 +104,7 @@ const T = (text: string) => typo(lang, text);
           </p>
           <p class="hero__pitch">{T(text.pitch)}</p>
           <div class="hero__links">
-            {"href" in app ? <a class="go" href={app.href}>{app.label}</a> : <span class="hero__note">{app.note}</span>}
+            {"href" in app ? <a class="go" href={app.href} target={app.target} rel={app.rel}>{app.label}</a> : <span class="hero__note">{app.note}</span>}
             {
               code && (
                 <a class="link" href={code} target="_blank" rel="noopener">
@@ -250,7 +250,7 @@ const T = (text: string) => typo(lang, text);
           </div>
           {
             "href" in app ? (
-              <a class="pass__gate" href={app.href}>
+              <a class="pass__gate" href={app.href} target={app.target} rel={app.rel}>
                 <span class="pass__gate-text">
                   <span class="pass__k">{gate.kicker}</span>
                   <span class="serif pass__big">{gate.big}</span>

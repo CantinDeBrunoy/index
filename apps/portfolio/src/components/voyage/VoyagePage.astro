@@ -201,7 +201,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                 {s.text.extra && <p class="cartel__extra">{typo(lang, s.text.extra)}</p>}
                 <div class="cartel__links">
                   {"href" in app ? (
-                    <a class="go" href={app.href}>
+                    <a class="go" href={app.href} target={app.target} rel={app.rel}>
                       <span class="lg">{app.label}</span>
                       <span class="sm">{app.short}</span>
                     </a>

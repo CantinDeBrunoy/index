@@ -115,7 +115,7 @@ const ticker = tickerText(h.ticker, apps, lang);
                     </td>
                     <td class="act">
                       {s.live ? (
-                        <a class="board-go board-go--solid" href={demo}>{h.open}</a>
+                        <a class="board-go board-go--solid" href={demo} target="_blank" rel="noopener">{h.open}</a>
                       ) : s.state === "download" && download ? (
                         <a class="board-go" href={download}>{h.download}</a>
                       ) : s.state === "here" && code ? (

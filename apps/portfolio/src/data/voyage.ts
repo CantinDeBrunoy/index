@@ -274,13 +274,20 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
 export const fill = (s: string, values: Record<string, string | number>) =>
   s.replace(/\{(\w+)\}/g, (m, k: string) => (k in values ? String(values[k]) : m));
 
-/** Le lien vers l'app d'une escale, ou la note qui le remplace : une archive, INDEX, une app pas encore en ligne. */
-export function appOf(project: Project, text: StopText, lang: Lang): { href: string; label: string; short: string } | { note: string } {
+/**
+ * Le lien vers l'app d'une escale, ou la note qui le remplace : une archive, INDEX, une app pas encore en ligne.
+ * Une app web s'ouvre dans un nouvel onglet (`target`), pour que le voyage reste là ; un téléchargement, sur place.
+ */
+export function appOf(
+  project: Project,
+  text: StopText,
+  lang: Lang,
+): { href: string; label: string; short: string; target?: "_blank"; rel?: "noopener" } | { note: string } {
   const v = VOYAGE[lang];
   const { kind, links } = project;
   if (text.noApp) return { note: text.noApp };
   if (kind === "desktop" && links.download) return { href: links.download, label: v.download, short: v.download };
-  if (kind === "web" && links.demo) return { href: links.demo, label: v.app, short: v.appShort };
+  if (kind === "web" && links.demo) return { href: links.demo, label: v.app, short: v.appShort, target: "_blank", rel: "noopener" };
   return { note: kind === "archive" ? v.noApp : v.soon };
 }
 
