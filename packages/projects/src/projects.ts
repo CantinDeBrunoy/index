@@ -17,8 +17,6 @@ export const MONOREPO_URL = `${GITHUB_URL}/index`;
 /** Sous-domaine workers.dev du compte Cloudflare (gym-picker.<ici>.workers.dev). */
 export const WORKERS_SUBDOMAIN: string | undefined = "cantin-roquier";
 
-/** URL Vercel de Cancionero (projet Vercel « cancionero-cantin »). */
-const CANCIONERO_URL: string | undefined = "https://cancionero-cantin.vercel.app";
 
 const workersDev = (worker: string) =>
   WORKERS_SUBDOMAIN ? `https://${worker}.${WORKERS_SUBDOMAIN}.workers.dev` : undefined;
@@ -33,6 +31,7 @@ export const PORTFOLIO_URL = workersDev("index");
 
 const GALACTIC_ESCAPE_URL = workersDev("galactic-escape");
 const MAGELLAN_URL = workersDev("magellan");
+const CANCIONERO_URL = workersDev("cancionero");
 const TONALLI_URL = "https://teinte-du-jour-eight.vercel.app";
 const GYM_PICKER_URL = workersDev("gym-picker");
 /**
@@ -120,7 +119,7 @@ export const PROJECTS = [
     kind: "web",
     badges: ["ia"],
     app: "cancionero",
-    host: "Vercel",
+    host: "Cloudflare Workers",
     pitch: {
       fr: "Apprendre l'espagnol en chansons : paroles traduites, karaoké à trous, flashcards et quiz, même hors ligne.",
     },

@@ -52,7 +52,7 @@ const DEMO = {
   "Visit Match": null,
   "gym-picker": "https://gym-picker.cantin-roquier.workers.dev",
   Mithril: "https://github.com/CantinDeBrunoy/Mithril/releases",
-  Cancionero: "https://cancionero-cantin.vercel.app",
+  Cancionero: "https://cancionero.cantin-roquier.workers.dev",
   Tonalli: "https://teinte-du-jour-eight.vercel.app",
   // INDEX n'a pas d'autre démo que ce site : le cartel le dit (noDemoText).
   INDEX: null,

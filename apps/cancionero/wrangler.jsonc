@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // L'export web statique d'Expo (expo export -p web), servi tel quel.
+  "name": "cancionero",
+  "main": "./worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Les chansons passent par le Worker, qui leur sert leur page pré-rendue.
+    "run_worker_first": ["/song/*"],
+    // Une autre adresse sans fichier (une page de l'app rechargée) renvoie l'app ; expo-router affiche
+    // la bonne page.
+    "not_found_handling": "single-page-application"
+  }
+}

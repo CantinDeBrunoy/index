@@ -22,7 +22,7 @@ aussitôt dessus.
 
 ## 📲 L'installer sur ton téléphone (version web, rien à installer)
 
-La version web est hébergée sur Vercel et s'installe comme une app (PWA) :
+La version web est hébergée sur Cloudflare Workers (https://cancionero.cantin-roquier.workers.dev) et s'installe comme une app (PWA) :
 
 - **iPhone** : ouvre le site dans **Safari** → bouton **Partager** → **Sur l'écran
   d'accueil**. L'app s'ouvre ensuite en plein écran, avec son icône.
@@ -35,20 +35,24 @@ de paroles et la traduction automatique, qui passent par Internet).
 > les chansons ajoutées dans l'un n'apparaissent pas dans l'autre. Installe l'app
 > d'abord, puis ajoute tes chansons depuis l'icône.
 
-## 🚀 Déploiement (Vercel)
+## 🚀 Déploiement (Cloudflare Workers)
 
-Vercel déploie la branche **`main`** à chaque push : build `expo export -p web`,
-sortie `dist` (voir `vercel.json`). Une chanson (`/song/<id>`) reçoit sa page
-pré-rendue, `song/[id].html` ; toute autre adresse qui n'est pas un fichier renvoie
-vers l'accueil, et expo-router affiche la bonne page. Le HTML servi doit être celui
-de la page affichée : sinon React ne peut pas l'hydrater (erreur #418) et refait tout
-l'écran. `public/_redirects` fait la même chose sur Netlify / Cloudflare Pages.
+`deploy-cancionero.yml` déploie à chaque push sur **`main`** qui touche l'app : build
+`expo export -p web`, puis `wrangler deploy` du dossier `dist` (voir `wrangler.jsonc`).
 
-Tester le build de production en local :
+Une chanson (`/song/<id>`) reçoit sa page pré-rendue, `song/[id].html`, grâce au petit
+Worker de `worker/index.js`, le seul code qui tourne côté serveur ; toute autre adresse
+qui n'est pas un fichier renvoie vers l'accueil, et expo-router affiche la bonne page.
+Le HTML servi doit être celui de la page affichée : sinon React ne peut pas l'hydrater
+(erreur #418) et refait tout l'écran.
+
+Tester le build de production en local, avec le vrai routage :
 ```bash
-npx expo export -p web
+pnpm --filter cancionero build
 ```
-puis servir le dossier `dist` avec n'importe quel serveur statique.
+```bash
+pnpm --filter cancionero exec wrangler dev
+```
 
 **Pièges du service worker** (`public/sw.js`, enregistré en production seulement) :
 

@@ -1,6 +1,0 @@
-# Une chanson (/song/<id>) a sa propre page pré-rendue : la servir, et non
-# l'accueil, évite à React un HTML qui ne correspond pas à la page affichée.
-/song/*    /song/[id].html   200
-# Toutes les autres routes sont gérées côté client par expo-router : on renvoie
-# index.html (statut 200) pour éviter les 404 au rechargement / à la réouverture.
-/*    /index.html   200

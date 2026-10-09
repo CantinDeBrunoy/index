@@ -4,8 +4,8 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 
 # Déploiement
 
-La version web est hébergée sur Vercel, qui ne déploie que `main` (voir
-`vercel.json` et la section « Déploiement » du README).
+La version web est hébergée sur Cloudflare Workers, déployée depuis `main` par
+`deploy-cancionero.yml` (voir `wrangler.jsonc` et la section « Déploiement » du README).
 
 - Travailler sur une branche `claude/…`, jamais directement sur `main`. Tant
   qu'elle n'est pas fusionnée, la fonctionnalité n'existe pour personne : à la

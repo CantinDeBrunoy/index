@@ -1,0 +1,25 @@
+name: deploy-cancionero
+
+# Déploie apps/cancionero sur Cloudflare Workers, seulement quand son dossier (ou un package
+# partagé, ou le lockfile) change sur main.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/cancionero/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/deploy-cancionero.yml
+      - .github/workflows/_deploy-cloudflare.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-cloudflare.yml
+    with:
+      app: cancionero
+    secrets: inherit
