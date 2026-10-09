@@ -1,17 +1,15 @@
 // Le carrousel « en dehors du code » (AproposPage.astro) : un loisir au centre, ses deux voisins de côté, et il
-// tourne seul toutes les 4 s quand il est à l'écran. Il s'arrête au survol, au focus et avec le bouton pause ; en
-// mouvement réduit, il ne tourne pas. Les flèches, les points ou un clic sur un loisir de côté le font avancer.
+// tourne seul toutes les 4 s quand il est à l'écran. Il s'arrête au survol et au focus ; en mouvement réduit, il
+// ne tourne pas. Les flèches, les points ou un clic sur un loisir de côté le font avancer.
 // Chaque loisir s'affiche d'abord en image fixe ; sa boucle animée ne se charge qu'en arrivant à côté du centre.
 const carousel = document.querySelector<HTMLElement>("[data-carousel]");
 
 if (carousel) {
   const slides = [...carousel.querySelectorAll<HTMLElement>("[data-slide]")];
   const dots = [...carousel.querySelectorAll<HTMLButtonElement>("[data-dot]")];
-  const pause = carousel.querySelector<HTMLButtonElement>("[data-pause]");
   const calm = matchMedia("(prefers-reduced-motion: reduce)");
   const n = slides.length;
   let cur = 0;
-  let paused = calm.matches;
   let held = false;
   let visible = false;
 
@@ -37,7 +35,7 @@ if (carousel) {
   };
 
   window.setInterval(() => {
-    if (!paused && !held && visible && !document.hidden) show(cur + 1);
+    if (!calm.matches && !held && visible && !document.hidden) show(cur + 1);
   }, 4000);
   new IntersectionObserver(([entry]) => {
     visible = !!entry?.isIntersecting;
@@ -55,14 +53,5 @@ if (carousel) {
   carousel.addEventListener("focusin", () => (held = true));
   carousel.addEventListener("focusout", (event) => (held = carousel.contains(event.relatedTarget as Node | null)));
 
-  if (pause) {
-    // En mouvement réduit, rien ne tourne : pas de bouton pause.
-    pause.hidden = calm.matches;
-    pause.addEventListener("click", () => {
-      paused = !paused;
-      pause.dataset.state = paused ? "paused" : "";
-      pause.setAttribute("aria-label", (paused ? pause.dataset.playLabel : pause.dataset.pauseLabel) ?? "");
-    });
-  }
   show(0);
 }

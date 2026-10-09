@@ -110,6 +110,16 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
       }
       </div>
 
+      <!-- La ligne de vol, pour le décor : un pointillé de laiton d'un bout à l'autre, et l'avion qui le parcourt. -->
+      <div class="flight" aria-hidden="true">
+        <span class="flight__line"></span>
+        <span class="flight__track">
+          <svg class="flight__plane" width="26" height="26" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" transform="rotate(90 12 12)" />
+          </svg>
+        </span>
+      </div>
+
       <div class="atlas" data-atlas>
         <p id="atlas-hint" class="visually-hidden">{c.listHint}</p>
         <ol class="atlas__list" aria-label={c.listAria}>
@@ -269,8 +279,74 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     display: flex;
     flex-direction: column;
     gap: 14px;
-    margin: -24px 0 72px;
+    margin: -24px 0 48px;
     scroll-margin-top: 24px;
+  }
+
+  /* La ligne de vol : le pointillé entre deux escales rondes, et l'avion qui le traverse en une minute,
+     aller simple (immobile en mouvement réduit). Le rail (track) a la largeur de la ligne : le décaler de
+     x % fait avancer l'avion de x % de la ligne. */
+  .flight {
+    position: relative;
+    height: 32px;
+    margin: 0 0 48px;
+    overflow: hidden;
+  }
+  .flight::before,
+  .flight::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--brass);
+    border-radius: var(--radius-pill);
+    transform: translateY(-50%);
+  }
+  .flight::before {
+    left: 0;
+    background: var(--brass);
+  }
+  .flight::after {
+    right: 0;
+  }
+  .flight__line {
+    position: absolute;
+    top: 50%;
+    left: 18px;
+    right: 18px;
+    border-top: 2px dashed color-mix(in srgb, var(--brass) 45%, transparent);
+  }
+  .flight__track {
+    position: absolute;
+    inset: 0 34px;
+    animation: flight-cross 60s linear infinite;
+  }
+  /* Derrière l'avion, le trajet fait, en trait plein (rogné au bord par .flight). */
+  .flight__track::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    width: 100%;
+    height: 2px;
+    background: var(--brass);
+    transform: translateY(-50%);
+  }
+  .flight__plane {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    color: var(--brass);
+    transform: translate(-50%, -50%);
+  }
+  @keyframes flight-cross {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100%);
+    }
   }
   .app-chips {
     display: flex;
@@ -581,7 +657,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 64px;
       align-items: end;
-      padding-bottom: 64px;
+      padding-bottom: 48px;
     }
     .top .intro {
       padding-bottom: 0;
@@ -699,6 +775,10 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     .row,
     .atlas__media {
       transition: none;
+    }
+    .flight__track {
+      animation: none;
+      transform: translateX(30%);
     }
     .live-dot[data-state="pending"],
     .live-dot[data-state="asleep"] {

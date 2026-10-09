@@ -1,8 +1,8 @@
 /**
  * Le copilote du voyage (components/voyage/Copilote.astro, CopiloteAccueil.astro et CopiloteTuto.astro).
- * - À chaque départ (« Décoller », ou l'escale 1 ouverte directement) : il accueille et donne le tuto, les
- *   deux façons de visiter. « Faire le voyage », la croix ou Échap le rangent ; partir de l'escale aussi.
- *   En revenant à l'escale 1 depuis l'escale 2, il reste rangé.
+ * - Au premier départ seulement (« Décoller », ou l'escale 1 ouverte directement) : il accueille et donne le
+ *   tuto, les deux façons de visiter. « Faire le voyage », la croix ou Échap le rangent ; partir de l'escale
+ *   aussi. Le navigateur s'en souvient (localStorage) : aux visites suivantes, il reste rangé d'emblée.
  * - Rangé, à chaque escale : sa pastille porte la tenue de l'escale. Un clic sur elle rouvre le tuto ;
  *   « Continuer le voyage », la croix, Échap ou un clic ailleurs le referment.
  * Il suit le voyage par l'évènement « voyage:escale » de scripts/voyage.ts : ce module se charge avant lui.
@@ -11,6 +11,23 @@
 /** Le temps qu'il file vers sa pastille, puis celui où l'anneau bat plus fort. */
 const BYE_MS = 750;
 const NUDGE_MS = 4000;
+const SEEN_KEY = "index:copilote-accueil";
+
+/** L'accueil a-t-il déjà été donné dans ce navigateur ? Sans stockage (navigation privée bloquée), on le redonne. */
+function welcomed(): boolean {
+  try {
+    return localStorage.getItem(SEEN_KEY) === "vu";
+  } catch {
+    return false;
+  }
+}
+function rememberWelcome() {
+  try {
+    localStorage.setItem(SEEN_KEY, "vu");
+  } catch {
+    // Stockage bloqué : l'accueil reviendra à la prochaine visite.
+  }
+}
 
 function start(root: HTMLElement) {
   const welcome = root.querySelector<HTMLElement>("[data-copilote-accueil]");
@@ -43,6 +60,7 @@ function start(root: HTMLElement) {
   const welcomeCard = welcome?.closest("[data-stop]")?.querySelector<HTMLElement>(".cartel") ?? null;
   const greet = () => {
     if (!welcome) return;
+    rememberWelcome();
     welcome.classList.remove("bye");
     welcome.hidden = false;
     root.classList.add("copilote-accueil");
@@ -84,8 +102,8 @@ function start(root: HTMLElement) {
     closeHelp();
     for (const stop of stops) stop.classList.remove("nudge");
     if (welcoming() && i !== 1) dismiss(false);
-    // Un départ : on arrive à l'escale 1 depuis le départ, ou la page s'ouvre sur elle.
-    if (i === 1 && from <= 0) greet();
+    // Le premier départ : on arrive à l'escale 1 depuis le départ, ou la page s'ouvre sur elle.
+    if (i === 1 && from <= 0 && !welcomed()) greet();
   });
 
   root.addEventListener("click", (event) => {

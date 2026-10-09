@@ -5,7 +5,7 @@
  * Les textes sont des brouillons, à réécrire.
  */
 
-import { projects, type Project } from "@index/projects";
+import type { Project } from "@index/projects";
 import { inWords, NBSP, type Lang } from "../i18n/voyage";
 
 export type Palette = "night" | "day" | "dusk" | "kraft";
@@ -221,10 +221,7 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     seeAll: "Voir tous les projets",
     allProjects: "Tous les projets",
     start: "Le départ",
-    caption0: `${inWords("fr", STOPS.length, true)} escales · ${inWords("fr", projects.length)} projets`,
-    caption: `Escale {i} sur ${STOPS.length} · {place}`,
     announce: "Escale {i} : {place}, {name}",
-    dot: "Escale {k} : {place}",
     dotsAria: "Les escales du voyage",
     fiche: "La fiche du projet →",
     ficheShort: "La fiche →",
@@ -249,10 +246,7 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     seeAll: "See all projects",
     allProjects: "All projects",
     start: "Departure",
-    caption0: `${inWords("en", STOPS.length, true)} stops · ${inWords("en", projects.length)} projects`,
-    caption: `Stop {i} of ${STOPS.length} · {place}`,
     announce: "Stop {i}: {place}, {name}",
-    dot: "Stop {k}: {place}",
     dotsAria: "The journey's stops",
     fiche: "Project page →",
     ficheShort: "Project page →",

@@ -53,6 +53,18 @@ export const BAG_LINES = ["#346885", "#4f6d3a", "#7a3b5c", "#84652f", "#a54e22",
 /** En dehors du code : les objets du cabinet, en boucle (public/voyage) et en image fixe (stills). */
 export const AWAY = ["randonnee", "book", "gloves", "valise", "escalade", "tennis", "natation", "course"] as const;
 
+/** Le fond de chaque loisir dans le carrousel : un pastel à lui, sous l'objet (ses images sont détourées). */
+export const AWAY_BG: Record<(typeof AWAY)[number], string> = {
+  randonnee: "#dde8d3",
+  book: "#e7def0",
+  gloves: "#f3dad3",
+  valise: "#d8e6f1",
+  escalade: "#f5e1c6",
+  tennis: "#e6eec8",
+  natation: "#d2ecea",
+  course: "#f2d8e2",
+};
+
 interface Leg {
   title: string;
   sub: string;
@@ -97,7 +109,7 @@ interface AproposStrings {
   /** Dans l'ordre d'AWAY. `text` : une phrase de Cantin, à écrire (les questions sont en commentaire). */
   away: { title: string; alt: string; text?: string }[];
   /** Le carrousel « en dehors du code » : ses boutons. */
-  carousel: { prev: string; next: string; pause: string; play: string; slide: string };
+  carousel: { prev: string; next: string; slide: string };
 }
 
 export const APROPOS: Record<Lang, AproposStrings> = {
@@ -195,7 +207,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       { title: "Natation", alt: "Un bassin d'argile, deux lignes d'eau qui suivent la houle, une échelle de laiton et trois plots de départ." },
       { title: "Course à pied", alt: "Une paire de baskets d'argile à semelle de laiton, qui déroulent le pas chacune son tour." },
     ],
-    carousel: { prev: "Loisir précédent", next: "Loisir suivant", pause: "Mettre le carrousel en pause", play: "Relancer le carrousel", slide: "Loisir {n} sur {count}" },
+    carousel: { prev: "Loisir précédent", next: "Loisir suivant", slide: "Loisir {n} sur {count}" },
   },
   en: {
     pageTitle: "About",
@@ -289,6 +301,6 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       { title: "Swimming", alt: "A clay pool, two lane ropes riding the swell, a brass ladder and three starting blocks." },
       { title: "Running", alt: "A pair of clay sneakers with brass soles, taking turns to roll through a stride." },
     ],
-    carousel: { prev: "Previous hobby", next: "Next hobby", pause: "Pause the carousel", play: "Play the carousel", slide: "Hobby {n} of {count}" },
+    carousel: { prev: "Previous hobby", next: "Next hobby", slide: "Hobby {n} of {count}" },
   },
 };

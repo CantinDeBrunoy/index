@@ -2,7 +2,7 @@
  * Le voyage animé : une escale à la fois.
  * - L'objet cliqué (ou « Décoller ») : la scène plonge vers lui sous un voile de la couleur de
  *   l'escale suivante, puis la suivante se pose ; le cartel et l'anneau arrivent en dernier.
- * - Les points, le retour et la marque : un simple fondu.
+ * - Le retour et la marque : un simple fondu.
  * - Flèches gauche et droite du clavier ; l'adresse (#escale-3) garde l'escale, l'interrupteur
  *   FR / EN aussi. Sans ce script, les escales se lisent à la suite, une par écran.
  */
@@ -15,8 +15,6 @@ const SETTLE_MS = 1250;
 const PALETTES = ["night", "day", "dusk", "kraft"];
 
 interface Texts {
-  caption0: string;
-  caption: string;
   announce: string;
 }
 
@@ -25,8 +23,6 @@ const fill = (s: string, values: Record<string, string | number>) =>
 
 function start(root: HTMLElement) {
   const stops = [...root.querySelectorAll<HTMLElement>("[data-stop]")];
-  const dots = [...root.querySelectorAll<HTMLElement>("[data-dot]")];
-  const caption = root.querySelector<HTMLElement>("[data-caption]");
   const announce = root.querySelector<HTMLElement>("[data-announce]");
   const langLinks = [...root.querySelectorAll<HTMLAnchorElement>("[data-lang-link]")];
   const texts = JSON.parse(root.dataset.texts ?? "{}") as Texts;
@@ -92,14 +88,7 @@ function start(root: HTMLElement) {
     root.style.setProperty("--bg", stop.dataset.bg ?? "");
     document.body.style.setProperty("--page-bg", stop.dataset.bg ?? "");
 
-    for (const [k, dot] of dots.entries()) {
-      const n = k + 1;
-      dot.classList.toggle("done", n < i);
-      if (n === i) dot.setAttribute("aria-current", "step");
-      else dot.removeAttribute("aria-current");
-    }
     const place = stop.dataset.place ?? "";
-    if (caption) caption.textContent = i === 0 ? texts.caption0 : fill(texts.caption, { i, place });
     if (announce) announce.textContent = i === 0 ? "" : fill(texts.announce, { i, place, name: stop.dataset.name ?? "" });
 
     const hash = i === 0 ? "" : `#escale-${i}`;

@@ -14,7 +14,6 @@ import { APPS_ANCHOR } from "../../data/carnet";
 import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
-import Badges from "./Badges.astro";
 import Copilote from "./Copilote.astro";
 import CopiloteAccueil from "./CopiloteAccueil.astro";
 
@@ -39,7 +38,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
   <div
     class="voyage pal-night"
     data-voyage
-    data-texts={JSON.stringify({ caption0: v.caption0, caption: v.caption, announce: v.announce })}
+    data-texts={JSON.stringify({ announce: v.announce })}
     style={`--bg: ${START.bg}`}
   >
     <!-- Avant même la mise en page : une escale à la fois, pour que les autres scènes ne se chargent pas. -->
@@ -50,20 +49,6 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
       <a class="brand" href={ROUTES.voyage[lang]} data-go="0" data-soft>
         <span class="brand__name">Index</span><span class="brand__who">Cantin Roquier</span>
       </a>
-      <nav class="vdots" aria-label={v.dotsAria}>
-        <ol class="dots">
-          {
-            stops.map((s) => (
-              <li>
-                <a class="dot" href={`#escale-${s.n}`} data-go={s.n} data-soft data-dot aria-label={fill(v.dot, { k: s.n, place: s.text.place })}>
-                  <span />
-                </a>
-              </li>
-            ))
-          }
-        </ol>
-        <p class="vcaption" data-caption>{v.caption0}</p>
-      </nav>
       <div class="vhead__end nav-desktop">
         <nav aria-label={t.tabsAria} class="tabs">
           {TABS.map((key) => <a href={ROUTES[key][lang]} aria-current={key === "voyage" ? "page" : undefined}>{t.tabs[key]}</a>)}
@@ -178,7 +163,10 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                 <div class="poster-veil ui" aria-hidden="true" />
                 <a class:list={["spot", { "spot--left": left }]} href={next} data-go={last ? undefined : s.n + 1}>
                   <span class="ring" aria-hidden="true" />
-                  <span class="lab">{s.text.cta} →</span>
+                  <span class="lab">
+                    {s.text.cta}
+                    <span class="arrow" aria-hidden="true">→</span>
+                  </span>
                 </a>
                 {
                   s.tag && s.text.tag && (
@@ -193,7 +181,6 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                 <p class="cartel__kind">
                   <span class="cartel__num">{s.project.number}</span>
                   <span>{kindOf(s.project, s.text, lang).meta}</span>
-                  <Badges project={s.project} lang={lang} />
                 </p>
                 <h2 class="serif" id={`escale-${s.n}-titre`} tabindex="-1" data-focus>
                   {s.project.name}
@@ -224,13 +211,14 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
               <nav class="stop-nav ui" aria-label={v.dotsAria}>
                 <Copilote lang={lang} n={s.n} scene={s.scene} />
                 <a class="pill back" href={prev} data-go={s.n - 1} data-soft aria-label={fill(v.backTo, { place: places[s.n - 1]! })}>
-                  <span aria-hidden="true">←</span>
+                  <span class="arrow" aria-hidden="true">←</span>
                   <span class="back__place" aria-hidden="true">
                     {places[s.n - 1]}
                   </span>
                 </a>
                 <a class="go next" href={next} data-go={last ? undefined : s.n + 1}>
-                  {s.text.cta} →
+                  {s.text.cta}
+                  <span class="arrow" aria-hidden="true">→</span>
                 </a>
               </nav>
             </section>
@@ -262,51 +250,17 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     cursor: default;
   }
 
-  /* — L'en-tête : la marque, les points des escales, les onglets et la langue — */
+  /* — L'en-tête : la marque à gauche, les onglets et la langue à droite — */
   .vhead {
     position: absolute;
     z-index: 3;
     left: 40px;
     right: 40px;
     top: 22px;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 24px;
-  }
-  .vhead .brand {
-    justify-self: start;
-  }
-  .vhead__end {
-    justify-self: end;
-  }
-  /* Sous 1366 px, les onglets et la langue ne tiennent plus dans un tiers de l'écran : leur colonne prend
-     la largeur de son contenu, sans revenir à la ligne, et les points se centrent dans ce qui reste.
-     Plus étroit encore (tablette en portrait), rien ne tient sur une ligne : la langue passe dessous. */
-  @media (min-width: 961px) and (max-width: 1365px) {
-    .vhead {
-      grid-template-columns: auto 1fr auto;
-    }
-    .vhead__end {
-      flex-wrap: nowrap;
-    }
-  }
-  @media (min-width: 961px) and (max-width: 1120px) {
-    .vhead .brand__who {
-      display: none;
-    }
-  }
-  .vdots {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-  }
-  .vcaption {
-    margin: 0;
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
   }
 
   /* — Une escale : sans script, une par écran, à la suite ; avec, une seule à la fois — */
@@ -446,6 +400,25 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     background: var(--ink);
     color: var(--card);
   }
+  /* Les flèches de la navigation, bien plus grandes que le texte qu'elles suivent ; elles avancent au survol. */
+  .arrow {
+    display: inline-block;
+    font-size: 1.6em;
+    line-height: 0.6;
+    transition: transform 0.2s;
+  }
+  .lab .arrow,
+  .next .arrow {
+    margin-left: 0.3em;
+  }
+  .spot:hover .arrow,
+  .spot:focus-visible .arrow,
+  .next:hover .arrow {
+    transform: translateX(3px);
+  }
+  .back:hover .arrow {
+    transform: translateX(-3px);
+  }
 
   .tag {
     position: absolute;
@@ -525,7 +498,6 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     --muted: #574a3e;
   }
   .cartel__kind {
-    --badge-bg: var(--stop-bg);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -775,19 +747,10 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
       justify-content: space-between;
       gap: 12px;
     }
-    .vdots {
-      position: absolute;
-      left: -16px;
-      right: -16px;
-      top: 50px;
-    }
-    .vcaption {
-      font-size: 11px;
-    }
     .stop {
       display: flex;
       flex-direction: column;
-      padding-top: 104px;
+      padding-top: 64px;
     }
     .scene-box {
       position: relative;

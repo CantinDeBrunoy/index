@@ -141,37 +141,6 @@ const T = (text: string) => typo(lang, text);
     </div>
   </div>
 
-  <nav class="strip" aria-label={f.stripAria}>
-    {
-      [["prev", prevCell], ["next", nextCell]].map(([side, c]) => {
-        const cell = c as typeof prevCell;
-        return (
-          <a class:list={["strip__cell", `strip__${side}`]} href={cell.href} rel={side as string}>
-            <svg class="strip__arrow" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d={ARROW[side as "prev" | "next"]} />
-            </svg>
-            {cell.scene && (
-              <span class="strip__thumb" style={`background: ${cell.bg}`}>
-                <img src={still(cell.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
-              </span>
-            )}
-            <span class="strip__text">
-              <span class="strip__label">
-                {cell.label}
-                {cell.place && <span class="strip__place"> · {cell.place}</span>}
-              </span>
-              <span class="serif strip__name">{cell.name}</span>
-            </span>
-          </a>
-        );
-      })
-    }
-    <div class="strip__mid" aria-hidden="true">
-      <span class="strip__label">{fill(f.stopOf, { i: n, n: STOPS.length })}</span>
-      <span class="strip__dots">{STOPS.map((_, k) => <i class:list={[{ done: k < i, now: k === i }]} />)}</span>
-    </div>
-  </nav>
-
   <main id="contenu" class="wrap-read">
     {
       media && (
@@ -276,7 +245,41 @@ const T = (text: string) => typo(lang, text);
         )
       }
     </section>
+  </main>
 
+  <!-- En bas, sur toute la largeur : les escales voisines et la place de celle-ci dans le voyage. -->
+  <nav class="strip" aria-label={f.stripAria} data-resume-hides>
+    {
+      [["prev", prevCell], ["next", nextCell]].map(([side, c]) => {
+        const cell = c as typeof prevCell;
+        return (
+          <a class:list={["strip__cell", `strip__${side}`]} href={cell.href} rel={side as string}>
+            <svg class="strip__arrow" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d={ARROW[side as "prev" | "next"]} />
+            </svg>
+            {cell.scene && (
+              <span class="strip__thumb" style={`background: ${cell.bg}`}>
+                <img src={still(cell.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
+              </span>
+            )}
+            <span class="strip__text">
+              <span class="strip__label">
+                {cell.label}
+                {cell.place && <span class="strip__place"> · {cell.place}</span>}
+              </span>
+              <span class="serif strip__name">{cell.name}</span>
+            </span>
+          </a>
+        );
+      })
+    }
+    <div class="strip__mid" aria-hidden="true">
+      <span class="strip__label">{fill(f.stopOf, { i: n, n: STOPS.length })}</span>
+      <span class="strip__dots">{STOPS.map((_, k) => <i class:list={[{ done: k < i, now: k === i }]} />)}</span>
+    </div>
+  </nav>
+
+  <div class="wrap-read">
     <footer class="foot" data-resume-hides>
       <p>
         {T(fill(f.question, { name: project.name }))} <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
@@ -284,7 +287,7 @@ const T = (text: string) => typo(lang, text);
       <a class="pill" href={GITHUB_URL} target="_blank" rel="noopener">GitHub ↗</a>
     </footer>
     <Colophon lang={lang} />
-  </main>
+  </div>
 
   <a class="resume pal-night" href={`${ROUTES.voyage[lang]}#escale-${n}`} data-resume>
     <span class="resume__thumb" style={`background: ${stop.bg}`}>
@@ -506,7 +509,7 @@ const T = (text: string) => typo(lang, text);
     display: grid;
     grid-template-areas: "prev mid next";
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    border-bottom: 1px solid var(--line);
+    border-block: 1px solid var(--line);
     background: var(--card);
   }
   .strip__cell {
@@ -722,7 +725,6 @@ const T = (text: string) => typo(lang, text);
     justify-content: space-between;
     gap: 16px;
     padding: 32px 0 56px;
-    border-top: 1px solid var(--line);
   }
   .foot p {
     margin: 0;

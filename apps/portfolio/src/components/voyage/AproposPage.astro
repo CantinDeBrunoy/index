@@ -8,7 +8,7 @@
  * Les objets tournent en boucle sur ordinateur ; sur téléphone et en mouvement réduit, leur image fixe.
  */
 import { getProject, GITHUB_URL } from "@index/projects";
-import { APROPOS, AWAY, BAG_LINES, LANG_LINES, LINES, NOW, type LineId, type StationId } from "../../data/apropos";
+import { APROPOS, AWAY, AWAY_BG, BAG_LINES, LANG_LINES, LINES, NOW, type LineId, type StationId } from "../../data/apropos";
 import { fill } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, STRINGS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
@@ -40,7 +40,7 @@ const today = pct(NOW);
 
 const legs = [R.school, R.work];
 const langs = LANG_LINES.map((l, k) => ({ ...l, ...a.langs[k]! }));
-const away = AWAY.map((object, k) => ({ object, ...a.away[k]! }));
+const away = AWAY.map((object, k) => ({ object, bg: AWAY_BG[object], ...a.away[k]! }));
 const still = (name: string) => `/voyage/stills/${name}.webp`;
 ---
 
@@ -141,9 +141,8 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
               <h3 class="serif">{leg.title}</h3>
               <p class="legs__sub">{leg.sub}</p>
               <ol>
-                {leg.items.map(([when, title, where, text, line]) => (
+                {leg.items.map(([when, title, where, text]) => (
                   <li>
-                    <i class="legs__dot" style={`background: ${INK[line]}`} />
                     <span class="legs__when">{when}</span>
                     <div>
                       <p class="legs__title">{title}</p>
@@ -222,7 +221,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
           {
             away.map((o, k) => (
               <li class="slide" data-slide data-pos={String(k > away.length / 2 ? k - away.length : k)} role="group" aria-label={fill(a.carousel.slide, { n: k + 1, count: away.length })}>
-                <picture class="slide__img">
+                <picture class="slide__img" style={`--slide-bg: ${o.bg}`}>
                   <source media="(prefers-reduced-motion: reduce)" srcset={still(o.object)} />
                   <source media="(max-width: 700px)" srcset={still(o.object)} />
                   <img src={still(o.object)} data-loop={`/voyage/${o.object}.webp`} alt={o.alt} width="560" height="560" loading="lazy" decoding="async" />
@@ -248,10 +247,6 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>
-          </button>
-          <button type="button" class="carousel__btn carousel__pause" data-pause data-pause-label={a.carousel.pause} data-play-label={a.carousel.play} aria-label={a.carousel.pause}>
-            <svg class="carousel__icon-pause" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /></svg>
-            <svg class="carousel__icon-play" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" /></svg>
           </button>
         </div>
       </div>
@@ -572,14 +567,8 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
   }
   .legs li {
     display: grid;
-    grid-template-columns: 14px 104px minmax(0, 1fr);
+    grid-template-columns: 104px minmax(0, 1fr);
     gap: 4px 14px;
-  }
-  .legs__dot {
-    width: 14px;
-    height: 14px;
-    margin-top: 4px;
-    border-radius: 4px;
   }
   .legs__when {
     padding-top: 2px;
@@ -753,7 +742,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     object-fit: cover;
     border: 1px solid var(--line);
     border-radius: 28px;
-    background: #efe7da;
+    background: var(--slide-bg, #efe7da);
   }
   .slide__text {
     display: flex;
@@ -839,17 +828,6 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
   .carousel__btn:hover {
     background: var(--ink);
     color: var(--card);
-  }
-  .carousel__pause {
-    margin-left: 10px;
-    border-color: var(--line);
-  }
-  .carousel__icon-play,
-  .carousel__pause[data-state="paused"] .carousel__icon-pause {
-    display: none;
-  }
-  .carousel__pause[data-state="paused"] .carousel__icon-play {
-    display: block;
   }
   .carousel__dots {
     display: flex;
@@ -952,7 +930,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
       padding-top: 56px;
     }
     .legs li {
-      grid-template-columns: 14px 88px minmax(0, 1fr);
+      grid-template-columns: 88px minmax(0, 1fr);
     }
     .roundel {
       width: 64px;
@@ -997,9 +975,6 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     }
     .carousel__dots button {
       width: 24px;
-    }
-    .carousel__pause {
-      margin-left: 4px;
     }
     .foot {
       padding: 64px 0 48px;
