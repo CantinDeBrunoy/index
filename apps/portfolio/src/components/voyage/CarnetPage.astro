@@ -157,14 +157,15 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
                     {f.stop} {s.n} · {s.text.place}
                   </p>
                   <h2 class="serif atlas__name">{s.project.name}</h2>
-                  <p class="atlas__kind">{s.kind}</p>
-                  {s.project.badges.length > 0 && (
-                    <p class="row__badges">
-                      <Badges project={s.project} lang={lang} />
-                    </p>
-                  )}
+                  <p class="atlas__kind">
+                    <span>{s.kind}</span>
+                    {s.project.badges.length > 0 && (
+                      <span class="atlas__badges">
+                        <Badges project={s.project} lang={lang} />
+                      </span>
+                    )}
+                  </p>
                   <p class="atlas__pitch">{typo(lang, s.text.pitch)}</p>
-                  {s.shelved.length > 0 && <p class="card__shelf">{typo(lang, fill(c.shelf, { list: s.shelved.join(", ") }))}</p>}
                   <div class="atlas__links">
                     <a class="go" href={fichePath(lang, s.project)}>
                       {VOYAGE[lang].fiche}
@@ -481,8 +482,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     font-size: 12px;
   }
   .atlas__view {
-    position: sticky;
-    top: 24px;
     overflow: hidden;
     border: 1px solid var(--line);
     border-radius: 24px;
@@ -498,23 +497,28 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
     height: 100%;
     object-fit: cover;
   }
-  /* Les textes des dix escales, superposés : la plus longue donne la hauteur, rien ne saute au survol. */
+  /* Les textes des dix escales, superposés : le plus long donne la hauteur, rien ne saute d'une escale à
+     l'autre. Sous la scène, l'essentiel seulement : le lieu, le nom, le type, deux lignes d'accroche, les liens. */
   .atlas__panels {
     display: grid;
-    padding: 32px 40px 36px;
+    padding: 20px 28px 24px;
   }
   .atlas__panel {
     display: flex;
     grid-area: 1 / 1;
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 6px;
   }
   .atlas__panel[data-off] {
     visibility: hidden;
   }
-  .atlas__panel .row__badges {
-    justify-content: flex-start;
+  .atlas__badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
   }
   .atlas__stop {
     margin: 0;
@@ -524,26 +528,39 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
   }
   .atlas__name {
     margin: 0;
-    font-size: clamp(48px, 4vw, 68px);
+    font-size: clamp(34px, 2.4vw, 46px);
     line-height: 1;
   }
   .atlas__kind {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
     margin: 0;
     color: var(--muted);
-    font-size: 15px;
+    font-size: 14px;
   }
   .atlas__pitch {
-    max-width: 640px;
-    margin: 6px 0 0;
-    font-size: 19px;
-    line-height: 1.55;
+    display: -webkit-box;
+    margin: 2px 0 0;
+    overflow: hidden;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
   .atlas__links {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px 24px;
-    margin-top: 12px;
+    gap: 6px 20px;
+    margin-top: 6px;
+  }
+  .atlas__links .go {
+    min-height: 44px;
+    padding: 0 20px;
+    font-size: 15px;
   }
   .atlas__revisit {
     color: var(--muted);
@@ -570,7 +587,16 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
       display: grid;
       grid-template-columns: minmax(440px, 0.85fr) minmax(0, 1fr);
       gap: 64px;
-      align-items: start;
+    }
+    /* La liste défile dans la hauteur de la scène, au lieu de pousser la page : sans taille propre (contain), elle
+       prend celle de la rangée, que donne la scène. Un fondu en bas montre qu'il y a la suite. */
+    .atlas__list {
+      contain: size;
+      overflow-y: auto;
+      padding-bottom: 36px;
+      scrollbar-color: var(--line) transparent;
+      scrollbar-width: thin;
+      mask-image: linear-gradient(to bottom, #000 calc(100% - 44px), transparent);
     }
     .cards {
       display: none;
