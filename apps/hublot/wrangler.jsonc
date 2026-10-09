@@ -1,9 +1,18 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  // La page de gestion de Hublot, servie telle quelle (aucun code côté serveur).
+  // La page de Hublot (docs/, préparée dans dist/page), servie telle quelle ; seul /api/* passe par le
+  // Worker : la connexion, et les appels à GitHub du propriétaire connecté (worker/index.ts).
   "name": "hublot",
+  "main": "./worker/index.ts",
   "compatibility_date": "2026-10-01",
   "assets": {
-    "directory": "./dist/page"
-  }
+    "directory": "./dist/page",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  // Le hub dit si le cookie reçu est celui du propriétaire : le secret de session ne quitte pas le hub.
+  "services": [{ "binding": "HUB", "service": "index" }],
+  // Secret (local : .dev.vars ; production : pnpm exec wrangler secret put HUBLOT_GITHUB_TOKEN) :
+  // jeton GitHub à grain fin, dépôt CantinDeBrunoy/Hublot seulement, Contents et Actions en écriture.
+  "observability": { "enabled": true }
 }

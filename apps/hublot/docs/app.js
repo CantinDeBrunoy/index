@@ -1,6 +1,7 @@
 // @ts-check
 // fare-radar web page: current deals + management of the watches (config.json of the repository).
-// Reads the repository files; writes config.json through the GitHub API with the viewer's token.
+// Reads the repository files; the signed-in owner writes config.json through the Worker (worker/index.ts),
+// which holds the GitHub key: the page never does.
 
 import { DEMO_SEARCH_MS, DEMO_SNAPSHOT_FILE, demoCities, demoConfig, demoReading, isDemo, shiftSnapshot } from "./demo.js";
 import { createGitHub, GitHubError } from "./github.js";
@@ -34,15 +35,16 @@ import {
  * @typedef {import("./lib.js").City} City
  */
 
-// Dans le monorepo INDEX : le code et le workflow vivent sur main, l'état (config.json, data/)
-// sur la branche hublot-data, pour que les relevés du cron ne remplissent pas l'historique de main.
-const REPOSITORY = { owner: "CantinDeBrunoy", repo: "index" };
-const DATA_BRANCH = "hublot-data";
+// La page est servie par le Worker « hublot » du monorepo INDEX, mais l'état (config.json, data/) et le
+// cron restent dans l'ancien dépôt Hublot, sur main. Le Worker n'ouvre que ce dépôt-là (DATA_REPOSITORY dans
+// worker/index.ts) : changer l'un, c'est changer l'autre. (À la bascule complète : dépôt index, branche
+// hublot-data, workflow hublot-check.yml lancé depuis main.)
+const REPOSITORY = { owner: "CantinDeBrunoy", repo: "Hublot" };
+const DATA_BRANCH = "main";
 const WORKFLOW_REF = "main";
-const WORKFLOW = "hublot-check.yml";
+const WORKFLOW = "check.yml";
 const CONFIG_FILE = "config.json";
 const SNAPSHOT_FILE = "data/latest.json";
-const TOKEN_KEY = "fare-radar:github-token";
 const STALE_AFTER_MS = 8 * 3_600_000;
 const DEALS_SHOWN_PER_WATCH = 3;
 const POLL_EVERY_MS = 20_000;
@@ -58,8 +60,8 @@ const state = {
   configSha: null,
   /** @type {Snapshot | null} */
   snapshot: null,
-  // En démo, la clé enregistrée sur l'appareil n'est jamais lue : rien ne peut partir vers GitHub.
-  token: site.demo ? null : readToken(),
+  /** Le propriétaire est connecté (sur le hub INDEX) : il peut modifier. Jamais en démo. */
+  owner: false,
   /** Watch ids whose prices are being searched right now. */
   searching: new Set(),
 };
@@ -70,7 +72,7 @@ const ui = {
   deals: byId("deals", HTMLElement),
   watches: byId("watches", HTMLElement),
   addWatch: byId("add-watch", HTMLButtonElement),
-  openSettings: byId("open-settings", HTMLButtonElement),
+  account: byId("account", HTMLAnchorElement),
   watchDialog: byId("watch-dialog", HTMLDialogElement),
   watchForm: byId("watch-form", HTMLFormElement),
   watchTitle: byId("watch-dialog-title", HTMLElement),
@@ -83,15 +85,6 @@ const ui = {
   maxPrice: byId("max-price", HTMLInputElement),
   watchErrors: byId("watch-errors", HTMLElement),
   watchSubmit: byId("watch-submit", HTMLButtonElement),
-  settingsDialog: byId("settings-dialog", HTMLDialogElement),
-  settingsForm: byId("settings-form", HTMLFormElement),
-  settingsReason: byId("settings-reason", HTMLElement),
-  repoName: byId("repo-name", HTMLElement),
-  tokenLink: byId("token-link", HTMLAnchorElement),
-  tokenInput: byId("token-input", HTMLInputElement),
-  tokenSave: byId("token-save", HTMLButtonElement),
-  tokenRemove: byId("token-remove", HTMLButtonElement),
-  settingsErrors: byId("settings-errors", HTMLElement),
   confirmDialog: byId("confirm-dialog", HTMLDialogElement),
   confirmMessage: byId("confirm-message", HTMLElement),
 };
@@ -99,12 +92,36 @@ const ui = {
 // ---- Start ----
 
 setUpWatchDialog();
-setUpSettingsDialog();
 ui.addWatch.addEventListener("click", () => openWatchDialog(null));
-ui.openSettings.addEventListener("click", () => openSettings());
-// Démo : un badge le dit, et la clé GitHub n'a plus de raison d'être demandée.
-if (site.demo) ui.openSettings.replaceWith(el("span", { class: "badge demo", text: "Démo · données fictives" }));
-void refresh();
+// Démo : un badge le dit, et la connexion n'a plus de raison d'être proposée.
+if (site.demo) ui.account.replaceWith(el("span", { class: "badge demo", text: "Démo · données fictives" }));
+void start();
+
+async function start() {
+  if (!site.demo) state.owner = await fetchOwner();
+  renderAccount();
+  await refresh();
+}
+
+/** Le propriétaire est-il connecté ? Le Worker le demande au hub ; sans Worker (page servie telle quelle), non. */
+async function fetchOwner() {
+  try {
+    const response = await fetch("/api/session", { cache: "no-store" });
+    if (!response.ok || !response.headers.get("content-type")?.includes("json")) return false;
+    return (await response.json()).owner === true;
+  } catch {
+    return false;
+  }
+}
+
+/** Le bouton d'en-tête : « Connexion » (par le hub INDEX, qui ramène ici), ou « Déconnexion ». */
+function renderAccount() {
+  if (site.demo) return;
+  const next = encodeURIComponent(location.pathname + location.search);
+  ui.account.textContent = state.owner ? "Déconnexion" : "Connexion";
+  ui.account.href = `/api/auth/${state.owner ? "logout" : "login"}?next=${next}`;
+  ui.account.title = state.owner ? "Connecté : tu peux modifier tes surveillances" : "Se connecter pour modifier les surveillances";
+}
 
 async function refresh() {
   try {
@@ -125,7 +142,7 @@ async function loadData() {
     const snapshot = shiftSnapshot(await fetchJson(DEMO_SNAPSHOT_FILE), new Date());
     return { config: demoConfig(snapshot), sha: null, snapshot };
   }
-  if (state.token && !site.local) {
+  if (state.owner) {
     try {
       const github = gitHub();
       const [configFile, snapshotFile] = await Promise.all([
@@ -134,7 +151,7 @@ async function loadData() {
       ]);
       return { config: JSON.parse(configFile.text), sha: configFile.sha, snapshot: snapshotFile ? JSON.parse(snapshotFile.text) : null };
     } catch (error) {
-      showBanner(`Clé GitHub inutilisable (${describeError(error)}) : affichage en lecture seule.`, "warning");
+      showBanner(`Lecture par le serveur impossible (${describeError(error)}) : affichage en lecture seule.`, "warning");
     }
   }
   const raw = `https://raw.githubusercontent.com/${site.owner}/${site.repo}/${DATA_BRANCH}/`;
@@ -436,11 +453,8 @@ async function deleteWatch(watch) {
  */
 async function saveConfig(next, message, searchFor) {
   if (site.demo) return saveDemoConfig(next, searchFor);
-  if (site.local) return "Aperçu local : les modifications se font depuis la page publiée.";
-  if (!state.token || !state.configSha) {
-    openSettings("Pour enregistrer une modification, la page a besoin de ta clé GitHub.");
-    return "Ajoute ta clé GitHub, puis enregistre à nouveau.";
-  }
+  if (!state.owner) return "Pour modifier, connecte-toi d'abord : bouton « Connexion » en haut de la page.";
+  if (!state.configSha) return "Le serveur n'a pas pu lire la configuration : recharge la page.";
   const github = gitHub();
   try {
     state.configSha = await github.writeFile(CONFIG_FILE, serializeConfig(next), state.configSha, message);
@@ -521,79 +535,20 @@ function pollForNewPrices() {
   }, POLL_EVERY_MS);
 }
 
-// ---- GitHub key ----
-
-function setUpSettingsDialog() {
-  const tokenUrl = new URL("https://github.com/settings/personal-access-tokens/new");
-  tokenUrl.search = new URLSearchParams({
-    name: `fare-radar (${site.repo})`,
-    description: "Page fare-radar : modifier les surveillances (config.json) et lancer la vérification des prix.",
-    target_name: site.owner,
-    expires_in: "366",
-    contents: "write",
-    actions: "write",
-  }).toString();
-  ui.tokenLink.href = tokenUrl.href;
-  ui.repoName.textContent = site.repo;
-
-  ui.settingsForm.addEventListener("submit", (event) => {
-    if (event.submitter instanceof HTMLButtonElement && event.submitter.value === "cancel") return;
-    event.preventDefault();
-    void saveToken();
-  });
-  ui.tokenRemove.addEventListener("click", () => {
-    writeToken(null);
-    ui.settingsDialog.close();
-    showBanner("Clé oubliée sur cet appareil. Pense à la révoquer sur GitHub si tu ne t'en sers plus.", "info");
-    void refresh();
-  });
-}
-
-/** @param {string} [reason] */
-function openSettings(reason) {
-  ui.settingsReason.hidden = !reason;
-  ui.settingsReason.textContent = reason ?? "";
-  ui.tokenInput.value = "";
-  ui.tokenInput.placeholder = state.token ? "Clé enregistrée : colle une nouvelle clé pour la remplacer" : "github_pat_…";
-  ui.tokenRemove.hidden = !state.token;
-  ui.settingsErrors.replaceChildren();
-  setBusy(ui.tokenSave, false, "Enregistrer");
-  ui.settingsDialog.showModal();
-}
-
-async function saveToken() {
-  const token = ui.tokenInput.value.trim();
-  if (!token) {
-    ui.settingsErrors.replaceChildren(el("span", { text: "Colle la clé générée sur GitHub." }));
-    return;
-  }
-  setBusy(ui.tokenSave, true, "Vérification…");
-  try {
-    await gitHub(token).readFile(CONFIG_FILE);
-  } catch (error) {
-    setBusy(ui.tokenSave, false, "Enregistrer");
-    ui.settingsErrors.replaceChildren(el("span", { text: `Clé refusée : ${describeError(error)}` }));
-    return;
-  }
-  writeToken(token);
-  ui.settingsDialog.close();
-  showBanner("Clé enregistrée sur cet appareil : tu peux modifier tes surveillances.", "success");
-  await refresh();
-}
-
 // ---- Helpers ----
 
-/** @param {string} [token] */
-function gitHub(token = state.token ?? "") {
-  return createGitHub({ owner: site.owner, repo: site.repo, token, branch: DATA_BRANCH, workflowRef: WORKFLOW_REF });
+/** Les appels à GitHub passent par le Worker, qui y ajoute sa clé pour le propriétaire connecté. */
+function gitHub() {
+  return createGitHub({ base: "/api/github", branch: DATA_BRANCH, workflowRef: WORKFLOW_REF });
 }
 
 /** @param {unknown} error */
 function describeError(error) {
   if (error instanceof GitHubError) {
-    if (error.status === 401) return "clé GitHub refusée (expirée ou révoquée ?)";
-    if (error.status === 403) return "la clé n'a pas les droits nécessaires (Contents et Actions en écriture)";
-    if (error.status === 404) return `dépôt introuvable avec cette clé : a-t-elle accès au dépôt ${site.repo} ?`;
+    if (error.status === 401) return "session expirée : reconnecte-toi";
+    if (error.status === 403) return "la clé GitHub du serveur n'a pas les droits nécessaires (Contents et Actions en écriture)";
+    if (error.status === 404) return `introuvable : la clé du serveur a-t-elle accès au dépôt ${site.repo} ?`;
+    if (error.status === 503) return "la clé GitHub du serveur n'est pas encore configurée";
     if (error.status === 409 || error.status === 422) return "la configuration a changé entre-temps, la page vient d'être rechargée : recommence";
     return error.message;
   }
@@ -637,33 +592,12 @@ async function fetchJson(url, signal) {
   return response.json();
 }
 
-function readToken() {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-/** @param {string | null} token */
-function writeToken(token) {
-  state.token = token;
-  try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    // Storage blocked: the key only lasts for this visit.
-  }
-}
-
 /**
- * Dépôt servi par cette page ; sur localhost, aperçu en lecture seule des données publiées ; avec
- * « ?demo », données fictives (demo.js) partout.
+ * Dépôt servi par cette page ; avec « ?demo », données fictives (demo.js) partout.
  * @param {Location} where
  */
 function locateSite(where) {
-  const local = where.hostname === "localhost" || where.hostname === "127.0.0.1";
-  return { ...REPOSITORY, local, demo: isDemo(where.search) };
+  return { ...REPOSITORY, demo: isDemo(where.search) };
 }
 
 /**

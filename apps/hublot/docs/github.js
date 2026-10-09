@@ -1,6 +1,8 @@
 // @ts-check
 // Minimal GitHub REST client for the page: read/write a file of the repository and start a
-// workflow. Authenticated with a fine-grained token (Contents + Actions write, this repo only).
+// workflow. On the Cloudflare page, the calls go through the Worker (`base` = "/api/github"), which adds
+// its own fine-grained token (Contents + Actions write, data repository only) for the signed-in owner:
+// the page never holds a key. A `token` is only for direct calls to api.github.com.
 
 export class GitHubError extends Error {
   /** @param {number} status @param {string} message */
@@ -25,11 +27,11 @@ export function decodeBase64(base64) {
 }
 
 /**
- * `branch` : où les fichiers sont lus et écrits ; `workflowRef` : la branche dont le workflow est lancé.
- * @param {{ owner: string, repo: string, token: string, branch?: string, workflowRef?: string, fetch?: typeof globalThis.fetch }} options
+ * `branch` : où les fichiers sont lus et écrits ; `workflowRef` : la branche dont le workflow est lancé ;
+ * `base` : l'adresse du dépôt dans l'API (par défaut api.github.com/repos/<owner>/<repo>).
+ * @param {{ owner?: string, repo?: string, base?: string, token?: string, branch?: string, workflowRef?: string, fetch?: typeof globalThis.fetch }} options
  */
-export function createGitHub({ owner, repo, token, branch = "main", workflowRef = "main", fetch: fetchImpl = globalThis.fetch.bind(globalThis) }) {
-  const base = `https://api.github.com/repos/${owner}/${repo}`;
+export function createGitHub({ owner, repo, base = `https://api.github.com/repos/${owner}/${repo}`, token, branch = "main", workflowRef = "main", fetch: fetchImpl = globalThis.fetch.bind(globalThis) }) {
 
   /**
    * JSON body of a successful call; errors become a GitHubError with GitHub's message.
@@ -41,7 +43,7 @@ export function createGitHub({ owner, repo, token, branch = "main", workflowRef 
       method: init.method ?? "GET",
       headers: {
         Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(init.body === undefined ? {} : { "Content-Type": "application/json" }),
       },
       body: init.body === undefined ? undefined : JSON.stringify(init.body),

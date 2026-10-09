@@ -1,0 +1,3 @@
+# Copie ce fichier en .dev.vars (ignoré par git) pour tester le Worker en local.
+# Jeton GitHub à grain fin, dépôt CantinDeBrunoy/Hublot seulement : Contents et Actions en écriture.
+HUBLOT_GITHUB_TOKEN=

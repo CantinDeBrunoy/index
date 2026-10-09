@@ -6,10 +6,9 @@ Vérifie toutes les 6 h le prix des allers-retours depuis Paris (CDG / ORY) pour
 
 Hublot est l'entrée 010 d'[INDEX](../../README.md). Par rapport au dépôt d'origine :
 
-- **Le cron** est `.github/workflows/hublot-check.yml` à la racine du monorepo. Il ne tourne que si la variable de dépôt `HUBLOT_ENABLED` vaut `true`.
-- **L'état** (`config.json`, `data/*.json`) vit sur la branche **`hublot-data`**, pas sur `main` : les ~4 relevés par jour ne remplissent pas l'historique du monorepo. `config.example.json` montre le format.
-- **La page** n'est plus sur GitHub Pages : `pnpm --filter hublot build` la prépare dans `dist/page/` (avec l'onglet « ← INDEX ») et le Worker Cloudflare `hublot` la sert (`wrangler.jsonc`).
-- **La clé GitHub de la page** doit viser le dépôt `CantinDeBrunoy/index` (Contents et Actions en écriture). ⚠️ Elle donne donc accès en écriture à tout le monorepo, pas seulement à Hublot : à garder sur tes appareils uniquement.
+- **La page** n'est plus sur GitHub Pages : `pnpm --filter hublot build` la prépare dans `dist/page/` (avec l'onglet « ← INDEX ») et le Worker Cloudflare `hublot` la sert (`wrangler.jsonc`, `worker/`).
+- **Pour modifier**, on se connecte par le hub INDEX (bouton « Connexion » de la page) : seul le compte GitHub du propriétaire y a accès. La page n'a plus de clé : ses appels à GitHub passent par le Worker, qui y ajoute la sienne (secret `HUBLOT_GITHUB_TOKEN`, jeton à grain fin limité au dépôt des données, Contents et Actions en écriture) et ne laisse passer que les appels prévus (`worker/github.ts`).
+- **Le cron et l'état** restent pour l'instant dans l'ancien dépôt `CantinDeBrunoy/Hublot`, où la page lit et écrit. À la bascule (README d'INDEX), le cron devient `.github/workflows/hublot-check.yml` à la racine du monorepo (il ne tourne que si la variable de dépôt `HUBLOT_ENABLED` vaut `true`), et l'état (`config.json`, `data/*.json`) passe sur la branche **`hublot-data`**, pas sur `main` : les ~4 relevés par jour ne remplissent pas l'historique du monorepo. `config.example.json` montre le format.
 
 ## Fonctionnement
 
@@ -31,7 +30,7 @@ Adresse : celle du Worker Cloudflare `hublot` (voir le tableau des déploiements
 - **Mes surveillances** : ajouter (avec recherche de la ville), modifier, supprimer ; meilleur prix actuel et par mois de départ.
 - Après un ajout ou une modification, la page lance tout de suite une vérification des prix : résultats en 2 minutes environ.
 - **Démo** : avec `?demo` à la fin de l'adresse, la page montre des surveillances et des prix fictifs (`docs/demo/latest.json`, ramené au mois en cours) au lieu des vrais, pour la montrer ou la filmer. Rien ne part vers GitHub ni vers l'API des villes : ajouts, modifications et suppressions restent dans la page, et la recherche des prix est simulée en quelques secondes.
-- Pour modifier, la page a besoin d'une **clé GitHub** (⚙️ en haut à droite) : un formulaire GitHub pré-rempli est proposé, il faut y choisir *Only select repositories* puis ce dépôt. La clé n'a accès qu'à ce dépôt, expire au bout d'un an et reste enregistrée uniquement sur ton appareil.
+- Pour modifier, il faut être **connecté** (bouton « Connexion » en haut à droite, qui passe par le hub INDEX puis revient ici). Sans connexion, la page reste consultable en lecture seule.
 
 ## Configuration (`config.json`)
 
@@ -87,7 +86,7 @@ Le CLI lit `config.json` et `data/` dans le dossier courant. Un vrai passage loc
 
 - Les prix viennent du cache d'Aviasales (recherches des derniers jours sur le marché français). Beaucoup de mois peuvent être vides, et le prix au clic peut différer : lors du premier test, une offre à 578 € en cache était à 653 € en direct.
 - Le dépôt étant public, `config.json`, `data/*.json` et la page le sont aussi (destinations et prix, rien de sensible). Le token Travelpayouts et le topic ntfy restent dans les secrets et n'apparaissent jamais dans les logs.
-- La clé GitHub de la page est enregistrée dans le navigateur, pour le domaine `<ton-utilisateur>.github.io`. Si tu publies d'autres pages GitHub avec des scripts de tiers, ou si tu perds ton téléphone, révoque-la dans *GitHub → Settings → Developer settings → Personal access tokens*.
+- La clé GitHub n'est plus sur tes appareils : elle est dans le Worker. Pour la changer ou la révoquer, *GitHub → Settings → Developer settings → Personal access tokens*, puis `pnpm --filter hublot exec wrangler secret put HUBLOT_GITHUB_TOKEN`. Perdre un téléphone ne demande que de se déconnecter (ou de changer `SESSION_SECRET` sur le hub, ce qui déconnecte partout).
 - GitHub peut retarder les crons de plusieurs minutes, voire les sauter quand la plateforme est chargée.
 - GitHub désactive les crons d'un dépôt public après 60 jours sans activité. Les commits de données du workflow suffisent normalement ; sinon, il faut le réactiver depuis l'onglet *Actions*.
 - En cas d'échec (token refusé, API en panne…), le job passe en rouge et GitHub envoie un e-mail. Les autres surveillances sont quand même traitées et sauvegardées.

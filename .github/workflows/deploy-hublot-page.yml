@@ -19,8 +19,7 @@ permissions:
 
 jobs:
   deploy:
-    # La nouvelle page ne remplace l'ancienne (GitHub Pages du dépôt Hublot) qu'à la bascule.
-    if: vars.HUBLOT_ENABLED == 'true'
+    # La page est servie par Cloudflare dès maintenant ; seul le cron (hublot-check.yml) attend la bascule.
     uses: ./.github/workflows/_deploy-cloudflare.yml
     with:
       app: hublot

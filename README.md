@@ -7,16 +7,17 @@ Le monorepo de mes projets, et leur catalogue : le portfolio présente chaque pr
 ```
 index/
   apps/
-    portfolio/    le site INDEX (Astro) + Worker Cloudflare : /api/status et cron du keep-alive
+    portfolio/    le site INDEX (Astro) + Worker Cloudflare : /api/status, connexion (/api/auth/*) et cron du keep-alive
     galactic-escape/ 001 · Vite + React + Three.js (jeu d'école de 2022)
-    magellan/     005 · Expo (export web statique)
+    magellan/     005 · Expo (export web) + Worker Cloudflare : les voyages du propriétaire (D1)
     cancionero/   006 · Expo (PWA statique)
     mithril/      007 · C# WinForms (hors pnpm/Turborepo, CI Windows dédiée)
     tonalli/      008 · Vite + React (PWA) + Supabase
     gym-picker/   009 · Vite + React + Worker Cloudflare (API TomTom)
-    hublot/       010 · CLI Node (cron GitHub Actions) + page de gestion
+    hublot/       010 · CLI Node (cron GitHub Actions) + page de gestion et son Worker (clé GitHub côté serveur)
   packages/
     projects/     @index/projects : la liste des entrées (source de vérité unique) et les sondes de statut
+    auth/         @index/auth : la connexion du propriétaire (GitHub sur le hub, vérifiée par Magellan et Hublot)
     ui/           @index/ui : palettes du voyage, polices, onglet « ← Index » des apps
     config/       @index/config : tsconfig partagé
   scripts/        keep-alive.ts, screenshots.ts
@@ -101,7 +102,7 @@ Les variables d'environnement de chaque app sont décrites dans son `.env.exampl
 | 007 | mithril | GitHub Releases (tags `mithril-v*`) | — | à la main (skill `publier-release`), CI `mithril.yml` |
 | 008 | tonalli | Vercel `teinte-du-jour` + Supabase | https://teinte-du-jour-eight.vercel.app | intégration Git Vercel, *Root Directory* `apps/tonalli` |
 | 009 | gym-picker | Cloudflare Workers `gym-picker` | https://gym-picker.cantin-roquier.workers.dev | `deploy-gym-picker.yml` |
-| 010 | hublot | GitHub Actions (cron) + Cloudflare Workers `hublot` (page) | https://hublot.cantin-roquier.workers.dev après la bascule | `hublot-check.yml`, `deploy-hublot-page.yml` |
+| 010 | hublot | GitHub Actions (cron, ancien dépôt jusqu'à la bascule) + Cloudflare Workers `hublot` (page) | https://hublot.cantin-roquier.workers.dev | `deploy-hublot-page.yml` ; `hublot-check.yml` à la bascule |
 
 Le sous-domaine workers.dev (`cantin-roquier`) est renseigné une seule fois, dans `WORKERS_SUBDOMAIN` (`packages/projects/src/projects.ts`). Toutes les URLs, le statut live et l'onglet « ← Index » en découlent.
 
@@ -153,6 +154,26 @@ pnpm --filter portfolio exec wrangler secret put GITHUB_ALERTS_TOKEN
 
 `GITHUB_ALERTS_TOKEN` est un jeton GitHub à grain fin limité au dépôt `index`, avec *Issues* en lecture/écriture et *Actions* en lecture.
 
+**La connexion du propriétaire** (le lien « Connexion » en bas des pages du hub) :
+
+- une application OAuth GitHub (*Settings → Developer settings → OAuth Apps*), *Authorization callback URL* `https://index.cantin-roquier.workers.dev/api/auth/callback` ; son *Client ID* va dans `GITHUB_CLIENT_ID` (`apps/portfolio/wrangler.jsonc`, public) ;
+- deux secrets sur le Worker `index` : `GITHUB_CLIENT_SECRET` (celui de l'application) et `SESSION_SECRET` (une longue valeur aléatoire ; la changer déconnecte partout) ;
+- un secret sur le Worker `hublot` : `HUBLOT_GITHUB_TOKEN`, jeton à grain fin limité au dépôt `Hublot`, *Contents* et *Actions* en écriture.
+
+```bash
+pnpm --filter portfolio exec wrangler secret put GITHUB_CLIENT_SECRET
+```
+
+```bash
+pnpm --filter portfolio exec wrangler secret put SESSION_SECRET
+```
+
+```bash
+pnpm --filter hublot exec wrangler secret put HUBLOT_GITHUB_TOKEN
+```
+
+Seul le compte GitHub du propriétaire (`OWNER` dans `packages/auth/src/session.ts`) obtient une session : un cookie signé, posé sur tout `cantin-roquier.workers.dev`. Magellan et Hublot ne connaissent pas le secret : ils demandent au hub, par une liaison de service, si le cookie reçu est le bon. Les voyages de Magellan sont dans la base D1 `magellan` (une ligne, versionnée ; retour en arrière possible sur 30 jours avec `wrangler d1 time-travel`), jamais dans le dépôt.
+
 **Vercel :** le projet `teinte-du-jour` (Tonalli) est relié au dépôt `index`, avec *Root Directory* `apps/tonalli`, Node 24, l'option qui ignore les déploiements quand le dossier n'a pas changé, et la variable `ENABLE_EXPERIMENTAL_COREPACK` = `1`, sans laquelle Vercel n'utilise pas la version de pnpm fixée dans `packageManager`.
 
 **Cloudflare :** déconnecter Workers Builds de l'ancien dépôt `gym-picker`. Les déploiements passent désormais par `deploy-gym-picker.yml`. Le secret `TOMTOM_API_KEY` reste sur le Worker.
@@ -161,7 +182,7 @@ pnpm --filter portfolio exec wrangler secret put GITHUB_ALERTS_TOKEN
 
 ## Bascule de Hublot
 
-Jusqu'à la bascule, Hublot tourne depuis son ancien dépôt. Le monorepo est prêt :
+La page de Hublot est déjà servie par le Worker `hublot` : on s'y connecte par le hub, et sa clé GitHub reste côté serveur. Mais jusqu'à la bascule, le cron et les données restent dans l'ancien dépôt Hublot, et la page y lit et écrit. Le monorepo est prêt :
 
 - code dans `apps/hublot` ;
 - état sur la branche `hublot-data` ;
@@ -170,10 +191,11 @@ Jusqu'à la bascule, Hublot tourne depuis son ancien dépôt. Le monorepo est pr
 Étapes :
 
 1. Rafraîchir `hublot-data` avec le dernier état de l'ancien dépôt (`config.json`, `data/*.json`).
-2. Créer la variable `HUBLOT_ENABLED` = `true`, puis lancer `deploy-hublot-page.yml` et `hublot-check.yml` (*Run workflow*).
-3. Désactiver le workflow de l'ancien dépôt Hublot, pour éviter les notifications en double.
-4. Passer `HUBLOT_MIGRATED` à `true` dans `packages/projects/src/projects.ts`, ce qui bascule l'URL de démo et la sonde de fraîcheur.
-5. Sur la nouvelle page, créer une clé GitHub pour le dépôt `index`. ⚠️ Elle a accès en écriture à tout le monorepo.
+2. Viser le monorepo dans `apps/hublot` : `DATA_REPOSITORY` (`worker/github.ts`) et `REPOSITORY`, `DATA_BRANCH`, `WORKFLOW` (`docs/app.js`) deviennent `index`, `hublot-data`, `hublot-check.yml`.
+3. Créer la variable `HUBLOT_ENABLED` = `true`, puis lancer `hublot-check.yml` (*Run workflow*).
+4. Désactiver le workflow de l'ancien dépôt Hublot, pour éviter les notifications en double.
+5. Passer `HUBLOT_MIGRATED` à `true` dans `packages/projects/src/projects.ts`, ce qui bascule la sonde de fraîcheur.
+6. Remplacer `HUBLOT_GITHUB_TOKEN` par un jeton sur le dépôt `index`. ⚠️ Même côté serveur, il a accès en écriture à tout le monorepo.
 
 ## Charte
 

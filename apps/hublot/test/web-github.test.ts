@@ -68,6 +68,14 @@ describe("client GitHub de la page", () => {
     });
   });
 
+  it("passe par le Worker, sans clé dans la page", async () => {
+    const { fetch, calls } = mockFetch(Response.json({ content: encodeBase64("{}"), sha: "abc" }));
+    await createGitHub({ base: "/api/github", fetch }).readFile("config.json");
+
+    expect(calls[0]?.url).toBe("/api/github/contents/config.json?ref=main");
+    expect(calls[0]?.headers.Authorization).toBeUndefined();
+  });
+
   it("remonte le statut HTTP et le message de GitHub", async () => {
     const { fetch } = mockFetch(Response.json({ message: "Bad credentials" }, { status: 401 }));
     const failure = createGitHub({ ...repo, fetch }).readFile("config.json");

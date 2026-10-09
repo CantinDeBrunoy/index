@@ -35,11 +35,13 @@ const CANCIONERO_URL = workersDev("cancionero");
 const TONALLI_URL = "https://teinte-du-jour-eight.vercel.app";
 const GYM_PICKER_URL = workersDev("gym-picker");
 /**
- * Hublot tourne depuis son ancien dépôt (cron + GitHub Pages) jusqu'à la bascule : variable
- * HUBLOT_ENABLED=true sur le monorepo, cron de l'ancien dépôt désactivé. Passer à true ce jour-là.
+ * La page de Hublot est servie par le Worker « hublot » (connexion du propriétaire, clé GitHub côté
+ * serveur), mais le cron et les données restent dans l'ancien dépôt jusqu'à la bascule : variable
+ * HUBLOT_ENABLED=true sur le monorepo, cron de l'ancien dépôt désactivé, dépôt des données changé dans
+ * apps/hublot (worker/github.ts, docs/app.js). Passer à true ce jour-là.
  */
 const HUBLOT_MIGRATED: boolean = false;
-const HUBLOT_URL = HUBLOT_MIGRATED ? workersDev("hublot") : "https://cantindebrunoy.github.io/Hublot/";
+const HUBLOT_URL = workersDev("hublot");
 const HUBLOT_LATEST_JSON = HUBLOT_MIGRATED
   ? "https://raw.githubusercontent.com/CantinDeBrunoy/index/hublot-data/data/latest.json"
   : "https://raw.githubusercontent.com/CantinDeBrunoy/Hublot/main/data/latest.json";
@@ -187,7 +189,7 @@ export const PROJECTS = [
     kind: "web",
     badges: ["ia"],
     app: "hublot",
-    host: HUBLOT_MIGRATED ? "GitHub Actions + Cloudflare Workers" : "GitHub Actions + GitHub Pages",
+    host: "GitHub Actions + Cloudflare Workers",
     pitch: {
       fr: "Surveille toutes les 6 heures le prix des allers-retours depuis Paris et m'alerte quand un vol passe sous mon seuil.",
     },

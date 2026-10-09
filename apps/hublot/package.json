@@ -11,11 +11,14 @@
     "build": "tsc -p tsconfig.build.json && node scripts/build-page.ts",
     "start": "node dist/main.js",
     "dry-run": "pnpm run build && node dist/main.js --dry-run",
-    "typecheck": "tsc && tsc -p tsconfig.web.json",
+    "typecheck": "tsc && tsc -p tsconfig.web.json && tsc -p worker",
     "test": "vitest run",
-    "deploy:page": "wrangler deploy"
+    "deploy:page": "wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "postinstall": "wrangler types"
   },
   "devDependencies": {
+    "@index/auth": "workspace:*",
     "@index/projects": "workspace:*",
     "@index/ui": "workspace:*",
     "@types/node": "^20.19.43",
