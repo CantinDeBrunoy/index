@@ -14,6 +14,9 @@ choices:
     text: "Le même code pour le web aujourd'hui, et pour le téléphone demain."
   - title: "Pas de serveur"
     text: "Les paroles se cherchent dans LRCLIB, une base publique, et tout le reste vit sur l'appareil."
+video:
+  src: "/demos/cancionero.mp4"
+  caption: "Trois mots mis de côté dans « Hola, ¿cómo estás? », le karaoké, puis les cartes à réviser."
 capture:
   alt: "Capture de Cancionero : le vocabulaire à réviser et la liste des chansons, de « Hola, ¿cómo estás? » à « En el mercado »."
   caption: "Les chansons et le vocabulaire à réviser."

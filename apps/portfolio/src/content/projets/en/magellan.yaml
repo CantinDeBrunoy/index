@@ -14,6 +14,9 @@ choices:
     text: "A proven 3D globe, in a WebView on phones and right in the page on the web: only the data is shared."
   - title: "A version per platform when needed"
     text: ".web and .native files rather than a hack that would break one of them."
+video:
+  src: "/demos/magellan.mp4"
+  caption: "The globe, the list of trips, then two of them: Tokyo, Kyoto and Osaka, and Marrakech. With the demo trips."
 capture:
   alt: "Screenshot of Magellan: the globe and its coloured countries, with the counter of the demo data (14 trips, 22 cities, 13 countries)."
   caption: "The globe, with the demo trips."

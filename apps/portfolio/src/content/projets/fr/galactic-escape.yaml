@@ -12,3 +12,6 @@ choices:
     text: "La partie se joue en 3D ; les menus, l'inventaire et le chronomètre restent de simples composants React."
   - title: "La logique à part, et testée"
     text: "Le placement des cases, l'inventaire et la génération de la carte vivent hors de la 3D, vérifiés par des tests Jest."
+video:
+  src: "/demos/galactic-escape.mp4"
+  caption: "Le menu sur Mars, puis une partie : chaque case posée trace le chemin, le monstre aux trousses."

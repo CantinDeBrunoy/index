@@ -14,6 +14,9 @@ choices:
     text: "The same code for the web today, and for phones tomorrow."
   - title: "No server"
     text: "Lyrics are looked up in LRCLIB, a public database, and everything else lives on the device."
+video:
+  src: "/demos/cancionero.mp4"
+  caption: "Three words saved from “Hola, ¿cómo estás?”, the karaoke, then the flashcards."
 capture:
   alt: "Screenshot of Cancionero: the vocabulary to review and the list of songs, from “Hola, ¿cómo estás?” to “En el mercado”."
   caption: "The songs and the vocabulary to review."

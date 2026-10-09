@@ -14,3 +14,6 @@ choices:
     text: "Apps already on Vercel stay there, with their addresses; the others move to Cloudflare Workers."
   - title: "The wake-up call in GitHub Actions"
     text: "A real request keeps Supabase awake, and the repository re-enables itself so its scheduled jobs never stop."
+video:
+  src: "/demos/index.mp4"
+  caption: "The departure, three stops, Hublot's page, then the journal and its shortcuts to the apps."

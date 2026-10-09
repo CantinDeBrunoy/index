@@ -12,3 +12,6 @@ choices:
     text: "The game itself is 3D; the menus, the inventory and the timer stay plain React components."
   - title: "Game logic kept apart, and tested"
     text: "Tile placement, the inventory and map generation live outside the 3D code, checked by Jest tests."
+video:
+  src: "/demos/galactic-escape.mp4"
+  caption: "The menu on Mars, then a game: every tile laid extends the path, with the monster in pursuit."

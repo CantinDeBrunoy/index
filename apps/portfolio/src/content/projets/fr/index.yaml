@@ -14,3 +14,6 @@ choices:
     text: "Les apps déjà sur Vercel y restent, avec leurs adresses ; les autres partent sur Cloudflare Workers."
   - title: "Le réveil dans GitHub Actions"
     text: "Une vraie requête garde Supabase éveillé, et le dépôt se réactive lui-même pour que ses tâches planifiées ne s'arrêtent jamais."
+video:
+  src: "/demos/index.mp4"
+  caption: "Le départ, trois escales, la fiche de Hublot, puis le carnet et ses raccourcis vers les apps."

@@ -46,6 +46,9 @@ const HOME_CODE = STOPS.find((s) => s.slug === "index")!.code;
 const gate = f.pass.gate["href" in app ? "open" : text.noApp ? "here" : project.kind === "archive" ? "archive" : "soon"];
 const alternates = { fr: fichePath("fr", project), en: fichePath("en", project) };
 
+// La vidéo de démo (scripts/demo-videos.ts) : 1280 × 800, son affiche à côté d'elle (<slug>.webp).
+const DEMO = { width: 1280, height: 800 };
+const demoPoster = (src: string) => src.replace(/\.mp4$/, ".webp");
 // La capture : celle d'ordinateur, et sous 700 px celle du téléphone, s'il y en a une.
 const shot = capture ? getShot(slug, "desktop") : undefined;
 const shotPhone = capture ? getShot(slug, "mobile") : undefined;
@@ -172,14 +175,14 @@ const T = (text: string) => typo(lang, text);
 
   <main id="contenu" class="wrap-read">
     {
-      capture && shot && shotSet && (
+      (video || (capture && shot && shotSet)) && (
         <section class="pictures">
           <h2 class="label">{video ? f.demo : f.pictures}</h2>
           <figure>
             {video ? (
-              <video class="shot" src={video.src} poster={shotSet.src} controls playsinline preload="none" width={shot.width} height={shot.height} />
+              <video class="shot shot--video" src={video.src} poster={demoPoster(video.src)} controls muted playsinline preload="none" width={DEMO.width} height={DEMO.height} />
             ) : (
-            <picture>
+            shot && shotSet && capture && <picture>
               {shotPhone && shotPhoneSet && (
                 <source
                   media="(max-width: 700px)"
@@ -194,7 +197,7 @@ const T = (text: string) => typo(lang, text);
               <img class="shot" src={shotSet.src} width={shot.width} height={shot.height} alt={capture.alt} loading="lazy" decoding="async" />
             </picture>
             )}
-            <figcaption>{T(video ? video.caption : capture.caption)}</figcaption>
+            <figcaption>{T(video ? video.caption : (capture?.caption ?? ""))}</figcaption>
           </figure>
         </section>
       )
@@ -989,10 +992,14 @@ const T = (text: string) => typo(lang, text);
     .boarding {
       padding: 40px 0;
     }
-    /* La capture du téléphone, à la taille d'un téléphone. */
+    /* La capture du téléphone, à la taille d'un téléphone ; la vidéo, filmée sur ordinateur, garde toute la largeur. */
     .shot {
       width: min(100%, 300px);
       border-radius: 28px;
+    }
+    .shot--video {
+      width: 100%;
+      border-radius: var(--radius-m);
     }
     .next-card__name {
       font-size: 40px;
