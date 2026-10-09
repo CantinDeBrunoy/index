@@ -23,7 +23,7 @@
   //   GITHUB_CLIENT_ID ci-dessous. Magellan et Hublot la vérifient auprès de ce Worker (liaison HUB).
   "vars": {
     // L'identifiant de l'application OAuth GitHub « INDEX » : public, il figure dans l'adresse de connexion.
-    "GITHUB_CLIENT_ID": ""
+    "GITHUB_CLIENT_ID": "Ov23liTtpXaUaFu1PRLy"
   },
   "observability": { "enabled": true }
 }
