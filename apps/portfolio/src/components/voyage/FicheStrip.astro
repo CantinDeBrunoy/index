@@ -1,0 +1,194 @@
+---
+/**
+ * La bande des escales d'une fiche : la fiche d'avant et celle d'après, dans l'ordre du voyage, et au milieu
+ * où on en est (« Escale 2 / 10 » et ses points). Avant la première escale, le départ ; après la dernière,
+ * le carnet. La fiche la pose deux fois : sous l'en-tête, et en bas, avant le pied de page.
+ */
+
+export interface StripCell {
+  href: string;
+  label: string;
+  place?: string | undefined;
+  name: string;
+  /** La vignette ronde (l'image fixe de la scène), s'il y en a une. */
+  thumb?: string | undefined;
+  bg: string;
+}
+
+interface Props {
+  aria: string;
+  prev: StripCell;
+  next: StripCell;
+  /** « Escale 2 / 10 ». */
+  position: string;
+  /** Le nombre d'escales et l'index de celle-ci (0 pour la première). */
+  total: number;
+  index: number;
+  /** En bas de la fiche, la bande cache le bouton flottant « Reprendre le voyage » (scripts/resume-button.ts). */
+  hidesResume?: boolean;
+}
+
+const { aria, prev, next, position, total, index, hidesResume = false } = Astro.props;
+const ARROW = { prev: "M19 12H5M11 18l-6-6 6-6", next: "M5 12h14M13 6l6 6-6 6" };
+const cells = [["prev", prev], ["next", next]] as const;
+---
+
+<nav class="strip" aria-label={aria} data-resume-hides={hidesResume ? "" : undefined}>
+  {
+    cells.map(([side, cell]) => (
+      <a class:list={["strip__cell", `strip__${side}`]} href={cell.href} rel={side}>
+        <svg class="strip__arrow" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d={ARROW[side]} />
+        </svg>
+        {cell.thumb && (
+          <span class="strip__thumb" style={`background: ${cell.bg}`}>
+            <img src={cell.thumb} alt="" width="640" height="360" loading="lazy" decoding="async" />
+          </span>
+        )}
+        <span class="strip__text">
+          <span class="strip__label">
+            {cell.label}
+            {cell.place && <span class="strip__place"> · {cell.place}</span>}
+          </span>
+          <span class="serif strip__name">{cell.name}</span>
+        </span>
+      </a>
+    ))
+  }
+  <div class="strip__mid" aria-hidden="true">
+    <span class="strip__label">{position}</span>
+    <span class="strip__dots">{Array.from({ length: total }, (_, k) => <i class:list={[{ done: k < index, now: k === index }]} />)}</span>
+  </div>
+</nav>
+
+<style>
+  .strip {
+    display: grid;
+    grid-template-areas: "prev mid next";
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    border-block: 1px solid var(--line);
+    background: var(--card);
+  }
+  .strip__cell {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-height: 120px;
+    padding: 22px clamp(20px, 4vw, 48px);
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .strip__cell:hover {
+    background: color-mix(in srgb, var(--brass) 10%, var(--card));
+  }
+  .strip__prev {
+    grid-area: prev;
+  }
+  .strip__next {
+    grid-area: next;
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+  .strip__arrow {
+    flex: none;
+    color: var(--brass-text);
+    transition: transform 0.2s;
+  }
+  .strip__prev:hover .strip__arrow {
+    transform: translateX(-4px);
+  }
+  .strip__next:hover .strip__arrow {
+    transform: translateX(4px);
+  }
+  .strip__thumb {
+    flex: none;
+    width: 72px;
+    height: 72px;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+  }
+  .strip__thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .strip__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .strip__label {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .strip__name {
+    font-size: clamp(24px, 2.4vw, 32px);
+    line-height: 1.05;
+  }
+  .strip__mid {
+    grid-area: mid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 40px;
+    border-inline: 1px solid var(--line);
+  }
+  .strip__dots {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .strip__dots i {
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid var(--muted);
+    border-radius: var(--radius-pill);
+    box-sizing: border-box;
+  }
+  .strip__dots i.done,
+  .strip__dots i.now {
+    border-color: var(--brass);
+    background: var(--brass);
+  }
+  .strip__dots i.now {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* Sous 700 px : l'escale d'avant et celle d'après, côte à côte, sans la position du milieu. */
+  @media (max-width: 700px) {
+    .strip {
+      grid-template-areas: "prev next";
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    /* Sur un téléphone, « Escale 1 » suffit : le lieu ferait passer l'étiquette sur deux lignes. */
+    .strip__mid,
+    .strip__arrow,
+    .strip__place {
+      display: none;
+    }
+    .strip__cell {
+      gap: 12px;
+      min-height: 88px;
+      padding: 16px 20px;
+    }
+    .strip__prev {
+      border-right: 1px solid var(--line);
+    }
+    .strip__thumb {
+      width: 44px;
+      height: 44px;
+    }
+    .strip__name {
+      font-size: 22px;
+    }
+  }
+</style>

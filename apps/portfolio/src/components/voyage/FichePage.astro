@@ -20,6 +20,7 @@ import Badges from "./Badges.astro";
 import ProjectBrief from "./ProjectBrief.astro";
 import Colophon from "./Colophon.astro";
 import FichePoints from "./FichePoints.astro";
+import FicheStrip, { type StripCell } from "./FicheStrip.astro";
 import SiteHeader from "./SiteHeader.astro";
 
 interface Props {
@@ -65,25 +66,28 @@ const shelf = await Promise.all(
     }),
 );
 
-// L'escale suivante, qui reprend le voyage ; après la dernière, le carnet.
-const after = STOPS[i + 1];
-const next = after && { ...after, n: n + 1, project: getProject(after.slug)!, text: STOP_TEXTS[lang][after.slug]! };
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
 
-// La bande des escales, sous l'en-tête : la fiche d'avant et celle d'après, dans l'ordre du voyage ;
-// avant la première escale, le départ ; après la dernière, le carnet.
+// La bande des escales (FicheStrip), sous l'en-tête et en bas : la fiche d'avant et celle d'après, dans l'ordre
+// du voyage ; avant la première escale, le départ ; après la dernière, le carnet.
 const before = STOPS[i - 1];
-const cellOf = (s: (typeof STOPS)[number], k: number) => ({
+const after = STOPS[i + 1];
+const cellOf = (s: (typeof STOPS)[number], k: number): StripCell => ({
   href: fichePath(lang, getProject(s.slug)!),
   label: `${f.stop} ${k}`,
-  place: STOP_TEXTS[lang][s.slug]!.place as string | undefined,
+  place: STOP_TEXTS[lang][s.slug]!.place,
   name: getProject(s.slug)!.name,
-  scene: s.scene as string | undefined,
+  thumb: still(s.scene, "-640"),
   bg: s.bg,
 });
-const prevCell = before ? cellOf(before, n - 1) : { href: ROUTES.voyage[lang], label: f.departLabel, place: undefined, name: f.depart, scene: START.scene, bg: START.bg };
-const nextCell = after ? cellOf(after, n + 1) : { href: ROUTES.projets[lang], label: f.end, place: undefined, name: f.journal, scene: undefined, bg: "" };
-const ARROW = { prev: "M19 12H5M11 18l-6-6 6-6", next: "M5 12h14M13 6l6 6-6 6" };
+const strip = {
+  aria: f.stripAria,
+  prev: before ? cellOf(before, n - 1) : { href: ROUTES.voyage[lang], label: f.departLabel, name: f.depart, thumb: still(START.scene, "-640"), bg: START.bg },
+  next: after ? cellOf(after, n + 1) : { href: ROUTES.projets[lang], label: f.end, name: f.journal, bg: "" },
+  position: fill(f.stopOf, { i: n, n: STOPS.length }),
+  total: STOPS.length,
+  index: i,
+};
 // Les textes en prose, à la typographie de la langue (les espaces insécables du français).
 const T = (text: string) => typo(lang, text);
 ---
@@ -140,6 +144,8 @@ const T = (text: string) => typo(lang, text);
       </div>
     </div>
   </div>
+
+  <FicheStrip {...strip} />
 
   <main id="contenu" class="wrap-read">
     {
@@ -212,72 +218,10 @@ const T = (text: string) => typo(lang, text);
         </section>
       )
     }
-
-    <section class="next" data-resume-hides>
-      {
-        next ? (
-          <a class="post next-card" href={`${ROUTES.voyage[lang]}#escale-${next.n}`}>
-            <span class="thumb" style={`background: ${next.bg}`}>
-              <img
-                src={still(next.scene, "-640")}
-                srcset={`${still(next.scene, "-640")} 640w, ${still(next.scene)} 1280w`}
-                sizes="(min-width: 760px) 560px, 100vw"
-                alt=""
-                width="640"
-                height="360"
-                loading="lazy"
-                decoding="async"
-              />
-            </span>
-            <span class="next-card__text">
-              <span class="next-card__label">{fill(f.next, { place: next.text.place })}</span>
-              <span class="serif next-card__name">{next.project.name}</span>
-              <span class="next-card__pitch">{T(next.text.pitch)}</span>
-              <span class="link">{f.go}</span>
-            </span>
-          </a>
-        ) : (
-          <a class="post end-card" href={ROUTES.projets[lang]}>
-            <span class="next-card__label">{f.end}</span>
-            <span class="serif next-card__name">{f.journal}</span>
-            <span class="link">{f.seeAll}</span>
-          </a>
-        )
-      }
-    </section>
   </main>
 
-  <!-- En bas, sur toute la largeur : les escales voisines et la place de celle-ci dans le voyage. -->
-  <nav class="strip" aria-label={f.stripAria} data-resume-hides>
-    {
-      [["prev", prevCell], ["next", nextCell]].map(([side, c]) => {
-        const cell = c as typeof prevCell;
-        return (
-          <a class:list={["strip__cell", `strip__${side}`]} href={cell.href} rel={side as string}>
-            <svg class="strip__arrow" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d={ARROW[side as "prev" | "next"]} />
-            </svg>
-            {cell.scene && (
-              <span class="strip__thumb" style={`background: ${cell.bg}`}>
-                <img src={still(cell.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
-              </span>
-            )}
-            <span class="strip__text">
-              <span class="strip__label">
-                {cell.label}
-                {cell.place && <span class="strip__place"> · {cell.place}</span>}
-              </span>
-              <span class="serif strip__name">{cell.name}</span>
-            </span>
-          </a>
-        );
-      })
-    }
-    <div class="strip__mid" aria-hidden="true">
-      <span class="strip__label">{fill(f.stopOf, { i: n, n: STOPS.length })}</span>
-      <span class="strip__dots">{STOPS.map((_, k) => <i class:list={[{ done: k < i, now: k === i }]} />)}</span>
-    </div>
-  </nav>
+  <!-- En bas aussi, sur toute la largeur, avant le pied de page. -->
+  <FicheStrip {...strip} hidesResume />
 
   <div class="wrap-read">
     <footer class="foot" data-resume-hides>
@@ -330,23 +274,6 @@ const T = (text: string) => typo(lang, text);
     flex: 1 1 400px;
     flex-direction: column;
     gap: 16px;
-  }
-  .strip__thumb {
-    flex: none;
-    overflow: hidden;
-    border-radius: var(--radius-pill);
-  }
-  .strip__thumb img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .strip__text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
   }
   /* Le retour au voyage, qui suit la lecture dès le haut de la fiche : de nuit, en bas à droite ; sur
      téléphone, en bas, de toute la largeur. Visible même sans script ; scripts/resume-button.ts l'efface au
@@ -504,93 +431,6 @@ const T = (text: string) => typo(lang, text);
     }
   }
 
-  /* — La bande des escales, sous l'en-tête : celle d'avant, où on en est, celle d'après — */
-  .strip {
-    display: grid;
-    grid-template-areas: "prev mid next";
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    border-block: 1px solid var(--line);
-    background: var(--card);
-  }
-  .strip__cell {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    min-height: 120px;
-    padding: 22px clamp(20px, 4vw, 48px);
-    color: var(--ink);
-    text-decoration: none;
-    transition: background 0.2s;
-  }
-  .strip__cell:hover {
-    background: color-mix(in srgb, var(--brass) 10%, var(--card));
-  }
-  .strip__prev {
-    grid-area: prev;
-  }
-  .strip__next {
-    grid-area: next;
-    flex-direction: row-reverse;
-    text-align: right;
-  }
-  .strip__arrow {
-    flex: none;
-    color: var(--brass-text);
-    transition: transform 0.2s;
-  }
-  .strip__prev:hover .strip__arrow {
-    transform: translateX(-4px);
-  }
-  .strip__next:hover .strip__arrow {
-    transform: translateX(4px);
-  }
-  .strip__thumb {
-    width: 72px;
-    height: 72px;
-  }
-  .strip__label {
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  .strip__name {
-    font-size: clamp(24px, 2.4vw, 32px);
-    line-height: 1.05;
-  }
-  .strip__mid {
-    grid-area: mid;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 0 40px;
-    border-inline: 1px solid var(--line);
-  }
-  .strip__dots {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .strip__dots i {
-    width: 8px;
-    height: 8px;
-    border: 1.5px solid var(--muted);
-    border-radius: var(--radius-pill);
-    box-sizing: border-box;
-  }
-  .strip__dots i.done,
-  .strip__dots i.now {
-    border-color: var(--brass);
-    background: var(--brass);
-  }
-  .strip__dots i.now {
-    width: 13px;
-    height: 13px;
-  }
-
   /* — Le papier : les rubriques, séparées d'un filet — */
   .shelf .label {
     flex: 1 1 200px;
@@ -685,39 +525,6 @@ const T = (text: string) => typo(lang, text);
     line-height: 1.6;
   }
 
-  /* — L'escale suivante, ou le carnet après la dernière — */
-  .next {
-    padding: 56px 0 40px;
-  }
-  .next-card {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-    align-items: center;
-    gap: 24px 40px;
-  }
-  .end-card {
-    gap: 10px;
-  }
-  .next-card__text {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .next-card__label {
-    color: var(--brass-text);
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
-  .next-card__name {
-    font-size: 48px;
-    line-height: 1;
-  }
-  .next-card__pitch {
-    color: var(--muted);
-    font-size: 16px;
-    line-height: 1.55;
-  }
-
   .foot {
     display: flex;
     flex-wrap: wrap;
@@ -737,32 +544,6 @@ const T = (text: string) => typo(lang, text);
 
   /* Sous 700 px : la scène dans le cadre du téléphone, sous le texte. */
   @media (max-width: 700px) {
-    /* La bande : l'escale d'avant et celle d'après, côte à côte, sans la position du milieu. */
-    .strip {
-      grid-template-areas: "prev next";
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    /* Sur un téléphone, « Escale 1 » suffit : le lieu ferait passer l'étiquette sur deux lignes. */
-    .strip__mid,
-    .strip__arrow,
-    .strip__place {
-      display: none;
-    }
-    .strip__cell {
-      gap: 12px;
-      min-height: 88px;
-      padding: 16px 20px;
-    }
-    .strip__prev {
-      border-right: 1px solid var(--line);
-    }
-    .strip__thumb {
-      width: 44px;
-      height: 44px;
-    }
-    .strip__name {
-      font-size: 22px;
-    }
     .hero__body {
       gap: 28px;
       padding: 12px 0 48px;
@@ -786,9 +567,6 @@ const T = (text: string) => typo(lang, text);
     .shot--video {
       width: 100%;
       border-radius: var(--radius-m);
-    }
-    .next-card__name {
-      font-size: 40px;
     }
   }
 </style>

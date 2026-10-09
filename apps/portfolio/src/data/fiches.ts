@@ -6,7 +6,7 @@
  */
 
 import { getProject, projects, type Project } from "@index/projects";
-import { fichePath, inWords, type Lang } from "../i18n/voyage";
+import { fichePath, type Lang } from "../i18n/voyage";
 import { STOPS } from "./voyage";
 
 export const FICHE: Record<
@@ -39,12 +39,8 @@ export const FICHE: Record<
     };
     pictures: string;
     shelf: string;
-    /** {place} : le lieu de l'escale suivante. */
-    next: string;
-    go: string;
     end: string;
     journal: string;
-    seeAll: string;
     /** {name} : le projet. */
     question: string;
   }
@@ -71,11 +67,8 @@ export const FICHE: Record<
     },
     pictures: "En images",
     shelf: "Sur l'étagère aussi",
-    next: "Escale suivante · {place}",
-    go: "Continuer le voyage →",
     end: "Fin du voyage",
     journal: "Le carnet de voyage",
-    seeAll: `Voir les ${inWords("fr", projects.length)} projets →`,
     question: "Une question sur {name} ?",
   },
   en: {
@@ -100,11 +93,8 @@ export const FICHE: Record<
     },
     pictures: "In pictures",
     shelf: "Also on the shelf",
-    next: "Next stop · {place}",
-    go: "Continue the journey →",
     end: "End of the journey",
     journal: "The travel journal",
-    seeAll: `See all ${inWords("en", projects.length)} projects →`,
     question: "A question about {name}?",
   },
 };
