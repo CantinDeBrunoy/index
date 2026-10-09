@@ -587,7 +587,8 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     top: 50%;
     width: 118%;
     aspect-ratio: 16 / 9;
-    transform: translateY(-50%);
+    /* -38 % plutôt que -50 % : depuis le dézoom de la planète, cela la ramène à la hauteur du titre. */
+    transform: translateY(-38%);
   }
   .stop--intro .scene {
     transform-origin: 24% 50%;

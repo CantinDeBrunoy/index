@@ -1580,7 +1580,9 @@ const SCENES = {
       gal.rotation.y = 0.2 * Math.sin(phi);
       earth.rotation.y = -1.75 + phi;
     };
-    g.userData.camera = { pos: [0, 0.4, 7.2], target: [0.2, 0, 0], fov: 32 };
+    // Recul et visée basse (2026-10-09, « dézoomer la planète ») : rognée en 16:10 sur le site, la
+    // planète passait derrière le cartel ; elle tient maintenant entière au-dessus de lui.
+    g.userData.camera = { pos: [0, 0.5, 10], target: [0.2, -0.8, 0], fov: 32 };
     return g;
   },
   // 005 Magellan : la Terre et ses voyages ; l'avion attend à côté (à cliquer)

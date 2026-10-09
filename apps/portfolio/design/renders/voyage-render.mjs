@@ -64,7 +64,7 @@ if (process.env.AV) {
 const MOBILE = !!process.env.MOBILE || (!!process.env.SIZE && MODE !== "video");
 const [MW, MH] = process.env.SIZE ? process.env.SIZE.split("x").map(Number) : [780, 760];
 const BOXES = {
-  espace: [-0.04, 0.14, 0.84, 0.78],
+  espace: [0.06, 0.1, 0.76, 0.66],
   terre: [0.22, 0.06, 0.94, 0.92],
   avion: [0.24, -0.04, 0.8, 1.02],
   paris: [0.12, 0.1, 0.96, 0.94],

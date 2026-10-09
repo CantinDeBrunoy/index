@@ -27,7 +27,7 @@ export interface Stop {
 }
 
 export const STOPS: Stop[] = [
-  { slug: "galactic-escape", code: "GLX", scene: "espace", bg: "#0b0c14", palette: "night", spot: [70.5, 31.3], spotMobile: [84, 39] },
+  { slug: "galactic-escape", code: "GLX", scene: "espace", bg: "#0b0c14", palette: "night", spot: [66.2, 21.7], spotMobile: [83.9, 34.6] },
   { slug: "magellan", code: "MGL", scene: "terre", bg: "#10131c", palette: "night", spot: [83, 43.8], spotMobile: [82.1, 46.4] },
   { slug: "hublot", code: "HBL", scene: "avion", bg: "#dce9f0", palette: "day", spot: [52.9, 56], spotMobile: [51, 56.4] },
   { slug: "metro-pathfinder", code: "MTR", scene: "paris", bg: "#dce3ea", palette: "day", spot: [79.5, 55.7], spotMobile: [77.9, 52.2] },
