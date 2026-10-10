@@ -86,10 +86,7 @@ interface AproposStrings {
   status: string;
   lead: string;
   write: string;
-  /**
-   * Le CV à télécharger. En attente : les PDF actuels portent le numéro de téléphone, qui ne va pas sur le
-   * site. Le bouton apparaît dès qu'une version sans numéro est là ({ href, file, label }).
-   */
+  /** Le CV à télécharger, sans numéro de téléphone : public/cv, imprimé par design/cv/cv.mjs. */
   cv?: { href: string; file: string; label: string };
   linkedin: string;
   alt: string;
@@ -126,6 +123,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     status: "Ingénieur en CDI chez la STIME",
     lead: "Ingénieur diplômé de l'EFREI, je travaille depuis 2020 à la DSI du Groupement Les Mousquetaires : je conçois des applications web et mobiles utilisées à grande échelle, du recueil des besoins jusqu'à la mise en production.",
     write: "M'écrire",
+    cv: { href: "/cv/cantin-roquier-cv.pdf", file: "CV_ROQUIER_Cantin.pdf", label: "Mon CV (PDF)" },
     linkedin: "https://fr.linkedin.com/in/cantin-roquier-2a0a50228",
     alt: "Mon passeport sur le bureau : à gauche, la page d'identité et mon monogramme ; à droite, un visa par projet, chacun à l'encre de son escale. Le tampon de laiton passe par l'encreur et pose un nouveau visa : INDEX 2026.",
     labels: {
@@ -221,6 +219,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     status: "Engineer at STIME, on a permanent contract",
     lead: "An EFREI Paris engineer, I have worked in the IT department of Les Mousquetaires Group (Intermarché) since 2020, building web and mobile apps used at scale, from requirements gathering to production release.",
     write: "Email me",
+    cv: { href: "/cv/cantin-roquier-resume.pdf", file: "CV_ROQUIER_Cantin_EN.pdf", label: "My résumé (PDF)" },
     linkedin: "https://www.linkedin.com/in/cantin-roquier-2a0a50228",
     alt: "My passport on the desk: on the left, the identity page and my monogram; on the right, one visa per project, each in the ink of its stop. The brass stamp dips into the ink pad and adds a new visa: INDEX 2026.",
     labels: {

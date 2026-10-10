@@ -8,6 +8,7 @@ le site n'utilise que les boucles animées déjà rendues, dans `../public/voyag
 | `renders/` | Le moteur des scènes : des modèles three.js procéduraux, rendus image par image dans Edge (sans écran), puis encodés en WebP animé. |
 | `renders/assets/` | Les modèles 3D et la carte du monde que les scènes chargent. Leurs licences sont dans `CREDITS.md`. |
 | `design-canvas/` | Le générateur des planches de la maquette (canvas Claude Design) et tous les textes du site, en français et en anglais. |
+| `cv/` | Le CV de Cantin, en français et en anglais : deux pages HTML que `node cv/cv.mjs` imprime en PDF dans `../public/cv/`, pour le bouton « Mon CV » de la page À propos. Sans numéro de téléphone : le script refuse un CV qui en porte un. |
 
 ## Rendre une scène
 
