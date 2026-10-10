@@ -1,22 +1,27 @@
 # 🎶 Cancionero — apprendre l'espagnol en chanson
 
 App mobile (iOS / Android / Web) pour **travailler une chanson** afin d'apprendre
-l'espagnol. On choisit une chanson dans la liste, puis on l'étudie sous 4 angles :
+l'espagnol. On choisit une chanson dans la liste, puis on l'étudie sous 3 angles :
 
 - **📖 Paroles + traduction** — paroles espagnoles avec la traduction française
   alignée ligne par ligne. Touche 🔊 pour **écouter** chaque ligne (synthèse vocale),
-  ou une ligne pour révéler/masquer sa traduction.
-- **✏️ Texte à trous** — mode karaoké : un mot est masqué par ligne, à compléter.
-- **🃏 Vocabulaire** — flashcards ES → FR des mots-clés, retournables.
-- **❓ Quiz** — questions de compréhension avec correction immédiate.
+  et touche un mot pour le surligner : il part dans le vocabulaire à réviser.
+- **🎤 Karaoké** — plein écran : la ligne chantée grossit et se remplit au rythme
+  de la chanson, avec sa traduction. Pour l'instant visuel, sans le son. Un mot
+  touché part aussi dans le vocabulaire.
+- **🃏 Vocabulaire** — les mots touchés deviennent des cartes ES → FR, à retourner
+  puis à glisser : « Je le connais » retire le mot, « À revoir » le remet sous la pile.
 
 L'app est livrée avec **3 chansons originales** (salutations, famille, marché) écrites
-pour l'apprentissage. Tu peux **ajouter tes propres chansons** : colle les paroles
-espagnoles (+ la traduction si tu veux), et les modes Paroles / Audio / Trous marchent
-aussitôt dessus.
+pour l'apprentissage. Tu peux **ajouter tes propres chansons** : cherche-les dans
+LRCLIB ou colle les paroles espagnoles (+ la traduction si tu veux). Les paroles, le
+karaoké et le vocabulaire marchent aussitôt dessus, et les traductions qui manquent
+arrivent à la demande.
 
 > Stack : Expo SDK 54 · React Native 0.81 · React 19 · TypeScript · expo-router.
-> Local-first : tes chansons sont stockées sur l'appareil (AsyncStorage), pas de serveur.
+> Local-first : tes chansons et ton vocabulaire sont stockés sur l'appareil (AsyncStorage).
+> Seules la recherche de paroles (LRCLIB) et la traduction à la demande (MyMemory)
+> passent par Internet.
 
 ---
 
@@ -139,6 +144,5 @@ src/
 ## 🧭 Idées pour la suite
 
 - Vocabulaire / quiz **auto-générés** pour les chansons ajoutées par l'utilisateur.
-- **Traduction automatique** au collage (via une API) pour ne coller que l'espagnol.
 - Suivi de progression (chansons travaillées, scores).
 - Mode « écoute en boucle » d'une ligne pour la prononciation.
