@@ -19,6 +19,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["apps/portfolio/node_modules/astro/bin/astro.mjs", "dev", "--root", "apps/portfolio", "--port", "4321"],
       "port": 4321
+    },
+    {
+      "name": "magellan",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["apps/magellan/node_modules/expo/bin/cli", "start", "apps/magellan", "--web", "--port", "8082"],
+      "port": 8082
     }
   ]
 }
