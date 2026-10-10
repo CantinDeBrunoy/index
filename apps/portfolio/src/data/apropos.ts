@@ -100,8 +100,6 @@ interface AproposStrings {
   titles: { route: string; langs: string; bag: string; away: string };
   route: {
     band: string;
-    /** Les lettres des deux lignes, dans leur pastille. */
-    codes: [string, string];
     stations: Record<StationId, [string, string]>;
     school: Leg;
     work: Leg;
@@ -150,7 +148,6 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     },
     route: {
       band: "Cinq ans d'alternance, sur les deux lignes à la fois",
-      codes: ["É", "S"],
       stations: {
         dut: ["DUT Informatique", "UPEC · 2019"],
         licence: ["Licence pro", "CY Gennevilliers · 2021"],
@@ -246,7 +243,6 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     },
     route: {
       band: "Five years of work-study, on both lines at once",
-      codes: ["S", "W"],
       stations: {
         dut: ["Technical degree", "UPEC · 2019"],
         licence: ["Bachelor's", "CY Gennevilliers · 2021"],

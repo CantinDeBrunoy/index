@@ -92,8 +92,8 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
       <h2 class="serif title">{a.titles.route}</h2>
       <!-- Le plan, sur grand écran : décoratif pour les lecteurs d'écran, le détail des deux lignes, dessous, dit tout. -->
       <div class="metro" aria-hidden="true">
-        <span class="metro__code" style={`top: 190px; background: ${INK.school}`}>{R.codes[0]}</span>
-        <span class="metro__code metro__code--work" style="top: 380px">{R.codes[1]}</span>
+        <i class="metro__zone metro__zone--school"></i>
+        <i class="metro__zone metro__zone--work"></i>
         <div class="metro__plan">
           <i class="metro__band" style={`left: ${pct(LINES.band.from)}%; width: ${pct(LINES.band.to) - pct(LINES.band.from)}%`}></i>
           <span class="metro__band-label" style={`left: ${pct(LINES.band.from)}%`}>{R.band}</span>
@@ -397,36 +397,42 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     position: absolute;
     inset: 0 120px 0 96px;
   }
-  .metro__code {
+  /* Chaque ligne a son fond, d'un bord à l'autre : en haut le bleu de l'école en pastel, en bas le laiton de la
+     STIME, jusqu'au fil des années, qui reste sur la carte. La limite passe à mi-chemin des deux lignes. */
+  .metro__zone {
     position: absolute;
-    left: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    margin-top: -22px;
-    border-radius: 999px;
-    color: #fbf7f0;
-    font-family: var(--font-serif);
-    font-size: 24px;
+    right: 0;
+    left: 0;
   }
-  .metro__code--work {
-    background: var(--brass);
-    color: var(--on-brass);
+  .metro__zone--school {
+    top: 0;
+    height: 285px;
+    background: #dce8f0;
+  }
+  .metro__zone--work {
+    top: 285px;
+    height: 260px;
+    background: #f0e3cc;
   }
   .metro__band {
     position: absolute;
     top: 150px;
     height: 270px;
-    border: 1px dashed rgba(176, 138, 79, 0.45);
+    border: 1px dashed rgba(36, 30, 24, 0.28);
     border-radius: 22px;
-    background: rgba(176, 138, 79, 0.08);
+    background: rgba(251, 247, 240, 0.32);
   }
+  /* Sur la limite des deux fonds : les deux lignes à la fois. */
   .metro__band-label {
     position: absolute;
-    top: 277px;
-    padding-left: 16px;
+    top: 274px;
+    display: flex;
+    align-items: center;
+    height: 22px;
+    margin-left: 16px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--card);
     color: var(--brass-text);
     font-family: var(--font-mono);
     font-size: 11px;
