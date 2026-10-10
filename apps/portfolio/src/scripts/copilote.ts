@@ -55,20 +55,28 @@ function start(root: HTMLElement) {
     open = wrap;
   };
 
-  /** L'accueil, à l'escale 1. Son cartel attend la fin de l'accueil : inerte, et masqué par le CSS. */
+  /** L'accueil, à l'escale 1. Son cartel et sa barre des escales attendent la fin de l'accueil : inertes, et
+   *  masqués par le CSS. La barre revient dès qu'il file vers sa pastille, le cartel une fois qu'il y est. */
   const welcoming = () => !!welcome && !welcome.hidden;
-  const welcomeCard = welcome?.closest("[data-stop]")?.querySelector<HTMLElement>(".cartel") ?? null;
+  const welcomeStop = welcome?.closest<HTMLElement>("[data-stop]") ?? null;
+  const welcomeCard = welcomeStop?.querySelector<HTMLElement>(".cartel") ?? null;
+  const welcomeNav = welcomeStop?.querySelector<HTMLElement>(".stop-nav") ?? null;
+  const hold = (el: HTMLElement | null, on: boolean) => {
+    if (el) el.inert = on;
+  };
   const greet = () => {
     if (!welcome) return;
     rememberWelcome();
     welcome.classList.remove("bye");
     welcome.hidden = false;
     root.classList.add("copilote-accueil");
-    if (welcomeCard) welcomeCard.inert = true;
+    hold(welcomeCard, true);
+    hold(welcomeNav, true);
   };
   const dock = (animate: boolean) => {
     root.classList.remove("copilote-accueil");
-    if (welcomeCard) welcomeCard.inert = false;
+    hold(welcomeCard, false);
+    hold(welcomeNav, false);
     if (!animate) return;
     root.classList.add("copilote-arrive");
     window.setTimeout(() => root.classList.remove("copilote-arrive"), 900);
@@ -83,15 +91,15 @@ function start(root: HTMLElement) {
       return;
     }
     welcome.classList.add("bye");
-    const stop = welcome.closest<HTMLElement>("[data-stop]");
+    hold(welcomeNav, false);
     window.setTimeout(() => {
       if (!welcome.classList.contains("bye")) return;
       welcome.hidden = true;
       welcome.classList.remove("bye");
       dock(true);
-      if (current !== 1 || !stop) return;
-      stop.classList.add("nudge");
-      window.setTimeout(() => stop.classList.remove("nudge"), NUDGE_MS);
+      if (current !== 1 || !welcomeStop) return;
+      welcomeStop.classList.add("nudge");
+      window.setTimeout(() => welcomeStop.classList.remove("nudge"), NUDGE_MS);
     }, BYE_MS);
   };
 

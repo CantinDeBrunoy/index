@@ -601,6 +601,15 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     background: color-mix(in srgb, var(--bar) 94%, transparent);
     box-shadow: 0 12px 32px var(--shadow);
     color: var(--ink);
+    transition:
+      filter 0.6s ease,
+      translate 0.6s ease;
+  }
+  /* Escale 1 : la barre attend elle aussi la fin de l'accueil (scripts/copilote.ts la rend inerte) et revient
+     pendant qu'il file vers sa pastille. filter et translate, car l'arrivée de l'escale anime déjà son opacité. */
+  .stop-nav[inert] {
+    filter: opacity(0);
+    translate: 0 10px;
   }
   .stop.pal-night .stop-nav {
     --bar: rgb(14, 16, 24);
