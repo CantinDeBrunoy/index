@@ -1,10 +1,11 @@
 // Le copilote qui suit la lecture d'une fiche, dès son haut, et ramène au voyage. Sur ordinateur, il part du
-// bas de l'écran et monte avec la lecture : au milieu une fois qu'on a descendu d'un demi-écran, il y reste
-// (--rise, de 0 à 1 ; le CSS en fait le déplacement). Au bas de la page, il va se poser dans le rond du bouton
-// « Reprendre le voyage » : dès que le pied de page ([data-resume-from]) entre à l'écran, sa bulle s'efface et
-// sa pastille glisse vers le rond ([data-resume-pad]) au fil du défilement ; au bout de la page elle y est, et
-// le rond la montre à sa place. En remontant, il repart. Sans script, il reste visible en bas, et le rond le
-// montre aussi ; en mouvement réduit, il ne vole pas : il s'efface, et le rond le montre.
+// bas de l'écran et monte avec la lecture : au milieu une fois qu'on a descendu d'un demi-écran, il y reste,
+// dans la marge (--rise, de 0 à 1 ; le CSS en fait le déplacement). Au pied de page ([data-resume-from]), sa
+// bulle s'efface. Quand le rond du bouton « Reprendre le voyage » ([data-resume-pad]) est à l'écran, il va s'y
+// poser d'un bond : il descend le long de la marge, puis glisse dans la bande jusqu'au rond, qui le montre alors
+// à sa place. Il ne reste jamais en l'air au-dessus du texte. En remontant, il repart à sa place du même bond.
+// Sans script, il reste visible en bas et le rond le montre aussi ; en mouvement réduit, il ne vole pas : il
+// s'efface, et le rond le montre.
 const button = document.querySelector<HTMLElement>("[data-resume]");
 const dock = document.querySelector<HTMLElement>("[data-resume-dock]");
 const from = document.querySelector<HTMLElement>("[data-resume-from]");
@@ -17,69 +18,76 @@ if (button && dock && from && pad) {
   const rgb = (el: Element) => getComputedStyle(el).backgroundColor.match(/[\d.]+/g)!.slice(0, 3).map(Number);
   const dockBg = rgb(dock);
   const padBg = rgb(pad);
-  const smooth = (t: number) => t * t * (3 - 2 * t);
+  // La durée du bond, d'un bout à l'autre.
+  const flight = 700;
+  const easeOut = (t: number) => 1 - (1 - t) ** 3;
+  const easeInOut = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (2 - 2 * t) ** 3 / 2);
+  // Où il en est : 0 à sa place, 1 posé dans le rond ; et où il va.
+  let at = 0;
+  let to = 0;
   let frame = 0;
-  let landed = false;
+  let last = 0;
   // Le déplacement donné à la pastille : sa place de départ s'en déduit.
   let dx = 0;
   let dy = 0;
 
-  const rest = () => {
-    dx = dy = 0;
-    dock.style.transform = "";
-    dock.style.backgroundColor = "";
+  const place = () => {
+    const landed = at === 1;
+    button.classList.toggle("is-landed", landed);
+    button.classList.toggle("is-flying", at > 0 && !landed);
+    pad.classList.toggle("is-empty", !landed && !reduced.matches);
+    if (at === 0 || landed) {
+      dx = dy = 0;
+      dock.style.transform = "";
+      dock.style.backgroundColor = "";
+      return;
+    }
+    // Il descend d'abord (sa hauteur va vite), puis glisse vers le rond (sa position, lentement au départ), en
+    // penchant un peu et en prenant la taille du rond ; jamais sous le bas de l'écran.
+    const d = dock.getBoundingClientRect();
+    const t = pad.getBoundingClientRect();
+    const x = d.left + d.width / 2 - dx;
+    const y = d.top + d.height / 2 - dy;
+    const ty = t.top + t.height / 2;
+    const scale = 1 + (pad.offsetWidth / dock.offsetWidth - 1) * at;
+    const floor = Math.max(innerHeight - 12 - (dock.offsetHeight * scale) / 2, ty);
+    dx = (t.left + t.width / 2 - x) * easeInOut(at);
+    dy = Math.min(y + (ty - y) * easeOut(at), floor) - y;
+    const tilt = -12 * Math.sin(Math.PI * at);
+    dock.style.transform = `translate(${dx}px, ${dy}px) rotate(${tilt}deg) scale(${scale})`;
+    dock.style.backgroundColor = `rgb(${dockBg.map((c, i) => Math.round(c + (padBg[i]! - c) * at)).join(", ")})`;
   };
 
-  const update = () => {
+  const tick = (now: number) => {
     frame = 0;
     const rise = desktop.matches ? Math.min(1, scrollY / (innerHeight / 2)) : 0;
     button.style.setProperty("--rise", rise.toFixed(3));
-
-    // La part de la fin de page, du haut du pied de page au bas, qui est à l'écran : 0 avant, 1 au bout.
-    const top = from.getBoundingClientRect().top;
-    const span = document.documentElement.scrollHeight - scrollY - top;
-    const seen = innerHeight - top;
-    const p = Math.min(1, Math.max(0, seen / span));
-    const atEnd = seen >= span - 2;
-    button.classList.toggle("is-leaving", p > 0);
-
-    if (reduced.matches) {
-      button.classList.toggle("is-landed", p > 0);
-      pad.classList.remove("is-empty");
-      rest();
-      return;
+    // Il part quand le rond est entièrement à l'écran.
+    to = pad.getBoundingClientRect().bottom <= innerHeight - 8 ? 1 : 0;
+    if (reduced.matches) at = to;
+    else if (at !== to) {
+      const step = (last ? Math.min(64, now - last) : 16) / flight;
+      at = to ? Math.min(1, at + step) : Math.max(0, at - step);
+      if (at === 1) pad.classList.add("is-touchdown");
     }
-    if (atEnd !== landed) {
-      landed = atEnd;
-      button.classList.toggle("is-landed", landed);
-      pad.classList.toggle("is-empty", !landed);
-      pad.classList.toggle("is-touchdown", landed);
-    }
-    if (landed || p === 0) {
-      rest();
-      return;
-    }
-
-    // Il glisse d'abord vers le rond, puis descend s'y poser, en penchant un peu ; il prend la taille du rond.
-    // Sans jamais passer sous le bas de l'écran : sur téléphone, il part de là, et le rond arrive d'en dessous.
-    const d = dock.getBoundingClientRect();
-    const t = pad.getBoundingClientRect();
-    const k = smooth(p);
-    const x = d.left + d.width / 2 - dx;
-    const y = d.top + d.height / 2 - dy;
-    const scale = 1 + (pad.offsetWidth / dock.offsetWidth - 1) * k;
-    dx = (t.left + t.width / 2 - x) * k;
-    dy = Math.min((t.top + t.height / 2 - y) * p * p, innerHeight - 12 - (dock.offsetHeight * scale) / 2 - y);
-    const tilt = -12 * Math.sin(Math.PI * p);
-    dock.style.transform = `translate(${dx}px, ${dy}px) rotate(${tilt}deg) scale(${scale})`;
-    dock.style.backgroundColor = `rgb(${dockBg.map((c, i) => Math.round(c + (padBg[i]! - c) * k)).join(", ")})`;
+    last = at !== to ? now : 0;
+    button.classList.toggle("is-leaving", at > 0 || from.getBoundingClientRect().top < innerHeight);
+    place();
+    if (at !== to) frame = requestAnimationFrame(tick);
+  };
+  const soon = () => (frame ||= requestAnimationFrame(tick));
+  const now = () => {
+    cancelAnimationFrame(frame);
+    tick(performance.now());
   };
 
-  pad.classList.add("is-empty");
   pad.addEventListener("animationend", () => pad.classList.remove("is-touchdown"));
-  addEventListener("scroll", () => (frame ||= requestAnimationFrame(update)), { passive: true });
-  addEventListener("resize", update);
-  desktop.addEventListener("change", update);
-  reduced.addEventListener("change", update);
-  update();
+  addEventListener("scroll", soon, { passive: true });
+  addEventListener("resize", now);
+  desktop.addEventListener("change", now);
+  reduced.addEventListener("change", now);
+  // Au chargement, il est déjà où il doit être : posé si la page s'ouvre en bas, sans bond.
+  to = pad.getBoundingClientRect().bottom <= innerHeight - 8 ? 1 : 0;
+  at = to;
+  now();
 }

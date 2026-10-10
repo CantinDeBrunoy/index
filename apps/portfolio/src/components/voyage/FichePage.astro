@@ -282,8 +282,8 @@ const T = (text: string) => typo(lang, text);
   /* Le copilote, qui suit la lecture dès le haut de la fiche : dans la tenue de l'escale, il dit « Reprends ton
      voyage », dans une bulle crème au liseré de laiton, comme à l'accueil du voyage. En bas à droite au départ ;
      quand on descend, il monte (--rise, de 0 à 1, posé par scripts/resume-button.ts) jusqu'au milieu de l'écran,
-     et il y reste. Au bas de la page, il va se poser dans le rond de la bande du bas (le même script le fait
-     voler). Visible même sans script. */
+     et il y reste, dans la marge. Au bas de la page, il va se poser dans le rond de la bande du bas (le même
+     script le fait voler). Visible même sans script. */
   .resume {
     position: fixed;
     right: 32px;
@@ -299,13 +299,13 @@ const T = (text: string) => typo(lang, text);
       opacity 0.25s,
       visibility 0s;
   }
-  /* Dès le pied de page, sa bulle s'efface et sa pastille, cerclée de laiton, s'envole vers le rond ; une fois
-     posée, c'est le rond qui la montre. */
+  /* Dès le pied de page, sa bulle s'efface ; quand le rond est à l'écran, sa pastille, cerclée de laiton, s'y
+     envole d'un bond ; une fois posée, c'est le rond qui la montre. */
   .resume:global(.is-leaving) .resume__bubble {
     opacity: 0;
     pointer-events: none;
   }
-  .resume:global(.is-leaving) .resume__dock {
+  .resume:global(.is-flying) .resume__dock {
     box-shadow: 0 0 0 2px var(--brass);
   }
   .resume:global(.is-landed) {
@@ -604,7 +604,6 @@ const T = (text: string) => typo(lang, text);
     gap: 20px;
     min-height: 136px;
     padding: 28px 20px;
-    border-top: 1.5px solid var(--brass);
     background: var(--stop-bg);
     color: var(--ink);
     text-decoration: none;
