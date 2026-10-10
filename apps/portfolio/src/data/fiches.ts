@@ -26,6 +26,8 @@ export const FICHE: Record<
     demo: string;
     /** {i} : l'escale de la fiche ; {n} : le nombre d'escales. */
     stopOf: string;
+    /** La même chose pour un lecteur d'écran, qui lirait « / » comme « barre oblique ». */
+    stopOfSpoken: string;
     stop: string;
     why: string;
     what: string;
@@ -59,6 +61,7 @@ export const FICHE: Record<
     depart: "Le départ",
     demo: "La démo",
     stopOf: "Escale {i} / {n}",
+    stopOfSpoken: "Escale {i} sur {n}",
     stop: "Escale",
     why: "Pourquoi je l'ai fabriqué",
     what: "Ce que ça fait",
@@ -86,6 +89,7 @@ export const FICHE: Record<
     depart: "The departure",
     demo: "The demo",
     stopOf: "Stop {i} / {n}",
+    stopOfSpoken: "Stop {i} of {n}",
     stop: "Stop",
     why: "Why I built it",
     what: "What it does",

@@ -85,6 +85,7 @@ const strip = {
   prev: before ? cellOf(before, n - 1) : { href: ROUTES.voyage[lang], label: f.departLabel, name: f.depart, thumb: still(START.scene, "-640"), bg: START.bg },
   next: after ? cellOf(after, n + 1) : { href: ROUTES.projets[lang], label: f.end, name: f.journal, bg: "" },
   position: fill(f.stopOf, { i: n, n: STOPS.length }),
+  spoken: fill(f.stopOfSpoken, { i: n, n: STOPS.length }),
   total: STOPS.length,
   index: i,
 };

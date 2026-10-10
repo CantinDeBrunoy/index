@@ -21,6 +21,8 @@ interface Props {
   next: StripCell;
   /** « Escale 2 / 10 ». */
   position: string;
+  /** « Escale 2 sur 10 », pour les lecteurs d'écran : le milieu de la bande ne leur est pas lu. */
+  spoken: string;
   /** Le nombre d'escales et l'index de celle-ci (0 pour la première). */
   total: number;
   index: number;
@@ -28,12 +30,13 @@ interface Props {
   hidesResume?: boolean;
 }
 
-const { aria, prev, next, position, total, index, hidesResume = false } = Astro.props;
+const { aria, prev, next, position, spoken, total, index, hidesResume = false } = Astro.props;
 const ARROW = { prev: "M19 12H5M11 18l-6-6 6-6", next: "M5 12h14M13 6l6 6-6 6" };
 const cells = [["prev", prev], ["next", next]] as const;
 ---
 
 <nav class="strip" aria-label={aria} data-resume-hides={hidesResume ? "" : undefined}>
+  <p class="visually-hidden">{spoken}</p>
   {
     cells.map(([side, cell]) => (
       <a class:list={["strip__cell", `strip__${side}`]} href={cell.href} rel={side}>
