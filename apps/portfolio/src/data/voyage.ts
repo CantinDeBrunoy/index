@@ -219,9 +219,6 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     introText:
       "Je fabrique les outils qui me manquent. Ici, chaque projet devient un objet du décor : la planète, l'avion, le hublot, la station… Clique dessus pour passer à l'escale suivante.",
     takeOff: "Décoller →",
-    openApp: "Ouvrir une app",
-    seeAll: "Voir tous les projets",
-    allProjects: "Tous les projets",
     start: "Le départ",
     announce: "Escale {i} : {place}, {name}",
     dotsAria: "Les escales du voyage",
@@ -244,9 +241,6 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     introText:
       "I build the tools I'm missing. Here, each project becomes part of the scenery: the planet, the plane, the window, the station… Click it to fly on to the next stop.",
     takeOff: "Take off →",
-    openApp: "Open an app",
-    seeAll: "See all projects",
-    allProjects: "All projects",
     start: "Departure",
     announce: "Stop {i}: {place}, {name}",
     dotsAria: "The journey's stops",

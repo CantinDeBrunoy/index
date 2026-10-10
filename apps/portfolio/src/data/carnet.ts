@@ -8,7 +8,7 @@
 import { projects } from "@index/projects";
 import { inWords, type Lang } from "../i18n/voyage";
 
-/** L'ancre de la rangée des raccourcis : « Ouvrir une app » au départ du voyage y mène. */
+/** L'ancre de la rangée des raccourcis : l'ancienne adresse /apps y redirige (public/_redirects). */
 export const APPS_ANCHOR = "apps";
 
 /**

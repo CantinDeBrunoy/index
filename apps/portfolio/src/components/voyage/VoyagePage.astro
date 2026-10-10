@@ -10,7 +10,6 @@
  * le retour et l'escale suivante au pouce.
  */
 import { getProject } from "@index/projects";
-import { APPS_ANCHOR } from "../../data/carnet";
 import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
@@ -128,10 +127,6 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
           <p class="intro__text">{typo(lang, v.introText)}</p>
           <div class="intro__actions">
             <a class="go" href="#escale-1" data-go="1">{v.takeOff}</a>
-            <div class="intro__more">
-              <a class="pill" href={`${ROUTES.projets[lang]}#${APPS_ANCHOR}`}>{v.openApp}</a>
-              <a class="pill" href={ROUTES.projets[lang]}><span class="lg">{v.seeAll}</span><span class="sm">{v.allProjects}</span></a>
-            </div>
           </div>
         </div>
       </section>
@@ -627,15 +622,15 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     font-size: 19px;
     line-height: 1.6;
   }
-  .intro__actions,
-  .intro__more {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 14px;
-  }
+  /* Seul bouton du départ : plus grand que le laiton des escales. */
   .intro__actions {
+    display: flex;
     padding-top: 6px;
+  }
+  .intro__actions .go {
+    min-height: 62px;
+    padding: 0 38px;
+    font-size: 19px;
   }
 
   /* — Les transitions : la scène plonge vers l'objet cliqué sous un voile de la couleur suivante,
@@ -929,16 +924,11 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     .intro__actions {
       flex-direction: column;
       align-items: stretch;
-      gap: 10px;
       padding-top: 4px;
     }
-    .intro__more {
-      flex-wrap: nowrap;
-      gap: 10px;
-    }
-    .intro__more .pill {
-      flex: 1;
-      justify-content: center;
+    .intro__actions .go {
+      min-height: 58px;
+      font-size: 17px;
     }
   }
 
