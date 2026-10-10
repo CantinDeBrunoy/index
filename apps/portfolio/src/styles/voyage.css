@@ -1,6 +1,6 @@
 /*
  * Le site « le voyage » : la base et les éléments communs à toutes les pages (boutons, liens,
- * en-tête, interrupteur de langue, pied de page). Les couleurs viennent de la palette du bloc
+ * en-tête, onglets, menu du téléphone, pied de page). Les couleurs viennent de la palette du bloc
  * (@index/ui/voyage.css) ; sous 700 px, l'en-tête passe en version téléphone.
  */
 
@@ -158,8 +158,8 @@ a {
   color: var(--brass-text);
 }
 
-/* — En-tête : la marque, et le sommaire (components/voyage/Sommaire.astro) —
-   Pleine largeur, au même bord que celui du voyage : d'une page à l'autre, il ne bouge pas. */
+/* — En-tête : la marque, les onglets, la langue ; sur téléphone, la langue et un menu ☰ —
+   Pleine largeur, au même bord que celui du voyage : d'un onglet à l'autre, il ne bouge pas. */
 
 .site-header {
   display: flex;
@@ -188,7 +188,6 @@ a {
   color: var(--muted);
 }
 
-/* Des liens en pilules côte à côte : l'interrupteur de langue du sommaire. */
 .tabs {
   display: inline-flex;
   align-items: center;
@@ -230,6 +229,103 @@ a {
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.04em;
+}
+
+.nav-desktop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.nav-phone {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.m-menu {
+  position: relative;
+}
+.m-menu summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  list-style: none;
+  cursor: pointer;
+}
+.m-menu summary::-webkit-details-marker {
+  display: none;
+}
+.m-drop {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 230px;
+  padding: 8px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
+}
+.m-drop a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: var(--radius-s);
+  color: var(--ink);
+  font-size: 16px;
+  text-decoration: none;
+}
+.m-drop a[aria-current] {
+  color: var(--brass-text);
+}
+
+/* — Les escales en points (le voyage, les fiches) : déjà vues, en laiton ; l'escale courante, plus grosse — */
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+}
+.dot span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1.5px solid var(--muted);
+  transition: transform 0.2s;
+}
+.dot.done span {
+  border-color: var(--brass);
+  background: var(--brass);
+}
+.dot[aria-current] span {
+  width: 13px;
+  height: 13px;
+  border-color: var(--brass);
+  background: var(--brass);
+}
+.dot:hover span {
+  transform: scale(1.35);
 }
 
 /* — Une pastille (la pile d'un projet), sur le papier des pages de lecture — */
@@ -329,8 +425,12 @@ a {
   .brand__name {
     font-size: 28px;
   }
-  .brand__who {
+  .brand__who,
+  .nav-desktop {
     display: none;
+  }
+  .nav-phone {
+    display: flex;
   }
 }
 

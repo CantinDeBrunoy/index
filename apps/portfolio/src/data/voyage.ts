@@ -233,6 +233,8 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     statusSoon: "Bientôt en ligne",
     statusDownload: "À télécharger",
     backTo: "Revenir : {place}",
+    /** Au milieu de la barre des escales : {i} l'escale, {n} leur nombre, {place} son lieu. */
+    where: "Escale {i} / {n} · {place}",
   },
   en: {
     introLabel: "Index · since 2022",
@@ -254,6 +256,7 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     statusSoon: "Coming soon",
     statusDownload: "Download",
     backTo: "Back: {place}",
+    where: "Stop {i} / {n} · {place}",
   },
 };
 

@@ -175,9 +175,7 @@ const DEMOS: Demo[] = [
       await hand.wait(1800);
       await hand.scroll(-1800, 1500);
       await hand.wait(800);
-      await hand.tap(page.locator("[data-sommaire-open]"));
-      await hand.wait(1400);
-      await hand.tap(page.locator(".sommaire__site").getByRole("link", { name: /^Les projets/ }));
+      await hand.tap(page.locator(".nav-desktop").getByRole("link", { name: "Les projets" }));
       await hand.wait(2500);
       await hand.hover(page.locator(".app-chip").nth(1), 900);
       await hand.wait(1200);

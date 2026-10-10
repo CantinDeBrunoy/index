@@ -1,12 +1,14 @@
 /**
- * L'accueil du copilote (components/voyage/CopiloteAccueil.astro et CopiloteTuto.astro), au premier départ
- * seulement (« Décoller », ou l'escale 1 ouverte directement) : il accueille et donne le tuto, les deux façons
- * de visiter. « Faire le voyage », la croix ou Échap le rangent ; partir de l'escale aussi. Le navigateur s'en
- * souvient (localStorage) : aux visites suivantes, il ne revient pas.
+ * Le copilote du voyage (components/voyage/Copilote.astro, CopiloteAccueil.astro et CopiloteTuto.astro).
+ * - Au premier départ seulement (« Décoller », ou l'escale 1 ouverte directement) : il accueille et donne le
+ *   tuto, les deux façons de visiter. « Faire le voyage », la croix ou Échap le rangent ; partir de l'escale
+ *   aussi. Le navigateur s'en souvient (localStorage) : aux visites suivantes, il reste rangé d'emblée.
+ * - Rangé, à chaque escale : le « ? » de la barre des escales. Un clic dessus rouvre le tuto ;
+ *   « Continuer le voyage », la croix, Échap ou un clic ailleurs le referment.
  * Il suit le voyage par l'évènement « voyage:escale » de scripts/voyage.ts : ce module se charge avant lui.
  */
 
-/** Le temps qu'il file dans le coin, puis celui où l'anneau bat plus fort. */
+/** Le temps qu'il file vers le « ? », puis celui où l'anneau bat plus fort. */
 const BYE_MS = 750;
 const NUDGE_MS = 4000;
 const SEEN_KEY = "index:copilote-accueil";
@@ -29,34 +31,64 @@ function rememberWelcome() {
 
 function start(root: HTMLElement) {
   const welcome = root.querySelector<HTMLElement>("[data-copilote-accueil]");
-  if (!welcome) return;
   const stops = [...root.querySelectorAll<HTMLElement>("[data-stop]")];
   /** L'escale affichée ; -1 avant la première. */
   let current = -1;
+  let open: HTMLElement | null = null;
+
+  const dockOf = (wrap: HTMLElement) => wrap.querySelector<HTMLButtonElement>("[data-copilote-dock]")!;
+  const helpOf = (wrap: HTMLElement) => wrap.querySelector<HTMLElement>("[data-copilote-help]")!;
+
+  /** Le tuto qu'il rouvre depuis le « ? ». */
+  const closeHelp = (focusDock = false) => {
+    if (!open) return;
+    helpOf(open).hidden = true;
+    const dock = dockOf(open);
+    dock.setAttribute("aria-expanded", "false");
+    if (focusDock) dock.focus();
+    open = null;
+  };
+  const openHelp = (wrap: HTMLElement) => {
+    closeHelp();
+    helpOf(wrap).hidden = false;
+    dockOf(wrap).setAttribute("aria-expanded", "true");
+    open = wrap;
+  };
 
   /** L'accueil, à l'escale 1. Son cartel attend la fin de l'accueil : inerte, et masqué par le CSS. */
-  const welcoming = () => !welcome.hidden;
-  const welcomeCard = welcome.closest("[data-stop]")?.querySelector<HTMLElement>(".cartel") ?? null;
+  const welcoming = () => !!welcome && !welcome.hidden;
+  const welcomeCard = welcome?.closest("[data-stop]")?.querySelector<HTMLElement>(".cartel") ?? null;
   const greet = () => {
+    if (!welcome) return;
     rememberWelcome();
     welcome.classList.remove("bye");
     welcome.hidden = false;
+    root.classList.add("copilote-accueil");
     if (welcomeCard) welcomeCard.inert = true;
   };
-  const away = () => {
-    welcome.hidden = true;
-    welcome.classList.remove("bye");
+  const dock = (animate: boolean) => {
+    root.classList.remove("copilote-accueil");
     if (welcomeCard) welcomeCard.inert = false;
+    if (!animate) return;
+    root.classList.add("copilote-arrive");
+    window.setTimeout(() => root.classList.remove("copilote-arrive"), 900);
   };
-  /** Il se range : en filant dans le coin (gently), puis l'anneau de l'escale bat plus fort ; ou d'un coup quand on quitte l'escale. */
+  /** Il se range : en filant vers le « ? » (gently), ou d'un coup quand on quitte l'escale. */
   const dismiss = (gently: boolean) => {
-    if (!welcoming()) return;
-    if (!gently) return away();
+    if (!welcome || !welcoming()) return;
+    if (!gently) {
+      welcome.hidden = true;
+      welcome.classList.remove("bye");
+      dock(false);
+      return;
+    }
     welcome.classList.add("bye");
     const stop = welcome.closest<HTMLElement>("[data-stop]");
     window.setTimeout(() => {
       if (!welcome.classList.contains("bye")) return;
-      away();
+      welcome.hidden = true;
+      welcome.classList.remove("bye");
+      dock(true);
       if (current !== 1 || !stop) return;
       stop.classList.add("nudge");
       window.setTimeout(() => stop.classList.remove("nudge"), NUDGE_MS);
@@ -67,6 +99,7 @@ function start(root: HTMLElement) {
     const { i } = (event as CustomEvent<{ i: number }>).detail;
     const from = current;
     current = i;
+    closeHelp();
     for (const stop of stops) stop.classList.remove("nudge");
     if (welcoming() && i !== 1) dismiss(false);
     // Le premier départ : on arrive à l'escale 1 depuis le départ, ou la page s'ouvre sur elle.
@@ -74,11 +107,29 @@ function start(root: HTMLElement) {
   });
 
   root.addEventListener("click", (event) => {
-    if ((event.target as Element).closest("[data-copilote-voyage], [data-copilote-fermer]")) dismiss(true);
+    const target = event.target as Element;
+    const dockButton = target.closest<HTMLElement>("[data-copilote-dock]");
+    if (dockButton) {
+      const wrap = dockButton.closest<HTMLElement>("[data-copilote]")!;
+      if (open === wrap) closeHelp();
+      else openHelp(wrap);
+      return;
+    }
+    if (target.closest("[data-copilote-close]")) {
+      closeHelp(true);
+      return;
+    }
+    if (target.closest("[data-copilote-voyage], [data-copilote-fermer]")) {
+      dismiss(true);
+      return;
+    }
+    if (open && !open.contains(target)) closeHelp();
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && welcoming()) dismiss(true);
+    if (event.key !== "Escape") return;
+    if (open) closeHelp(true);
+    else if (welcoming()) dismiss(true);
   });
 }
 

@@ -1,0 +1,222 @@
+---
+/**
+ * Le copilote rangé, à une escale : un « ? » dans la barre des escales, et la bulle qu'il ouvre quand on clique
+ * dessus, avec le tuto (les deux façons de visiter) ; lui en dépasse, dans la tenue de l'escale (elle se voit).
+ * Au bout de la barre sur ordinateur, entre le retour et l'escale suivante sur téléphone. Il ne se montre
+ * qu'avec le script du voyage (scripts/copilote.ts).
+ */
+import { COPILOTE, TENUES } from "../../data/copilote";
+import type { Lang } from "../../i18n/voyage";
+import CopiloteTuto from "./CopiloteTuto.astro";
+
+interface Props {
+  lang: Lang;
+  /** Le numéro de l'escale, de 1 à 10. */
+  n: number;
+  /** La scène de l'escale : elle choisit la tenue. */
+  scene: string;
+}
+
+const { lang, n, scene } = Astro.props;
+if (!TENUES.includes(scene)) throw new Error(`Copilote sans tenue pour la scène : ${scene}`);
+const id = `copilote-${n}`;
+const loop = `/voyage/copilote/${scene}.webp`;
+const still = `/voyage/copilote/${scene}-fixe.webp`;
+---
+
+<div class="copilote" data-copilote>
+  <button type="button" class="dock" data-copilote-dock aria-expanded="false" aria-controls={id} aria-label={COPILOTE[lang].dock}>?</button>
+  <aside class="help" id={id} data-copilote-help aria-labelledby={`${id}-titre`} hidden>
+    <div class="help__peek" aria-hidden="true">
+      <picture>
+        <source media="(prefers-reduced-motion: reduce)" srcset={still} />
+        <img src={loop} alt="" width="400" height="400" loading="lazy" decoding="async" />
+      </picture>
+    </div>
+    <CopiloteTuto lang={lang} mode="aide" titleId={`${id}-titre`} />
+  </aside>
+</div>
+
+<style>
+  /* Sans le script du voyage, pas de copilote : les escales se lisent à la suite. */
+  .copilote {
+    position: relative;
+    display: none;
+    flex: none;
+  }
+  :global(.voyage.is-ready) .copilote {
+    display: block;
+  }
+  /* Pendant qu'il accueille, à l'escale 1, il n'est pas encore rangé. */
+  :global(.voyage.copilote-accueil) .copilote {
+    visibility: hidden;
+  }
+
+  /* — Le « ? » : un rond au bout de la barre des escales, qui y prend sa taille (--dock). — */
+  .dock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--dock, 48px);
+    height: var(--dock, 48px);
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--brass);
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-style: italic;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+  .dock:hover {
+    border-color: var(--brass);
+  }
+  .dock[aria-expanded="true"] {
+    border-color: var(--brass);
+    box-shadow: 0 0 0 3px var(--brass);
+  }
+  :global(.voyage.copilote-arrive) .dock {
+    animation: dock-in 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  }
+
+  /* — Sa bulle, avec le tuto : crème sur toutes les escales, épais liseré de laiton, grosse pointe vers le
+     « ? », et lui qui dépasse en haut. Elle grandit avec l'écran (--u, comme l'affiche du cartel) et s'ancre
+     sur le « ? », au bout de la barre : elle le dépasse de --overhang à droite, la pointe tombe en son centre. — */
+  .help {
+    --overhang: 24px;
+    --card: #fbf7f0;
+    --ink: #241e18;
+    --muted: #5a4f44;
+    --line: #e3d8c8;
+    --brass-text: #84652f;
+    position: absolute;
+    z-index: 3;
+    right: calc(-1 * var(--overhang));
+    bottom: calc(100% + 22 * var(--u));
+    display: flex;
+    flex-direction: column;
+    gap: calc(12 * var(--u));
+    box-sizing: border-box;
+    width: max(380px, calc(460 * var(--u)));
+    padding: calc(28 * var(--u)) calc(30 * var(--u)) calc(22 * var(--u));
+    border: 3px solid var(--brass);
+    border-radius: calc(26 * var(--u));
+    background: var(--card);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+    color: var(--ink);
+    transform-origin: 90% 100%;
+    animation: bubble-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  }
+  .help[hidden] {
+    display: none;
+  }
+  /* La pointe : un carré tourné, bordé de laiton sur ses deux côtés du bas, centré sous le « ? ». */
+  .help::before {
+    content: "";
+    position: absolute;
+    left: calc(max(380px, 460 * var(--u)) - var(--overhang) - var(--dock, 48px) / 2 - 15 * var(--u) - 3px);
+    bottom: calc(-15 * var(--u) - 2px);
+    width: calc(30 * var(--u));
+    height: calc(30 * var(--u));
+    border: 3px solid var(--brass);
+    border-top: 0;
+    border-left: 0;
+    background: var(--card);
+    transform: rotate(45deg);
+  }
+  .help__peek {
+    position: absolute;
+    right: calc(22 * var(--u));
+    top: calc(-120 * var(--u));
+    width: calc(150 * var(--u));
+    height: calc(150 * var(--u));
+    pointer-events: none;
+    animation: peek-in 0.9s 0.05s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+  }
+  .help__peek img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  @keyframes dock-in {
+    from {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes bubble-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes peek-in {
+    from {
+      opacity: 0;
+      transform: translate(60px, 50px) rotate(18deg) scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* — Le téléphone : dans la rangée du bas, entre le retour et l'escale suivante ; la bulle au-dessus de la
+     rangée, sur toute la largeur, la pointe vers le « ? » — */
+  @media (max-width: 700px) {
+    .copilote {
+      position: static;
+      order: 1;
+    }
+    .dock {
+      width: 52px;
+      height: 52px;
+      background: rgba(14, 16, 24, 0.85);
+    }
+    .help {
+      left: 16px;
+      right: 16px;
+      bottom: calc(100% - 4px);
+      gap: 9px;
+      width: auto;
+      padding: 20px 20px 16px;
+      border-radius: 20px;
+      transform-origin: 20% 100%;
+    }
+    /* Le « ? » est à 104 px du bord : 16 de marge, 52 de retour, 10 d'écart, 26 de demi-rond. */
+    .help::before {
+      left: 70px;
+      bottom: -17px;
+      width: 30px;
+      height: 30px;
+    }
+    .help__peek {
+      right: 8px;
+      top: -108px;
+      width: 130px;
+      height: 130px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .help,
+    .help__peek,
+    :global(.voyage.copilote-arrive) .dock {
+      animation: none;
+    }
+  }
+</style>

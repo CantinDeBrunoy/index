@@ -1,7 +1,8 @@
 ---
 /**
- * Le tuto du copilote, dans sa bulle d'accueil à l'escale 1 : les deux façons de visiter, le voyage (l'objet
- * entouré d'or) ou le détail des projets (la fiche, « Les projets »).
+ * Le tuto du copilote : les deux façons de visiter, le voyage (l'objet entouré d'or) ou le détail des
+ * projets (la fiche, « Les projets »). Le même dans sa bulle d'accueil, à l'escale 1 (« accueil »), et
+ * dans celle qu'il rouvre quand on clique sur lui, à n'importe quelle escale (« aide »).
  * Ses textes sont à la taille d'une bulle compacte ; seul l'accueil sur grand écran les agrandit.
  */
 import { COPILOTE } from "../../data/copilote";
@@ -9,23 +10,27 @@ import { ROUTES, typo, type Lang } from "../../i18n/voyage";
 
 interface Props {
   lang: Lang;
+  mode: "accueil" | "aide";
   /** L'identifiant du titre, que la bulle désigne par aria-labelledby. */
   titleId: string;
 }
 
-const { lang, titleId } = Astro.props;
+const { lang, mode, titleId } = Astro.props;
 const c = COPILOTE[lang];
+const welcome = mode === "accueil";
+// La croix et le bouton principal : l'accueil se range (et l'anneau bat plus fort), l'aide se referme.
+const dismiss = welcome ? { "data-copilote-fermer": "" } : { "data-copilote-close": "" };
+const main = welcome ? { "data-copilote-voyage": "" } : { "data-copilote-close": "" };
 ---
 
-<!-- La croix et le bouton principal rangent l'accueil (et l'anneau bat plus fort). -->
-<button type="button" class="x" aria-label={c.close} data-copilote-fermer>
+<button type="button" class="x" aria-label={c.close} {...dismiss}>
   <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
     <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
   </svg>
 </button>
 <p class="who">{c.who}</p>
-<p class="title" id={titleId}>{typo(lang, c.hello)}</p>
-<p class="text">{typo(lang, c.intro)}</p>
+<p class="title" id={titleId}>{typo(lang, welcome ? c.hello : c.again)}</p>
+<p class="text">{typo(lang, welcome ? c.intro : c.againIntro)}</p>
 <ul class="ways">
   <li>
     <span class="way-ic" aria-hidden="true"><span class="mini-ring"></span></span>
@@ -48,10 +53,17 @@ const c = COPILOTE[lang];
   </li>
 </ul>
 <div class="actions">
-  <button type="button" class="go" data-copilote-voyage>{c.go}</button>
+  <button type="button" class="go" {...main}>{welcome ? c.go : c.goOn}</button>
   <a class="pill" href={ROUTES.projets[lang]}>{c.projects}</a>
 </div>
-<p class="lost">{typo(lang, c.lost)}</p>
+{
+  welcome && (
+    <p class="lost">
+      <span class="d">{typo(lang, c.lost)}</span>
+      <span class="m">{typo(lang, c.lostPhone)}</span>
+    </p>
+  )
+}
 
 <style>
   .x {

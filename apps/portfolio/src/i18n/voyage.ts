@@ -1,6 +1,6 @@
 /**
  * Le site « le voyage », en français et en anglais : les adresses de chaque page dans les deux
- * langues, et les textes communs à toutes les pages (en-tête, sommaire, pied de page).
+ * langues, et les textes communs à toutes les pages (en-tête, menu, pied de page).
  * Le français est à la racine, l'anglais sous /en.
  */
 
@@ -47,9 +47,8 @@ export function inWords(lang: Lang, n: number, upper = false): string {
 }
 
 /**
- * Les pages du sommaire (components/voyage/Sommaire.astro), dans l'ordre : le voyage, les projets, à propos.
- * « Les projets » est aussi le hub : chaque app s'ouvre de sa rangée de raccourcis (l'ancienne page « Les
- * apps » y redirige).
+ * Les onglets de l'en-tête, dans l'ordre : le voyage, les projets, à propos. « Les projets » est aussi le
+ * hub : chaque app s'ouvre de sa rangée de raccourcis (l'ancienne page « Les apps » y redirige).
  */
 export const TABS = ["voyage", "projets", "apropos"] as const satisfies readonly PageKey[];
 export type TabKey = (typeof TABS)[number];
@@ -59,19 +58,11 @@ const fr = {
   siteDescription:
     "Le portfolio et le hub de Cantin Roquier, ingénieur développeur : chaque app s'ouvre d'ici, chaque projet a sa fiche.",
   skip: "Aller au contenu",
+  tabsAria: "Le site",
   tabs: { voyage: "Le voyage", projets: "Les projets", apropos: "À propos" },
   langAria: "Langue",
   langNames: { fr: "Français", en: "English" },
-  /** Le sommaire, seul bouton de l'en-tête : les escales du voyage ({n} : leur nombre), les pages, la langue. */
-  sommaire: "Sommaire",
-  sommaireClose: "Fermer le sommaire",
-  sommaireVoyage: "Le voyage, en {n} escales",
-  sommaireSite: "Le site",
-  sommaireAbout: {
-    voyage: "Le départ, puis les escales une à une",
-    projets: "Tous les projets, et les apps à ouvrir",
-    apropos: "Qui je suis, d'où je viens",
-  },
+  menu: "Ouvrir le menu",
   legal: "Mentions légales",
   /** Au pied des pages : la connexion du propriétaire (@index/auth), qui ouvre ses vraies données dans les apps. */
   login: "Connexion",
@@ -96,18 +87,11 @@ const en: Strings = {
   siteDescription:
     "Cantin Roquier's portfolio and hub, a software engineer: every app opens from here, every project has its page.",
   skip: "Skip to content",
+  tabsAria: "Site",
   tabs: { voyage: "The journey", projets: "Projects", apropos: "About" },
   langAria: "Language",
   langNames: { fr: "Français", en: "English" },
-  sommaire: "Contents",
-  sommaireClose: "Close the contents",
-  sommaireVoyage: "The journey, in {n} stops",
-  sommaireSite: "The site",
-  sommaireAbout: {
-    voyage: "The departure, then each stop in turn",
-    projets: "Every project, and the apps to open",
-    apropos: "Who I am, where I come from",
-  },
+  menu: "Open the menu",
   legal: "Legal notice",
   login: "Sign in",
   logout: "Sign out",

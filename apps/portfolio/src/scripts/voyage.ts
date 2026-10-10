@@ -155,8 +155,6 @@ function start(root: HTMLElement) {
   document.addEventListener("keydown", (event) => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     if ((event.target as Element).closest("input, textarea, select, [contenteditable]")) return;
-    // Le sommaire ouvert garde les flèches pour lui.
-    if (document.querySelector("dialog[open]")) return;
     if (event.key === "ArrowRight") go(current + 1);
     else if (event.key === "ArrowLeft") go(current - 1, true);
   });
