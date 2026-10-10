@@ -12,9 +12,13 @@ on:
 permissions:
   contents: read
 
+# Une PR : un nouveau push annule la vérification en cours, qui ne servirait plus.
+# Sur main, chaque push a la sienne et va au bout : --affected ne compare un push qu'au
+# précédent (le « before » de l'événement), une vérification annulée ou remplacée ne
+# serait refaite par aucune autre.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
