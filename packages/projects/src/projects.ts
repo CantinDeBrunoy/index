@@ -108,7 +108,7 @@ export const PROJECTS = [
     app: "magellan",
     host: "Cloudflare Workers",
     pitch: {
-      fr: "Un globe 3D qui colorie les pays visités et trace chaque voyage étape par étape, sans compte ni serveur.",
+      fr: "Un globe 3D qui colorie les pays visités et trace chaque voyage étape par étape.",
     },
     stack: ["Expo", "React Native", "TypeScript", "Three.js", "IndexedDB"],
     links: { demo: MAGELLAN_URL, code: code("magellan") },

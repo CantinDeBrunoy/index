@@ -71,7 +71,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "La Terre",
       alt: "La Terre tourne : les pays de la démo de Magellan en laiton, les voyages tracés en arcs depuis Paris ; à côté, un avion de ligne attend, incliné vers elle.",
       kind: "App web et mobile · 2026 · En ligne",
-      pitch: "Un globe qui colorie les pays que j'ai traversés et trace chaque voyage, sans compte ni serveur.",
+      pitch: "Un globe qui colorie les pays que j'ai traversés et trace chaque voyage.",
       cta: "Prendre l'avion",
     },
     hublot: {
@@ -146,7 +146,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "The Earth",
       alt: "The Earth turns: the countries of the Magellan demo in brass, trips drawn as arcs from Paris; nearby, an airliner waits, banking towards it.",
       kind: "Web and mobile app · 2026 · Live",
-      pitch: "A globe that colours in the countries I've travelled through and traces each trip, with no account and no server.",
+      pitch: "A globe that colours in the countries I've travelled through and traces each trip.",
       cta: "Board the plane",
     },
     hublot: {
