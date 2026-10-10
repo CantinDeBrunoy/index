@@ -808,7 +808,7 @@ ${nextCard}
 <p style="margin:0;font-size:15px;color:var(--muted)">${fill(t.question, { name: e.name })} <a href="mailto:${MAIL}" style="color:var(--brass-text)">${MAIL}</a></p>
 <a class="pill" href="${GH}" target="_blank" rel="noopener">GitHub ↗</a>
 </footer>
-${colophon()}
+<p class="mono" style="margin:0;padding:0 0 40px;font-size:12px" aria-hidden="true">&nbsp;</p>
 </main>
 </div>`;
       write(e.ficheBase, page(L.lang, fill(t.titleFiche, { name: e.name }), body, 1440, H(e.ficheBase, f.h), READ_STYLE));

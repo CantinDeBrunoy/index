@@ -2,21 +2,23 @@
 /**
  * Le bas de page : le lien vers les mentions légales, et la connexion du propriétaire (scripts/owner.ts),
  * invisible tant que le pointeur ne passe pas dessus (ou que le clavier ne l'atteint pas).
+ * Les fiches n'ont que la connexion (legal={false}) : les mentions restent au bas du carnet et d'« À propos ».
  */
 import { ROUTES, STRINGS, type Lang } from "../../i18n/voyage";
 
 interface Props {
   lang: Lang;
+  legal?: boolean;
 }
 
-const { lang } = Astro.props;
+const { lang, legal = true } = Astro.props;
 const t = STRINGS[lang];
 ---
 
 <p class="colophon">
-  <a href={ROUTES.mentions[lang]}>{t.legal}</a>
+  {legal && <a href={ROUTES.mentions[lang]}>{t.legal}</a>}
   <span class="colophon__owner">
-    <span aria-hidden="true">·</span>
+    {legal && <span aria-hidden="true">·</span>}
     <a href="/api/auth/login" rel="nofollow" data-auth={JSON.stringify({ logout: t.logout, signedIn: t.signedIn })}>{t.login}</a>
   </span>
 </p>
