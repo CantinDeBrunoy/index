@@ -94,7 +94,7 @@ export const PROJECTS = [
     kind: "archive",
     badges: ["ecole"],
     pitch: {
-      fr: "Une app mobile qui met en relation des voyageurs solo partageant destinations et centres d'intérêt.",
+      fr: "Une app mobile pour découvrir les lieux d'une ville, à garder ou à passer d'un geste.",
     },
     stack: ["Flutter", "Dart", "Firebase", "Figma"],
     links: {},

@@ -153,7 +153,7 @@ const MONTAGES: Montage[] = [
         { bg: "#fbf8f3", ink: "#1d2533", muted: "#5d6575", accent: "#d9952c", card: "#ffffff", line: "rgba(0,0,0,.08)" },
         ["#d9952c", "#9ec9e8", "#5cb85c", "#e05a4f", "#4a90c2"],
       );
-      await stage.title({ name: "Visit Match", tag: "Les voyageurs solo qui partagent les mêmes envies.", meta: ["2023", "Projet d'école", "Flutter · Firebase"] });
+      await stage.title({ name: "Visit Match", tag: "Les lieux d'une ville, à garder ou à passer d'un geste.", meta: ["2023", "Projet d'école", "Flutter · Firebase"] });
       await wait(4200);
       await stage.device("phone");
       // Chaque séquence : [début, fin] dans l'enregistrement, et sa vitesse.

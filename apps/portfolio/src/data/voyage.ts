@@ -2,7 +2,7 @@
  * Le voyage : l'accueil du site, dix escales, une par projet, dont chacune mène à la suivante.
  * Ici le décor de chaque escale (sa scène, ses couleurs, le point à cliquer) et ses textes en
  * français et en anglais. Les liens (l'app, le code) et le numéro viennent de @index/projects.
- * Textes relus par Cantin le 10 octobre 2026 (accueil, accroches) ; Visit Match attend la sienne.
+ * Textes relus par Cantin le 10 octobre 2026 (accueil, accroches).
  */
 
 import type { Project } from "@index/projects";
@@ -92,7 +92,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "Au pied des monuments",
       alt: "Au pied des monuments : la tour Eiffel et l'arc de triomphe, reliés par un arc de laiton sur lequel deux voyageurs se rejoignent ; la pelouse et les arbres vert sauge.",
       kind: "App mobile · 2023 · Archive",
-      pitch: "Une app pour que des voyageurs solo qui partagent les mêmes envies se trouvent sur place.",
+      pitch: "Une app pour découvrir les lieux d'une ville : on garde ou on passe chacun d'un geste, et on range ses favoris dans un carnet de voyage.",
       cta: "Prendre la route",
     },
     "gym-picker": {
@@ -167,7 +167,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "At the foot of the monuments",
       alt: "At the foot of the monuments: the Eiffel Tower and the Arc de Triomphe, joined by a brass arc on which two travellers meet; the lawn and the sage-green trees.",
       kind: "Mobile app · 2023 · Archive",
-      pitch: "An app that helps solo travellers with the same interests find each other on the spot.",
+      pitch: "An app to discover a city's sights: keep or skip each one with a swipe, and file your favourites in a travel notebook.",
       cta: "Hit the road",
     },
     "gym-picker": {

@@ -138,7 +138,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     },
     stats: [
       ["5 ans", "d'alternance : l'école et la STIME en même temps"],
-      ["3 000+", "points de vente utilisent l'app mobile à laquelle j'ai contribué en alternance"],
+      ["3 000+", "points de vente et des dizaines de milliers d'employés utilisent l'app mobile à laquelle j'ai contribué en alternance"],
       ["1 700", "magasins comptent sur l'app que je développe pour commander leurs produits frais"],
       [String(projects.length), `projets à côté du travail : ${inWords("fr", SCHOOL)} en école, ${inWords("fr", OWN)} sur mon temps libre`],
     ],
@@ -234,7 +234,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     },
     stats: [
       ["5 years", "of work-study: school and STIME at the same time"],
-      ["3,000+", "stores use the mobile app I worked on as an apprentice"],
+      ["3,000+", "stores and tens of thousands of employees use the mobile app I worked on as an apprentice"],
       ["1,700", "stores rely on the app I build to order their fresh products"],
       [String(projects.length), `projects alongside work: ${inWords("en", SCHOOL)} at school, ${inWords("en", OWN)} in my free time`],
     ],
