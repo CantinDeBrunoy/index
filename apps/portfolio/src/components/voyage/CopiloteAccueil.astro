@@ -2,8 +2,8 @@
 /**
  * L'accueil du copilote, à la première escale : il arrive en flottant dans le coin libre, en combinaison
  * spatiale, et donne le tuto (les deux façons de visiter : le voyage, ou le détail des projets).
- * « Faire le voyage » ou la croix le rangent à côté du bouton retour. Il accueille à chaque départ (le
- * bouton « Décoller ») : scripts/copilote.ts décide de l'afficher. Caché, il ne télécharge rien.
+ * « Faire le voyage » ou la croix le rangent : il file dans le coin et s'en va. Il n'accueille qu'au premier
+ * départ (le bouton « Décoller ») : scripts/copilote.ts décide de l'afficher. Caché, il ne télécharge rien.
  */
 import type { Lang } from "../../i18n/voyage";
 import CopiloteTuto from "./CopiloteTuto.astro";
@@ -29,7 +29,7 @@ const { lang } = Astro.props;
         <img src="/voyage/copilote/espace.webp" alt="" width="400" height="400" loading="lazy" decoding="async" />
       </picture>
     </div>
-    <CopiloteTuto lang={lang} mode="accueil" titleId="copilote-accueil-titre" />
+    <CopiloteTuto lang={lang} titleId="copilote-accueil-titre" />
   </aside>
 </div>
 

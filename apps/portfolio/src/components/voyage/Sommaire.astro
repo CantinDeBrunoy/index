@@ -1,0 +1,424 @@
+---
+/**
+ * Le sommaire, seul bouton de l'en-tête sur toutes les pages. Il ouvre le plan du site en plein écran : les
+ * escales du voyage en vignettes (on saute à celle qu'on veut), les pages, la langue. Sur le bouton, où l'on
+ * en est du voyage : les escales en points, « 2/10 » sur téléphone. Sur le voyage, il suit l'escale affichée
+ * et ses liens y restent, sans recharger la page (scripts/sommaire.ts, scripts/voyage.ts).
+ * Sans script, le bouton mène à son ancre (#sommaire), et le sommaire s'affiche par :target.
+ */
+import { getProject } from "@index/projects";
+import { FICHE } from "../../data/fiches";
+import { fill, STOP_TEXTS, STOPS } from "../../data/voyage";
+import { inWords, LANGS, ROUTES, STRINGS, TABS, typo, type Lang, type TabKey } from "../../i18n/voyage";
+
+interface Props {
+  lang: Lang;
+  /** La même page dans chaque langue. */
+  alternates: Record<Lang, string>;
+  /** L'escale où l'on en est (1 à 10 ; 0 au départ) ; aucune hors du voyage et des fiches. */
+  here?: number | undefined;
+  /** Sur le voyage : ses liens passent d'une escale à l'autre sans recharger, et la langue garde l'escale. */
+  voyage?: boolean;
+  /** La page du site ; `exact` à faux pour une page qui en dépend (une fiche, sous « Les projets »). */
+  current?: TabKey | undefined;
+  exact?: boolean;
+}
+
+const { lang, alternates, here, voyage = false, current, exact = true } = Astro.props;
+const t = STRINGS[lang];
+const stops = STOPS.map((stop, k) => ({
+  n: k + 1,
+  name: getProject(stop.slug)!.name,
+  place: STOP_TEXTS[lang][stop.slug]!.place,
+  scene: stop.scene,
+  bg: stop.bg,
+}));
+const total = stops.length;
+const stopHref = (n: number) => (voyage ? `#escale-${n}` : `${ROUTES.voyage[lang]}#escale-${n}`);
+const currentOf = (key: TabKey) => (key === current ? (exact ? "page" : "true") : undefined);
+---
+
+<div class="sommaire" data-sommaire data-total={total}>
+  <a class="sommaire__open" href="#sommaire" aria-haspopup="dialog" data-sommaire-open>
+    <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+    </svg>
+    <span>{t.sommaire}</span>
+    {
+      here !== undefined && (
+        <span class="sommaire__where" aria-hidden="true" hidden={here === 0} data-where>
+          <span class="sommaire__dots">
+            {stops.map((s) => (
+              <i class:list={[{ done: s.n < here, now: s.n === here }]} data-dot={s.n} />
+            ))}
+          </span>
+          <span class="sommaire__count" data-count>
+            {here}/{total}
+          </span>
+        </span>
+      )
+    }
+  </a>
+
+  <dialog class="sommaire__panel pal-night" id="sommaire" aria-labelledby="sommaire-titre" data-sommaire-panel>
+    <div class="sommaire__top">
+      <h2 class="sommaire__title" id="sommaire-titre">{t.sommaire}</h2>
+      <a class="sommaire__close" href="#" aria-label={t.sommaireClose} data-sommaire-close>
+        <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+        </svg>
+      </a>
+    </div>
+
+    <div class="sommaire__grid">
+      <section aria-labelledby="sommaire-voyage">
+        <h3 class="label" id="sommaire-voyage">{fill(t.sommaireVoyage, { n: inWords(lang, total) })}</h3>
+        <ol class="sommaire__stops">
+          {
+            stops.map((s) => (
+              <li>
+                <a
+                  href={stopHref(s.n)}
+                  data-go={voyage ? s.n : undefined}
+                  data-soft={voyage ? "" : undefined}
+                  data-stop-link={s.n}
+                  aria-current={s.n === here ? "location" : undefined}
+                >
+                  <span class="sommaire__thumb" style={`background: ${s.bg}`}>
+                    <img src={`/voyage/stills/${s.scene}-640.webp`} alt="" width="640" height="360" loading="lazy" decoding="async" />
+                  </span>
+                  <span class="sommaire__stop">
+                    <span class="sommaire__place">
+                      {FICHE[lang].stop} {s.n} · {s.place}
+                    </span>
+                    <span class="sommaire__name">{s.name}</span>
+                  </span>
+                </a>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <section class="sommaire__site" aria-labelledby="sommaire-site">
+        <h3 class="label" id="sommaire-site">{t.sommaireSite}</h3>
+        <ul>
+          {
+            TABS.map((key) => (
+              <li>
+                <a
+                  href={ROUTES[key][lang]}
+                  data-go={voyage && key === "voyage" ? 0 : undefined}
+                  data-soft={voyage && key === "voyage" ? "" : undefined}
+                  aria-current={currentOf(key)}
+                >
+                  <span class="sommaire__page">{t.tabs[key]}</span>
+                  <small>{typo(lang, t.sommaireAbout[key])}</small>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <nav aria-label={t.langAria} class="tabs lang">
+          {
+            LANGS.map((l) => (
+              <a
+                href={l === lang ? undefined : alternates[l]}
+                data-lang-link={voyage && l !== lang ? alternates[l] : undefined}
+                hreflang={l === lang ? undefined : l}
+                lang={l}
+                aria-current={l === lang ? "page" : undefined}
+              >
+                {t.langNames[l]}
+              </a>
+            ))
+          }
+        </nav>
+      </section>
+    </div>
+  </dialog>
+</div>
+
+<script>
+  import "../../scripts/sommaire";
+</script>
+
+<style>
+  /* — Le bouton : une pilule, les escales en points (sur téléphone, « 2/10 ») — */
+  .sommaire__open {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: border-color 0.2s;
+  }
+  .sommaire__open:hover {
+    border-color: var(--brass);
+  }
+  .sommaire__where {
+    display: inline-flex;
+    align-items: center;
+  }
+  .sommaire__where[hidden] {
+    display: none;
+  }
+  .sommaire__dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .sommaire__dots i {
+    display: block;
+    width: 6px;
+    height: 6px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--muted);
+    border-radius: var(--radius-pill);
+  }
+  .sommaire__dots i.done,
+  .sommaire__dots i.now {
+    border-color: var(--brass);
+    background: var(--brass);
+  }
+  .sommaire__dots i.now {
+    width: 10px;
+    height: 10px;
+  }
+  .sommaire__count {
+    display: none;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  /* — Le sommaire ouvert : plein écran, de nuit — */
+  .sommaire__panel {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 22px 40px 48px;
+    border: 0;
+    background: var(--night);
+    color: var(--ink);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .sommaire__panel[open],
+  .sommaire__panel:target {
+    display: flex;
+    flex-direction: column;
+  }
+  .sommaire__panel::backdrop {
+    background: var(--night);
+  }
+  :global(:root:has(.sommaire__panel[open])) {
+    overflow: hidden;
+  }
+  .sommaire__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+  }
+  .sommaire__title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-style: italic;
+    font-weight: 400;
+  }
+  .sommaire__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    color: var(--ink);
+  }
+  .sommaire__close:hover {
+    border-color: var(--brass);
+  }
+  .sommaire__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 40px 72px;
+    width: 100%;
+    max-width: 1440px;
+    margin: 28px auto 0;
+  }
+  .sommaire h3 {
+    margin: 0 0 14px;
+  }
+
+  /* Les escales : deux colonnes de vignettes ; celle où l'on en est, cerclée de laiton. */
+  .sommaire__stops {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sommaire__stops a {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px;
+    border-radius: var(--radius-m);
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .sommaire__stops a:hover {
+    background: var(--card);
+  }
+  .sommaire__stops a[aria-current] {
+    background: var(--card);
+    box-shadow: inset 0 0 0 1.5px var(--brass);
+  }
+  .sommaire__thumb {
+    flex: none;
+    width: 104px;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--radius-s);
+  }
+  .sommaire__thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .sommaire__stop {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .sommaire__place {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .sommaire__name {
+    font-family: var(--font-serif);
+    font-size: 27px;
+    line-height: 1;
+  }
+
+  /* Les pages : en grand, chacune avec ce qu'on y trouve ; puis la langue. */
+  .sommaire__site ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sommaire__site ul a {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .sommaire__page {
+    font-family: var(--font-serif);
+    font-size: 44px;
+    line-height: 1;
+    white-space: nowrap;
+    transition: color 0.2s;
+  }
+  .sommaire__site ul a:hover .sommaire__page,
+  .sommaire__site ul a[aria-current] .sommaire__page {
+    color: var(--brass);
+  }
+  .sommaire__site small {
+    max-width: 220px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.35;
+    text-align: right;
+  }
+  .sommaire__site .lang {
+    margin-top: 28px;
+  }
+  .sommaire__site .lang a {
+    padding: 0 16px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+
+  @media (max-width: 1100px) {
+    .sommaire__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  /* Sur téléphone : « 2/10 » à la place des points ; le sommaire, une colonne qui défile. */
+  @media (max-width: 700px) {
+    .sommaire__open {
+      padding: 0 16px;
+    }
+    .sommaire__dots {
+      display: none;
+    }
+    .sommaire__count {
+      display: inline;
+    }
+    .sommaire__panel {
+      padding: 8px 16px calc(32px + env(safe-area-inset-bottom));
+    }
+    .sommaire__title {
+      font-size: 28px;
+    }
+    .sommaire__grid {
+      gap: 32px;
+      margin-top: 16px;
+    }
+    .sommaire__stops {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+    .sommaire__thumb {
+      width: 76px;
+    }
+    .sommaire__name {
+      font-size: 23px;
+    }
+    .sommaire__page {
+      font-size: 34px;
+    }
+    /* Ce qu'on trouve sur la page passe sous son nom. */
+    .sommaire__site ul a {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 14px 0;
+    }
+    .sommaire__site small {
+      max-width: none;
+      text-align: left;
+    }
+  }
+</style>
