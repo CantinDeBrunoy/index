@@ -636,6 +636,13 @@ const T = (text: string) => typo(lang, text);
   .reprendre__pad:global(.is-empty) {
     border-color: transparent;
     background: var(--halo);
+    transition: opacity 0.2s;
+  }
+  /* Vide, il s'efface quand le copilote approche : on ne le voit pas à moitié caché sous lui. Posé, il réapparaît
+     d'un coup, sous la pastille qui le recouvre exactement. */
+  .reprendre__pad:global(.is-empty.is-arriving) {
+    opacity: 0;
+    transition-duration: 0.1s;
   }
   .reprendre__pad:global(.is-empty) picture {
     visibility: hidden;
