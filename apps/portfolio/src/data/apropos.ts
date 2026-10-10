@@ -22,7 +22,7 @@ export const NOW = built.getFullYear() + (built.getMonth() + (built.getDate() - 
 
 /** Le plan de ligne : l'axe des années, la bande de l'alternance, les stations de chaque ligne. */
 export const LINES = {
-  axis: [2019, Math.max(2027, Math.ceil(NOW))] as const,
+  axis: [2019, Math.max(2027, Math.floor(NOW) + 1)] as const,
   band: { from: 2020 + 8 / 12, to: 2025 + 8 / 12 },
   school: [
     { id: "dut", at: 2019 + 8 / 12 },

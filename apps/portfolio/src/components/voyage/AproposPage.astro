@@ -124,9 +124,10 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
             ))
           }
           <i class="metro__axis"></i>
+          {[...years, to].map((y) => <i class="metro__tick" style={`left: ${pct(y)}%`} />)}
           {
             years.map((y) => (
-              <span class="metro__year" style={`left: ${pct(y)}%`}>
+              <span class="metro__year" style={`left: ${pct(y + 0.5)}%`}>
                 {y}
               </span>
             ))
@@ -532,6 +533,14 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     right: -60px;
     left: -40px;
     border-top: 1px solid var(--line);
+  }
+  /* Un trait au 1er janvier, l'année au milieu de la sienne : une station de septembre tombe sous son année. */
+  .metro__tick {
+    position: absolute;
+    top: 545px;
+    width: 1px;
+    height: 8px;
+    background: var(--line);
   }
   .metro__year {
     position: absolute;
