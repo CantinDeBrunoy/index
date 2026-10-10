@@ -132,8 +132,10 @@ async function callback(request: Request, env: HubAuthEnv, ctx: WaitUntil | unde
         redirect_uri: `${url.origin}${STATE_PATH}/callback`,
       }),
     });
-    const { access_token: token } = (await exchange.json()) as { access_token?: string };
-    if (!token) throw new Error("GitHub n'a pas donné de jeton");
+    const answer = (await exchange.json()) as { access_token?: string; error?: string };
+    const token = answer.access_token;
+    // GitHub dit pourquoi (incorrect_client_credentials, bad_verification_code…) : ça va dans le journal.
+    if (!token) throw new Error(`GitHub n'a pas donné de jeton (HTTP ${exchange.status}, ${answer.error ?? "sans raison"})`);
     const profile = await fetchImpl("https://api.github.com/user", {
       headers: { accept: "application/vnd.github+json", authorization: `Bearer ${token}`, "user-agent": USER_AGENT, "x-github-api-version": "2022-11-28" },
     });
