@@ -1,8 +1,8 @@
 /**
  * Le copilote du voyage : un petit bonhomme d'argile qui accueille le visiteur à la première escale,
- * puis se range dans le « ? » de la barre des escales. Dans l'espace, il porte la combinaison ; dès la Terre,
- * il la laisse et s'habille pour chaque escale (sans le dire : sa tenue se voit). Un clic sur le « ? » rouvre
- * le tuto : les deux façons de visiter. Sur chaque fiche, il attend en bas à droite et ramène au voyage (ses
+ * puis se range au bout de la barre des escales. Dans l'espace, il porte la combinaison ; dès la Terre, il la
+ * laisse et s'habille pour chaque escale (sans le dire : sa tenue se voit). Un clic sur lui rouvre le tuto :
+ * les deux façons de visiter. Sur chaque fiche, il attend en bas à droite et ramène au voyage (ses
  * mots y sont dans data/fiches.ts). Ici, tout ce qu'il dit au voyage, en français et en anglais.
  * Les boucles animées sont dans /voyage/copilote/ (design/renders/copilote-site.mjs).
  * Les textes sont des brouillons, à réécrire.
@@ -32,8 +32,8 @@ const fr = {
   go: "Faire le voyage →",
   goOn: "Continuer le voyage →",
   projects: "Voir les projets",
-  lost: "Perdu en route ? Le « ? », en bas à droite, me rappelle.",
-  lostPhone: "Perdu ? Touche le « ? », en bas : je reviens.",
+  lost: "Perdu en route ? Je me range dans le coin.",
+  lostPhone: "Perdu ? Je me range en bas : touche-moi.",
   close: "Fermer",
   dock: "Ton copilote : comment visiter ?",
 };
@@ -53,8 +53,8 @@ const en: { [K in keyof typeof fr]: string } = {
   go: "Start the journey →",
   goOn: "Carry on →",
   projects: "See the projects",
-  lost: "Lost along the way? The “?” at the bottom right calls me back.",
-  lostPhone: "Lost? Tap the “?” at the bottom: I'll be back.",
+  lost: "Lost along the way? I'll wait in the corner.",
+  lostPhone: "Lost? I'll wait at the bottom: tap me.",
   close: "Close",
   dock: "Your co-pilot: how to visit?",
 };

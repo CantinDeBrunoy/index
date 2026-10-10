@@ -3,12 +3,12 @@
  * - Au premier départ seulement (« Décoller », ou l'escale 1 ouverte directement) : il accueille et donne le
  *   tuto, les deux façons de visiter. « Faire le voyage », la croix ou Échap le rangent ; partir de l'escale
  *   aussi. Le navigateur s'en souvient (localStorage) : aux visites suivantes, il reste rangé d'emblée.
- * - Rangé, à chaque escale : le « ? » de la barre des escales. Un clic dessus rouvre le tuto ;
+ * - Rangé, à chaque escale, au bout de la barre des escales : sa pastille porte la tenue de l'escale. Un clic sur elle rouvre le tuto ;
  *   « Continuer le voyage », la croix, Échap ou un clic ailleurs le referment.
  * Il suit le voyage par l'évènement « voyage:escale » de scripts/voyage.ts : ce module se charge avant lui.
  */
 
-/** Le temps qu'il file vers le « ? », puis celui où l'anneau bat plus fort. */
+/** Le temps qu'il file vers sa pastille, puis celui où l'anneau bat plus fort. */
 const BYE_MS = 750;
 const NUDGE_MS = 4000;
 const SEEN_KEY = "index:copilote-accueil";
@@ -39,7 +39,7 @@ function start(root: HTMLElement) {
   const dockOf = (wrap: HTMLElement) => wrap.querySelector<HTMLButtonElement>("[data-copilote-dock]")!;
   const helpOf = (wrap: HTMLElement) => wrap.querySelector<HTMLElement>("[data-copilote-help]")!;
 
-  /** Le tuto qu'il rouvre depuis le « ? ». */
+  /** Le tuto qu'il rouvre depuis sa pastille. */
   const closeHelp = (focusDock = false) => {
     if (!open) return;
     helpOf(open).hidden = true;
@@ -73,7 +73,7 @@ function start(root: HTMLElement) {
     root.classList.add("copilote-arrive");
     window.setTimeout(() => root.classList.remove("copilote-arrive"), 900);
   };
-  /** Il se range : en filant vers le « ? » (gently), ou d'un coup quand on quitte l'escale. */
+  /** Il se range : en filant vers sa pastille (gently), ou d'un coup quand on quitte l'escale. */
   const dismiss = (gently: boolean) => {
     if (!welcome || !welcoming()) return;
     if (!gently) {

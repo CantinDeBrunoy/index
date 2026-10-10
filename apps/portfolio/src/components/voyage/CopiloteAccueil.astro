@@ -2,7 +2,7 @@
 /**
  * L'accueil du copilote, à la première escale : il arrive en flottant dans le coin libre, en combinaison
  * spatiale, et donne le tuto (les deux façons de visiter : le voyage, ou le détail des projets).
- * « Faire le voyage » ou la croix le rangent dans le « ? » de la barre des escales. Il accueille à chaque départ (le
+ * « Faire le voyage » ou la croix le rangent au bout de la barre des escales. Il accueille à chaque départ (le
  * bouton « Décoller ») : scripts/copilote.ts décide de l'afficher. Caché, il ne télécharge rien.
  */
 import type { Lang } from "../../i18n/voyage";
@@ -109,7 +109,7 @@ const { lang } = Astro.props;
     display: none;
   }
 
-  /* Rangé : il file vers le « ? », en bas à droite, et la bulle s'efface. */
+  /* Rangé : il file vers sa pastille, en bas à droite, et la bulle s'efface. */
   .accueil:global(.bye) .accueil__astro {
     animation: astro-dock 0.75s cubic-bezier(0.5, 0, 0.6, 1) forwards;
   }
