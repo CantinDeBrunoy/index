@@ -4,9 +4,9 @@
  * haute définition sur ordinateur, la boucle du téléphone sous 700 px, une image fixe en mouvement réduit.
  * Le reste est sur papier crème : la démo et, à côté, la carte d'embarquement (la pile, l'hébergeur ; son
  * talon, le statut), pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait, l'étagère (les projets
- * racontés ici), le pied de page, et tout en bas une bande qui reprend le voyage à l'escale du projet. La démo
- * tourne d'elle-même quand elle est à l'écran. À droite, le copilote, dans la tenue de l'escale, y ramène aussi
- * pendant la lecture ; il s'en va au bas de la page.
+ * racontés ici), le pied de page, et tout en bas une bande, de la couleur de l'en-tête, qui reprend le voyage à
+ * l'escale du projet. La démo tourne d'elle-même quand elle est à l'écran. À droite, le copilote, dans la tenue
+ * de l'escale, y ramène aussi pendant la lecture ; au bas de la page, il va se poser dans cette bande.
  * Les textes viennent de la collection de contenu (src/content/projets) ; le décor et l'accroche, de
  * data/voyage.ts ; les liens, la pile et l'hébergeur, de @index/projects.
  */
@@ -71,6 +71,8 @@ const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp
 
 // Le retour au voyage, à l'escale du projet : le copilote et le bouton du bas.
 const resume = `${ROUTES.voyage[lang]}#escale-${n}`;
+// Le copilote, dans la tenue de l'escale : sa boucle, et son image fixe en mouvement réduit.
+const copilote = { loop: `/voyage/copilote/${stop.scene}.webp`, still: `/voyage/copilote/${stop.scene}-fixe.webp` };
 // Les textes en prose, à la typographie de la langue (les espaces insécables du français).
 const T = (text: string) => typo(lang, text);
 ---
@@ -202,7 +204,7 @@ const T = (text: string) => typo(lang, text);
   </main>
 
   <div class="wrap-read">
-    <footer class="foot" data-resume-hides>
+    <footer class="foot" data-resume-from>
       <p>
         {T(fill(f.question, { name: project.name }))} <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
       </p>
@@ -211,10 +213,14 @@ const T = (text: string) => typo(lang, text);
     <Colophon lang={lang} />
   </div>
 
-  <!-- Tout en bas, sous le pied de page, sur toute la largeur : la bande entière est le bouton qui reprend le voyage. -->
-  <a class="reprendre pal-night" href={resume} data-resume-hides>
-    <span class="reprendre__thumb" style={`background: ${stop.bg}`}>
-      <img src={still(stop.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
+  <!-- Tout en bas, sous le pied de page, sur toute la largeur, de la couleur de l'en-tête : la bande entière est le
+       bouton qui reprend le voyage. Le copilote vient se poser dans son rond. -->
+  <a class={`reprendre pal-${stop.palette}`} href={resume} style={`--stop-bg: ${stop.bg}`}>
+    <span class="reprendre__pad" data-resume-pad>
+      <picture>
+        <source media="(prefers-reduced-motion: reduce)" srcset={copilote.still} />
+        <img src={copilote.loop} alt="" width="400" height="400" loading="lazy" decoding="async" />
+      </picture>
     </span>
     <span class="reprendre__text"><b>{f.resume}</b><small>{f.stop} {n} · {text.place}</small></span>
     <span class="reprendre__arrow" aria-hidden="true">→</span>
@@ -225,10 +231,10 @@ const T = (text: string) => typo(lang, text);
       <b>{f.copilot}</b>
       <small>{f.stop} {n} · {text.place} <span aria-hidden="true">→</span></small>
     </span>
-    <span class="resume__dock">
+    <span class="resume__dock" data-resume-dock>
       <picture>
-        <source media="(prefers-reduced-motion: reduce)" srcset={`/voyage/copilote/${stop.scene}-fixe.webp`} />
-        <img src={`/voyage/copilote/${stop.scene}.webp`} alt="" width="400" height="400" loading="lazy" decoding="async" />
+        <source media="(prefers-reduced-motion: reduce)" srcset={copilote.still} />
+        <img src={copilote.loop} alt="" width="400" height="400" loading="lazy" decoding="async" />
       </picture>
     </span>
   </a>
@@ -247,12 +253,16 @@ const T = (text: string) => typo(lang, text);
     color: var(--ink);
   }
   /* Les petits textes de laiton et de gris sont posés sur le fond de l'escale, plus soutenu que les
-     cartes : sur les fonds clairs, un laiton et un gris plus sombres, 4,5:1 au moins. */
+     cartes : sur les fonds clairs, un laiton et un gris plus sombres, 4,5:1 au moins. De même sur la
+     bande du bas, de la même couleur. */
   .hero.pal-day,
-  .hero.pal-dusk {
+  .hero.pal-dusk,
+  .reprendre.pal-day,
+  .reprendre.pal-dusk {
     --brass-text: #684c22;
   }
-  .hero.pal-day {
+  .hero.pal-day,
+  .reprendre.pal-day {
     --muted: #5f5447;
   }
 
@@ -272,7 +282,8 @@ const T = (text: string) => typo(lang, text);
   /* Le copilote, qui suit la lecture dès le haut de la fiche : dans la tenue de l'escale, il dit « Reprends ton
      voyage », dans une bulle crème au liseré de laiton, comme à l'accueil du voyage. En bas à droite au départ ;
      quand on descend, il monte (--rise, de 0 à 1, posé par scripts/resume-button.ts) jusqu'au milieu de l'écran,
-     et il y reste. Visible même sans script ; le script l'efface devant le bouton du bas et le pied de page. */
+     et il y reste. Au bas de la page, il va se poser dans le rond de la bande du bas (le même script le fait
+     voler). Visible même sans script. */
   .resume {
     position: fixed;
     right: 32px;
@@ -286,17 +297,28 @@ const T = (text: string) => typo(lang, text);
     text-decoration: none;
     transition:
       opacity 0.25s,
-      transform 0.25s,
       visibility 0s;
   }
-  .resume:global(.is-hidden) {
+  /* Dès le pied de page, sa bulle s'efface et sa pastille, cerclée de laiton, s'envole vers le rond ; une fois
+     posée, c'est le rond qui la montre. */
+  .resume:global(.is-leaving) .resume__bubble {
     opacity: 0;
+    pointer-events: none;
+  }
+  .resume:global(.is-leaving) .resume__dock {
+    box-shadow: 0 0 0 2px var(--brass);
+  }
+  .resume:global(.is-landed) {
     visibility: hidden;
-    transform: translateY(12px);
-    transition:
-      opacity 0.25s,
-      transform 0.25s,
-      visibility 0s linear 0.25s;
+  }
+  /* En mouvement réduit, il ne vole pas : il s'efface d'un fondu, et le rond le montre déjà. */
+  @media (prefers-reduced-motion: reduce) {
+    .resume:global(.is-landed) {
+      opacity: 0;
+      transition:
+        opacity 0.25s,
+        visibility 0s linear 0.25s;
+    }
   }
   .resume__bubble {
     position: relative;
@@ -308,7 +330,9 @@ const T = (text: string) => typo(lang, text);
     border-radius: var(--radius-l);
     background: #fbf7f0;
     box-shadow: 0 12px 30px rgba(14, 16, 24, 0.22);
-    transition: background 0.2s;
+    transition:
+      background 0.2s,
+      opacity 0.25s;
   }
   /* La pointe, vers lui. */
   .resume__bubble::after {
@@ -350,12 +374,15 @@ const T = (text: string) => typo(lang, text);
     border-radius: var(--radius-pill);
     background: #171a24;
     box-shadow: 0 0 0 4px rgba(23, 26, 36, 0.18);
-    transition: border-color 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.25s;
   }
   .resume:hover .resume__dock {
     border-color: var(--brass);
   }
-  .resume__dock img {
+  .resume__dock img,
+  .reprendre__pad img {
     position: absolute;
     left: -24%;
     top: -12%;
@@ -363,11 +390,6 @@ const T = (text: string) => typo(lang, text);
     width: 161%;
     height: 161%;
     max-width: none;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .resume {
-      transform: none;
-    }
   }
   /* Sur téléphone, il reste en bas, sous le pouce, sans cacher le texte au milieu de l'écran. */
   @media (max-width: 700px) {
@@ -573,7 +595,8 @@ const T = (text: string) => typo(lang, text);
     line-height: 1.6;
   }
 
-  /* — Tout en bas, sous le pied de page, sur toute la largeur : la bande de nuit est le bouton, son contenu au centre — */
+  /* — Tout en bas, sous le pied de page, sur toute la largeur : la bande, de la couleur et de la palette de
+     l'en-tête, est le bouton, son contenu au centre — */
   .reprendre {
     display: flex;
     align-items: center;
@@ -582,30 +605,59 @@ const T = (text: string) => typo(lang, text);
     min-height: 136px;
     padding: 28px 20px;
     border-top: 1.5px solid var(--brass);
-    background: var(--night);
+    background: var(--stop-bg);
     color: var(--ink);
     text-decoration: none;
     transition: background 0.2s;
   }
   .reprendre:hover {
-    background: var(--card);
+    background: color-mix(in srgb, var(--stop-bg) 92%, var(--ink));
   }
   .reprendre:focus-visible {
     outline-offset: -6px;
   }
-  .reprendre__thumb {
+  /* Le rond où le copilote se pose : sa pastille, cerclée de laiton (sans script, il y est d'emblée). Tant qu'il
+     vole (.is-empty, scripts/resume-button.ts), le rond l'attend, vide, avec le point de laiton des objets à
+     cliquer du voyage ; il rebondit quand il s'y pose (.is-touchdown). */
+  .reprendre__pad {
+    position: relative;
+    display: flex;
     flex: none;
-    width: 60px;
-    height: 60px;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 64px;
+    height: 64px;
     overflow: hidden;
+    border: 1px solid var(--line);
     border-radius: var(--radius-pill);
+    background: var(--card);
     box-shadow: 0 0 0 2px var(--brass);
   }
-  .reprendre__thumb img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .reprendre__pad:global(.is-empty) {
+    border-color: transparent;
+    background: var(--halo);
+  }
+  .reprendre__pad:global(.is-empty) picture {
+    visibility: hidden;
+  }
+  .reprendre__pad:global(.is-empty)::after {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-pill);
+    background: var(--brass);
+  }
+  .reprendre__pad:global(.is-touchdown) {
+    animation: touchdown 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  }
+  @keyframes touchdown {
+    from {
+      transform: scale(1.18);
+    }
+    to {
+      transform: none;
+    }
   }
   .reprendre__text {
     display: flex;
@@ -675,9 +727,9 @@ const T = (text: string) => typo(lang, text);
       min-height: 112px;
       padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
     }
-    .reprendre__thumb {
-      width: 48px;
-      height: 48px;
+    .reprendre__pad {
+      width: 52px;
+      height: 52px;
     }
     .reprendre b {
       font-size: 26px;
