@@ -647,15 +647,16 @@ const T = (text: string) => typo(lang, text);
     border-radius: var(--radius-pill);
     background: var(--brass);
   }
+  /* Le rebond part de sa taille : il s'écrase un peu en se posant, puis se redresse. */
   .reprendre__pad:global(.is-touchdown) {
-    animation: touchdown 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+    animation: touchdown 0.4s ease-out;
   }
   @keyframes touchdown {
-    from {
-      transform: scale(1.18);
+    35% {
+      transform: scale(0.9);
     }
-    to {
-      transform: none;
+    70% {
+      transform: scale(1.04);
     }
   }
   .reprendre__text {

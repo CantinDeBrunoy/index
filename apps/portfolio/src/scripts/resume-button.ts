@@ -1,9 +1,10 @@
 // Le copilote qui suit la lecture d'une fiche, dès son haut, et ramène au voyage. Sur ordinateur, il part du
 // bas de l'écran et monte avec la lecture : au milieu une fois qu'on a descendu d'un demi-écran, il y reste,
 // dans la marge (--rise, de 0 à 1 ; le CSS en fait le déplacement). Au pied de page ([data-resume-from]), sa
-// bulle s'efface. Quand le rond du bouton « Reprendre le voyage » ([data-resume-pad]) est à l'écran, il va s'y
-// poser d'un bond : il descend le long de la marge, puis glisse dans la bande jusqu'au rond, qui le montre alors
-// à sa place. Il ne reste jamais en l'air au-dessus du texte. En remontant, il repart à sa place du même bond.
+// bulle s'efface. Quand le rond du bouton « Reprendre le voyage » ([data-resume-pad]) est entièrement à l'écran,
+// il va s'y poser d'un bond : il descend le long de la marge, puis glisse dans la bande jusqu'au rond, qui le
+// montre alors à sa place. Il ne reste jamais en l'air au-dessus du texte. Il en repart, du même bond, quand on
+// remonte assez pour que le rond quitte l'écran à moitié : pas pour quelques pixels.
 // Sans script, il reste visible en bas et le rond le montre aussi ; en mouvement réduit, il ne vole pas : il
 // s'efface, et le rond le montre.
 const button = document.querySelector<HTMLElement>("[data-resume]");
@@ -14,10 +15,15 @@ const pad = document.querySelector<HTMLElement>("[data-resume-pad]");
 if (button && dock && from && pad) {
   const desktop = matchMedia("(min-width: 701px)");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-  // En vol, sa pastille prend peu à peu la couleur du rond, celle de la palette de l'escale.
-  const rgb = (el: Element) => getComputedStyle(el).backgroundColor.match(/[\d.]+/g)!.slice(0, 3).map(Number);
-  const dockBg = rgb(dock);
-  const padBg = rgb(pad);
+  // En vol, sa pastille prend peu à peu le fond et le liseré du rond, ceux de la palette de l'escale.
+  const rgb = (color: string) => color.match(/[\d.]+/g)!.slice(0, 3).map(Number);
+  const mix = (a: number[], b: number[], k: number) => `rgb(${a.map((c, i) => Math.round(c + (b[i]! - c) * k)).join(", ")})`;
+  const dockStyle = getComputedStyle(dock);
+  const padStyle = getComputedStyle(pad);
+  const dockBg = rgb(dockStyle.backgroundColor);
+  const padBg = rgb(padStyle.backgroundColor);
+  const dockLine = rgb(dockStyle.borderTopColor);
+  const padLine = rgb(padStyle.borderTopColor);
   // La durée du bond, d'un bout à l'autre.
   const flight = 700;
   const easeOut = (t: number) => 1 - (1 - t) ** 3;
@@ -40,30 +46,34 @@ if (button && dock && from && pad) {
       dx = dy = 0;
       dock.style.transform = "";
       dock.style.backgroundColor = "";
+      dock.style.borderColor = "";
       return;
     }
     // Il descend d'abord (sa hauteur va vite), puis glisse vers le rond (sa position, lentement au départ), en
-    // penchant un peu et en prenant la taille du rond ; jamais sous le bas de l'écran.
+    // penchant un peu et en prenant la taille du rond.
     const d = dock.getBoundingClientRect();
     const t = pad.getBoundingClientRect();
     const x = d.left + d.width / 2 - dx;
     const y = d.top + d.height / 2 - dy;
-    const ty = t.top + t.height / 2;
     const scale = 1 + (pad.offsetWidth / dock.offsetWidth - 1) * at;
-    const floor = Math.max(innerHeight - 12 - (dock.offsetHeight * scale) / 2, ty);
     dx = (t.left + t.width / 2 - x) * easeInOut(at);
-    dy = Math.min(y + (ty - y) * easeOut(at), floor) - y;
+    dy = (t.top + t.height / 2 - y) * easeOut(at);
     const tilt = -12 * Math.sin(Math.PI * at);
     dock.style.transform = `translate(${dx}px, ${dy}px) rotate(${tilt}deg) scale(${scale})`;
-    dock.style.backgroundColor = `rgb(${dockBg.map((c, i) => Math.round(c + (padBg[i]! - c) * at)).join(", ")})`;
+    dock.style.backgroundColor = mix(dockBg, padBg, at);
+    dock.style.borderColor = mix(dockLine, padLine, at);
+  };
+  // Il se pose quand le rond est entièrement à l'écran ; posé, il n'en repart que si le rond le quitte à moitié.
+  const wanted = () => {
+    const r = pad.getBoundingClientRect();
+    return r.bottom <= innerHeight - 8 || (to === 1 && r.top + r.height / 2 < innerHeight) ? 1 : 0;
   };
 
   const tick = (now: number) => {
     frame = 0;
     const rise = desktop.matches ? Math.min(1, scrollY / (innerHeight / 2)) : 0;
     button.style.setProperty("--rise", rise.toFixed(3));
-    // Il part quand le rond est entièrement à l'écran.
-    to = pad.getBoundingClientRect().bottom <= innerHeight - 8 ? 1 : 0;
+    to = wanted();
     if (reduced.matches) at = to;
     else if (at !== to) {
       const step = (last ? Math.min(64, now - last) : 16) / flight;
@@ -87,7 +97,7 @@ if (button && dock && from && pad) {
   desktop.addEventListener("change", now);
   reduced.addEventListener("change", now);
   // Au chargement, il est déjà où il doit être : posé si la page s'ouvre en bas, sans bond.
-  to = pad.getBoundingClientRect().bottom <= innerHeight - 8 ? 1 : 0;
+  to = wanted();
   at = to;
   now();
 }
