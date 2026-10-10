@@ -139,7 +139,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
                   aria-current={k === 0 ? "true" : undefined}
                   aria-describedby="atlas-hint"
                 >
-                  <span class="row__num">{String(s.n).padStart(2, "0")}</span>
                   <span class="row__img" style={`background: ${s.bg}`}>
                     <img src={still(s.scene, "-mobile")} alt="" width="780" height="760" loading="lazy" decoding="async" style={focusOf(s.scene)} />
                   </span>
@@ -414,7 +413,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
   }
   .row {
     display: grid;
-    grid-template-columns: 36px 64px minmax(0, 1fr);
+    grid-template-columns: 64px minmax(0, 1fr);
     gap: 20px;
     align-items: center;
     padding: 12px 16px;
@@ -428,14 +427,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
   /* Le survol ne change plus la scène : il montre seulement que la ligne se choisit d'un clic. */
   .row:not([data-on]):hover {
     background: color-mix(in srgb, var(--card) 55%, transparent);
-  }
-  .row__num {
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
-  .row[data-on] .row__num {
-    color: var(--brass-text);
   }
   .row__img {
     width: 64px;
