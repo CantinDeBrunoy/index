@@ -200,16 +200,14 @@ const T = (text: string) => typo(lang, text);
     }
   </main>
 
-  <!-- En bas, sur toute la largeur : un seul bouton, qui reprend le voyage. Le copilote s'efface devant lui. -->
-  <section class="reprendre" data-resume-hides>
-    <a class="reprendre__go pal-night" href={resume}>
-      <span class="reprendre__thumb" style={`background: ${stop.bg}`}>
-        <img src={still(stop.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
-      </span>
-      <span class="reprendre__text"><b>{f.resume}</b><small>{f.stop} {n} · {text.place}</small></span>
-      <span class="reprendre__arrow" aria-hidden="true">→</span>
-    </a>
-  </section>
+  <!-- En bas, sur toute la largeur : la bande entière est le bouton qui reprend le voyage. Le copilote s'efface devant elle. -->
+  <a class="reprendre pal-night" href={resume} data-resume-hides>
+    <span class="reprendre__thumb" style={`background: ${stop.bg}`}>
+      <img src={still(stop.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
+    </span>
+    <span class="reprendre__text"><b>{f.resume}</b><small>{f.stop} {n} · {text.place}</small></span>
+    <span class="reprendre__arrow" aria-hidden="true">→</span>
+  </a>
 
   <div class="wrap-read">
     <footer class="foot" data-resume-hides>
@@ -269,14 +267,16 @@ const T = (text: string) => typo(lang, text);
     flex-direction: column;
     gap: 16px;
   }
-  /* Le copilote, qui suit la lecture dès le haut de la fiche, en bas à droite : dans la tenue de l'escale,
-     il dit « Reprends ton voyage », dans une bulle crème au liseré de laiton, comme à l'accueil du voyage.
-     Visible même sans script ; scripts/resume-button.ts l'efface devant le bouton du bas et le pied de page. */
+  /* Le copilote, qui suit la lecture dès le haut de la fiche : dans la tenue de l'escale, il dit « Reprends ton
+     voyage », dans une bulle crème au liseré de laiton, comme à l'accueil du voyage. En bas à droite au départ ;
+     quand on descend, il monte (--rise, de 0 à 1, posé par scripts/resume-button.ts) jusqu'au milieu de l'écran,
+     et il y reste. Visible même sans script ; le script l'efface devant le bouton du bas et le pied de page. */
   .resume {
     position: fixed;
     right: 32px;
     bottom: 28px;
     z-index: 5;
+    translate: 0 calc(var(--rise, 0) * (28px + 50% - 50vh));
     display: flex;
     align-items: center;
     gap: 16px;
@@ -367,11 +367,13 @@ const T = (text: string) => typo(lang, text);
       transform: none;
     }
   }
+  /* Sur téléphone, il reste en bas, sous le pouce, sans cacher le texte au milieu de l'écran. */
   @media (max-width: 700px) {
     .resume {
       right: 16px;
       bottom: calc(16px + env(safe-area-inset-bottom));
       gap: 12px;
+      translate: none;
     }
     .resume__bubble {
       padding: 10px 16px 10px 14px;
@@ -569,34 +571,30 @@ const T = (text: string) => typo(lang, text);
     line-height: 1.6;
   }
 
-  /* — En bas, sur toute la largeur : un seul bouton, au centre, qui reprend le voyage — */
+  /* — En bas, sur toute la largeur : la bande de nuit est le bouton, son contenu au centre — */
   .reprendre {
     display: flex;
-    justify-content: center;
-    padding: 32px 20px;
-    border-block: 1px solid var(--line);
-    background: var(--card);
-  }
-  .reprendre__go {
-    display: inline-flex;
     align-items: center;
-    gap: 16px;
-    min-height: 64px;
-    padding: 8px 30px 8px 8px;
-    border: 1.5px solid var(--brass);
-    border-radius: var(--radius-pill);
+    justify-content: center;
+    gap: 20px;
+    min-height: 136px;
+    padding: 28px 20px;
+    border-top: 1.5px solid var(--brass);
     background: var(--night);
     color: var(--ink);
     text-decoration: none;
     transition: background 0.2s;
   }
-  .reprendre__go:hover {
+  .reprendre:hover {
     background: var(--card);
+  }
+  .reprendre:focus-visible {
+    outline-offset: -6px;
   }
   .reprendre__thumb {
     flex: none;
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
     overflow: hidden;
     border-radius: var(--radius-pill);
     box-shadow: 0 0 0 2px var(--brass);
@@ -613,23 +611,27 @@ const T = (text: string) => typo(lang, text);
     gap: 2px;
   }
   .reprendre b {
-    font-size: 17px;
-    font-weight: 500;
+    font-family: var(--font-serif);
+    font-size: 34px;
+    font-weight: 400;
+    line-height: 1;
   }
   .reprendre small {
+    margin-top: 6px;
     color: var(--brass-text);
     font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.04em;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
   .reprendre__arrow {
-    margin-left: 6px;
+    margin-left: 10px;
     color: var(--brass-text);
-    font-size: 18px;
+    font-size: 26px;
     transition: transform 0.2s;
   }
-  .reprendre__go:hover .reprendre__arrow {
-    transform: translateX(4px);
+  .reprendre:hover .reprendre__arrow {
+    transform: translateX(6px);
   }
 
   .foot {
@@ -667,10 +669,19 @@ const T = (text: string) => typo(lang, text);
       padding: 40px 0;
     }
     .reprendre {
+      gap: 14px;
+      min-height: 112px;
       padding: 24px 16px;
     }
-    .reprendre__go {
-      width: 100%;
+    .reprendre__thumb {
+      width: 48px;
+      height: 48px;
+    }
+    .reprendre b {
+      font-size: 26px;
+    }
+    .reprendre__arrow {
+      margin-left: 4px;
     }
     /* La capture du téléphone, à la taille d'un téléphone ; la vidéo, filmée sur ordinateur, garde toute la largeur. */
     .shot {
