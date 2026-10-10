@@ -4,7 +4,9 @@
 // directement. L'image d'attente de la démo s'affiche tout de suite ; la vidéo (muette, en boucle) la recouvre si
 // on s'y attarde, sans mouvement réduit ni économie de données : seules les démos regardées se chargent. Sans
 // démo (Mithril), c'est la scène de l'escale, et sa boucle animée. Sous 1 280 px, la liste est cachée (les cartes
-// postales la remplacent) et rien ne se charge.
+// postales la remplacent) et rien ne se charge. Les démos tournent en accéléré (scripts/demo-rate.ts).
+import { speedUp } from "./demo-rate";
+
 const root = document.querySelector<HTMLElement>("[data-atlas]");
 const media = root?.querySelector<HTMLElement>("[data-atlas-media]");
 const img = media?.querySelector("img");
@@ -18,6 +20,7 @@ if (root && media && img && video) {
   const panels = [...root.querySelectorAll<HTMLElement>("[data-atlas-panel]")];
   let sel = 0;
   let timer = 0;
+  speedUp(video);
 
   /** La vidéo ne se montre qu'une fois lancée, et seulement si c'est encore la démo de la ligne choisie. */
   video.addEventListener("playing", () => {
