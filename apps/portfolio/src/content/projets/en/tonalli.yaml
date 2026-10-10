@@ -1,19 +1,21 @@
-# Tonalli, la fiche en anglais. Brouillon, à réécrire.
-why: "One emotion, one colour, two photos: every day takes its place on the calendar. I wanted to keep track of my days without turning it into a social network: no feed, no comments, just a month filling with colour, square by square."
+# Tonalli, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "I wanted to keep track of my days without turning it into a social network: no feed, no comments, just a month filling with colour, square by square."
 features:
   - title: "A colour a day"
-    text: "One emotion out of twelve, in three intensities: that's what sets the colour."
+    text: "One emotion out of twelve, in three intensities, gives the day its colour."
   - title: "Two photos in the moment"
-    text: "The scene, then your face, taken in the app, never from the gallery."
+    text: "The scene, then your face, in a single tap in the app, never from the gallery."
   - title: "The other's calendar"
-    text: "It only reveals itself once you've filled in your own day; you reply with a single emoji."
+    text: "It only reveals itself once you've filled in your own day, and you reply with an emoji."
+  - title: "A reminder at my hour"
+    text: "A notification, at the time you choose, reminds you to fill in your day; a day saved offline is sent as soon as you're back online."
 choices:
   - title: "Reciprocity written into the database"
-    text: "Supabase access rules enforce it in SQL: impossible to get around from the browser."
+    text: "Supabase access rules enforce it in SQL, and it can't be got around from the browser."
   - title: "The author's day"
-    text: "An entry's date is computed in its author's time zone, never in UTC: otherwise, in the evening, the day shifts."
+    text: "An entry's date is computed in its author's time zone, never in UTC; otherwise, in the evening, the day shifts."
   - title: "A website rather than an app"
-    text: "Tonalli started as a mobile app, then became an installable website: there had to be nothing to install."
+    text: "Tonalli started as a mobile app, then became a website you can install: a link is all it takes to start."
 video:
   src: "/demos/tonalli.mp4"
   caption: "The concept, the day's emotion, the two photos, the other's day revealed, the calendar and the character. With a demo account."

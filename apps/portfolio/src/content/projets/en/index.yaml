@@ -1,19 +1,19 @@
-# INDEX, la fiche en anglais. Brouillon, à réécrire.
-why: "My projects each lived in their own corner, and some fell asleep on free tiers. INDEX gathers them in a single repository, keeps them awake, and shows them here, numbered, like the stops of a journey."
+# INDEX, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "My projects each lived in their own corner, and some fell asleep on free tiers. INDEX gathers them in a single repository, keeps them awake and shows them here, like the stops of a journey."
 features:
   - title: "One repository"
-    text: "All the projects imported with their full history, each in its own folder."
+    text: "My active projects gathered in one repository, each in its own folder, nearly all with their history."
   - title: "Nothing falls asleep"
-    text: "A bot keeps Tonalli's database awake, checks every site each hour and opens an issue if one goes down."
+    text: "A bot keeps Tonalli's database awake, checks every site each hour and opens an issue when one goes down."
   - title: "Every project in its place"
-    text: "A number, a project page and a stop: this very site."
+    text: "A stop, a project page and, when it has one, its app to open from here."
 choices:
   - title: "pnpm and Turborepo"
-    text: "Each project keeps its own versions; only the ones that change are rebuilt and tested."
-  - title: "Two hosts"
-    text: "Apps already on Vercel stay there, with their addresses; the others move to Cloudflare Workers."
-  - title: "The wake-up call in GitHub Actions"
-    text: "A real request keeps Supabase awake, and the repository re-enables itself so its scheduled jobs never stop."
+    text: "Each project keeps its own versions, and only the ones that change are rebuilt and tested."
+  - title: "Cloudflare, except Tonalli"
+    text: "The apps run on Cloudflare Workers; only Tonalli stays on Vercel, so its users don't get signed out."
+  - title: "The wake-up call on Cloudflare"
+    text: "A scheduled job on the Worker keeps Supabase awake with a real request; if GitHub suspends one of the repository's jobs, an issue tells me."
 video:
   src: "/demos/index.mp4"
   caption: "The departure, three stops, Hublot's page, then the journal and its shortcuts to the apps."

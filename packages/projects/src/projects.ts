@@ -123,7 +123,7 @@ export const PROJECTS = [
     app: "cancionero",
     host: "Cloudflare Workers",
     pitch: {
-      fr: "Apprendre l'espagnol en chansons : paroles traduites, karaoké à trous, flashcards et quiz, même hors ligne.",
+      fr: "Apprendre l'espagnol en chansons : paroles traduites à écouter, karaoké et cartes de vocabulaire, même hors ligne.",
     },
     stack: ["Expo", "React Native Web", "TypeScript", "PWA"],
     links: { demo: CANCIONERO_URL, code: code("cancionero") },

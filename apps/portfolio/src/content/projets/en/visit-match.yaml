@@ -1,15 +1,19 @@
-# Visit Match, la fiche en anglais. Brouillon, à réécrire.
-why: "An engineering school project, taken all the way to a business plan. Travelling alone is freeing, but sometimes you want to share a visit: Visit Match connects solo travellers who share the same destinations and interests."
+# Visit Match, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "An engineering school project, taken all the way to a business plan. In a city you're discovering, you don't always know what to visit: Visit Match suggests the places around you, and you keep the ones you like."
 features:
-  - title: "Shared interests"
-    text: "You enter your destinations and what you're into."
+  - title: "Your interests first"
+    text: "When signing up, you pick what you're into: monuments, museums, parks, hikes…"
+  - title: "One place, one swipe"
+    text: "The places around you go by, to keep or skip with a swipe; each has its own page, with its distance, price, photos and map."
+  - title: "A notebook per trip"
+    text: "The places you keep go into the trip's notebook, sort by date, price or category, and get pinned on the map."
 choices:
   - title: "Flutter"
-    text: "One codebase for iOS and Android."
+    text: "One codebase, for iOS as well as Android."
   - title: "Firebase"
-    text: "Accounts and data with no server to maintain."
+    text: "Accounts and data, with no server to maintain."
   - title: "Figma first"
-    text: "Screens designed and discussed before the first line of code."
+    text: "Screens designed and shown to future users before the first line of code."
 video:
   src: "/demos/visit-match.mp4"
   caption: "Sign-up, places to keep or skip, trip notebooks, likes, the map and the profile, with a test account."

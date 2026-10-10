@@ -1,19 +1,19 @@
-# INDEX, la fiche en français. Brouillon, à réécrire.
-why: "Mes projets vivaient chacun dans son coin, et certains s'endormaient sur les offres gratuites. INDEX les réunit dans un seul dépôt, les garde éveillés, et les présente ici, numérotés, comme les escales d'un voyage."
+# INDEX, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "Mes projets vivaient chacun dans son coin, et certains s'endormaient sur les offres gratuites. INDEX les réunit dans un seul dépôt, les garde éveillés et les présente ici, comme les escales d'un voyage."
 features:
   - title: "Un seul dépôt"
-    text: "Tous les projets importés avec tout leur historique, chacun dans son dossier."
+    text: "Mes projets actifs réunis dans un même dépôt, chacun dans son dossier, presque tous avec leur historique."
   - title: "Rien ne s'endort"
-    text: "Un robot garde la base de Tonalli éveillée, vérifie chaque site toutes les heures et ouvre un ticket si l'un tombe."
+    text: "Un robot garde la base de Tonalli éveillée, vérifie chaque site toutes les heures et ouvre un ticket quand l'un d'eux tombe."
   - title: "Chaque projet à sa place"
-    text: "Un numéro, une fiche et une escale : ce site."
+    text: "Une escale, une fiche et, quand il en a une, son app à ouvrir d'ici."
 choices:
   - title: "pnpm et Turborepo"
-    text: "Chaque projet garde ses propres versions ; seuls ceux qui changent sont reconstruits et testés."
-  - title: "Un hébergement en deux"
-    text: "Les apps déjà sur Vercel y restent, avec leurs adresses ; les autres partent sur Cloudflare Workers."
-  - title: "Le réveil dans GitHub Actions"
-    text: "Une vraie requête garde Supabase éveillé, et le dépôt se réactive lui-même pour que ses tâches planifiées ne s'arrêtent jamais."
+    text: "Chaque projet garde ses propres versions, et seuls ceux qui changent sont reconstruits et testés."
+  - title: "Cloudflare, sauf Tonalli"
+    text: "Les apps tournent sur Cloudflare Workers ; seul Tonalli reste sur Vercel, pour ne pas déconnecter ses utilisateurs."
+  - title: "Le réveil chez Cloudflare"
+    text: "Une tâche planifiée du Worker garde Supabase éveillé par une vraie requête ; si GitHub suspend une tâche du dépôt, un ticket me prévient."
 video:
   src: "/demos/index.mp4"
   caption: "Le départ, trois escales, la fiche de Hublot, puis le carnet et ses raccourcis vers les apps."

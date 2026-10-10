@@ -1,19 +1,21 @@
-# Tonalli, la fiche en français. Brouillon, à réécrire.
-why: "Une émotion, une couleur, deux photos : chaque jour prend sa place sur le calendrier. Je voulais garder la trace de mes journées sans en faire un réseau social : pas de fil d'actualité, pas de commentaires, juste un mois qui se colore case après case."
+# Tonalli, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "Je voulais garder la trace de mes journées sans en faire un réseau social : pas de fil d'actualité, pas de commentaires, juste un mois qui se colore case après case."
 features:
   - title: "Une couleur par jour"
-    text: "Une émotion parmi douze, en trois intensités : c'est elle qui donne la couleur."
+    text: "Une émotion parmi douze, en trois intensités, donne sa couleur à la journée."
   - title: "Deux photos sur le moment"
-    text: "La scène puis le visage, pris dans l'app, jamais depuis la galerie."
+    text: "La scène puis le visage, d'un seul appui dans l'app, jamais depuis la galerie."
   - title: "Le calendrier de l'autre"
-    text: "Il ne se dévoile qu'une fois sa propre journée remplie ; on y répond d'un seul emoji."
+    text: "Il ne se dévoile qu'une fois sa propre journée remplie, et on y répond d'un emoji."
+  - title: "Un rappel à mon heure"
+    text: "Une notification, à l'heure choisie, rappelle de remplir sa journée ; une journée validée hors ligne part dès que la connexion revient."
 choices:
   - title: "La réciprocité écrite dans la base"
-    text: "Les règles d'accès de Supabase la font respecter en SQL : impossible de la contourner depuis le navigateur."
+    text: "Les règles d'accès de Supabase l'appliquent en SQL, et on ne peut pas la contourner depuis le navigateur."
   - title: "Le jour de l'auteur"
-    text: "La date d'une entrée se calcule dans le fuseau de celui qui l'écrit, jamais en UTC : sinon, le soir, la journée se décale."
+    text: "La date d'une entrée se calcule dans le fuseau horaire de celui qui l'écrit, jamais en UTC ; sinon, le soir, la journée se décale."
   - title: "Un site plutôt qu'une app"
-    text: "Tonalli a commencé en app mobile, puis est devenu un site installable : il ne fallait rien avoir à installer."
+    text: "Tonalli a commencé en app mobile, puis est devenu un site qu'on peut installer : un lien suffit pour commencer."
 video:
   src: "/demos/tonalli.mp4"
   caption: "Le concept, l'émotion du jour, les deux photos, la journée de l'autre qui se découvre, le calendrier et le personnage. Avec un compte de démonstration."

@@ -1,15 +1,19 @@
-# Visit Match, la fiche en français. Brouillon, à réécrire.
-why: "Un projet d'école d'ingénieur, mené jusqu'au business plan. Voyager seul, c'est libre, mais on a parfois envie de partager une visite : Visit Match met en relation les voyageurs solo qui partagent les mêmes destinations et les mêmes envies."
+# Visit Match, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "Un projet d'école d'ingénieur, mené jusqu'au business plan. Dans une ville qu'on découvre, on ne sait pas toujours quoi visiter : Visit Match propose les lieux autour de soi, et on garde ceux qui donnent envie."
 features:
-  - title: "Ses envies en commun"
-    text: "On indique ses destinations et ses centres d'intérêt."
+  - title: "Ses envies d'abord"
+    text: "À l'inscription, on choisit ses centres d'intérêt : monuments, musées, parcs, randonnées…"
+  - title: "Un lieu, un geste"
+    text: "Les lieux autour de soi défilent, à garder ou à passer d'un geste ; chacun a sa fiche, avec sa distance, son prix, ses photos et son plan."
+  - title: "Un carnet par voyage"
+    text: "Les lieux gardés se rangent dans le carnet du voyage, se trient par date, par prix ou par catégorie, et s'épinglent sur la carte."
 choices:
   - title: "Flutter"
-    text: "Une seule base de code pour iOS et Android."
+    text: "Une seule base de code, pour iOS comme pour Android."
   - title: "Firebase"
-    text: "Les comptes et les données sans serveur à maintenir."
+    text: "Les comptes et les données, sans serveur à maintenir."
   - title: "Figma d'abord"
-    text: "Les écrans dessinés et discutés avant la première ligne de code."
+    text: "Les écrans dessinés et montrés à de futurs utilisateurs avant la première ligne de code."
 video:
   src: "/demos/visit-match.mp4"
   caption: "L'inscription, les lieux à garder ou à passer, les carnets, les likes, la carte et le profil, avec un compte de test."

@@ -1,17 +1,17 @@
-# Galactic Escape, la fiche en anglais. Brouillon, à réécrire.
-why: "A school project, five of us, in 2022: build a complete game in the browser. We started from Pipe Mania, where you lay pipes to guide the water, and took it to space, with a monster hot on our heels."
+# Galactic Escape, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "A school project, five of us, in 2022: build a complete game that runs in the browser. We started from Pipe Mania, where you lay pipes to guide the water, and took it to space, with a monster hot on our heels."
 features:
   - title: "A path, tile by tile"
-    text: "You lay tiles with two, three or four exits to extend your route; a preview shows whether it connects."
+    text: "You lay tiles with one, two or three exits to extend your route, and a preview shows whether it connects."
   - title: "The taxman on your heels"
-    text: "Michel, a little alien, is fleeing Roberto, a tax agent hot on his trail: every tile laid quickly is ground gained."
+    text: "Michel, a little alien, is fleeing Roberto, the tax agent on his trail: every tile laid quickly buys him a head start."
   - title: "Meteors in the way"
-    text: "They block tiles and force you to route around them. Four levels, from “easy” to “impossible”."
+    text: "They block tiles and force you to go around. Four levels, from “easy” to “impossible”: the higher you go, the faster it gets."
 choices:
   - title: "Three.js for the scene, React for the rest"
-    text: "The game itself is 3D; the menus, the inventory and the timer stay plain React components."
+    text: "The game itself is 3D; the menus, the inventory and the timer are plain React components."
   - title: "Game logic kept apart, and tested"
-    text: "Tile placement, the inventory and map generation live outside the 3D code, checked by Jest tests."
+    text: "Tile placement, the inventory and map generation live outside the 3D code, checked by Vitest tests."
 video:
   src: "/demos/galactic-escape.mp4"
   caption: "The menu on Mars, then a game: every tile laid extends the path, with the monster in pursuit."

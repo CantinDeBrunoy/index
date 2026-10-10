@@ -1,19 +1,19 @@
-# Hublot, la fiche en anglais. Brouillon, à réécrire.
-why: "Ticket prices change all the time, and I didn't want to keep watching them myself. Hublot checks them for me and only bothers me when it's worth it."
+# Hublot, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "Ticket prices change all the time, and I didn't want to keep watching them myself. Hublot checks them for me."
 features:
   - title: "Watches"
-    text: "A destination, a departure window, a length of stay, a price not to exceed."
+    text: "For each one: a destination, a departure window, a length of stay and a price not to exceed."
   - title: "Every six hours"
-    text: "A bot checks round-trip prices for each watch."
+    text: "A bot checks the round-trip prices of each watch."
   - title: "An alert, not a flood"
-    text: "A notification when a price drops below the threshold, at most one per departure month, even during sales."
+    text: "A notification when a price drops below the threshold; the same deal then stays quiet for 30 days, and only a cheaper one rings again."
 choices:
   - title: "GitHub Actions as the server"
-    text: "The bot runs as a free scheduled job: no machine to look after."
-  - title: "Price checks on their own branch"
-    text: "Four checks a day, kept apart: the code history stays readable."
+    text: "The bot runs as a free scheduled job, with no machine to look after."
+  - title: "A management page of my own"
+    text: "Watches are managed on a page served by a Cloudflare Worker, open only to me once signed in; the GitHub key stays on the server."
   - title: "ntfy for alerts"
-    text: "A notification on my phone, without writing an app."
+    text: "Alerts reach my phone without me having to write an app."
 video:
   src: "/demos/hublot.mp4"
   caption: "Deals under the threshold, the watches, then a new one to Reykjavik. With fictional watches and prices."

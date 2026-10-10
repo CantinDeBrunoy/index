@@ -1,17 +1,17 @@
-# Magellan, la fiche en anglais. Brouillon, à réécrire.
-why: "I wanted to open an app and see my own world map: a globe that fills in as I cross countries."
+# Magellan, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "I wanted to see everywhere I've already been at a glance."
 features:
   - title: "The globe fills in"
-    text: "Visited countries light up, each city gets its flag, an arc links the stops."
+    text: "Visited countries light up, each city gets its flag and an arc links the stops."
   - title: "Trips as index cards"
-    text: "Sorted by year: a sticky note per stop, a postcard per city, the budget."
+    text: "Sorted by year, with a sticky note per stop, a postcard per city and the budget."
   - title: "Photos sort themselves"
-    text: "The app reads the date and place of each photo and files it under the right stop."
+    text: "On the web version, the app reads the date and place of the iCloud photos and files each one under the right stop; the ones it isn't sure about wait for my approval."
 choices:
   - title: "One codebase"
-    text: "Expo and React Native: iOS, Android and the web from the same code."
+    text: "Expo and React Native for iOS, Android and the web, from the same code."
   - title: "globe.gl for the Earth"
-    text: "A proven 3D globe, in a WebView on phones and right in the page on the web: only the data is shared."
+    text: "A proven 3D globe, the same on phones and on the web: a WebView on one side, a frame in the page on the other."
 video:
   src: "/demos/magellan.mp4"
   caption: "The globe, the list of trips, then two of them: Tokyo, Kyoto and Osaka, and Marrakech. With the demo trips."

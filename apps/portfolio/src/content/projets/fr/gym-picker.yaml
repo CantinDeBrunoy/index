@@ -1,13 +1,15 @@
-# gym-picker, la fiche en français. Brouillon, à réécrire.
-why: "Mes salles de sport sont à distance comparable : c'est le trafic qui décide laquelle est la plus proche. Plutôt que de les vérifier une par une dans Waze, l'app les compare toutes d'un coup."
+# gym-picker, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "Mes salles de sport sont à distance comparable : c'est le trafic qui décide laquelle est la plus proche. Plutôt que de les vérifier une par une dans Waze, je laisse l'app les comparer d'un coup."
 features:
   - title: "Le trafic en temps réel"
-    text: "Toutes les salles classées par temps de trajet en voiture, bouchons compris."
+    text: "Toutes les salles, classées par temps de trajet en voiture, bouchons compris."
   - title: "Un appui, et c'est parti"
-    text: "Toucher une salle ouvre Waze ou Google Maps sur le bon trajet."
+    text: "Toucher une salle ouvre Waze sur le bon trajet ; un bouton « Maps » ouvre Google Maps."
 choices:
-  - title: "Un Worker Cloudflare devant l'API"
-    text: "La clé ne quitte jamais le serveur, et chaque adresse IP est limitée à 20 appels par minute."
+  - title: "Un Worker Cloudflare devant TomTom"
+    text: "La clé de l'API de trafic ne quitte jamais le serveur, et chaque adresse IP est limitée à 20 appels par minute."
+  - title: "Ma position hors des journaux"
+    text: "Elle part dans le corps de la requête, jamais dans l'adresse : elle ne finit pas dans les journaux du serveur."
 video:
   src: "/demos/gym-picker.mp4"
   caption: "Les salles classées par temps de trajet, le classement qui suit le trafic, puis le domicile de secours. Avec des salles et des trajets fictifs."

@@ -1,6 +1,6 @@
 # INDEX
 
-Le monorepo de mes projets, et leur catalogue : le portfolio présente chaque projet comme une entrée numérotée (`001`, `002`…), dans l'ordre chronologique, avec démo, code et statut en direct.
+Le monorepo de mes projets, et leur catalogue : le portfolio présente chaque projet comme l'escale d'un voyage, avec sa fiche, sa démo, son code et son statut en direct. Les adresses des fiches gardent le numéro du projet (`/005-magellan`).
 
 ## Architecture
 

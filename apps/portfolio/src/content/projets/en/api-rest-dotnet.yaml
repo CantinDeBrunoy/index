@@ -1,2 +1,2 @@
-# .NET REST API : racontée sur l'étagère de Mithril, sans fiche à elle (en anglais). Brouillon, à réécrire.
-shelf: "A REST API built as C# .NET microservices: an asynchronous microservice with persistence, unit tests and a test-driven approach, containerised with Docker (2023)."
+# .NET REST API : racontée sur l'étagère de Mithril, sans fiche à elle (en anglais). Relue et vérifiée dans le code le 10 octobre 2026.
+shelf: "A REST API built as C# .NET microservices, written test-first with xUnit, including an asynchronous microservice with persistence, all running in Docker (2023)."

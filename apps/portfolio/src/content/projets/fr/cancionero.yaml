@@ -1,19 +1,19 @@
-# Cancionero, la fiche en français. Brouillon, à réécrire.
-why: "Une chanson qu'on aime, on la retient sans effort. Cancionero en fait une leçon d'espagnol : on la lit, on la comprend, on la chante, et les mots restent."
+# Cancionero, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "Cancionero fait de chaque chanson une leçon d'espagnol : on la lit, on la comprend, on la chante, et les mots restent."
 features:
   - title: "Les paroles traduites"
-    text: "Chaque ligne avec sa traduction en français, et sa voix à écouter."
-  - title: "Le karaoké à trous"
-    text: "On complète les mots manquants en suivant la chanson."
-  - title: "Cartes et quiz"
-    text: "Le vocabulaire en cartes, et un quiz corrigé sur-le-champ, même hors ligne."
+    text: "Chaque ligne avec sa traduction en français, et sa prononciation à écouter."
+  - title: "Le karaoké"
+    text: "La ligne chantée grossit et se remplit au rythme de la chanson."
+  - title: "Les mots à réviser"
+    text: "Un mot touché dans les paroles ou le karaoké devient une carte, à retourner puis à glisser pour la trier, même hors ligne."
 choices:
   - title: "Une application installable"
-    text: "Elle s'installe depuis le navigateur et marche hors ligne ; une app iOS aurait demandé un compte développeur Apple."
+    text: "Elle s'installe depuis le navigateur et marche hors ligne, alors qu'une app iOS aurait demandé un compte développeur Apple."
   - title: "Expo et React Native Web"
-    text: "Le même code pour le web aujourd'hui, et pour le téléphone demain."
-  - title: "Pas de serveur"
-    text: "Les paroles se cherchent dans LRCLIB, une base publique, et tout le reste vit sur l'appareil."
+    text: "Le même code sert le web aujourd'hui, et servira le téléphone demain."
+  - title: "Presque pas de serveur"
+    text: "Les paroles viennent de LRCLIB, les traductions qui manquent de MyMemory, et le vocabulaire reste sur l'appareil."
 video:
   src: "/demos/cancionero.mp4"
   caption: "Trois mots mis de côté dans « Hola, ¿cómo estás? », le karaoké, puis les cartes à réviser."

@@ -1,17 +1,17 @@
-# Magellan, la fiche en français. Brouillon, à réécrire.
-why: "Je voulais ouvrir une app et voir ma propre carte du monde : un globe qui se colore au fil des pays traversés."
+# Magellan, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "Je voulais voir d'un coup d'œil tout ce que j'ai déjà parcouru."
 features:
   - title: "Le globe se colore"
-    text: "Les pays visités s'allument, chaque ville porte son drapeau, un arc relie les étapes."
+    text: "Les pays visités s'allument, chaque ville porte son drapeau et un arc relie les étapes."
   - title: "Les voyages en fiches"
-    text: "Rangés par année : un post-it par étape, une carte postale par ville, le budget."
+    text: "Rangés par année, avec un post-it par étape, une carte postale par ville et le budget."
   - title: "Les photos se rangent seules"
-    text: "L'app lit la date et le lieu de chaque photo et la classe dans la bonne étape."
+    text: "Sur la version web, l'app lit la date et le lieu des photos d'iCloud et range chacune dans la bonne étape ; celles dont elle doute attendent qu'on les valide."
 choices:
   - title: "Une seule base de code"
-    text: "Expo et React Native : iOS, Android et le web à partir du même code."
+    text: "Expo et React Native pour iOS, Android et le web, à partir du même code."
   - title: "globe.gl pour la Terre"
-    text: "Un globe 3D éprouvé, dans une WebView sur téléphone et directement dans la page sur le web : seules les données sont partagées."
+    text: "Un globe 3D éprouvé, le même sur téléphone et sur le web : une WebView d'un côté, un cadre dans la page de l'autre."
 video:
   src: "/demos/magellan.mp4"
   caption: "Le globe, la liste des voyages, puis deux d'entre eux : Tokyo, Kyoto et Osaka, et Marrakech. Avec les voyages de démonstration."

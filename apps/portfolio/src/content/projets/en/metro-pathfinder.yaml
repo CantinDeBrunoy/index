@@ -1,17 +1,17 @@
-# Métro Pathfinder, la fiche en anglais. Brouillon, à réécrire.
-why: "On the Paris metro, the shortest route isn't always the one you'd think. I wanted to compute it myself: it was my first algorithm on a graph."
+# Métro Pathfinder, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "A school project: computing the shortest route on the Paris metro, which isn't always the one you'd think."
 features:
   - title: "Two stations, one route"
-    text: "Pick the start and the end: the shortest path appears."
+    text: "Pick the start and the end, and the shortest path appears."
   - title: "The network as a graph"
-    text: "Stations are nodes, the sections linking them are edges."
+    text: "Stations are the nodes, and the sections between them, the edges."
   - title: "A desktop app"
-    text: "A Swing window to pick the stations and read the route."
+    text: "A Java window to pick your stations and read the route."
 choices:
   - title: "Dijkstra"
-    text: "The shortest path in a graph with positive distances: exact, and easy to check by hand."
+    text: "It finds the shortest path in a graph with positive distances, with an exact result that's easy to check by hand."
   - title: "Java and Swing"
-    text: "A language and a toolkit I already knew: all the effort went into the algorithm."
+    text: "A language and a toolkit I already knew, so all the effort could go into the algorithm."
 video:
   src: "/demos/metro-pathfinder.mp4"
   caption: "The metro map as a graph, a computed route, then Dijkstra and the code. Edited from the 2022 recording."

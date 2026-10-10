@@ -1,16 +1,16 @@
-# Mithril, la fiche en anglais. Brouillon, à réécrire.
-why: "I wanted a password vault I could read from end to end: no cloud, no dependencies, compiled with what Windows already ships. And anyone can recompile it to check."
+# Mithril, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
+why: "I wanted a password vault I could read from end to end: no cloud, no dependencies, compiled with what Windows already ships. Anyone can recompile it to check."
 features:
   - title: "Strong passwords"
-    text: "From 8 to 128 characters, without ambiguous ones if you like, with their strength shown."
-  - title: "A vault encrypted twice"
-    text: "By Windows, then by the master password, with AES-256."
+    text: "From 8 to 128 characters, leaving out look-alike characters if you like, with their strength shown."
+  - title: "An encrypted vault"
+    text: "Windows encrypts the vault; an optional master password adds an AES-256 layer. That password is what protects the portable vault used by the phone."
   - title: "Auto-typing"
-    text: "A shortcut fills in the active window, without going through the clipboard."
+    text: "Ctrl+Alt+M types the password into the active window, without going through the clipboard."
 choices:
   - title: "No dependencies"
-    text: "Compiled by csc.exe, the compiler that ships with Windows: no installer, a single .exe."
+    text: "Compiled by csc.exe, the compiler that ships with Windows, with no installer: a single .exe."
   - title: "The phone, without the cloud"
-    text: "Paired with a six-digit code, it syncs over the local network, each side verifying the other."
+    text: "Paired with a six-digit code, it syncs over the local network or through Tailscale, and each side verifies the other."
   - title: "Unbiased randomness"
-    text: "Windows' cryptographic generator, rejecting biased draws: every character has exactly the same chance."
+    text: "Windows' cryptographic generator, discarding biased draws: every character has exactly the same chance of coming up."
