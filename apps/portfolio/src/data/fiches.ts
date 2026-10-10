@@ -12,29 +12,24 @@ import { STOPS } from "./voyage";
 export const FICHE: Record<
   Lang,
   {
-    /** Le bouton qui ramène au voyage, à l'escale de la fiche, et suit la lecture. */
+    /** Le bouton du bas de la fiche, qui reprend le voyage à l'escale du projet. */
     resume: string;
-    /** La bande des escales, sous l'en-tête : avant la première escale, le départ. */
-    stripAria: string;
+    /** Le copilote, qui suit la lecture en bas à droite et ramène au voyage, lui aussi. */
+    copilot: string;
     /** La ligne de vol : le pourquoi, ce que ça fait et comment c'est fait, un point à la fois. */
     pointsAria: string;
     prevPoint: string;
     nextPoint: string;
-    departLabel: string;
     depart: string;
     /** La vidéo de démo, quand le projet en a une (sinon, la capture « En images »). */
     demo: string;
-    /** {i} : l'escale de la fiche ; {n} : le nombre d'escales. */
-    stopOf: string;
-    /** La même chose pour un lecteur d'écran, qui lirait « / » comme « barre oblique ». */
-    stopOfSpoken: string;
     stop: string;
     why: string;
     what: string;
     how: string;
     /**
-     * La carte d'embarquement, à côté de la démo : le statut en direct de l'app et ce que l'en-tête ne dit
-     * pas (avec quoi c'est fait, où ça tourne). Son talon ouvre l'app ; sans app, il dit pourquoi.
+     * La carte d'embarquement, à côté de la démo : ce que l'en-tête ne dit pas (avec quoi c'est fait, où ça
+     * tourne) ; son talon, le statut en direct de l'app, ou pourquoi il n'y en a pas.
      */
     pass: {
       title: string;
@@ -45,23 +40,18 @@ export const FICHE: Record<
     };
     pictures: string;
     shelf: string;
-    end: string;
-    journal: string;
     /** {name} : le projet. */
     question: string;
   }
 > = {
   fr: {
     resume: "Reprendre le voyage",
-    stripAria: "Les escales voisines",
+    copilot: "Reprends ton voyage",
     pointsAria: "Le projet, point par point",
     prevPoint: "Point précédent",
     nextPoint: "Point suivant",
-    departLabel: "Avant le décollage",
     depart: "Le départ",
     demo: "La démo",
-    stopOf: "Escale {i} / {n}",
-    stopOfSpoken: "Escale {i} sur {n}",
     stop: "Escale",
     why: "Pourquoi je l'ai fabriqué",
     what: "Ce que ça fait",
@@ -75,21 +65,16 @@ export const FICHE: Record<
     },
     pictures: "En images",
     shelf: "Sur l'étagère aussi",
-    end: "Fin du voyage",
-    journal: "Le carnet de voyage",
     question: "Une question sur {name} ?",
   },
   en: {
     resume: "Resume the journey",
-    stripAria: "Neighbouring stops",
+    copilot: "Back to your journey",
     pointsAria: "The project, point by point",
     prevPoint: "Previous point",
     nextPoint: "Next point",
-    departLabel: "Before take-off",
     depart: "The departure",
     demo: "The demo",
-    stopOf: "Stop {i} / {n}",
-    stopOfSpoken: "Stop {i} of {n}",
     stop: "Stop",
     why: "Why I built it",
     what: "What it does",
@@ -103,8 +88,6 @@ export const FICHE: Record<
     },
     pictures: "In pictures",
     shelf: "Also on the shelf",
-    end: "End of the journey",
-    journal: "The travel journal",
     question: "A question about {name}?",
   },
 };

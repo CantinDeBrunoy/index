@@ -1,14 +1,15 @@
 ---
 /**
  * La carte d'embarquement d'une fiche, à côté de la démo. La forme d'une carte (le bandeau à l'encre de nuit,
- * le talon détaché par une ligne pointillée et deux encoches), mais ce sont les infos qui comptent : le statut
- * de l'app en direct, avec quoi c'est fait, où ça tourne, le code. Le trajet d'Index vers le projet reste en
- * petit dans le bandeau. Le talon ouvre l'app (en laiton), ou dit pourquoi il n'y en a pas. `compact` : la
- * version posée à droite de la démo ; `level` : le niveau du titre, 3 sous la démo, 2 quand la carte est seule.
+ * le talon détaché par une ligne pointillée et deux encoches), mais ce sont les infos qui comptent : avec quoi
+ * c'est fait, où ça tourne, et sur le talon le statut de l'app en direct (ou pourquoi il n'y en a pas). Ni l'app
+ * ni le code : l'en-tête de la fiche les ouvre déjà. Le trajet d'Index vers le projet reste en petit dans le
+ * bandeau. `compact` : la version posée à droite de la démo ; `level` : le niveau du titre, 3 sous la démo, 2
+ * quand la carte est seule.
  */
 import type { Project } from "@index/projects";
 import { FICHE } from "../../data/fiches";
-import { appOf, kindOf, STOPS, VOYAGE, type Stop, type StopText } from "../../data/voyage";
+import { appOf, kindOf, STOPS, type Stop, type StopText } from "../../data/voyage";
 import type { Lang } from "../../i18n/voyage";
 
 interface Props {
@@ -24,7 +25,6 @@ const { lang, project, stop, text, compact = false, level = 3 } = Astro.props;
 const p = FICHE[lang].pass;
 const app = appOf(project, text, lang);
 const status = kindOf(project, text, lang).status;
-const code = project.links.code;
 // Seule une app web en ligne a un statut en direct (sondé par le Worker, /api/status).
 const live = project.kind === "web" && "href" in app;
 const HOME_CODE = STOPS.find((s) => s.slug === "index")!.code;
@@ -49,17 +49,6 @@ const titleId = `carte-${project.slug}`;
     </div>
     <div class="pass__body">
       <dl class="pass__facts">
-        {
-          "href" in app && (
-            <div>
-              <dt>{p.status}</dt>
-              <dd class="pass__status" data-brief-live={live ? project.slug : undefined} data-states={live ? JSON.stringify(p.states) : undefined}>
-                {live && <i class="live-dot" data-state="pending" aria-hidden="true" hidden />}
-                <span data-live-text>{status}</span>
-              </dd>
-            </div>
-          )
-        }
         <div>
           <dt>{p.madeWith}</dt>
           <dd><ul class="chips">{project.stack.map((tech) => <li class="chip">{tech}</li>)}</ul></dd>
@@ -73,19 +62,16 @@ const titleId = `carte-${project.slug}`;
           )
         }
       </dl>
-      {
-        code && (
-          <a class="link pass__code" href={code} target="_blank" rel="noopener">
-            {VOYAGE[lang].code}
-          </a>
-        )
-      }
     </div>
     {
       "href" in app ? (
-        <a class="pass__gate" href={app.href} target={app.target} rel={app.rel}>
-          {app.label}
-        </a>
+        <p class="pass__gate">
+          <span class="pass__gate-label">{p.status}</span>
+          <span class="pass__status" data-brief-live={live ? project.slug : undefined} data-states={live ? JSON.stringify(p.states) : undefined}>
+            {live && <i class="live-dot" data-state="pending" aria-hidden="true" hidden />}
+            <span data-live-text>{status}</span>
+          </span>
+        </p>
       ) : (
         <p class="pass__gate pass__gate--off">{app.note}</p>
       )
@@ -171,41 +157,36 @@ const titleId = `carte-${project.slug}`;
   .pass__facts .chips {
     margin-top: 10px;
   }
-  .pass__status {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .pass__code {
-    align-self: flex-start;
-    min-height: 0;
-  }
-  /* Le talon : l'action, et rien d'autre. */
+  /* Le talon : le statut de l'app, et rien d'autre. */
   .pass__gate {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 14px;
     box-sizing: border-box;
     height: var(--gate);
     margin: 0;
     padding: 0 24px;
     border-top: 2px dashed rgba(36, 30, 24, 0.3);
-    background: var(--brass);
-    color: var(--on-brass);
+    background: var(--paper);
+    color: var(--ink);
     font-size: 17px;
     font-weight: 600;
-    text-decoration: none;
-    transition: filter 0.2s;
   }
-  a.pass__gate:hover {
-    filter: brightness(1.08);
+  .pass__gate-label {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
-  a.pass__gate:focus-visible {
-    outline: 2px solid var(--ink);
-    outline-offset: -6px;
+  .pass__status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
   .pass__gate--off {
-    background: var(--paper);
     color: var(--muted);
     font-size: 14px;
     font-weight: 500;

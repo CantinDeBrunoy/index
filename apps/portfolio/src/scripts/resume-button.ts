@@ -1,5 +1,5 @@
-// Le bouton « Reprendre le voyage » qui suit la lecture d'une fiche, dès son haut. Il s'efface au bas de la
-// page, où la carte de l'escale suivante prend le relais : quand un élément [data-resume-hides] est à
+// Le copilote qui suit la lecture d'une fiche, dès son haut, et ramène au voyage. Il s'efface au bas de la
+// page, où le bouton « Reprendre le voyage » prend le relais : quand un élément [data-resume-hides] est à
 // l'écran. Sans script, il reste visible.
 const button = document.querySelector<HTMLElement>("[data-resume]");
 const hides = document.querySelectorAll("[data-resume-hides]");

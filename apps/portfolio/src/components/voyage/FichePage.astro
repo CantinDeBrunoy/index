@@ -2,9 +2,10 @@
 /**
  * Une fiche projet, une par escale du voyage. L'en-tête prend la couleur et la scène de l'escale : la vidéo
  * haute définition sur ordinateur, la boucle du téléphone sous 700 px, une image fixe en mouvement réduit.
- * Le reste est sur papier crème : la démo et, à côté, la carte d'embarquement (la pile, l'hébergeur, le
- * statut ; son talon ouvre l'app), pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait, l'étagère (les
- * projets racontés ici), puis l'escale suivante, qui reprend le voyage ; après la dernière, le carnet.
+ * Le reste est sur papier crème : la démo et, à côté, la carte d'embarquement (la pile, l'hébergeur ; son
+ * talon, le statut), pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait, l'étagère (les projets
+ * racontés ici), puis un seul bouton, qui reprend le voyage à l'escale du projet. En bas à droite, le
+ * copilote, dans la tenue de l'escale, y ramène aussi pendant la lecture.
  * Les textes viennent de la collection de contenu (src/content/projets) ; le décor et l'accroche, de
  * data/voyage.ts ; les liens, la pile et l'hébergeur, de @index/projects.
  */
@@ -12,7 +13,7 @@ import { getProject, GITHUB_URL } from "@index/projects";
 import { getImage } from "astro:assets";
 import { getEntry } from "astro:content";
 import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
-import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
+import { appOf, fill, kindOf, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import { getShot } from "../../lib/shots";
@@ -20,7 +21,6 @@ import Badges from "./Badges.astro";
 import BoardingPass from "./BoardingPass.astro";
 import Colophon from "./Colophon.astro";
 import FichePoints from "./FichePoints.astro";
-import FicheStrip, { type StripCell } from "./FicheStrip.astro";
 import SiteHeader from "./SiteHeader.astro";
 
 interface Props {
@@ -68,34 +68,15 @@ const shelf = await Promise.all(
 
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
 
-// La bande des escales (FicheStrip), sous l'en-tête et en bas : la fiche d'avant et celle d'après, dans l'ordre
-// du voyage ; avant la première escale, le départ ; après la dernière, le carnet.
-const before = STOPS[i - 1];
-const after = STOPS[i + 1];
-const cellOf = (s: (typeof STOPS)[number], k: number): StripCell => ({
-  href: fichePath(lang, getProject(s.slug)!),
-  label: `${f.stop} ${k}`,
-  place: STOP_TEXTS[lang][s.slug]!.place,
-  name: getProject(s.slug)!.name,
-  thumb: still(s.scene, "-640"),
-  bg: s.bg,
-});
-const strip = {
-  aria: f.stripAria,
-  prev: before ? cellOf(before, n - 1) : { href: ROUTES.voyage[lang], label: f.departLabel, name: f.depart, thumb: still(START.scene, "-640"), bg: START.bg },
-  next: after ? cellOf(after, n + 1) : { href: ROUTES.projets[lang], label: f.end, name: f.journal, bg: "" },
-  position: fill(f.stopOf, { i: n, n: STOPS.length }),
-  spoken: fill(f.stopOfSpoken, { i: n, n: STOPS.length }),
-  total: STOPS.length,
-  index: i,
-};
+// Le retour au voyage, à l'escale du projet : le copilote et le bouton du bas.
+const resume = `${ROUTES.voyage[lang]}#escale-${n}`;
 // Les textes en prose, à la typographie de la langue (les espaces insécables du français).
 const T = (text: string) => typo(lang, text);
 ---
 
 <Voyage lang={lang} title={project.name} description={text.pitch} alternates={alternates} type="article" palette="day">
   <div class={`hero pal-${stop.palette}`} style={`--stop-bg: ${stop.bg}`}>
-    <SiteHeader lang={lang} current="projets" exact={false} alternates={alternates} />
+    <SiteHeader lang={lang} current="projets" exact={false} here={n} alternates={alternates} />
 
     <div class="wrap-read">
       <div class="hero__body">
@@ -145,8 +126,6 @@ const T = (text: string) => typo(lang, text);
       </div>
     </div>
   </div>
-
-  <FicheStrip {...strip} />
 
   <main id="contenu" class="wrap-read">
     {
@@ -221,8 +200,16 @@ const T = (text: string) => typo(lang, text);
     }
   </main>
 
-  <!-- En bas aussi, sur toute la largeur, avant le pied de page. -->
-  <FicheStrip {...strip} hidesResume />
+  <!-- En bas, sur toute la largeur : un seul bouton, qui reprend le voyage. Le copilote s'efface devant lui. -->
+  <section class="reprendre" data-resume-hides>
+    <a class="reprendre__go pal-night" href={resume}>
+      <span class="reprendre__thumb" style={`background: ${stop.bg}`}>
+        <img src={still(stop.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
+      </span>
+      <span class="reprendre__text"><b>{f.resume}</b><small>{f.stop} {n} · {text.place}</small></span>
+      <span class="reprendre__arrow" aria-hidden="true">→</span>
+    </a>
+  </section>
 
   <div class="wrap-read">
     <footer class="foot" data-resume-hides>
@@ -234,11 +221,17 @@ const T = (text: string) => typo(lang, text);
     <Colophon lang={lang} />
   </div>
 
-  <a class="resume pal-night" href={`${ROUTES.voyage[lang]}#escale-${n}`} data-resume>
-    <span class="resume__thumb" style={`background: ${stop.bg}`}>
-      <img src={still(stop.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
+  <a class="resume" href={resume} data-resume>
+    <span class="resume__bubble">
+      <b>{f.copilot}</b>
+      <small>{f.stop} {n} · {text.place} <span aria-hidden="true">→</span></small>
     </span>
-    <span class="resume__text"><b>{f.resume}</b><small>{f.stop} {n} · {text.place}</small></span>
+    <span class="resume__dock">
+      <picture>
+        <source media="(prefers-reduced-motion: reduce)" srcset={`/voyage/copilote/${stop.scene}-fixe.webp`} />
+        <img src={`/voyage/copilote/${stop.scene}.webp`} alt="" width="400" height="400" loading="lazy" decoding="async" />
+      </picture>
+    </span>
   </a>
 </Voyage>
 
@@ -276,30 +269,23 @@ const T = (text: string) => typo(lang, text);
     flex-direction: column;
     gap: 16px;
   }
-  /* Le retour au voyage, qui suit la lecture dès le haut de la fiche : de nuit, en bas à droite ; sur
-     téléphone, en bas, de toute la largeur. Visible même sans script ; scripts/resume-button.ts l'efface au
-     bas de la page. */
+  /* Le copilote, qui suit la lecture dès le haut de la fiche, en bas à droite : dans la tenue de l'escale,
+     il dit « Reprends ton voyage », dans une bulle crème au liseré de laiton, comme à l'accueil du voyage.
+     Visible même sans script ; scripts/resume-button.ts l'efface devant le bouton du bas et le pied de page. */
   .resume {
     position: fixed;
     right: 32px;
-    bottom: 32px;
+    bottom: 28px;
     z-index: 5;
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 14px;
-    min-height: 64px;
-    padding: 8px 28px 8px 8px;
-    border: 1.5px solid var(--brass);
-    border-radius: var(--radius-pill);
-    background: var(--night);
-    box-shadow: 0 14px 36px rgba(14, 16, 24, 0.35);
-    color: var(--ink);
+    gap: 16px;
+    color: #241e18;
     text-decoration: none;
     transition:
       opacity 0.25s,
       transform 0.25s,
-      visibility 0s,
-      background 0.2s;
+      visibility 0s;
   }
   .resume:global(.is-hidden) {
     opacity: 0;
@@ -308,40 +294,73 @@ const T = (text: string) => typo(lang, text);
     transition:
       opacity 0.25s,
       transform 0.25s,
-      visibility 0s linear 0.25s,
-      background 0.2s;
+      visibility 0s linear 0.25s;
   }
-  .resume:hover {
-    background: var(--card);
-  }
-  .resume__thumb {
-    flex: none;
-    width: 48px;
-    height: 48px;
-    overflow: hidden;
-    border-radius: var(--radius-pill);
-    box-shadow: 0 0 0 2px var(--brass);
-  }
-  .resume__thumb img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .resume__text {
+  .resume__bubble {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
+    padding: 14px 22px 14px 20px;
+    border: 2px solid var(--brass);
+    border-radius: var(--radius-l);
+    background: #fbf7f0;
+    box-shadow: 0 12px 30px rgba(14, 16, 24, 0.22);
+    transition: background 0.2s;
+  }
+  /* La pointe, vers lui. */
+  .resume__bubble::after {
+    content: "";
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    border-top: 2px solid var(--brass);
+    border-right: 2px solid var(--brass);
+    background: inherit;
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .resume:hover .resume__bubble {
+    background: #fff;
   }
   .resume b {
-    font-size: 16px;
-    font-weight: 500;
+    font-family: var(--font-serif);
+    font-size: 26px;
+    font-weight: 400;
+    line-height: 1;
   }
   .resume small {
-    color: var(--brass-text);
+    color: #84652f;
     font-family: var(--font-mono);
     font-size: 11px;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  /* Sa pastille, cadrée comme au voyage. */
+  .resume__dock {
+    position: relative;
+    flex: none;
+    width: 76px;
+    height: 76px;
+    overflow: hidden;
+    border: 1px solid #2b3040;
+    border-radius: var(--radius-pill);
+    background: #171a24;
+    box-shadow: 0 0 0 4px rgba(23, 26, 36, 0.18);
+    transition: border-color 0.2s;
+  }
+  .resume:hover .resume__dock {
+    border-color: var(--brass);
+  }
+  .resume__dock img {
+    position: absolute;
+    left: -24%;
+    top: -12%;
+    display: block;
+    width: 161%;
+    height: 161%;
+    max-width: none;
   }
   @media (prefers-reduced-motion: reduce) {
     .resume {
@@ -352,7 +371,17 @@ const T = (text: string) => typo(lang, text);
     .resume {
       right: 16px;
       bottom: calc(16px + env(safe-area-inset-bottom));
-      left: 16px;
+      gap: 12px;
+    }
+    .resume__bubble {
+      padding: 10px 16px 10px 14px;
+    }
+    .resume b {
+      font-size: 21px;
+    }
+    .resume__dock {
+      width: 62px;
+      height: 62px;
     }
   }
   @media print {
@@ -540,6 +569,69 @@ const T = (text: string) => typo(lang, text);
     line-height: 1.6;
   }
 
+  /* — En bas, sur toute la largeur : un seul bouton, au centre, qui reprend le voyage — */
+  .reprendre {
+    display: flex;
+    justify-content: center;
+    padding: 32px 20px;
+    border-block: 1px solid var(--line);
+    background: var(--card);
+  }
+  .reprendre__go {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 64px;
+    padding: 8px 30px 8px 8px;
+    border: 1.5px solid var(--brass);
+    border-radius: var(--radius-pill);
+    background: var(--night);
+    color: var(--ink);
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .reprendre__go:hover {
+    background: var(--card);
+  }
+  .reprendre__thumb {
+    flex: none;
+    width: 48px;
+    height: 48px;
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 0 0 2px var(--brass);
+  }
+  .reprendre__thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .reprendre__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .reprendre b {
+    font-size: 17px;
+    font-weight: 500;
+  }
+  .reprendre small {
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .reprendre__arrow {
+    margin-left: 6px;
+    color: var(--brass-text);
+    font-size: 18px;
+    transition: transform 0.2s;
+  }
+  .reprendre__go:hover .reprendre__arrow {
+    transform: translateX(4px);
+  }
+
   .foot {
     display: flex;
     flex-wrap: wrap;
@@ -573,6 +665,12 @@ const T = (text: string) => typo(lang, text);
     .pictures,
     .boarding {
       padding: 40px 0;
+    }
+    .reprendre {
+      padding: 24px 16px;
+    }
+    .reprendre__go {
+      width: 100%;
     }
     /* La capture du téléphone, à la taille d'un téléphone ; la vidéo, filmée sur ordinateur, garde toute la largeur. */
     .shot {
