@@ -116,7 +116,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
                   class:list={["metro__stop", { "metro__stop--today": s.id === "today" }]}
                   style={`top: ${s.line === "school" ? 190 : 380}px; left: ${s.x}%; --c: ${INK[s.line]}`}
                 />
-                <span class:list={["metro__label", `metro__label--${s.place}`]} style={`top: ${(s.line === "school" ? 190 : 380) + 22}px; left: ${s.x}%`}>
+                <span class:list={["metro__label", `metro__label--${s.place}`]} style={`top: ${s.line === "school" ? 212 : 416}px; left: ${s.x}%`}>
                   <b>{s.label[0]}</b>
                   <small>{s.label[1]}</small>
                 </span>
@@ -414,10 +414,11 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     height: 260px;
     background: #f0e3cc;
   }
+  /* La bande s'arrête juste sous la ligne de la STIME : ses étiquettes passent dessous, hors du pointillé. */
   .metro__band {
     position: absolute;
     top: 150px;
-    height: 270px;
+    height: 256px;
     border: 1px dashed rgba(36, 30, 24, 0.28);
     border-radius: 22px;
     background: rgba(251, 247, 240, 0.32);
