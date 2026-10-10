@@ -60,13 +60,14 @@ const RETRY_DELAY_MS = 10_000;
  * Où vivent les voyages : dans ce navigateur ou cet appareil (visiteur, app mobile), ou sur le compte
  * du propriétaire connecté sur le hub (web). `unavailable` : connecté mais voyages illisibles, rien ne
  * s'enregistre pour ne jamais écraser le compte ; `conflict` : modifiés sur un autre appareil, la
- * version du compte vient d'être rechargée.
+ * version du compte vient d'être rechargée. `checking` : sur le web, le temps de savoir qui regarde.
  */
 export type TripsSync =
+  | { mode: 'checking' }
   | { mode: 'local' }
   | { mode: 'account'; login: string; status: 'saved' | 'saving' | 'error' | 'conflict' | 'unavailable' };
 
-/** Pour le propriétaire connecté : où en sont ses voyages sur son compte (rien pour un visiteur). */
+/** Pour le propriétaire connecté : où en sont ses voyages sur son compte. */
 const SYNC_LABEL: Record<Extract<TripsSync, { mode: 'account' }>['status'], string> = {
   saved: 'Enregistrés sur mon compte',
   saving: 'Enregistrement sur mon compte…',
@@ -75,8 +76,12 @@ const SYNC_LABEL: Record<Extract<TripsSync, { mode: 'account' }>['status'], stri
   unavailable: 'Illisibles pour le moment : recharge la page',
 };
 
+/** Où sont les voyages, pour le propriétaire connecté comme pour un visiteur du web (rien sur l'app mobile). */
 export function syncLabel(sync: TripsSync): string | undefined {
-  return sync.mode === 'account' ? SYNC_LABEL[sync.status] : undefined;
+  if (sync.mode === 'account') return SYNC_LABEL[sync.status];
+  // Un visiteur : ses changements ne touchent pas les voyages du propriétaire, il doit le savoir.
+  if (sync.mode === 'local' && Platform.OS === 'web') return 'Gardés dans ce navigateur';
+  return undefined;
 }
 
 type TripsContextValue = {
@@ -106,7 +111,7 @@ export function TripsProvider({ children }: { children: ReactNode }) {
   // Sur le web, rien tant qu'on ne sait pas qui regarde : ni la démo au propriétaire, ni l'inverse.
   const [state, setState] = useState<TripsState>(Platform.OS === 'web' ? EMPTY : SEED);
   const [loading, setLoading] = useState(true);
-  const [sync, setSync] = useState<TripsSync>({ mode: 'local' });
+  const [sync, setSync] = useState<TripsSync>(Platform.OS === 'web' ? { mode: 'checking' } : { mode: 'local' });
 
   // Compte : la version connue du compte et ce qui y est enregistré (JSON), l'état à envoyer, un envoi en cours.
   const account = useRef<{ rev: number; saved: string } | null>(null);
@@ -144,6 +149,7 @@ export function TripsProvider({ children }: { children: ReactNode }) {
       }
       const raw = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null);
       if (!active) return;
+      setSync({ mode: 'local' });
       try {
         setState(raw ? migrate(JSON.parse(raw) as TripsState) : SEED);
       } catch {
@@ -201,7 +207,7 @@ export function TripsProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
-    if (sync.status === 'unavailable' || JSON.stringify(state) === account.current?.saved) return;
+    if (sync.mode !== 'account' || sync.status === 'unavailable' || JSON.stringify(state) === account.current?.saved) return;
     const timer = setTimeout(() => void sendRef.current(), SAVE_DELAY_MS);
     return () => clearTimeout(timer);
   }, [state, loading, sync]);

@@ -67,7 +67,7 @@ export default function GlobeScreen() {
           <ThemedText style={styles.badgeText}>
             {trips.length} voyages · {cities.length} villes · {visitedCountries.length} pays
           </ThemedText>
-          {sync.mode === 'account' && <ThemedText style={styles.syncText}>{syncLabel(sync)}</ThemedText>}
+          {syncLabel(sync) ? <ThemedText style={styles.syncText}>{syncLabel(sync)}</ThemedText> : null}
         </View>
       </View>
 
