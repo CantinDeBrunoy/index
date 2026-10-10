@@ -4,8 +4,9 @@
  * haute définition sur ordinateur, la boucle du téléphone sous 700 px, une image fixe en mouvement réduit.
  * Le reste est sur papier crème : la démo et, à côté, la carte d'embarquement (la pile, l'hébergeur ; son
  * talon, le statut), pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait, l'étagère (les projets
- * racontés ici), puis un seul bouton, qui reprend le voyage à l'escale du projet. En bas à droite, le
- * copilote, dans la tenue de l'escale, y ramène aussi pendant la lecture.
+ * racontés ici), le pied de page, et tout en bas une bande qui reprend le voyage à l'escale du projet. La démo
+ * tourne d'elle-même quand elle est à l'écran. À droite, le copilote, dans la tenue de l'escale, y ramène aussi
+ * pendant la lecture ; il s'en va au bas de la page.
  * Les textes viennent de la collection de contenu (src/content/projets) ; le décor et l'accroche, de
  * data/voyage.ts ; les liens, la pile et l'hébergeur, de @index/projects.
  */
@@ -135,7 +136,7 @@ const T = (text: string) => typo(lang, text);
           <div class="pictures__row">
           <figure>
             {video ? (
-              <video class="shot shot--video" src={video.src} poster={demoPoster(video.src)} controls muted playsinline preload="none" width={video.width} height={video.height} />
+              <video class="shot shot--video" src={video.src} poster={demoPoster(video.src)} controls muted loop playsinline preload="none" width={video.width} height={video.height} data-demo />
             ) : (
             shot && shotSet && capture && <picture>
               {shotPhone && shotPhoneSet && (
@@ -200,15 +201,6 @@ const T = (text: string) => typo(lang, text);
     }
   </main>
 
-  <!-- En bas, sur toute la largeur : la bande entière est le bouton qui reprend le voyage. Le copilote s'efface devant elle. -->
-  <a class="reprendre pal-night" href={resume} data-resume-hides>
-    <span class="reprendre__thumb" style={`background: ${stop.bg}`}>
-      <img src={still(stop.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
-    </span>
-    <span class="reprendre__text"><b>{f.resume}</b><small>{f.stop} {n} · {text.place}</small></span>
-    <span class="reprendre__arrow" aria-hidden="true">→</span>
-  </a>
-
   <div class="wrap-read">
     <footer class="foot" data-resume-hides>
       <p>
@@ -218,6 +210,15 @@ const T = (text: string) => typo(lang, text);
     </footer>
     <Colophon lang={lang} />
   </div>
+
+  <!-- Tout en bas, sous le pied de page, sur toute la largeur : la bande entière est le bouton qui reprend le voyage. -->
+  <a class="reprendre pal-night" href={resume} data-resume-hides>
+    <span class="reprendre__thumb" style={`background: ${stop.bg}`}>
+      <img src={still(stop.scene, "-640")} alt="" width="640" height="360" loading="lazy" decoding="async" />
+    </span>
+    <span class="reprendre__text"><b>{f.resume}</b><small>{f.stop} {n} · {text.place}</small></span>
+    <span class="reprendre__arrow" aria-hidden="true">→</span>
+  </a>
 
   <a class="resume" href={resume} data-resume>
     <span class="resume__bubble">
@@ -235,6 +236,7 @@ const T = (text: string) => typo(lang, text);
 
 <script>
   import "../../scripts/scene-video";
+  import "../../scripts/demo-video";
   import "../../scripts/resume-button";
 </script>
 
@@ -571,7 +573,7 @@ const T = (text: string) => typo(lang, text);
     line-height: 1.6;
   }
 
-  /* — En bas, sur toute la largeur : la bande de nuit est le bouton, son contenu au centre — */
+  /* — Tout en bas, sous le pied de page, sur toute la largeur : la bande de nuit est le bouton, son contenu au centre — */
   .reprendre {
     display: flex;
     align-items: center;
@@ -671,7 +673,7 @@ const T = (text: string) => typo(lang, text);
     .reprendre {
       gap: 14px;
       min-height: 112px;
-      padding: 24px 16px;
+      padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
     }
     .reprendre__thumb {
       width: 48px;
