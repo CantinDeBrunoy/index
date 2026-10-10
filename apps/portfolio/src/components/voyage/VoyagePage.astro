@@ -516,8 +516,10 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     width: min(calc(720 * var(--u)), calc(100% - 280px));
   }
   /* Sans carte, les petits textes reposent sur la couleur de l'escale : sur les escales claires, un laiton
-     et un gris plus sombres que ceux des cartes (au moins 5:1 ; ceux des cartes tombaient à 3,2:1 sur Tonalli). */
-  .stop:not(.pal-night) .cartel {
+     et un gris plus sombres que ceux des cartes (au moins 5:1 ; ceux des cartes tombaient à 3,2:1 sur Tonalli).
+     De même dans la barre des escales, teintée de cette couleur. */
+  .stop:not(.pal-night) .cartel,
+  .stop:not(.pal-night) .stop-nav {
     --brass-text: #63491f;
     --muted: #574a3e;
   }
@@ -576,14 +578,16 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     display: none;
   }
 
-  /* La barre des escales, en bas à droite, de nuit sur toutes les escales : reculer, où l'on en est,
-     avancer, et la pastille du copilote, qui rouvre le tuto. */
+  /* La barre des escales, en bas à droite : reculer, où l'on en est, avancer, et la pastille du copilote,
+     qui rouvre le tuto. Elle prend la couleur de l'escale, éclaircie de la crème des cartes (--bar), et
+     l'encre de sa palette ; sur les escales de nuit, le bleu nuit. */
   .stop-nav {
     --dock: 48px;
-    --ink: #f1e8da;
-    --card: #1c2030;
-    --line: #2b3040;
-    --brass-text: #d9b475;
+    --bar: color-mix(in srgb, var(--stop-bg) 45%, var(--card));
+    --hover: color-mix(in srgb, var(--ink) 7%, var(--bar));
+    --line: color-mix(in srgb, var(--ink) 14%, var(--bar));
+    --dot: var(--muted);
+    --shadow: rgba(36, 30, 24, 0.16);
     position: absolute;
     z-index: 2;
     right: 40px;
@@ -594,9 +598,17 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     padding: 5px;
     border: 1px solid var(--line);
     border-radius: var(--radius-pill);
-    background: rgba(14, 16, 24, 0.94);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    background: color-mix(in srgb, var(--bar) 94%, transparent);
+    box-shadow: 0 12px 32px var(--shadow);
     color: var(--ink);
+  }
+  .stop.pal-night .stop-nav {
+    --bar: rgb(14, 16, 24);
+    --card: #1c2030;
+    --hover: var(--card);
+    --line: #2b3040;
+    --dot: #8a8274;
+    --shadow: rgba(0, 0, 0, 0.35);
   }
   .back {
     display: inline-flex;
@@ -611,7 +623,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     transition: background 0.2s;
   }
   .back:hover {
-    background: var(--card);
+    background: var(--hover);
   }
   .where {
     display: flex;
@@ -641,7 +653,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     width: 6px;
     height: 6px;
     box-sizing: border-box;
-    border: 1.5px solid #8a8274;
+    border: 1.5px solid var(--dot);
     border-radius: var(--radius-pill);
   }
   .where__dots i.done,
@@ -943,7 +955,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
       min-height: 52px;
       padding: 0;
       border: 1px solid var(--line);
-      background: rgba(14, 16, 24, 0.85);
+      background: color-mix(in srgb, var(--bar) 85%, transparent);
       font-size: 18px;
     }
     .where {
