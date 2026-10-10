@@ -76,14 +76,14 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
     },
     hublot: {
       place: "Dans l'avion",
-      alt: "Dans l'avion : par le hublot, l'aile, son réacteur et son winglet de laiton, au-dessus d'une mer de nuages.",
+      alt: "Dans l'avion : par le hublot, sous son volet un peu baissé, l'aile, son réacteur et son winglet de laiton, au-dessus d'une mer de nuages.",
       kind: "Robot et page web · 2026 · En ligne",
       pitch: "Je fixe mon prix, un robot surveille les vols au départ de Paris, et mon téléphone ne sonne que quand ça vaut le coup.",
       cta: "Regarder par le hublot",
     },
     "metro-pathfinder": {
       place: "Paris vu du ciel",
-      alt: "Paris vu du ciel : la Seine, les toits de zinc, les lignes de métro, et le plus court chemin en laiton qu'une rame parcourt jusqu'à sa station.",
+      alt: "Paris vu du ciel : la Seine, la tour Eiffel, les toits de zinc, les lignes de métro, et le plus court chemin en laiton qu'une rame parcourt jusqu'à sa station.",
       kind: "Algorithme · 2022 · Archive",
       pitch: "Mon premier algorithme sur un graphe : le trajet le plus court entre deux stations du métro parisien.",
       cta: "Descendre à la station",
@@ -151,14 +151,14 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
     },
     hublot: {
       place: "On the plane",
-      alt: "On the plane: through the window, the wing, its engine and brass winglet above a sea of clouds.",
+      alt: "On the plane: through the window, under its partly lowered blind, the wing, its engine and brass winglet above a sea of clouds.",
       kind: "Bot and web page · 2026 · Live",
       pitch: "I set my price, a bot watches flights from Paris, and my phone only rings when it's worth it.",
       cta: "Look out of the window",
     },
     "metro-pathfinder": {
       place: "Paris from above",
-      alt: "Paris from above: the Seine, the zinc roofs, the metro lines, and the shortest route in brass, which a train follows to its station.",
+      alt: "Paris from above: the Seine, the Eiffel Tower, the zinc roofs, the metro lines, and the shortest route in brass, which a train follows to its station.",
       kind: "Algorithm · 2022 · Archive",
       pitch: "My first graph algorithm: the shortest route between two Paris metro stations.",
       cta: "Get off at the station",

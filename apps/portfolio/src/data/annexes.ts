@@ -1,7 +1,7 @@
 /**
  * Les pages annexes du voyage. La 404, « Bagage égaré », une escale hors itinéraire : de nuit, un tapis à
  * bagages tourne à vide sous le panneau du tapis 404 ; à côté, une valise attend seule. La valise ramène au
- * départ ; le cartel mène aux projets. Et les mentions légales. Brouillons, à relire.
+ * départ ; le cartel mène aux projets. Et les mentions légales.
  */
 
 import { projects } from "@index/projects";
@@ -39,7 +39,7 @@ export const NOT_FOUND: Record<Lang, NotFoundStrings> = {
     title: "Bagage <em>égaré</em>.",
     text: "Cette page n'existe pas, ou plus : elle a dû se perdre en correspondance. Le reste du voyage, lui, est bien arrivé.",
     spot: "Reprendre le voyage",
-    alt: "Un tapis à bagages tourne à vide dans un terminal de nuit, sous le panneau du tapis 404 ; à côté, une valise terre cuite attend seule, l'étiquette « 404 » pendue à sa poignée.",
+    alt: "Un tapis à bagages tourne à vide dans un terminal de nuit, sous le panneau du tapis 404 ; à côté, une valise couleur terre cuite attend seule, l'étiquette « 404 » pendue à sa poignée.",
     projects: `Voir les ${inWords("fr", projects.length)} projets →`,
     about: "À propos →",
   },
@@ -63,7 +63,8 @@ export const NOT_FOUND: Record<Lang, NotFoundStrings> = {
  * l'adresse et le téléphone de l'hébergeur. Cantin signe de son nom, avec son e-mail : ni adresse ni
  * téléphone à lui. L'hébergeur, d'après ses rapports à la SEC et cloudflare.com (octobre 2026).
  * Les affirmations sur les données restent vraies tant que le site ne dépose aucun cookie chez ses visiteurs
- * (seule la connexion du propriétaire en pose, @index/auth), ne charge rien d'un autre site (les polices sont
+ * (seule la connexion du propriétaire en pose, @index/auth), ne garde rien dans leur navigateur que l'accueil
+ * du copilote déjà vu (localStorage, scripts/copilote.ts), ne charge rien d'un autre site (les polices sont
  * auto-hébergées), sauf le script de mesure d'audience sans cookie quand il est actif (data/stats.ts), et n'a
  * aucun formulaire.
  */
@@ -99,7 +100,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
         "Hébergement",
         [
           `<strong>Cloudflare, Inc.</strong><br>101 Townsend St, San Francisco, CA 94107, États-Unis<br>${cfPhone} · ${cf}`,
-          "Les apps ont chacune leur hébergeur, indiqué dans le billet de leur fiche.",
+          "Chaque app a son propre hébergeur, indiqué sur le billet de sa fiche.",
         ],
       ],
       [
@@ -109,6 +110,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
             ? "Ce site ne dépose aucun cookie chez ses visiteurs et n'a aucun formulaire. Il compte ses visites avec Cloudflare Web Analytics, sans cookie ni identifiant : seulement des chiffres d'ensemble (pages vues, pays, navigateur). Si vous m'écrivez, votre adresse sert seulement à vous répondre."
             : "Ce site ne dépose aucun cookie chez ses visiteurs, ne mesure pas l'audience et n'a aucun formulaire. Si vous m'écrivez, votre adresse sert seulement à vous répondre.",
           "Seule exception, le lien « Connexion » en bas des pages, qui ne sert qu'à moi : il passe par GitHub et dépose des cookies strictement nécessaires à la connexion, pour ouvrir mes propres données dans Magellan et Hublot.",
+          "Sinon, votre navigateur ne garde qu'une chose : que vous avez déjà vu l'accueil du copilote, pour ne pas vous le remontrer. Rien n'en est envoyé.",
           "Comme tout hébergeur, Cloudflare tient des journaux techniques, dont l'adresse IP, pour faire fonctionner et protéger le service.",
           `Une question sur vos données ? Écrivez-moi. Vous pouvez aussi vous adresser à la <a href="https://www.cnil.fr" target="_blank" rel="noopener">CNIL</a>.`,
         ],
@@ -116,14 +118,14 @@ export const LEGAL: Record<Lang, LegalStrings> = {
       [
         "Propriété intellectuelle",
         [
-          "Les textes, les scènes 3D et le code de ce site sont de Cantin Roquier.",
+          "Les textes, les scènes 3D et le code de ce site sont de Cantin Roquier, sauf ce qui est crédité ci-dessous.",
           "Le code de mes projets est public sur GitHub : sauf licence indiquée dans le dépôt, tous droits réservés. Pour en reprendre un morceau, demandez-moi.",
         ],
       ],
     ],
     creditsLabel: "Crédits",
     repainted: "Tous les modèles sont repeints dans la matière du voyage.",
-    updated: "Mise à jour le 9 octobre 2026",
+    updated: "Mise à jour le 10 octobre 2026",
   },
   en: {
     pageTitle: "Legal notice",
@@ -147,6 +149,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
             ? "This site sets no cookies on its visitors and has no forms. It counts its visits with Cloudflare Web Analytics, with no cookies and no identifiers: only overall figures (page views, countries, browsers). If you write to me, your address is only used to reply."
             : "This site sets no cookies on its visitors, runs no analytics and has no forms. If you write to me, your address is only used to reply.",
           "The one exception is the “Sign in” link at the bottom of the pages, which is for me only: it goes through GitHub and sets cookies strictly needed to sign in, to open my own data in Magellan and Hublot.",
+          "Otherwise, your browser keeps just one thing: that you have already seen the copilot's welcome, so it isn't shown again. None of it is sent anywhere.",
           "Like any host, Cloudflare keeps technical logs, including IP addresses, to run and protect the service.",
           `A question about your data? Write to me. You can also contact the <a href="https://www.cnil.fr/en" target="_blank" rel="noopener">CNIL</a>, the French data protection authority.`,
         ],
@@ -154,13 +157,13 @@ export const LEGAL: Record<Lang, LegalStrings> = {
       [
         "Intellectual property",
         [
-          "The texts, 3D scenes and code of this site are by Cantin Roquier.",
+          "The texts, 3D scenes and code of this site are by Cantin Roquier, except what is credited below.",
           "My projects' code is public on GitHub: unless a licence is stated in the repository, all rights are reserved. To reuse a piece, ask me.",
         ],
       ],
     ],
     creditsLabel: "Credits",
     repainted: "Every model is repainted in the journey's own materials.",
-    updated: "Updated on 9 October 2026",
+    updated: "Updated on 10 October 2026",
   },
 };

@@ -200,7 +200,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     away: [
       { title: "Randonnée", alt: "Une petite montagne d'argile, son sentier de laiton en lacets jusqu'au fanion du sommet ; un randonneur y monte." },
       { title: "Histoire", alt: "Une pile de livres d'histoire, celui du dessus qui s'entrouvre, un signet en laiton." },
-      { title: "Sports de combat", alt: "Une paire de gants de boxe en argile, le laçage en laiton.", text: "Boxe française, MMA, jiu-jitsu brésilien." },
+      { title: "Sports de combat", alt: "Une paire de gants de boxe en argile, cerclés de laiton au poignet.", text: "Boxe française, MMA, jiu-jitsu brésilien." },
       { title: "Voyages", alt: "Une valise d'argile aux coins de laiton, couverte d'étiquettes de voyage ; son étiquette à bagages se balance, un avion de papier en fait le tour." },
       { title: "Escalade", alt: "Un pan d'escalade qui surplombe son tapis, une voie de prises en laiton ; un grimpeur encordé la monte et la redescend." },
       { title: "Tennis", alt: "Une raquette d'argile debout, le manche en laiton ; une balle de laiton rebondit à côté." },
@@ -294,7 +294,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     away: [
       { title: "Hiking", alt: "A small clay mountain, its brass trail switching back up to the summit flag; a hiker climbs it." },
       { title: "History", alt: "A stack of history books, the top one falling open, with a brass bookmark." },
-      { title: "Combat sports", alt: "A pair of clay boxing gloves with brass lacing.", text: "Savate (French kickboxing), MMA, Brazilian jiu-jitsu." },
+      { title: "Combat sports", alt: "A pair of clay boxing gloves, with brass bands at the wrists.", text: "Savate (French kickboxing), MMA, Brazilian jiu-jitsu." },
       { title: "Travel", alt: "A clay suitcase with brass corners, covered in travel stickers; its luggage tag swings and a paper plane circles it." },
       { title: "Climbing", alt: "An overhanging climbing wall above its crash pad, a route of brass holds; a roped climber goes up and back down." },
       { title: "Tennis", alt: "A clay racket standing upright with a brass grip; a brass ball bounces beside it." },
