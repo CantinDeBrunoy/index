@@ -5,7 +5,8 @@
 // il va s'y poser d'un saut : un arc par-dessus la bande, puis il descend dans le rond, qui le montre alors à sa
 // place ; le rond vide s'efface à son approche (on ne le voit pas à moitié caché sous lui). Il ne reste jamais
 // en l'air au-dessus du texte. Il en repart, du même saut, quand on remonte assez pour que le rond quitte
-// l'écran à moitié : pas pour quelques pixels.
+// l'écran à moitié : pas pour quelques pixels. Sa pastille reste un cercle plein, de nuit au-dessus de la page ;
+// elle prend la couleur du rond quand elle entre entièrement dans la bande, et la quitte quand elle en sort.
 // Sans script, il reste visible en bas et le rond le montre aussi ; en mouvement réduit, il ne vole pas : il
 // s'efface, et le rond le montre.
 const button = document.querySelector<HTMLElement>("[data-resume]");
@@ -16,15 +17,9 @@ const pad = document.querySelector<HTMLElement>("[data-resume-pad]");
 if (button && dock && from && pad) {
   const desktop = matchMedia("(min-width: 701px)");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-  // En vol, sa pastille prend peu à peu le fond et le liseré du rond, ceux de la palette de l'escale.
-  const rgb = (color: string) => color.match(/[\d.]+/g)!.slice(0, 3).map(Number);
-  const mix = (a: number[], b: number[], k: number) => `rgb(${a.map((c, i) => Math.round(c + (b[i]! - c) * k)).join(", ")})`;
-  const dockStyle = getComputedStyle(dock);
-  const padStyle = getComputedStyle(pad);
-  const dockBg = rgb(dockStyle.backgroundColor);
-  const padBg = rgb(padStyle.backgroundColor);
-  const dockLine = rgb(dockStyle.borderTopColor);
-  const padLine = rgb(padStyle.borderTopColor);
+  // Dans la bande, sa pastille prend le fond et le liseré du rond, ceux de la palette de l'escale.
+  const band = pad.closest("a")!;
+  const { backgroundColor: padBg, borderTopColor: padLine } = getComputedStyle(pad);
   // La durée du bond, d'un bout à l'autre.
   const flight = 700;
   // La hauteur dont il s'élève au milieu du saut.
@@ -66,8 +61,10 @@ if (button && dock && from && pad) {
     pad.classList.toggle("is-arriving", gap < pad.offsetWidth + 140);
     const tilt = -12 * Math.sin(Math.PI * at);
     dock.style.transform = `translate(${dx}px, ${dy}px) rotate(${tilt}deg) scale(${scale})`;
-    dock.style.backgroundColor = mix(dockBg, padBg, at);
-    dock.style.borderColor = mix(dockLine, padLine, at);
+    // Entièrement dans la bande, en fin de saut (sur téléphone, il part de la bande et la survole d'abord).
+    const inBand = at > 0.5 && y + dy - (dock.offsetHeight * scale) / 2 >= band.getBoundingClientRect().top;
+    dock.style.backgroundColor = inBand ? padBg : "";
+    dock.style.borderColor = inBand ? padLine : "";
   };
   // Il se pose quand le rond est entièrement à l'écran ; posé, il n'en repart que si le rond le quitte à moitié.
   const wanted = () => {
