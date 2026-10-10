@@ -11,6 +11,11 @@
 import { projects } from "@index/projects";
 import { inWords, type Lang } from "../i18n/voyage";
 
+/** Les projets d'école (pastille « École »), les autres, faits sur mon temps libre, et l'année du premier : les textes les comptent. */
+const SCHOOL = projects.filter((p) => p.badges.includes("ecole")).length;
+const OWN = projects.length - SCHOOL;
+const SINCE = Math.min(...projects.map((p) => Number(p.started.slice(0, 4))));
+
 const built = new Date();
 /** Aujourd'hui, en année décimale. */
 export const NOW = built.getFullYear() + (built.getMonth() + (built.getDate() - 1) / 31) / 12;
@@ -134,17 +139,17 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     stats: [
       ["5 ans", "d'alternance : l'école et la STIME en même temps"],
       ["3 000+", "points de vente utilisent l'app mobile à laquelle j'ai contribué en alternance"],
-      ["1 700", "magasins commandent leurs produits frais sur l'app que je développe aujourd'hui"],
-      [String(projects.length), "projets à moi, à côté : chaque escale de ce site"],
+      ["1 700", "magasins comptent sur l'app que je développe pour commander leurs produits frais"],
+      [String(projects.length), `projets à côté du travail : ${inWords("fr", SCHOOL)} en école, ${inWords("fr", OWN)} sur mon temps libre`],
     ],
     titles: {
       route: "Deux lignes, une correspondance",
-      langs: "Trois lignes parlées",
-      bag: "Six lignes de bus",
-      away: "Ce que je fais quand l'écran s'éteint",
+      langs: "Mes langues",
+      bag: "Mes outils",
+      away: "Loin du clavier",
     },
     route: {
-      band: "Cinq ans d'alternance : les deux lignes en même temps",
+      band: "Cinq ans d'alternance, sur les deux lignes à la fois",
       codes: ["É", "S"],
       stations: {
         dut: ["DUT Informatique", "UPEC · 2019"],
@@ -173,11 +178,11 @@ export const APROPOS: Record<Lang, AproposStrings> = {
         items: [
           ["2020 – 2021", "Développeur frontend, en alternance", "", "Une application web mobile-first de flex office.", "work"],
           ["2020 – 2025", "Développeur fullstack, en alternance", "", "L'app mobile de plus de 3 000 points de vente, deux apps React pour le SAV et leur BFF Node.js.", "work"],
-          ["2025 – 2026", "Développeur mobile, ingénieur diplômé", "", "Une app React Native de pilotage pour les adhérents Intermarché.", "work"],
+          ["2025 – 2026", "Développeur mobile, ingénieur diplômé", "", "Une app React Native pour que chaque adhérent Intermarché suive les chiffres de son magasin.", "work"],
           ["Depuis 2026", "Développeur fullstack mobile", "", "L'app React Native / Expo de commande des produits frais de 1 700 magasins, et son back-office React.", "work"],
         ],
       },
-      projects: `Et en parallèle, ${inWords("fr", projects.length)} projets à moi depuis 2022 : chaque escale de ce site, et le site lui-même.`,
+      projects: `À côté, ${inWords("fr", projects.length)} projets depuis ${SINCE}, ${inWords("fr", SCHOOL)} en école et ${inWords("fr", OWN)} sur mon temps libre. Tous sont dans le voyage, ce site compris.`,
       projectsLink: "Revoir le voyage →",
     },
     langs: [
@@ -230,17 +235,17 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     stats: [
       ["5 years", "of work-study: school and STIME at the same time"],
       ["3,000+", "stores use the mobile app I worked on as an apprentice"],
-      ["1,700", "stores order their fresh products on the app I build today"],
-      [String(projects.length), "projects of my own, on the side: every stop on this site"],
+      ["1,700", "stores rely on the app I build to order their fresh products"],
+      [String(projects.length), `projects alongside work: ${inWords("en", SCHOOL)} at school, ${inWords("en", OWN)} in my free time`],
     ],
     titles: {
       route: "Two lines, one interchange",
-      langs: "Three spoken lines",
-      bag: "Six bus routes",
-      away: "What I do when the screen goes dark",
+      langs: "My languages",
+      bag: "My tools",
+      away: "Away from the keyboard",
     },
     route: {
-      band: "Five years of work-study: both lines at the same time",
+      band: "Five years of work-study, on both lines at once",
       codes: ["S", "W"],
       stations: {
         dut: ["Technical degree", "UPEC · 2019"],
@@ -269,11 +274,11 @@ export const APROPOS: Record<Lang, AproposStrings> = {
         items: [
           ["2020 – 2021", "Front-end developer, work-study", "", "A mobile-first flex-office web app.", "work"],
           ["2020 – 2025", "Full-stack developer, work-study", "", "The mobile app of over 3,000 stores, two React apps for after-sales support and their Node.js back-for-front.", "work"],
-          ["2025 – 2026", "Mobile developer, graduate engineer", "", "A React Native app for Intermarché store owners to track their store's performance.", "work"],
+          ["2025 – 2026", "Mobile developer, graduate engineer", "", "A React Native app so that every Intermarché store owner can follow their store's figures.", "work"],
           ["Since 2026", "Full-stack mobile developer", "", "The React Native / Expo app 1,700 stores use to order fresh products, and its React back office.", "work"],
         ],
       },
-      projects: `And alongside, ${inWords("en", projects.length)} projects of my own since 2022: every stop on this site, and the site itself.`,
+      projects: `Alongside, ${inWords("en", projects.length)} projects since ${SINCE}, ${inWords("en", SCHOOL)} at school and ${inWords("en", OWN)} in my free time. They are all on the journey, this site included.`,
       projectsLink: "Back to the journey →",
     },
     langs: [

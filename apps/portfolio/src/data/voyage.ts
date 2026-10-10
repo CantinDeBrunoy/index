@@ -2,7 +2,7 @@
  * Le voyage : l'accueil du site, dix escales, une par projet, dont chacune mène à la suivante.
  * Ici le décor de chaque escale (sa scène, ses couleurs, le point à cliquer) et ses textes en
  * français et en anglais. Les liens (l'app, le code) et le numéro viennent de @index/projects.
- * Les textes sont des brouillons, à réécrire.
+ * Textes relus par Cantin le 10 octobre 2026 (accueil, accroches) ; Visit Match attend la sienne.
  */
 
 import type { Project } from "@index/projects";
@@ -71,21 +71,21 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "La Terre",
       alt: "La Terre tourne : les pays de la démo de Magellan en laiton, les voyages tracés en arcs depuis Paris ; à côté, un avion de ligne attend, incliné vers elle.",
       kind: "App web et mobile · 2026 · En ligne",
-      pitch: "Un globe qui colorie les pays que j'ai traversés et trace chaque voyage.",
+      pitch: "Un globe qui colore les pays que j'ai traversés et trace chacun de mes voyages.",
       cta: "Prendre l'avion",
     },
     hublot: {
       place: "Dans l'avion",
       alt: "Dans l'avion : par le hublot, l'aile, son réacteur et son winglet de laiton, au-dessus d'une mer de nuages.",
       kind: "Robot et page web · 2026 · En ligne",
-      pitch: "Un robot surveille pour moi le prix des vols depuis Paris et me prévient dès qu'un billet passe sous mon seuil.",
+      pitch: "Je fixe mon prix, un robot surveille les vols au départ de Paris, et mon téléphone ne sonne que quand ça vaut le coup.",
       cta: "Regarder par le hublot",
     },
     "metro-pathfinder": {
       place: "Paris vu du ciel",
       alt: "Paris vu du ciel : la Seine, les toits de zinc, les lignes de métro, et le plus court chemin en laiton qu'une rame parcourt jusqu'à sa station.",
       kind: "Algorithme · 2022 · Archive",
-      pitch: "Le trajet le plus court entre deux stations du métro parisien, calculé avec Dijkstra.",
+      pitch: "Mon premier algorithme sur un graphe : le trajet le plus court entre deux stations du métro parisien.",
       cta: "Descendre à la station",
     },
     "visit-match": {
@@ -106,7 +106,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "À la maison",
       alt: "À la maison : le bureau, l'ordinateur, le coffre-fort de Mithril à molette de laiton, la lampe, le petit serveur, une plante et un tapis vert sauge et, par terre, une platine.",
       kind: "Logiciel Windows · 2026",
-      pitch: "Mon coffre à mots de passe pour Windows : chiffré, sans installation, et sans cloud.",
+      pitch: "Mes mots de passe dans un seul .exe, chiffrés, jamais dans le cloud.",
       extra: "Sur l'étagère aussi : l'API REST .NET, des microservices C# écrits en TDD et lancés dans Docker (2023).",
       tag: "API REST .NET · 2023",
       cta: "Mettre un disque",
@@ -115,7 +115,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "Le tourne-disque",
       alt: "Le tourne-disque : le vinyle tourne sous le bras de lecture, des notes de laiton s'envolent, certaines vers le calendrier punaisé au mur ; à côté, la pochette du disque, couleur terre cuite.",
       kind: "Application installable · 2026 · En ligne",
-      pitch: "J'apprends l'espagnol en chansons : paroles traduites, karaoké à trous, quiz, même hors ligne.",
+      pitch: "Une chanson qu'on aime, on la retient sans effort. Alors j'apprends l'espagnol en chantant.",
       cta: "Choisir la couleur du jour",
     },
     tonalli: {
@@ -129,7 +129,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "Les dossiers",
       alt: "Les dossiers : celui du dessus est ouvert sur sa page de titre et sur le sommaire des onze projets, de 001 à 011 ; un stylo de laiton parcourt la liste ; dessous, les onglets des autres dossiers, aux couleurs des escales.",
       kind: "Monorepo et portfolio · 2026 · En cours",
-      pitch: "Mes projets réunis dans un seul dépôt, gardés éveillés par des robots, et présentés ici, escale par escale.",
+      pitch: "Un seul dépôt pour tous mes projets, des robots pour qu'aucun ne s'endorme, et ce voyage pour les montrer.",
       cta: "Tout feuilleter",
       noApp: "Vous y êtes : c'est ce site",
     },
@@ -146,21 +146,21 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "The Earth",
       alt: "The Earth turns: the countries of the Magellan demo in brass, trips drawn as arcs from Paris; nearby, an airliner waits, banking towards it.",
       kind: "Web and mobile app · 2026 · Live",
-      pitch: "A globe that colours in the countries I've travelled through and traces each trip.",
+      pitch: "A globe that colours in the countries I've travelled through and traces each of my trips.",
       cta: "Board the plane",
     },
     hublot: {
       place: "On the plane",
       alt: "On the plane: through the window, the wing, its engine and brass winglet above a sea of clouds.",
       kind: "Bot and web page · 2026 · Live",
-      pitch: "A bot watches flight prices from Paris for me and tells me as soon as a ticket drops below my threshold.",
+      pitch: "I set my price, a bot watches flights from Paris, and my phone only rings when it's worth it.",
       cta: "Look out of the window",
     },
     "metro-pathfinder": {
       place: "Paris from above",
       alt: "Paris from above: the Seine, the zinc roofs, the metro lines, and the shortest route in brass, which a train follows to its station.",
       kind: "Algorithm · 2022 · Archive",
-      pitch: "The shortest route between two Paris metro stations, computed with Dijkstra.",
+      pitch: "My first graph algorithm: the shortest route between two Paris metro stations.",
       cta: "Get off at the station",
     },
     "visit-match": {
@@ -181,7 +181,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "At home",
       alt: "At home: the desk, the computer, Mithril's safe with its brass dial, the lamp, the small server, a plant, a sage-green rug and, on the floor, a record player.",
       kind: "Windows software · 2026",
-      pitch: "My password vault for Windows: encrypted, nothing to install, no cloud.",
+      pitch: "My passwords in a single .exe, encrypted, never in the cloud.",
       extra: "Also on the shelf: the .NET REST API, C# microservices written test-first and run in Docker (2023).",
       tag: ".NET REST API · 2023",
       cta: "Put on a record",
@@ -190,7 +190,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "The record player",
       alt: "The record player: the vinyl spins under the tonearm, brass notes float up, some towards the calendar pinned on the wall; beside it, the terracotta record sleeve.",
       kind: "Installable app · 2026 · Live",
-      pitch: "I'm learning Spanish through songs: translated lyrics, fill-in-the-blank karaoke, quizzes, even offline.",
+      pitch: "A song you love sticks without effort. So I'm learning Spanish by singing.",
       cta: "Pick today's colour",
     },
     tonalli: {
@@ -204,7 +204,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "The folders",
       alt: "The folders: the top one lies open on its title page and on the contents of all eleven projects, from 001 to 011; a brass pen runs down the list; below, the tabs of the other folders, in the colours of the stops.",
       kind: "Monorepo and portfolio · 2026 · In progress",
-      pitch: "My projects gathered in a single repository, kept awake by bots, and shown here, stop by stop.",
+      pitch: "One repository for all my projects, bots so that none of them falls asleep, and this journey to show them.",
       cta: "Browse them all",
       noApp: "You're on it: this very site",
     },
@@ -217,7 +217,7 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     introLabel: "Index · depuis 2022",
     introTitle: `Un voyage en ${inWords("fr", STOPS.length)} <em>escales</em>.`,
     introText:
-      "Je fabrique les outils qui me manquent. Ici, chaque projet devient un objet du décor : la planète, l'avion, le hublot, la station… Clique dessus pour passer à l'escale suivante.",
+      "Quand un outil me manque, je le fabrique. Ici, chaque projet devient un objet du décor, de la planète au tourne-disque : clique dessus et le voyage continue.",
     takeOff: "Décoller →",
     start: "Le départ",
     announce: "Escale {i} : {place}, {name}",
@@ -239,7 +239,7 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     introLabel: "Index · since 2022",
     introTitle: `A journey in ${inWords("en", STOPS.length)} <em>stops</em>.`,
     introText:
-      "I build the tools I'm missing. Here, each project becomes part of the scenery: the planet, the plane, the window, the station… Click it to fly on to the next stop.",
+      "When I'm missing a tool, I build it. Here, each project becomes part of the scenery, from the planet to the record player: click it and the journey goes on.",
     takeOff: "Take off →",
     start: "Departure",
     announce: "Stop {i}: {place}, {name}",
