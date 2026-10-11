@@ -31,7 +31,7 @@ export const STOPS: Stop[] = [
   { slug: "metro-pathfinder", code: "MTR", scene: "paris", bg: "#dce3ea", palette: "day", spot: [79.5, 55.7], spotMobile: [77.9, 52.2] },
   { slug: "visit-match", code: "VSM", scene: "monuments", bg: "#e0e8da", palette: "day", spot: [68.2, 57], spotMobile: [71.7, 56.2] },
   { slug: "gym-picker", code: "GYM", scene: "route", bg: "#f2dfd3", palette: "day", spot: [53.4, 70.3], spotMobile: [52.2, 59.3] },
-  { slug: "api-rest-dotnet", code: "API", scene: "maison", bg: "#f1e7da", palette: "day", spot: [78.2, 89.6], spotMobile: [74.8, 75.6] },
+  { slug: "api-rest-dotnet", code: "API", scene: "maison", bg: "#f1e7da", palette: "day", spot: [70.7, 42.7], spotMobile: [75.7, 45] },
   { slug: "cancionero", code: "CNC", scene: "salon", bg: "#f3d5b5", palette: "day", spot: [39.6, 34.8], spotMobile: [30.7, 37.7] },
   { slug: "tonalli", code: "TNL", scene: "calendrier", bg: "#d8c2c6", palette: "dusk", spot: [71.6, 72.8], spotMobile: [78.9, 67.6] },
   { slug: "index", code: "IDX", scene: "dossiers", bg: "#e6d5b8", palette: "kraft", spot: [65.8, 44.1], spotMobile: [71, 45.4] },
@@ -100,7 +100,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
     },
     "api-rest-dotnet": {
       place: "À la maison",
-      alt: "À la maison : sur le bureau, la lampe et le portable, dont l'écran affiche une requête et sa réponse en JSON ; un câble mène au petit serveur, et une perle de laiton y fait l'aller-retour ; une plante, un tapis vert sauge et, par terre, une platine.",
+      alt: "À la maison : sur le bureau, la lampe et le portable, dont l'écran affiche une requête et sa réponse en JSON ; un câble mène au petit serveur, et une perle de laiton y fait l'aller-retour ; au-dessus, sur une étagère, une platine et sa pochette terre cuite ; une plante et un tapis vert sauge.",
       kind: "API REST · 2023 · Archive",
       pitch: "Shard : l'API REST d'un jeu de stratégie spatiale, en C# .NET, écrite en équipe et validée version après version par des tests.",
       cta: "Mettre un disque",
@@ -173,7 +173,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
     },
     "api-rest-dotnet": {
       place: "At home",
-      alt: "At home: on the desk, the lamp and the laptop, whose screen shows a request and its JSON response; a cable runs to the small server, and a brass bead travels back and forth along it; a plant, a sage-green rug and, on the floor, a record player.",
+      alt: "At home: on the desk, the lamp and the laptop, whose screen shows a request and its JSON response; a cable runs to the small server, and a brass bead travels back and forth along it; above it, on a shelf, a record player and its terracotta sleeve; a plant and a sage-green rug.",
       kind: "REST API · 2023 · Archive",
       pitch: "Shard: the REST API of a space strategy game, in C# .NET, built as a team and validated version after version by tests.",
       cta: "Put on a record",

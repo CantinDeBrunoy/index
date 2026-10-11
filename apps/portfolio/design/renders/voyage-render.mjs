@@ -71,7 +71,8 @@ const BOXES = {
   // Visit Match : plus de marge autour de la tour et de l'arc (Cantin trouvait l'escale encore trop serrée).
   monuments: [0.09, -0.04, 0.91, 1.0],
   route: [0.08, 0.12, 0.94, 0.96],
-  maison: [0.18, 0.06, 0.94, 0.98],
+  // La maison : la platine n'est plus par terre au premier plan mais sur l'étagère du mur ; moins de sol.
+  maison: [0.16, 0.14, 0.88, 0.84],
   salon: [0.18, 0.04, 0.9, 0.96],
   calendrier: [0.14, 0.02, 0.86, 0.98],
   dossiers: [0.14, 0.08, 0.86, 0.92],

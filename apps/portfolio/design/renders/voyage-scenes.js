@@ -362,6 +362,36 @@ function plant(M, leafMat, h = 0.7) {
   return g;
 }
 
+// La pochette du disque de Cancionero : terre cuite, le rond du disque, une pastille de laiton, deux lignes de
+// titre. Debout, de côté `size`, centrée.
+const SLEEVE = (() => {
+  let cover;
+  return (size) => {
+    cover ??= canvasTex(512, 512, (c, w) => {
+      c.fillStyle = "#CDB3A4";
+      c.fillRect(0, 0, w, w);
+      c.fillStyle = "#EFE8DB";
+      c.beginPath();
+      c.arc(w * 0.56, w * 0.58, w * 0.3, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#B08A4F";
+      c.beginPath();
+      c.arc(w * 0.56, w * 0.58, w * 0.075, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#3A302A";
+      c.beginPath();
+      c.roundRect(w * 0.1, w * 0.1, w * 0.4, w * 0.035, w * 0.018);
+      c.roundRect(w * 0.1, w * 0.17, w * 0.26, w * 0.035, w * 0.018);
+      c.fill();
+    });
+    const g = new THREE.Group();
+    const k = size / 1.5;
+    g.add(mesh(new RoundedBoxGeometry(size, size, 0.04 * k, 2, 0.012 * k), tinted(TINT.salon, 0.8)));
+    g.add(mesh(new THREE.PlaneGeometry(1.46 * k, 1.46 * k), new THREE.MeshStandardMaterial({ map: cover, roughness: 0.8 }), 0, 0, 0.0215 * k));
+    return g;
+  };
+})();
+
 // ——— Le calendrier de Tonalli ———
 // Chaque jour d'octobre a sa couleur d'émotion (les douze de l'app, au cran léger), un jour manqué est hachuré,
 // la case d'aujourd'hui se remplit une couleur après l'autre ; la photo du jour est glissée dans le coin.
@@ -1737,7 +1767,7 @@ const SCENES = {
   },
   // 003 API REST .NET : la maison, le bureau, le portable et le serveur ; le tapis et la plante (la couleur de
   // l'escale). Le portable interroge l'API : sur son écran, une requête et sa réponse en JSON ; par le câble, une
-  // perle de laiton file jusqu'au serveur, qui répond. La platine, au premier plan, mène à l'escale suivante.
+  // perle de laiton file jusqu'au serveur, qui répond. La platine, sur l'étagère au-dessus, mène à l'escale suivante.
   maison(M) {
     const g = new THREE.Group();
     const sage = tinted(TINT.maison, 0.7);
@@ -1805,9 +1835,19 @@ const SCENES = {
     g.add(mesh(new THREE.TubeGeometry(cable, 96, 0.016, 8), M.clay2));
     const pearl = mesh(new THREE.SphereGeometry(0.042, 20, 14), M.accent);
     g.add(pearl);
+    // La platine, sur une étagère au mur au-dessus du serveur, sa pochette terre cuite adossée derrière, comme
+    // à l'escale suivante. Posée par terre au premier plan, elle tombait sous la barre des escales.
+    const SHELF = { x: 1.5, y: 0.95, w: 1.35, d: 0.8 };
+    const shelfZ = -1.45 + SHELF.d / 2;
+    g.add(mesh(new RoundedBoxGeometry(SHELF.w, 0.06, SHELF.d, 2, 0.02), M.clay2, SHELF.x, SHELF.y, shelfZ));
+    for (const dx of [-0.45, 0.45]) g.add(mesh(new RoundedBoxGeometry(0.04, 0.26, 0.36, 2, 0.015), M.clay2, SHELF.x + dx, SHELF.y - 0.16, -1.45 + 0.18));
+    const sleeve = SLEEVE(0.62);
+    sleeve.position.set(SHELF.x + 0.25, SHELF.y + 0.34, -1.4);
+    sleeve.rotation.set(-0.12, -0.1, 0);
+    g.add(sleeve);
     const deck = BUILD.cancionero(M);
-    deck.scale.setScalar(0.3);
-    deck.position.set(1.75, 0.0, 0.7);
+    deck.scale.setScalar(0.38);
+    deck.position.set(SHELF.x - 0.06, SHELF.y + 0.03, shelfZ + 0.05);
     g.add(deck);
     g.userData.hotspot = deck;
     // La boucle dure 4 s : la requête va au serveur dans la première moitié, la réponse revient dans la seconde.
@@ -1834,27 +1874,8 @@ const SCENES = {
     cal.position.set(-1.05, 1.5, -1.92);
     g.add(cal);
     g.userData.hotspot = cal.userData.today;
-    // La pochette, adossée derrière : terre cuite, le rond du disque, une pastille de laiton, deux lignes de titre.
-    const cover = canvasTex(512, 512, (c, w) => {
-      c.fillStyle = "#CDB3A4";
-      c.fillRect(0, 0, w, w);
-      c.fillStyle = "#EFE8DB";
-      c.beginPath();
-      c.arc(w * 0.56, w * 0.58, w * 0.3, 0, Math.PI * 2);
-      c.fill();
-      c.fillStyle = "#B08A4F";
-      c.beginPath();
-      c.arc(w * 0.56, w * 0.58, w * 0.075, 0, Math.PI * 2);
-      c.fill();
-      c.fillStyle = "#3A302A";
-      c.beginPath();
-      c.roundRect(w * 0.1, w * 0.1, w * 0.4, w * 0.035, w * 0.018);
-      c.roundRect(w * 0.1, w * 0.17, w * 0.26, w * 0.035, w * 0.018);
-      c.fill();
-    });
-    const sleeve = new THREE.Group();
-    sleeve.add(mesh(new RoundedBoxGeometry(1.5, 1.5, 0.04, 2, 0.012), tinted(TINT.salon, 0.8)));
-    sleeve.add(mesh(new THREE.PlaneGeometry(1.46, 1.46), new THREE.MeshStandardMaterial({ map: cover, roughness: 0.8 }), 0, 0, 0.0215));
+    // La pochette, adossée derrière.
+    const sleeve = SLEEVE(1.5);
     sleeve.position.set(1.35, 0.75, -1.78);
     sleeve.rotation.set(-0.13, -0.12, 0);
     g.add(sleeve);
