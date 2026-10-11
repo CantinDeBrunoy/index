@@ -50,8 +50,8 @@ Le copilote du voyage (le bonhomme qui accueille à l'escale 1, puis change de t
 tenue-terre …` pour ses dix tenues, et `SIZE=640x640 SUFFIX=-accueil` pour la tenue de l'espace en grand. Puis
 `node copilote-site.mjs` les copie dans `../public/voyage/copilote/` et en tire une image fixe chacune.
 
-Le décollage (au clic sur « Décoller », le copilote au pied de sa fusée explique le voyage, y grimpe, et la fusée
-part) est fait de quatre plans : les scènes `decollage-pied`, `decollage-echelle`, `decollage-trappe` et
+Le décollage (au premier « Décoller », ou rejoué par le retour de l'escale 1, le copilote au pied de sa fusée
+explique le voyage, y grimpe, et la fusée part) est fait de quatre plans : les scènes `decollage-pied`, `decollage-echelle`, `decollage-trappe` et
 `decollage-envol` de `decollage-scenes.js`, que `build-voyage.cjs` ajoute après celles du voyage. Chaque plan commence
 là où finit le précédent, et la dernière image de l'envol précède la première de la boucle de l'espace : la caméra
 de l'escale 1 et sa planète ne changent pas sans que l'envol soit refait. Pour les rendre :

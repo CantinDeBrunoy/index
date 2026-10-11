@@ -7,8 +7,9 @@
  * - Flèches gauche et droite du clavier ; l'adresse (#escale-3) garde l'escale, l'interrupteur
  *   FR / EN aussi. Sans ce script, les escales se lisent à la suite, une par écran.
  * - La dernière escale mène à « À propos » : avant, le dossier se ferme (scripts/voyage-sortie.ts).
- * - « Décoller » passe par la fusée du copilote (scripts/decollage.ts) : « voyage:decoller » lui laisse la main,
- *   « voyage:fusee » la lui donne une fois la plongée finie, « voyage:arrivee » la rend à l'escale 1.
+ * - Le premier « Décoller » passe par la fusée du copilote (scripts/decollage.ts), que le retour de l'escale 1,
+ *   « Le décollage », rejoue : « voyage:decoller » lui laisse la main, « voyage:fusee » la lui donne une fois
+ *   l'escale quittée effacée, « voyage:arrivee » la rend à l'escale 1.
  */
 
 import { animatePhoneScene } from "./phone-loop";
@@ -115,14 +116,20 @@ function start(root: HTMLElement) {
     root.dispatchEvent(new CustomEvent("voyage:escale", { detail: { i } }));
   };
 
-  const go = (next: number, soft = false) => {
-    if (busy || next === current || next < 0 || next >= stops.length) return;
+  /** `replay` : depuis l'escale 1, le décollage rejoué (son bouton retour, « Le décollage ») ; on y revient ensuite. */
+  const go = (next: number, soft = false, replay = false) => {
+    if (busy || (next === current && !replay) || next < 0 || next >= stops.length) return;
     busy = true;
     const from = stops[current]!;
     const to = stops[next]!;
     const hadFocus = from.contains(document.activeElement);
-    // Du départ à l'escale 1 : la fusée, si le décollage prend la main (il annule l'évènement).
-    const launch = current === 0 && next === 1 && !soft && !root.dispatchEvent(new CustomEvent("voyage:decoller", { cancelable: true }));
+    // Du départ à l'escale 1, ou rejoué depuis elle : la fusée, si le décollage prend la main (il annule l'évènement).
+    const launch = (replay || (current === 0 && next === 1 && !soft)) && !root.dispatchEvent(new CustomEvent("voyage:decoller", { cancelable: true, detail: { replay } }));
+    if (replay && !launch) {
+      // La fusée n'est pas là : le retour mène au départ, comme avant.
+      busy = false;
+      return go(0, true);
+    }
 
     root.style.setProperty("--veil", to.dataset.bg ?? "");
     root.classList.toggle("soft", soft);
@@ -169,6 +176,9 @@ function start(root: HTMLElement) {
     const { cut, focus } = (event as CustomEvent<{ cut: boolean; focus: boolean }>).detail;
     const to = stops[1]!;
     aboard = false;
+    // Sa scène repart de sa première image, celle qui suit l'envol (rejoué, elle s'était arrêtée en route).
+    const scene = videoOf(1);
+    if (scene && scene.readyState > 0) scene.currentTime = 0;
     to.classList.add("enter", cut ? "cut" : "soft");
     show(1);
     window.scrollTo({ top: 0 });
@@ -200,14 +210,17 @@ function start(root: HTMLElement) {
     const link = (event.target as Element).closest<HTMLElement>("[data-go]");
     if (!link) return;
     event.preventDefault();
-    go(Number(link.dataset.go), link.hasAttribute("data-soft"));
+    // Le retour de l'escale 1, « Le décollage » : la fusée rejouée.
+    if (link.hasAttribute("data-replay")) go(current, true, true);
+    else go(Number(link.dataset.go), link.hasAttribute("data-soft"));
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     if ((event.target as Element).closest("input, textarea, select, [contenteditable]")) return;
     if (event.key === "ArrowRight") go(current + 1);
-    else if (event.key === "ArrowLeft") go(current - 1, true);
+    // À l'escale 1, reculer rejoue le décollage, comme son bouton retour.
+    else if (event.key === "ArrowLeft") go(current === 1 ? 1 : current - 1, true, current === 1);
   });
 
   addEventListener("hashchange", () => go(fromHash(), true));

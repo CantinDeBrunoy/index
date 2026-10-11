@@ -220,6 +220,8 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     introText: `Je suis développeur full-stack et mobile, et voici mes ${inWords("fr", STOPS.length)} projets. Chacun est une escale : une scène en 3D, sa fiche et son app quand elle est en ligne. À chaque escale, tu auras le choix : découvrir la fiche projet ou passer au suivant.`,
     takeOff: "Décoller →",
     start: "Le départ",
+    /** Le retour de l'escale 1 : il rejoue le décollage (scripts/decollage.ts). */
+    relaunch: "Le décollage",
     announce: "Escale {i} : {place}, {name}",
     dotsAria: "Les escales du voyage",
     fiche: "La fiche du projet →",
@@ -242,6 +244,7 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     introText: `I'm a full-stack and mobile developer, and these are my ${inWords("en", STOPS.length)} projects. Each one is a stop: a 3D scene, its project page and its app when it's live. At each stop, you'll have a choice: discover the project page or move on to the next one.`,
     takeOff: "Take off →",
     start: "Departure",
+    relaunch: "Take-off",
     announce: "Stop {i}: {place}, {name}",
     dotsAria: "The journey's stops",
     fiche: "Project page →",

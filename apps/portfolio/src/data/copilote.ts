@@ -63,8 +63,8 @@ const en: { [K in keyof typeof fr]: string } = {
 export const COPILOTE: Record<Lang, typeof en> = { fr, en };
 
 /**
- * Le décollage (components/voyage/Decollage.astro) : au premier « Décoller », le copilote explique le voyage au pied
- * de sa fusée, en deux bulles, puis y grimpe et décolle. La seconde bulle reprend les deux façons de visiter de son
+ * Le décollage (components/voyage/Decollage.astro) : au premier « Décoller » (puis rejoué par « Le décollage », le
+ * retour de l'escale 1), le copilote explique le voyage au pied de sa fusée, en deux bulles, puis y grimpe et décolle. La seconde bulle reprend les deux façons de visiter de son
  * tuto (voyage, voyageText, detail, detailText ci-dessus). {n} : le nombre de projets, en lettres.
  */
 const decollageFr = {

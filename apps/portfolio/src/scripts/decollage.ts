@@ -1,16 +1,17 @@
 /**
- * Le décollage (components/voyage/Decollage.astro) : au clic sur « Décoller », la fusée du copilote, en quatre plans
- * vidéo enchaînés sans couture (rendus par design/renders/decollage-scenes.js) :
+ * Le décollage (components/voyage/Decollage.astro) : la fusée du copilote, en quatre plans vidéo enchaînés sans
+ * couture (rendus par design/renders/decollage-scenes.js) :
  *   pied (boucle) → première bulle → echelle → trappe (boucle) → seconde bulle → envol → l'escale 1.
  * - Chaque plan commence là où finit le précédent. Une boucle finit son tour (une seconde au plus) avant que le plan
  *   suivant parte ; celui-ci, déjà chargé, ne s'affiche qu'une fois sa première image prête.
  * - La dernière image de l'envol précède la première de la scène de l'escale 1 : on y passe sans transition.
- * - Au premier décollage seulement (localStorage), le copilote explique ; ensuite, la fusée décolle tout de suite.
+ * - Il se joue de lui-même au premier « Décoller » seulement (localStorage) ; ensuite, « Décoller » mène droit à
+ *   l'escale 1, et il ne se rejoue que depuis elle, par son bouton retour, « Le décollage ».
  * - « Passer l'intro » ou Échap : l'escale 1, en fondu. En mouvement réduit : les images fixes des deux bulles, puis
- *   un fondu ; et, l'explication déjà donnée, plus de décollage du tout.
- * Il suit scripts/voyage.ts : « voyage:decoller » (annulable : le décollage prend la main), « voyage:fusee » (la
- * plongée du départ est finie : la fusée apparaît), « voyage:arrivee » (il rend la main à l'escale 1). Ce module se
- * charge avant lui.
+ *   un fondu.
+ * Il suit scripts/voyage.ts : « voyage:decoller » (annulable : le décollage prend la main ; `replay` depuis
+ * l'escale 1), « voyage:fusee » (l'escale quittée s'est effacée : la fusée apparaît), « voyage:arrivee » (il rend la
+ * main à l'escale 1). Ce module se charge avant lui.
  */
 
 type Clip = "pied" | "echelle" | "trappe" | "envol";
@@ -63,7 +64,6 @@ function start(root: HTMLElement, layer: HTMLElement) {
 
   /** Le format choisi au départ de la fusée (le téléphone a ses propres plans, cadrés comme ses escales). */
   let phone = !desktop.matches;
-  let explain = !stored(SEEN_KEY);
   /** Chaque décollage a son numéro : une étape d'un décollage abandonné (passé, fini) ne fait plus rien. */
   let run = 0;
   let active = false;
@@ -166,7 +166,7 @@ function start(root: HTMLElement, layer: HTMLElement) {
     }
   };
 
-  /** Le décollage : la fusée est là, le copilote explique (ou pas), puis l'envol. */
+  /** Le décollage : la fusée est là, le copilote explique, grimpe, puis l'envol. */
   const fly = async (token: number) => {
     if (reduce.matches) {
       // Les images fixes, chacune sous sa bulle ; « Décoller », puis un fondu vers l'escale 1.
@@ -181,56 +181,53 @@ function start(root: HTMLElement, layer: HTMLElement) {
       if (!stale(token)) arrive(false);
       return;
     }
-    const first: Clip = explain ? "pied" : "envol";
-    load(first);
-    videos[first].poster = stillOf(explain ? "pied" : "trappe");
-    videos[first].classList.add("on");
-    if (!(await ready(videos[first]))) throw new Error(`décollage : plan illisible (${first})`);
+    load("pied");
+    videos.pied.poster = stillOf("pied");
+    videos.pied.classList.add("on");
+    if (!(await ready(videos.pied))) throw new Error("décollage : plan illisible (pied)");
     if (stale(token)) return;
-    await swap(first);
-    if (explain) {
-      load("echelle");
-      await sleep(BUBBLE_MS);
-      if (stale(token)) return;
-      // Pendant qu'on lit, la suite se charge.
-      load("trappe");
-      load("envol");
-      await ask(1, token);
-      if (stale(token)) return;
-      await chain("pied", "echelle");
-      if (stale(token)) return;
-      await chain("echelle", "trappe");
-      if (stale(token)) return;
-      await sleep(250);
-      if (stale(token)) return;
-      await ask(2, token);
-      if (stale(token)) return;
-      store(SEEN_KEY);
-      await chain("trappe", "envol");
-      if (stale(token)) return;
-    }
+    await swap("pied");
+    load("echelle");
+    await sleep(BUBBLE_MS);
+    if (stale(token)) return;
+    // Pendant qu'on lit, la suite se charge.
+    load("trappe");
+    load("envol");
+    await ask(1, token);
+    if (stale(token)) return;
+    await chain("pied", "echelle");
+    if (stale(token)) return;
+    await chain("echelle", "trappe");
+    if (stale(token)) return;
+    await sleep(250);
+    if (stale(token)) return;
+    await ask(2, token);
+    if (stale(token)) return;
+    store(SEEN_KEY);
+    await chain("trappe", "envol");
+    if (stale(token)) return;
     if (!videos.envol.ended) await once(videos.envol, "ended");
     if (!stale(token)) arrive(true);
   };
 
-  // « Décoller » depuis le départ : le décollage prend la main (sauf en mouvement réduit, l'explication déjà donnée).
+  // « Décoller » au premier départ, ou « Le décollage » depuis l'escale 1 : le décollage prend la main. Sinon,
+  // « Décoller » mène droit à l'escale 1.
   root.addEventListener("voyage:decoller", (event) => {
     if (active) return;
-    phone = !desktop.matches;
-    explain = !stored(SEEN_KEY);
-    if (reduce.matches && !explain) return;
+    const replay = (event as CustomEvent<{ replay?: boolean } | null>).detail?.replay === true;
+    if (!replay && stored(SEEN_KEY)) return;
     event.preventDefault();
+    phone = !desktop.matches;
     active = true;
-    focusIn = !!root.querySelector("#depart")?.contains(document.activeElement);
-    if (!reduce.matches) load(explain ? "pied" : "envol");
+    focusIn = !!main?.contains(document.activeElement);
+    if (!reduce.matches) load("pied");
   });
-  // La plongée du départ est finie : la fusée apparaît sous le voile qui se lève.
+  // L'escale quittée s'est effacée : la fusée apparaît sous le voile qui se lève.
   root.addEventListener("voyage:fusee", () => {
     const token = ++run;
     layer.hidden = false;
     layer.classList.add("arrive");
     if (main) main.inert = true;
-    if (focusIn && !explain) skip.focus({ preventScroll: true });
     fly(token).catch((error: unknown) => {
       console.debug(error);
       if (!stale(token)) arrive(false);
@@ -242,20 +239,23 @@ function start(root: HTMLElement, layer: HTMLElement) {
     if (event.key === "Escape" && active && !layer.hidden) arrive(false);
   });
 
-  // Sur le départ, les premiers plans se chargent d'avance (après la scène du départ, et pas en économie de données).
+  // Les premiers plans se chargent d'avance (pas en mouvement réduit, ni en économie de données) : sur le départ,
+  // après sa scène, si le décollage ne s'est encore jamais joué ; à l'escale 1, quand on vise « Le décollage ».
+  const early = () => !reduce.matches && !(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+  const preload = () => {
+    if (active || !early()) return;
+    phone = !desktop.matches;
+    load("pied");
+    load("echelle");
+  };
   let later = 0;
   root.addEventListener("voyage:escale", (event) => {
     window.clearTimeout(later);
-    if ((event as CustomEvent<{ i: number }>).detail.i !== 0 || reduce.matches) return;
-    if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
-    later = window.setTimeout(() => {
-      if (active) return;
-      phone = !desktop.matches;
-      explain = !stored(SEEN_KEY);
-      load(explain ? "pied" : "envol");
-      if (explain) load("echelle");
-    }, 2500);
+    if ((event as CustomEvent<{ i: number }>).detail.i === 0 && !stored(SEEN_KEY)) later = window.setTimeout(preload, 2500);
   });
+  for (const type of ["pointerenter", "focusin"]) {
+    for (const button of root.querySelectorAll("[data-replay]")) button.addEventListener(type, preload, { once: true });
+  }
 }
 
 const root = document.querySelector<HTMLElement>("[data-voyage]");

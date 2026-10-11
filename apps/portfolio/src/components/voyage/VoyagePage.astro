@@ -32,7 +32,8 @@ const stops = STOPS.map((stop, i) => {
   if (!project) throw new Error(`Escale sans projet : ${stop.slug}`);
   return { ...stop, n: i + 1, project, name: nameOf(project, lang), text: STOP_TEXTS[lang][stop.slug]! };
 });
-const places = [v.start, ...stops.map((s) => s.text.place)];
+// Les lieux, pour les retours : celui de l'escale 1 ne mène pas au départ mais rejoue le décollage.
+const places = [v.relaunch, ...stops.map((s) => s.text.place)];
 ---
 
 <Voyage lang={lang} alternates={alternates} palette="night" background={START.bg}>
@@ -232,7 +233,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
               </article>
               {s.n === 1 && <CopiloteAccueil lang={lang} />}
               <nav class="stop-nav ui" aria-label={v.dotsAria}>
-                <a class="back" href={prev} data-go={s.n - 1} data-soft aria-label={fill(v.backTo, { place: places[s.n - 1]! })}>
+                <a class="back" href={prev} data-go={s.n - 1} data-soft data-replay={s.n === 1 ? "" : undefined} aria-label={fill(v.backTo, { place: places[s.n - 1]! })}>
                   <span class="arrow" aria-hidden="true">←</span>
                   <span class="back__place" aria-hidden="true">
                     {places[s.n - 1]}
