@@ -64,7 +64,8 @@ export const NOT_FOUND: Record<Lang, NotFoundStrings> = {
  * téléphone à lui. L'hébergeur, d'après ses rapports à la SEC et cloudflare.com (octobre 2026).
  * Les affirmations sur les données restent vraies tant que le site ne dépose aucun cookie chez ses visiteurs
  * (seule la connexion du propriétaire en pose, @index/auth), ne garde rien dans leur navigateur que les accueils
- * du copilote déjà vus (localStorage : au voyage, scripts/copilote.ts ; sur les fiches, scripts/fiche-accueil.ts),
+ * du copilote déjà vus (localStorage : au voyage, scripts/copilote.ts et scripts/decollage.ts ; sur les fiches,
+ * scripts/fiche-accueil.ts),
  * ne charge rien d'un autre site (les polices sont
  * auto-hébergées), sauf le script de mesure d'audience sans cookie quand il est actif (data/stats.ts), et n'a
  * aucun formulaire.

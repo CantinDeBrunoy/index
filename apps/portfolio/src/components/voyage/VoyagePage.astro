@@ -16,6 +16,7 @@ import { fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../
 import Voyage from "../../layouts/Voyage.astro";
 import Copilote from "./Copilote.astro";
 import CopiloteAccueil from "./CopiloteAccueil.astro";
+import Decollage from "./Decollage.astro";
 
 interface Props {
   lang: Lang;
@@ -238,14 +239,16 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
       }
     </main>
 
+    <Decollage lang={lang} count={stops.length} />
     <div class="veil" aria-hidden="true"></div>
     <p class="visually-hidden" aria-live="polite" data-announce></p>
   </div>
 </Voyage>
 
 <script>
-  // Le copilote d'abord : il écoute le voyage dès sa première escale.
+  // Le copilote et sa fusée d'abord : ils écoutent le voyage dès sa première escale.
   import "../../scripts/copilote";
+  import "../../scripts/decollage";
   import "../../scripts/voyage";
 </script>
 
@@ -785,6 +788,10 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
   }
   .stop:global(.enter.soft) .scene {
     animation: fade-in 0.6s ease-out both;
+  }
+  /* Au bout du décollage (scripts/decollage.ts), la scène de l'escale 1 continue l'envol : elle ne bouge pas. */
+  .stop:global(.enter.cut) .scene {
+    animation: none;
   }
   .stop:global(.leave) .ui {
     opacity: 0;

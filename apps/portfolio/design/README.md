@@ -50,6 +50,30 @@ Le copilote du voyage (le bonhomme qui accueille à l'escale 1, puis change de t
 tenue-terre …` pour ses dix tenues, et `SIZE=640x640 SUFFIX=-accueil` pour la tenue de l'espace en grand. Puis
 `node copilote-site.mjs` les copie dans `../public/voyage/copilote/` et en tire une image fixe chacune.
 
+Le décollage (au clic sur « Décoller », le copilote au pied de sa fusée explique le voyage, y grimpe, et la fusée
+part) est fait de quatre plans : les scènes `decollage-pied`, `decollage-echelle`, `decollage-trappe` et
+`decollage-envol` de `decollage-scenes.js`, que `build-voyage.cjs` ajoute après celles du voyage. Chaque plan commence
+là où finit le précédent, et la dernière image de l'envol précède la première de la boucle de l'espace : la caméra
+de l'escale 1 et sa planète ne changent pas sans que l'envol soit refait. Pour les rendre :
+- `MODE=video CODEC=av01.0.12M.08 QP=32` pour les deux boucles, `RATE=variable BITRATE=2500000` pour la montée et
+  l'envol (à qualité constante, l'envol pesait 8 Mo) ;
+- `MODE=video CODEC=avc1.640034 BITRATE=3500000` pour le H.264 ;
+- `MOBILE=1 MODE=video SUFFIX=-mobile CODEC=avc1.640034 BITRATE=1200000` pour le téléphone, cadré comme ses escales ;
+- `MODE=shot SIZE=1920x1080 SUFFIX=` et `MODE=shot MOBILE=1` pour les images fixes des deux bulles (le mouvement
+  réduit), à convertir en WebP dans `../public/voyage/stills/decollage-<plan>(-mobile).webp`.
+
+Les vidéos se copient dans `../public/voyage/` (`decollage-<plan>-av1.mp4`, `decollage-<plan>.mp4`,
+`decollage-<plan>-mobile.mp4`). Si le copilote change de place, ses bulles suivent sa tête : `--ax` / `--ay` dans
+`src/components/voyage/Decollage.astro`.
+
+La sortie du voyage (« Faire connaissance » à l'escale 10 : le stylo se couche devant la pile, puis le dossier se
+ferme) est la scène `dossiers-ferme`, un clip de 164 images. Ses nombres sont `FERME` dans `voyage-scenes.js` et
+`EXIT` dans `../src/data/voyage.ts` : les deux doivent rester d'accord. Les commandes :
+- l'ordinateur, comme les escales : `MODE=video CODEC=av01.0.12M.08 QP=32` puis `MODE=video CODEC=avc1.640034 BITRATE=3000000` ;
+- le téléphone, la fermeture seule : `MOBILE=1 MODE=video FROM=133 SUFFIX=-mobile CODEC=avc1.64001F BITRATE=1000000`.
+
+Les trois fichiers vont dans `../public/voyage/sortie/`, à part : `stills.mjs` prend tout `-mobile` de `voyage/` pour une escale.
+
 ## La maquette
 
 ```bash

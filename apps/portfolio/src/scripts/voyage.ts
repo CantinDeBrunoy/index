@@ -6,6 +6,8 @@
  *   plonge, comme l'objet).
  * - Flèches gauche et droite du clavier ; l'adresse (#escale-3) garde l'escale, l'interrupteur
  *   FR / EN aussi. Sans ce script, les escales se lisent à la suite, une par écran.
+ * - « Décoller » passe par la fusée du copilote (scripts/decollage.ts) : « voyage:decoller » lui laisse la main,
+ *   « voyage:fusee » la lui donne une fois la plongée finie, « voyage:arrivee » la rend à l'escale 1.
  */
 
 import { animatePhoneScene } from "./phone-loop";
@@ -39,6 +41,8 @@ function start(root: HTMLElement) {
   let current = fromHash();
   let busy = false;
   let later = 0;
+  /** Pendant le décollage, la fusée couvre le départ : sa scène reste en pause. */
+  let aboard = false;
 
   const videoOf = (i: number) => stops[i]?.querySelector<HTMLVideoElement>("video");
 
@@ -50,7 +54,7 @@ function start(root: HTMLElement) {
   /** La vidéo de l'escale affichée tourne en boucle ; en mouvement réduit, elle reste sur sa première image. */
   const play = (i: number) => {
     const video = videoOf(i);
-    if (!video || !desktop.matches) return;
+    if (!video || !desktop.matches || aboard) return;
     video.preload = "auto";
     if (reduce.matches) {
       if (video.readyState === HTMLMediaElement.HAVE_NOTHING) video.load();
@@ -113,6 +117,8 @@ function start(root: HTMLElement) {
     const from = stops[current]!;
     const to = stops[next]!;
     const hadFocus = from.contains(document.activeElement);
+    // Du départ à l'escale 1 : la fusée, si le décollage prend la main (il annule l'évènement).
+    const launch = current === 0 && next === 1 && !soft && !root.dispatchEvent(new CustomEvent("voyage:decoller", { cancelable: true }));
 
     root.style.setProperty("--veil", to.dataset.bg ?? "");
     root.classList.toggle("soft", soft);
@@ -126,6 +132,14 @@ function start(root: HTMLElement) {
         from.classList.remove("leave", "soft");
         root.classList.remove("leaving");
         root.classList.add("entering");
+        if (launch) {
+          // Le voile se lève sur la fusée ; le voyage attend « voyage:arrivee » (busy jusque-là).
+          aboard = true;
+          pause(current);
+          root.dispatchEvent(new CustomEvent("voyage:fusee"));
+          window.setTimeout(() => root.classList.remove("entering", "soft"), SETTLE_MS);
+          return;
+        }
         to.classList.add("enter");
         to.classList.toggle("soft", soft);
         show(next);
@@ -144,6 +158,22 @@ function start(root: HTMLElement) {
 
   show(current);
   root.classList.add("is-live", "is-ready");
+
+  // Le décollage rend la main : l'escale 1 apparaît sous la fusée, sans transition au bout de l'envol (`cut` : sa
+  // scène commence où l'envol s'arrête), en fondu si l'on a passé l'intro.
+  root.addEventListener("voyage:arrivee", (event) => {
+    const { cut, focus } = (event as CustomEvent<{ cut: boolean; focus: boolean }>).detail;
+    const to = stops[1]!;
+    aboard = false;
+    to.classList.add("enter", cut ? "cut" : "soft");
+    show(1);
+    window.scrollTo({ top: 0 });
+    if (focus) to.querySelector<HTMLElement>("[data-focus]")?.focus({ preventScroll: true });
+    window.setTimeout(() => {
+      to.classList.remove("enter", "cut", "soft");
+      busy = false;
+    }, SETTLE_MS);
+  });
 
   root.addEventListener("click", (event) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

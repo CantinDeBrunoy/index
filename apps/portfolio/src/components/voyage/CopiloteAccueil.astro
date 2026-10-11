@@ -3,8 +3,9 @@
  * L'accueil du copilote, à la première escale : il arrive en flottant dans le coin libre, en combinaison
  * spatiale, et donne le tuto (les deux façons de visiter : le voyage, ou le détail des projets).
  * « Faire le voyage » ou la croix le rangent au bout de la barre des escales, et l'anneau doré naît sur le bouton
- * puis file se poser sur la planète. Il accueille à chaque départ (le
- * bouton « Décoller ») : scripts/copilote.ts décide de l'afficher. Caché, il ne télécharge rien.
+ * puis file se poser sur la planète. Il accueille quand l'escale 1 s'ouvre directement : après « Décoller », le
+ * décollage (Decollage.astro) a déjà tout expliqué. scripts/copilote.ts décide de l'afficher. Caché, il ne
+ * télécharge rien.
  */
 import type { Lang } from "../../i18n/voyage";
 import CopiloteTuto from "./CopiloteTuto.astro";

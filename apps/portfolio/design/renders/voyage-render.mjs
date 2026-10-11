@@ -19,12 +19,17 @@ const BG = {
   espace: "#0B0C14", terre: "#10131C", avion: "#DCE9F0", paris: "#DCE3EA", monuments: "#E0E8DA",
   route: "#F2DFD3", maison: "#F1E7DA", salon: "#F3D5B5", tonalliA: "#D8C2C6", tonalliB: "#D8C2C6", calendrier: "#D8C2C6",
   passeport: "#0E1018", dossiers: "#E6D5B8", bagage: "#121522", astronaute: "#0B0C14",
+  "decollage-pied": "#0B0C14", "decollage-echelle": "#0B0C14", "decollage-trappe": "#0B0C14", "decollage-envol": "#0B0C14",
 };
 // Boucles plus longues là où un tour complet doit rester lent (le globe) : [images, durée, qualité].
 // La carte du monde est riche en détails : 9 images/s et une qualité plus basse la gardent légère (2,1 Mo).
 // Le passeport : le tampon s'encre, traverse, tamponne et revient ; 6 s pour que le geste reste posé.
 // L'espace, l'avion et la route : 8 s plutôt que 4, pour que tout y bouge deux fois moins vite (2026-10-09).
-const LOOPS = { terre: [72, 8000, 45], passeport: [120, 6000, 72], espace: [120, 8000], avion: [120, 8000], route: [120, 8000] };
+// Le décollage (decollage-scenes.js) : deux boucles d'une seconde (le salut), la montée de 2,5 s, l'envol de 9 s.
+const LOOPS = {
+  terre: [72, 8000, 45], passeport: [120, 6000, 72], espace: [120, 8000], avion: [120, 8000], route: [120, 8000],
+  "decollage-pied": [24, 1000], "decollage-echelle": [60, 2500], "decollage-trappe": [24, 1000], "decollage-envol": [216, 9000],
+};
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".glb": "model/gltf-binary", ".geojson": "application/json" };
 const server = createServer(async (req, res) => {

@@ -1,7 +1,7 @@
 /**
  * Le copilote du voyage (components/voyage/Copilote.astro, CopiloteAccueil.astro et CopiloteTuto.astro).
- * - Au premier départ seulement (« Décoller », ou l'escale 1 ouverte directement) : il accueille et donne le
- *   tuto, les deux façons de visiter. « Faire le voyage », la croix ou Échap le rangent ; partir de l'escale
+ * - À l'escale 1 ouverte directement, une seule fois : il accueille et donne le tuto, les deux façons de visiter.
+ *   Pas après « Décoller » : au pied de sa fusée, il vient de l'expliquer (scripts/decollage.ts). « Faire le voyage », la croix ou Échap le rangent ; partir de l'escale
  *   aussi. Le navigateur s'en souvient (localStorage) : aux visites suivantes, il reste rangé d'emblée.
  *   L'anneau doré de l'escale attend la fin de l'accueil : il naît alors sur le bouton « Faire le voyage » et
  *   file se poser sur la planète, pour qu'on voie où cliquer.
@@ -176,7 +176,8 @@ function start(root: HTMLElement) {
     if (i !== 1) land();
     if (welcoming() && i !== 1) dismiss(false);
     // Le premier départ : on arrive à l'escale 1 depuis le départ, ou la page s'ouvre sur elle.
-    if (i === 1 && from <= 0 && !welcomed()) greet();
+    // Pas après le décollage : au pied de sa fusée, il vient d'expliquer (scripts/decollage.ts).
+    if (i === 1 && from <= 0 && !welcomed() && root.dataset.fusee !== "partie") greet();
   });
 
   root.addEventListener("click", (event) => {

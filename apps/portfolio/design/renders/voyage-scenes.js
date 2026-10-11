@@ -1046,7 +1046,8 @@ const WARDROBE = {
 // Le bras au repos, par défaut : pendant, légèrement en avant. L'escale 2 porte le casque, le bras plus plié.
 const REST_POSES = { default: [[-0.25, 0, -0.38], [-0.7, 0, 0]], terre: [[-0.15, 0, -0.42], [-1.15, 0, 0]] };
 
-function copilot(M, outfit = "espace") {
+// `tether: false` : sans le cordon de laiton qui le relie au vaisseau (au décollage, il est à pied sur la planète).
+function copilot(M, outfit = "espace", { tether = true } = {}) {
   const g = new THREE.Group();
   const fig = new THREE.Group();
   g.add(fig);
@@ -1191,7 +1192,7 @@ function copilot(M, outfit = "espace") {
     antenna.add(mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.32, 10), M.ink, 0, 0.16, 0));
     antenna.add(mesh(new THREE.SphereGeometry(0.04, 20, 16), M.accent, 0, 0.33, 0));
     head.add(antenna);
-    fig.add(tube(curve([[0.1, -0.05, -0.43], [0.5, -0.42, -0.62], [0.95, -0.62, -0.3], [1.5, -0.4, -0.2], [2.4, -0.55, -0.3]]), 0.018, M.accent));
+    if (tether) fig.add(tube(curve([[0.1, -0.05, -0.43], [0.5, -0.42, -0.62], [0.95, -0.62, -0.3], [1.5, -0.4, -0.2], [2.4, -0.55, -0.3]]), 0.018, M.accent));
     extra.push((phi) => (antenna.rotation.z = 0.35 + 0.12 * Math.sin(2 * phi + 0.4)));
   }
   if (outfit === "terre") {
@@ -1479,6 +1480,8 @@ function copilot(M, outfit = "espace") {
     rest.elbow.rotation.copy(REST_E);
     for (const f of extra) f(phi);
   };
+  // Ses membres, pour les scènes qui le font marcher et grimper (le décollage).
+  g.userData.parts = { fig, head, wave, rest, legL, legR };
   g.userData.camera = { pos: [0, 0.35, 6.2], target: [0.12, 0.22, 0], fov: 26 };
   return g;
 }

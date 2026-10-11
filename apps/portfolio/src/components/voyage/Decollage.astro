@@ -1,0 +1,474 @@
+---
+/**
+ * Le décollage : au clic sur « Décoller », on plonge sur la planète, et le copilote attend au pied de sa fusée. Au
+ * premier décollage, il explique le voyage en deux bulles : au pied de l'échelle (chaque escale est un projet), puis
+ * à la trappe (les deux façons de visiter) ; il grimpe entre les deux. Puis il entre, la fusée décolle, et la caméra
+ * recule jusqu'au cadre de l'escale 1, où le voyage reprend sans transition. Aux décollages suivants, la fusée part
+ * tout de suite. « Passer l'intro » (ou Échap) mène à l'escale 1.
+ * Quatre plans vidéo, enchaînés par scripts/decollage.ts (rendus par design/renders/decollage-scenes.js) ; caché, il
+ * ne télécharge rien. Sans script, « Décoller » mène droit à l'escale 1.
+ */
+import { COPILOTE, DECOLLAGE } from "../../data/copilote";
+import { fill } from "../../data/voyage";
+import { inWords, ROUTES, typo, type Lang } from "../../i18n/voyage";
+
+interface Props {
+  lang: Lang;
+  /** Le nombre de projets (d'escales) du voyage. */
+  count: number;
+}
+
+const { lang, count } = Astro.props;
+const d = DECOLLAGE[lang];
+const c = COPILOTE[lang];
+// Les plans : les deux bulles se lisent sur les boucles (le salut), la montée et l'envol se jouent une fois.
+const CLIPS = [
+  { clip: "pied", loop: true },
+  { clip: "echelle", loop: false },
+  { clip: "trappe", loop: true },
+  { clip: "envol", loop: false },
+];
+---
+
+<section class="decollage" data-decollage hidden aria-label={d.aria}>
+  <div class="dec-scene" aria-hidden="true">
+    {CLIPS.map(({ clip, loop }) => <video data-clip={clip} muted playsinline disablepictureinpicture preload="none" loop={loop} />)}
+  </div>
+
+  <div class="dec-bulle dec-bulle--1" data-dec-bulle="1" hidden>
+    <p class="who">{c.who}</p>
+    <p class="title" id="decollage-titre-1" tabindex="-1">{typo(lang, d.hello)}</p>
+    <p class="text">{typo(lang, fill(d.intro, { n: inWords(lang, count) }))}</p>
+    <div class="actions">
+      <button type="button" class="go" data-dec-next>{d.next}</button>
+    </div>
+  </div>
+
+  <div class="dec-bulle dec-bulle--2" data-dec-bulle="2" hidden>
+    <p class="title" id="decollage-titre-2" tabindex="-1">{typo(lang, d.how)}</p>
+    <p class="text">{typo(lang, d.howIntro)}</p>
+    <ul class="ways">
+      <li>
+        <span class="way-ic" aria-hidden="true"><span class="mini-ring"></span></span>
+        <span>
+          <b>{c.voyage}</b>
+          <span class="d">{typo(lang, c.voyageText)}</span><span class="m">{typo(lang, c.voyageTextPhone)}</span>
+        </span>
+      </li>
+      <li>
+        <span class="way-ic" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 20 20">
+            <rect x="3" y="4" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"></rect>
+            <path d="M6 8.5h8M6 11.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+          </svg>
+        </span>
+        <span>
+          <b>{c.detail}</b>
+          <span class="d">{typo(lang, c.detailText)}</span><span class="m">{typo(lang, c.detailTextPhone)}</span>
+        </span>
+      </li>
+    </ul>
+    <div class="actions">
+      <button type="button" class="go" data-dec-next>{d.go}</button>
+      <a class="pill" href={ROUTES.projets[lang]}>{c.projects}</a>
+    </div>
+  </div>
+
+  <button type="button" class="dec-skip" data-dec-skip>
+    {d.skip}<span class="arrow" aria-hidden="true">→</span>
+  </button>
+</section>
+
+<style>
+  /* Par-dessus les escales, sous l'en-tête (qui reste utilisable) et sous le voile des transitions. La scène est
+     cadrée exactement comme celle des escales : la dernière image de l'envol est la première de l'escale 1. */
+  .decollage {
+    /* 1 % de la largeur, puis de la hauteur, de la scène (16:9, qui couvre l'écran) : les bulles s'y accrochent. */
+    --bw: max(1vw, 1.7778svh);
+    --bh: calc(var(--bw) * 0.5625);
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    overflow: hidden;
+    background: #0b0c14;
+  }
+  .decollage[hidden] {
+    display: none;
+  }
+  .dec-scene {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 177.78svh);
+    aspect-ratio: 16 / 9;
+    transform: translate(-50%, -50%);
+  }
+  .dec-scene video {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+  }
+  .dec-scene video:global(.on) {
+    opacity: 1;
+  }
+  /* L'arrivée sur la planète, comme une escale qui se pose ; la fin, un fondu très court sur l'escale 1. */
+  .decollage:global(.arrive) .dec-scene {
+    animation: dec-land 1.05s cubic-bezier(0.16, 0.84, 0.3, 1) both;
+  }
+  .decollage:global(.leave) {
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .decollage:global(.leave.soft) {
+    transition-duration: 0.45s;
+  }
+  @keyframes dec-land {
+    from {
+      transform: translate(-50%, -50%) scale(1.22);
+      opacity: 0;
+      filter: blur(10px);
+    }
+    to {
+      transform: translate(-50%, -50%);
+      opacity: 1;
+      filter: blur(0);
+    }
+  }
+
+  /* — Les bulles : celles du copilote, crème, épais liseré de laiton, grosse pointe vers sa tête. Sur ordinateur,
+     au-dessus et à gauche de lui, dans le ciel : --ax / --ay, la pointe, en % de la scène. — */
+  .dec-bulle {
+    --card: #fbf7f0;
+    --ink: #241e18;
+    --muted: #5a4f44;
+    --line: #e3d8c8;
+    --brass-text: #84652f;
+    --w: min(var(--max-w), calc(100vw - 32px));
+    --axp: calc(50vw + (var(--ax) - 50) * var(--bw));
+    --ayp: calc(50svh + (var(--ay) - 50) * var(--bh));
+    --left: max(16px, calc(var(--axp) + var(--tail) - var(--w)));
+    position: absolute;
+    z-index: 1;
+    left: var(--left);
+    bottom: calc(100svh - var(--ayp) + 26px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+    width: var(--w);
+    padding: 22px 24px 18px;
+    border: 3px solid var(--brass);
+    border-radius: 22px;
+    background: var(--card);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+    color: var(--ink);
+    -webkit-user-select: text;
+    user-select: text;
+    transform-origin: calc(var(--axp) - var(--left)) 100%;
+    animation: bubble-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  }
+  .dec-bulle[hidden] {
+    display: none;
+  }
+  .dec-bulle:global(.out) {
+    animation: bubble-out 0.25s ease-in forwards;
+  }
+  .dec-bulle::before {
+    content: "";
+    position: absolute;
+    left: calc(var(--axp) - var(--left) - 15px);
+    bottom: -17px;
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--brass);
+    border-left: 0;
+    border-top: 0;
+    background: var(--card);
+    transform: rotate(45deg);
+  }
+  /* Au pied de l'échelle, puis à la trappe (decollage-scenes.js : la tête est à 31 % / 67 %, puis à 40 % / 62 %). */
+  /* --tail : la pointe, à cette distance du bord droit de la bulle ; la seconde s'écarte de la fusée. */
+  .dec-bulle--1 {
+    --max-w: 420px;
+    --ax: 31.4;
+    --ay: 58.5;
+    --tail: 72px;
+  }
+  .dec-bulle--2 {
+    --max-w: 460px;
+    --ax: 39.8;
+    --ay: 51;
+    --tail: 36px;
+  }
+  .who {
+    margin: 0;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: 34px;
+    line-height: 1;
+    outline: none;
+  }
+  .text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  .ways {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ways li {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .ways b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .way-ic {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    color: var(--brass-text);
+  }
+  .mini-ring {
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--brass);
+    border-radius: var(--radius-pill);
+  }
+  .mini-ring::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: var(--radius-pill);
+    background: var(--brass);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+    padding-top: 6px;
+  }
+  .actions .go {
+    min-height: 46px;
+    padding: 0 22px;
+    font-size: 15px;
+  }
+  .m {
+    display: none;
+  }
+  /* Un écran d'ordinateur peu haut (1280 × 800, 1366 × 768) : des bulles plus serrées, qui restent sous l'en-tête. */
+  @media (min-width: 701px) and (max-height: 860px) {
+    .dec-bulle {
+      gap: 8px;
+      padding: 18px 20px 14px;
+    }
+    .title {
+      font-size: 30px;
+    }
+    .text {
+      font-size: 14px;
+    }
+    .ways li {
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .actions .go {
+      min-height: 44px;
+    }
+  }
+
+  /* « Passer l'intro », en bas à droite, là où sera la barre des escales. */
+  .dec-skip {
+    position: absolute;
+    z-index: 1;
+    right: 40px;
+    bottom: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 22px;
+    border: 1px solid #2b3040;
+    border-radius: var(--radius-pill);
+    background: rgba(14, 16, 24, 0.85);
+    color: #efe8dc;
+    font: inherit;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .dec-skip:hover {
+    background: #1c2030;
+  }
+  .dec-skip .arrow {
+    font-size: 1.6em;
+    line-height: 0.6;
+    transition: transform 0.2s;
+  }
+  .dec-skip:hover .arrow {
+    transform: translateX(3px);
+  }
+
+  @keyframes bubble-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes bubble-out {
+    to {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+
+  /* — Le téléphone : la scène en haut, cadrée comme celle des escales ; la bulle dessous, sa pointe vers lui — */
+  @media (max-width: 700px) {
+    .decollage {
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding-top: 64px;
+    }
+    .dec-scene {
+      position: relative;
+      left: auto;
+      top: auto;
+      flex: none;
+      width: 100%;
+      aspect-ratio: 780 / 760;
+      overflow: hidden;
+      transform: none;
+    }
+    @keyframes dec-land-phone {
+      from {
+        transform: scale(1.22);
+        opacity: 0;
+        filter: blur(10px);
+      }
+      to {
+        transform: none;
+        opacity: 1;
+        filter: blur(0);
+      }
+    }
+    .decollage:global(.arrive) .dec-scene {
+      animation-name: dec-land-phone;
+    }
+    .dec-bulle {
+      position: relative;
+      left: auto;
+      bottom: auto;
+      flex: none;
+      gap: 8px;
+      width: auto;
+      margin: -20px 16px 0;
+      padding: 18px 18px 14px;
+      border-radius: 18px;
+      transform-origin: 30% 0;
+    }
+    .dec-bulle::before {
+      left: calc(var(--mx) - 16px - 15px);
+      top: -17px;
+      bottom: auto;
+      border: 3px solid var(--brass);
+      border-right: 0;
+      border-bottom: 0;
+    }
+    .dec-bulle--1 {
+      --mx: 26vw;
+    }
+    .dec-bulle--2 {
+      --mx: 36vw;
+    }
+    .title {
+      padding-right: 0;
+      font-size: 30px;
+    }
+    .text {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .ways li {
+      font-size: 13px;
+    }
+    .actions .go {
+      flex: 1;
+    }
+    .d {
+      display: none;
+    }
+    .m {
+      display: inline;
+    }
+    .dec-skip {
+      position: relative;
+      right: auto;
+      bottom: auto;
+      flex: none;
+      align-self: flex-end;
+      margin: auto 16px 22px;
+      min-height: 44px;
+      border: 0;
+      background: none;
+      color: #b7ad9f;
+      font-size: 14px;
+    }
+    .dec-skip:global(.alone) {
+      margin-top: 16px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .decollage:global(.arrive) .dec-scene {
+      animation: fade 0.3s both;
+    }
+    .dec-bulle {
+      animation: fade 0.3s both;
+    }
+    .dec-bulle:global(.out) {
+      animation: fade 0.2s reverse forwards;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+</style>
