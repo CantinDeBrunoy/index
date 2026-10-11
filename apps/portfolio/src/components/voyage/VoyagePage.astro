@@ -10,6 +10,7 @@
  * le retour et l'escale suivante au pouce.
  */
 import { getProject } from "@index/projects";
+import { nameOf } from "../../data/fiches";
 import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
@@ -28,7 +29,7 @@ const alternates = { fr: ROUTES.voyage.fr, en: ROUTES.voyage.en };
 const stops = STOPS.map((stop, i) => {
   const project = getProject(stop.slug);
   if (!project) throw new Error(`Escale sans projet : ${stop.slug}`);
-  return { ...stop, n: i + 1, project, text: STOP_TEXTS[lang][stop.slug]! };
+  return { ...stop, n: i + 1, project, name: nameOf(project, lang), text: STOP_TEXTS[lang][stop.slug]! };
 });
 const places = [v.start, ...stops.map((s) => s.text.place)];
 ---
@@ -144,7 +145,6 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
             `--y: ${s.spot[1]}%`,
             `--mx: ${s.spotMobile[0]}%`,
             `--my: ${s.spotMobile[1]}%`,
-            ...(s.tag ? [`--tx: ${s.tag[0]}%`, `--ty: ${s.tag[1]}%`] : []),
           ].join("; ");
           return (
             <section
@@ -155,7 +155,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
               data-bg={s.bg}
               data-pal={s.palette}
               data-place={s.text.place}
-              data-name={s.project.name}
+              data-name={s.name}
               data-img-phone={`/voyage/${s.scene}-mobile.webp`}
               style={style}
             >
@@ -177,24 +177,15 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                     <span class="arrow" aria-hidden="true">→</span>
                   </span>
                 </a>
-                {
-                  s.tag && s.text.tag && (
-                    <p class="tag ui">
-                      <i aria-hidden="true" />
-                      <span>{s.text.tag}</span>
-                    </p>
-                  )
-                }
               </div>
               <article class="cartel ui">
                 <p class="cartel__kind">
                   <span>{kindOf(s.project, s.text, lang).line}</span>
                 </p>
                 <h2 class="serif" id={`escale-${s.n}-titre`} tabindex="-1" data-focus>
-                  {s.project.name}
+                  {s.name}
                 </h2>
                 <p class="cartel__pitch">{typo(lang, s.text.pitch)}</p>
-                {s.text.extra && <p class="cartel__extra">{typo(lang, s.text.extra)}</p>}
                 <div class="cartel__links">
                   <a class="go" href={fichePath(lang, s.project)}>
                     <span class="lg">{v.fiche}</span>
@@ -229,7 +220,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                         data-go={o.n}
                         data-soft={o.n === s.n + 1 ? undefined : ""}
                         data-place={o.text.place}
-                        aria-label={fill(v.announce, { i: o.n, place: o.text.place, name: o.project.name })}
+                        aria-label={fill(v.announce, { i: o.n, place: o.text.place, name: o.name })}
                         aria-current={o.n === s.n ? "step" : undefined}
                       />
                     ))}
@@ -461,38 +452,6 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     transform: translateX(-3px);
   }
 
-  .tag {
-    position: absolute;
-    left: var(--tx);
-    top: var(--ty);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 0;
-    transform: translate(-7px, -7px);
-  }
-  .tag i {
-    flex: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 999px;
-    background: var(--brass);
-    box-shadow: 0 0 0 4px var(--halo);
-  }
-  .tag span {
-    display: inline-flex;
-    align-items: center;
-    min-height: 30px;
-    padding: 0 12px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: var(--card);
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
   /* — Le cartel, en bas à gauche : une affiche, le nom du projet en très grand à même la scène,
      sur un voile de la couleur de l'escale ; le retour, en bas à droite.
      L'affiche grandit avec l'écran, comme la scène : --u vaut 1px sur un écran de 1440 × 900. — */
@@ -562,13 +521,6 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     max-width: calc(540 * var(--u));
     margin: 0;
     font-size: max(15px, calc(19 * var(--u)));
-    line-height: 1.5;
-  }
-  .cartel__extra {
-    max-width: calc(540 * var(--u));
-    margin: 0;
-    color: var(--muted);
-    font-size: max(13px, calc(14 * var(--u)));
     line-height: 1.5;
   }
   .cartel__links {
@@ -946,9 +898,6 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
       clip: rect(0 0 0 0);
       white-space: nowrap;
     }
-    .tag {
-      display: none;
-    }
     /* Le bas de la scène se fond dans la couleur de l'escale ; le titre remonte dessus. */
     .poster-veil {
       left: 0;
@@ -975,16 +924,9 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
       line-height: 0.88;
       letter-spacing: -0.015em;
     }
-    .cartel__pitch,
-    .cartel__extra {
-      max-width: none;
-    }
     .cartel__pitch {
+      max-width: none;
       font-size: 15px;
-      line-height: 1.45;
-    }
-    .cartel__extra {
-      font-size: 12px;
       line-height: 1.45;
     }
     .cartel__links {

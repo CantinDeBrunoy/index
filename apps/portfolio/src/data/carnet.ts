@@ -20,7 +20,6 @@ export const CHIP_FOCUS: Record<string, { x: number; y: number; zoom: number }> 
   terre: { x: 38, y: 47, zoom: 1.5 },
   avion: { x: 51, y: 47, zoom: 1.5 },
   route: { x: 50, y: 49, zoom: 1.4 },
-  maison: { x: 44, y: 47, zoom: 2.2 },
   salon: { x: 46, y: 69, zoom: 1.8 },
   calendrier: { x: 56, y: 38, zoom: 2 },
 };
@@ -45,8 +44,6 @@ export interface CarnetStrings {
   previewAria: string;
   /** Pour les lecteurs d'écran, sur chaque ligne : ce que fait un clic. */
   listHint: string;
-  /** {list} : les projets racontés sur la fiche de l'escale. */
-  shelf: string;
   /** Le nom de la rangée des raccourcis, pour les lecteurs d'écran. */
   quick: string;
   /** La pastille du logiciel à télécharger, à la place du statut. */
@@ -77,7 +74,6 @@ export const CARNET: Record<Lang, CarnetStrings> = {
     listAria: "Les escales du voyage",
     previewAria: "L'escale choisie, en grand",
     listHint: "Un premier clic montre sa scène, un second ouvre sa fiche.",
-    shelf: "Sur l'étagère aussi : {list}",
     quick: "Ouvrir une app directement",
     quickDownload: "Windows ↓",
     owner: "Connecté : Magellan et Hublot s'ouvrent sur mes vraies données.",
@@ -106,7 +102,6 @@ export const CARNET: Record<Lang, CarnetStrings> = {
     listAria: "The journey's stops",
     previewAria: "The chosen stop, up close",
     listHint: "A first click shows its scene, a second opens its page.",
-    shelf: "Also on the shelf: {list}",
     quick: "Open an app directly",
     quickDownload: "Windows ↓",
     owner: "Signed in: Magellan and Hublot open on my real data.",

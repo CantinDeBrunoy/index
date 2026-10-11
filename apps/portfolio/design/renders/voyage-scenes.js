@@ -9,7 +9,7 @@ const ASSET = (p) => new URL(`assets/${p}`, location.href).href;
 // Avion de ligne « very cute airplane » d'Akash Rudra (CC-BY 3.0, via Poly Pizza), repeint dans notre matière.
 // Pays : Natural Earth 1:110m (domaine public), le jeu de données qu'affiche Magellan.
 // Tour Eiffel : « Eiffel Tower LOW POLY » d'ingoenius (CC0) ; arc de triomphe : Microsoft (CC BY 4.0), via Wikimedia Commons.
-// Voitures : « Car », « Car », « SUV » de Quaternius (CC0) ; coffre-fort : « Safe » de CreativeTrio (CC0), via Poly Pizza.
+// Voitures : « Car », « Car », « SUV » de Quaternius (CC0), via Poly Pizza.
 const stl = new STLLoader();
 const gltf = new GLTFLoader();
 const [AIRLINER, COUNTRIES, EIFFEL_STL, ARC_STL, ...MODELS] = await Promise.all([
@@ -20,10 +20,8 @@ const [AIRLINER, COUNTRIES, EIFFEL_STL, ARC_STL, ...MODELS] = await Promise.all(
   gltf.loadAsync(ASSET("car-sedan.glb")),
   gltf.loadAsync(ASSET("car-hatch.glb")),
   gltf.loadAsync(ASSET("car-suv.glb")),
-  gltf.loadAsync(ASSET("safe.glb")),
 ]);
 const CARS = MODELS.slice(0, 3);
-const SAFE = MODELS[3];
 // Les deux monuments, ramenés à une hauteur de 1, posés à y = 0 et centrés.
 // Normales lissées sous 30° : les courbes s'adoucissent, les arêtes vives restent nettes.
 const monument = (geo, upright) => {
@@ -48,7 +46,7 @@ const TINT = {
   avion: 0x8fb8d3, // le ciel
   paris: 0xa9b2ba, // le zinc des toits
   monuments: 0xa9ba9d, // la sauge des arbres
-  monument: 0xeab9b2, // le rouge très clair des monuments (tour Eiffel, arc de triomphe) et de la porte du coffre de Mithril, qui les détache du décor
+  monument: 0xeab9b2, // le rouge très clair des monuments (tour Eiffel, arc de triomphe), qui les détache du décor
   route: 0xc6ab9c, // la tuile
   maison: 0xa3b79d, // la plante, le tapis
   salon: 0xcdb3a4, // la terre cuite du tapis
@@ -313,108 +311,6 @@ function car(M, k, body) {
     o.castShadow = true;
     o.receiveShadow = true;
   });
-  return g;
-}
-
-// Le vrai coffre-fort de Mithril (modèle libre). Sa texture est une palette : on y repeint les zones
-// sombres (molette, poignée) et le reste. Le caisson reste en craie ; la porte et le fond prennent le
-// rouge clair des monuments, qui détache le coffre du bureau, et la molette et la poignée le laiton.
-const rgbOf = (hex) => [hex >> 16, (hex >> 8) & 255, hex & 255];
-const SAFE_LOOK = { body: [233, 228, 219], door: rgbOf(TINT.monument), knobs: [176, 138, 79], inside: 0x9b6d67 };
-const SAFE_TEX = (() => {
-  let tex = null;
-  SAFE.scene.traverse((o) => {
-    if (o.isMesh && o.material.map) tex = o.material.map;
-  });
-  return tex;
-})();
-const safeMat = (base, knobs) => {
-  const img = SAFE_TEX.image;
-  const c = document.createElement("canvas");
-  c.width = img.width;
-  c.height = img.height;
-  const ctx = c.getContext("2d");
-  ctx.drawImage(img, 0, 0);
-  const d = ctx.getImageData(0, 0, c.width, c.height);
-  for (let i = 0; i < d.data.length; i += 4) {
-    const l = (0.2126 * d.data[i] + 0.7152 * d.data[i + 1] + 0.0722 * d.data[i + 2]) / 255;
-    const rgb = l < 0.3 ? knobs : base.map((v) => v * (0.88 + 0.12 * l));
-    d.data[i] = rgb[0];
-    d.data[i + 1] = rgb[1];
-    d.data[i + 2] = rgb[2];
-  }
-  ctx.putImageData(d, 0, 0);
-  const t = new THREE.CanvasTexture(c);
-  t.flipY = SAFE_TEX.flipY;
-  t.colorSpace = THREE.SRGBColorSpace;
-  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.55, metalness: 0.05 });
-};
-const SAFE_BODY_MAT = safeMat(SAFE_LOOK.body, SAFE_LOOK.knobs);
-const SAFE_DOOR_MAT = safeMat(SAFE_LOOK.door, SAFE_LOOK.knobs);
-// La couleur de la porte sans texture (le gris de la palette, l = 0,545), pour son épaisseur.
-const SAFE_PLAIN = new THREE.MeshStandardMaterial({
-  color: new THREE.Color().setRGB(...SAFE_LOOK.door.map((v) => (v * 0.945) / 255), THREE.SRGBColorSpace),
-  roughness: 0.55,
-  metalness: 0.05,
-});
-const SAFE_INSIDE = new THREE.MeshStandardMaterial({ color: SAFE_LOOK.inside, roughness: 0.8, side: THREE.BackSide });
-// Le modèle est d'un seul tenant : on en détache la porte (la plaque en relief et la poignée) et la molette.
-// Coordonnées du modèle, en millièmes : la porte couvre x −0,89 → 1,32, y 0,31 → 2,31, devant z = 0,68,
-// et derrière elle le caisson est ouvert. userData.door pivote sur la charnière, au bord droit du caisson
-// (rotation.y > 0 : la porte s'ouvre) ; userData.dial tourne sur son axe (rotation.z).
-function safe(h = 1) {
-  const g = fitModel(SAFE, h);
-  let box;
-  g.traverse((o) => {
-    if (o.isMesh) box = o;
-  });
-  const K = 1e-3;
-  const geo = box.geometry, P = geo.attributes.position, idx = geo.index.array;
-  const at = (i) => [P.getX(i) / K, P.getY(i) / K, P.getZ(i) / K];
-  const inDoor = (i) => {
-    const [x, y, z] = at(i);
-    return x > -0.9 && x < 1.33 && y > 0.3 && y < 2.32 && z > 0.679;
-  };
-  const inDial = (i) => {
-    const [x, y, z] = at(i);
-    return x > -0.6 && x < -0.2 && y > 1.15 && y < 1.55 && z > 0.695;
-  };
-  const parts = { body: [], door: [], dial: [] };
-  for (let t = 0; t < idx.length; t += 3) {
-    const v = [idx[t], idx[t + 1], idx[t + 2]];
-    parts[v.every(inDial) ? "dial" : v.every(inDoor) ? "door" : "body"].push(...v);
-  }
-  const part = (list) => {
-    const p = geo.clone();
-    p.setIndex(list);
-    return p;
-  };
-  box.geometry = part(parts.body);
-  box.material = SAFE_BODY_MAT;
-  box.castShadow = true;
-  box.receiveShadow = true;
-  // Le fond du caisson, vu par l'ouverture.
-  const inside = mesh(new THREE.BoxGeometry(2.21 * K, 2.0 * K, 2.38 * K), SAFE_INSIDE, 0.215 * K, 1.31 * K, -0.51 * K);
-  inside.castShadow = false;
-  box.add(inside);
-  // La porte : la charnière au coin avant droit, la plaque décalée d'autant pour rester à sa place, fermée.
-  const HX = 1.42 * K, HZ = 0.7 * K;
-  const door = new THREE.Group();
-  door.position.set(HX, 0, HZ);
-  box.add(door);
-  const plate = mesh(part(parts.door), SAFE_DOOR_MAT, -HX, 0, -HZ);
-  door.add(plate);
-  // Son épaisseur, cachée dans l'ouverture quand elle est fermée.
-  plate.add(mesh(new THREE.BoxGeometry(2.17 * K, 1.96 * K, 0.12 * K), SAFE_PLAIN, 0.215 * K, 1.31 * K, 0.62 * K));
-  // La molette tourne autour de son centre.
-  const ring = parts.dial.map(at);
-  const [DX, DY] = [0, 1].map((a) => (Math.min(...ring.map((p) => p[a])) + Math.max(...ring.map((p) => p[a]))) / 2 * K);
-  const dial = new THREE.Group();
-  dial.position.set(DX, DY, 0);
-  plate.add(dial);
-  dial.add(mesh(part(parts.dial), SAFE_DOOR_MAT, -DX, -DY, 0));
-  g.userData.door = door;
-  g.userData.dial = dial;
   return g;
 }
 
@@ -830,13 +726,13 @@ const PASS = (() => {
   // Un visa par projet, dans l'ordre des escales, à l'encre de sa scène (en plus soutenu, pour se lire sur le papier).
   // Les noms de projet se lisent dans les deux langues.
   const STAMPS = [
-    { label: "GALAXY", year: "2024", ink: "#6F63A6", shape: "round", x: 165, y: 230, rot: -0.2 },
+    { label: "GALACTIC", year: "2022", ink: "#6F63A6", shape: "round", x: 165, y: 230, rot: -0.2 },
     { label: "MAGELLAN", year: "2026", ink: "#3E7696", shape: "oval", x: 390, y: 215, rot: 0.12 },
     { label: "HUBLOT", year: "2026", ink: "#4B8DB8", shape: "rect", x: 590, y: 250, rot: -0.08 },
     { label: "MÉTRO", year: "2022", ink: "#5E6C7B", shape: "round", x: 150, y: 470, rot: 0.18 },
     { label: "VISIT MATCH", year: "2023", ink: "#C25B55", shape: "rect", x: 385, y: 455, rot: -0.14 },
     { label: "GYM-PICKER", year: "2026", ink: "#A8654A", shape: "oval", x: 590, y: 480, rot: 0.1 },
-    { label: "MITHRIL", year: "2026", ink: "#5C8453", shape: "round", x: 170, y: 700, rot: -0.1 },
+    { label: "API .NET", year: "2023", ink: "#5C8453", shape: "round", x: 170, y: 700, rot: -0.1 },
     { label: "CANCIONERO", year: "2026", ink: "#B8693F", shape: "rect", x: 395, y: 690, rot: 0.16 },
     { label: "TONALLI", year: "2026", ink: "#A0557C", shape: "oval", x: 585, y: 710, rot: -0.18 },
   ];
@@ -855,15 +751,15 @@ const PASS = (() => {
   return { left, right, fresh, W, H, FRESH };
 })();
 
-// ——— 011 INDEX : la pile de dossiers ———
+// ——— 010 INDEX : la pile de dossiers ———
 // Des dossiers cartonnés, chacun avec l'onglet de la couleur d'une escale ; celui du dessus est ouvert.
-// Ouvert, il montre la page de titre et le sommaire des onze projets : les noms se lisent dans les deux langues.
+// Ouvert, il montre la page de titre et le sommaire des dix projets : les noms se lisent dans les deux langues.
 const KRAFT = 0xd8bf95;
 const INDEX_LIST = [
-  ["001", "Métro Pathfinder", "2022"], ["002", "API REST .NET", "2023"], ["003", "Visit Match", "2023"],
-  ["004", "Galaxy Escape", "2024"], ["005", "Magellan", "2026"], ["006", "Cancionero", "2026"],
-  ["007", "Mithril", "2026"], ["008", "Tonalli", "2026"], ["009", "gym-picker", "2026"],
-  ["010", "Hublot", "2026"], ["011", "INDEX", "2026"],
+  ["001", "Galactic Escape", "2022"], ["002", "Métro Pathfinder", "2022"], ["003", "API REST .NET", "2023"],
+  ["004", "Visit Match", "2023"], ["005", "Magellan", "2026"], ["006", "Cancionero", "2026"],
+  ["007", "Tonalli", "2026"], ["008", "gym-picker", "2026"], ["009", "Hublot", "2026"],
+  ["010", "INDEX", "2026"],
 ];
 const DOSSIER = (() => {
   const W = 800, H = 1100;
@@ -887,7 +783,7 @@ const DOSSIER = (() => {
     c.fillStyle = "#8A6A35";
     c.font = "bold 34px 'Courier New', monospace";
     c.letterSpacing = "6px";
-    c.fillText("001 → 011", W / 2, 690);
+    c.fillText(`001 → ${INDEX_LIST.at(-1)[0]}`, W / 2, 690);
     c.letterSpacing = "0px";
     // L'anneau de laiton du voyage, en emblème.
     c.strokeStyle = "#B08A4F";
@@ -911,7 +807,7 @@ const DOSSIER = (() => {
     c.letterSpacing = "0px";
     c.fillStyle = "#9A8F84";
     c.font = "bold 22px 'Courier New', monospace";
-    c.fillText("001 → 011", 70, 160);
+    c.fillText(`001 → ${INDEX_LIST.at(-1)[0]}`, 70, 160);
     INDEX_LIST.forEach(([num, name, year], i) => {
       const y = TOP + i * ROW;
       const last = i === INDEX_LIST.length - 1;
@@ -1406,7 +1302,7 @@ function copilot(M, outfit = "espace") {
     hold(db, new THREE.Euler(0, 0.32, 0.15));
   }
   if (outfit === "maison") {
-    // Mithril : à la maison. Sweat à capuche, pantalon de jogging, chaussons, et la clé de laiton du coffre.
+    // L'API REST .NET : à la maison. Sweat à capuche, pantalon de jogging, chaussons, et la clé de laiton de la maison.
     const hoodie = tinted(0x8fa889, 0.8);
     const hood = mesh(new THREE.TorusGeometry(0.2, 0.075, 14, 32, Math.PI), hoodie, 0, 0.27, -0.03);
     hood.rotation.set(Math.PI / 2, 0, Math.PI);
@@ -1558,7 +1454,7 @@ function copilot(M, outfit = "espace") {
 }
 
 const SCENES = {
-  // 004 Galaxy Escape : l'espace, la planète à anneau ; la Terre au loin
+  // 001 Galactic Escape : l'espace, la planète à anneau ; la Terre au loin
   espace(M) {
     const g = new THREE.Group();
     const lav = tinted(TINT.espace, 0.6);
@@ -1627,7 +1523,7 @@ const SCENES = {
     g.userData.camera = { pos: [0.6, 0.9, 7.4], target: [0, 0, 0], fov: 32 };
     return g;
   },
-  // 010 Hublot : dans l'avion, le hublot, le volet ; dehors, la vraie aile et la mer de nuages
+  // 009 Hublot : dans l'avion, le hublot, le volet ; dehors, la vraie aile et la mer de nuages
   avion(M) {
     const g = new THREE.Group();
     const wall = new THREE.Shape();
@@ -1691,7 +1587,7 @@ const SCENES = {
     g.userData.camera = { pos: [-0.75, 0.3, 2.5], target: [0, -0.05, -0.4], fov: 40 };
     return g;
   },
-  // 001 Métro Pathfinder : Paris vu du ciel, la Seine, le métro, le plus court chemin ; les toits de zinc
+  // 002 Métro Pathfinder : Paris vu du ciel, la Seine, le métro, le plus court chemin ; les toits de zinc
   paris(M) {
     const g = new THREE.Group();
     const zinc = tinted(TINT.paris, 0.55);
@@ -1726,7 +1622,7 @@ const SCENES = {
     g.userData.camera = { pos: [0.6, 5.6, 5.0], target: [0, 0, 0.2], fov: 34 };
     return g;
   },
-  // 003 Visit Match : la tour Eiffel et l'arc de triomphe reliés par un arc de laiton ; deux voyageurs
+  // 004 Visit Match : la tour Eiffel et l'arc de triomphe reliés par un arc de laiton ; deux voyageurs
   // partent chacun d'un monument et se rejoignent au sommet du lien. La pelouse et les arbres.
   monuments(M) {
     const g = new THREE.Group();
@@ -1773,7 +1669,7 @@ const SCENES = {
     g.userData.camera = { pos: [0.2, 2.4, 6.2], target: [0, 0.88, 0], fov: 35 };
     return g;
   },
-  // 009 gym-picker : la route, les bouchons, les quatre salles, le meilleur trajet ; quelques toits de tuile
+  // 008 gym-picker : la route, les bouchons, les quatre salles, le meilleur trajet ; quelques toits de tuile
   route(M) {
     const g = new THREE.Group();
     const tile = tinted(TINT.route, 0.7);
@@ -1839,7 +1735,9 @@ const SCENES = {
     g.userData.camera = { pos: [1.2, 5.0, 5.6], target: [0, 0, 0.2], fov: 34 };
     return g;
   },
-  // 007 Mithril + 002 API REST .NET : la maison, le bureau, le coffre et le serveur ; le tapis et la plante
+  // 003 API REST .NET : la maison, le bureau, le portable et le serveur ; le tapis et la plante (la couleur de
+  // l'escale). Le portable interroge l'API : sur son écran, une requête et sa réponse en JSON ; par le câble, une
+  // perle de laiton file jusqu'au serveur, qui répond. La platine, au premier plan, mène à l'escale suivante.
   maison(M) {
     const g = new THREE.Group();
     const sage = tinted(TINT.maison, 0.7);
@@ -1854,21 +1752,35 @@ const SCENES = {
     for (const [x, z] of [[-0.92, -0.38], [0.92, -0.38], [-0.92, 0.38], [0.92, 0.38]]) desk.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 12), M.clay2, x, 0.41, z));
     desk.position.set(-0.4, 0, -0.6);
     g.add(desk);
+    // L'écran : la requête en laiton, le code de réponse, puis le JSON, des lignes plus ou moins longues.
+    const SCREEN = canvasTex(620, 380, (c, w, h) => {
+      c.fillStyle = "#2B2B2F";
+      c.fillRect(0, 0, w, h);
+      c.fillStyle = "#D9B475";
+      c.fillRect(34, 36, 70, 22);
+      c.fillRect(118, 36, 250, 22);
+      c.fillStyle = "#8FB59A";
+      c.fillRect(34, 80, 58, 18);
+      const rows = [[0, 14], [1, 150], [2, 210], [2, 170], [1, 120], [2, 230], [2, 150], [1, 14]];
+      rows.forEach(([indent, len], i) => {
+        c.fillStyle = indent === 1 ? "#B9B2A6" : "#7E7A74";
+        c.fillRect(34 + indent * 34, 128 + i * 28, len, 14);
+      });
+    });
     const laptop = new THREE.Group();
     laptop.add(mesh(new RoundedBoxGeometry(0.7, 0.03, 0.46, 2, 0.01), M.clay2, 0, 0.88, 0));
     const screen = mesh(new RoundedBoxGeometry(0.7, 0.46, 0.025, 2, 0.01), M.clay2, 0, 1.11, -0.22);
     screen.rotation.x = -0.18;
     laptop.add(screen);
-    const display = mesh(new THREE.PlaneGeometry(0.62, 0.38), M.ink, 0, 1.12, -0.205);
+    const display = mesh(
+      new THREE.PlaneGeometry(0.62, 0.38),
+      new THREE.MeshStandardMaterial({ map: SCREEN, emissiveMap: SCREEN, emissive: 0xffffff, emissiveIntensity: 0.18, roughness: 0.45 }),
+      0, 1.12, -0.205,
+    );
     display.rotation.x = -0.18;
     laptop.add(display);
-    laptop.position.set(-0.55, 0, -0.55);
+    laptop.position.set(-0.3, 0, -0.55);
     g.add(laptop);
-    // Le coffre-fort de Mithril, posé sur le bureau, la porte tournée vers nous.
-    const vault = safe(0.52);
-    vault.position.set(0.28, 0.86, -0.52);
-    vault.rotation.y = -0.35;
-    g.add(vault);
     const lamp = new THREE.Group();
     lamp.add(mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.03, 24), M.clay2, 0, 0.88, 0));
     lamp.add(mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.5, 10), M.clay2, 0, 1.12, 0));
@@ -1881,21 +1793,28 @@ const SCENES = {
     rack.scale.setScalar(0.42);
     rack.position.set(1.6, 0, -1.0);
     g.add(rack);
+    // Le câble, du dos du portable au serveur : il descend derrière le bureau et longe le mur.
+    const cable = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.3, 0.9, -0.82),
+      new THREE.Vector3(-0.1, 0.86, -1.12),
+      new THREE.Vector3(0.1, 0.35, -1.3),
+      new THREE.Vector3(0.4, 0.02, -1.36),
+      new THREE.Vector3(1.0, 0.02, -1.36),
+      new THREE.Vector3(1.3, 0.12, -1.18),
+    ]);
+    g.add(mesh(new THREE.TubeGeometry(cable, 96, 0.016, 8), M.clay2));
+    const pearl = mesh(new THREE.SphereGeometry(0.042, 20, 14), M.accent);
+    g.add(pearl);
     const deck = BUILD.cancionero(M);
     deck.scale.setScalar(0.3);
     deck.position.set(1.75, 0.0, 0.7);
     g.add(deck);
     g.userData.hotspot = deck;
-    // La boucle dure 8 s : on arrive, le coffre est ouvert ; sa porte se ferme, la molette fait un tour
-    // pour verrouiller, puis il se rouvre à la fin de la boucle. Le serveur et la platine gardent leur
-    // rythme de 4 s (deux tours par boucle).
-    const OPEN = 1.85;
+    // La boucle dure 4 s : la requête va au serveur dans la première moitié, la réponse revient dans la seconde.
     g.userData.animate = (phi) => {
-      const u = phi / (Math.PI * 2);
-      vault.userData.door.rotation.y = OPEN * (1 - smooth(0.03, 0.17, u) + smooth(0.84, 0.97, u));
-      vault.userData.dial.rotation.z = -Math.PI * 2 * smooth(0.2, 0.36, u);
-      rack.userData.animate(2 * phi);
-      deck.userData.animate(2 * phi);
+      pearl.position.copy(cable.getPointAt(pingpong(phi)));
+      rack.userData.animate(phi);
+      deck.userData.animate(phi);
     };
     g.userData.camera = { pos: [0.9, 2.3, 4.6], target: [0.1, 0.8, -0.4], fov: 38 };
     return g;
@@ -1983,7 +1902,7 @@ const SCENES = {
     g.userData.camera = { pos: [0.45, 2.7, 5.1], target: [0.1, 0.95, -0.5], fov: 38 };
     return g;
   },
-  // 008 Tonalli : le calendrier collé au mur, en grand (le même qu'au mur du tourne-disque).
+  // 007 Tonalli : le calendrier collé au mur, en grand (le même qu'au mur du tourne-disque).
   calendrier(M) {
     const g = new THREE.Group();
     g.add(mesh(new RoundedBoxGeometry(4.3, 3.3, 0.14, 2, 0.03), M.clay, 0, 1.65, -0.07));
@@ -2022,7 +1941,7 @@ const SCENES = {
     g.userData.camera = { pos: [-1.1, 2.0, 6.8], target: [0.2, 1.5, 0], fov: 34 };
     return g;
   },
-  // 011 INDEX : le dossier ouvert en grand, la page de titre et le sommaire des onze projets ;
+  // 010 INDEX : le dossier ouvert en grand, la page de titre et le sommaire des dix projets ;
   // sous lui, les dossiers fermés et leurs onglets aux couleurs des escales ; un stylo de laiton parcourt la liste.
   dossiers(M) {
     const g = new THREE.Group();
@@ -2032,7 +1951,7 @@ const SCENES = {
     pile.position.set(w / 2, 0, 0);
     pile.userData.hinge.rotation.z = 3.08;
     g.add(pile);
-    // Le stylo : il glisse le long des lignes du sommaire, de 001 à 011, et remonte.
+    // Le stylo : il glisse le long des lignes du sommaire, de la première à la dernière, et remonte.
     const pen = new THREE.Group();
     pen.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.72, 24), M.ink, 0, 0.36, 0));
     pen.add(mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.22, 24), M.accent, 0, 0.62, 0));
@@ -2048,7 +1967,7 @@ const SCENES = {
     g.add(spot);
     g.userData.hotspot = spot;
     g.userData.animate = (phi) => {
-      const k = 10 * pingpong(phi);
+      const k = (INDEX_LIST.length - 1) * pingpong(phi);
       pen.position.set(rowX + 0.04, top + 0.02, rowZ(k));
       pen.rotation.set(0.5, 0, -0.55);
       pile.userData.hinge.rotation.z = 3.08 - 0.04 * Math.sin(phi);
@@ -2056,7 +1975,7 @@ const SCENES = {
     g.userData.camera = { pos: [0.35, 3.7, 2.9], target: [0.05, 0.1, 0.2], fov: 38 };
     return g;
   },
-  // 008 Tonalli, piste A : deux verres d'eau, deux gouttes d'encre — la couleur du jour de chacun
+  // 007 Tonalli, piste A : deux verres d'eau, deux gouttes d'encre — la couleur du jour de chacun
   tonalliA(M) {
     const g = new THREE.Group();
     g.add(mesh(new THREE.CylinderGeometry(2.3, 2.3, 0.12, 96), M.clay2, 0, -0.06, 0));
@@ -2131,7 +2050,7 @@ const SCENES = {
     g.userData.camera = { pos: [0, 1.75, 3.9], target: [0, 0.62, 0], fov: 32 };
     return g;
   },
-  // 008 Tonalli, piste B : nos deux personnages-gouttes, chacun dans sa couleur, et nos deux photos du jour
+  // 007 Tonalli, piste B : nos deux personnages-gouttes, chacun dans sa couleur, et nos deux photos du jour
   tonalliB(M) {
     const g = new THREE.Group();
     g.add(mesh(new THREE.CylinderGeometry(2.3, 2.3, 0.12, 96), M.clay2, 0, -0.06, 0));
@@ -2277,7 +2196,7 @@ const SCENES = {
       c.fillText("Index", 34, 134);
       c.fillStyle = "#9A8F84";
       c.font = "bold 19px 'Courier New', monospace";
-      c.fillText("10 ESCALES / STOPS · 11 PROJETS", 34, 190);
+      c.fillText(`10 ESCALES / STOPS · ${INDEX_LIST.length} PROJETS`, 34, 190);
       c.fillStyle = "#F7F1E6";
       c.font = "italic 64px Georgia, serif";
       c.fillText("CR", 506, 146);

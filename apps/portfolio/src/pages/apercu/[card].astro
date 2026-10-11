@@ -15,7 +15,7 @@ import serifItalicUrl from "@index/ui/fonts/instrument-serif-latin-400-italic.wo
 import serifUrl from "@index/ui/fonts/instrument-serif-latin-400-normal.woff2?url";
 import { CARDS, OG_LINE, type Card } from "../../data/apercus";
 import { APROPOS } from "../../data/apropos";
-import { FICHE } from "../../data/fiches";
+import { FICHE, nameOf } from "../../data/fiches";
 import { STOP_TEXTS, STOPS } from "../../data/voyage";
 import { typo } from "../../i18n/voyage";
 
@@ -98,7 +98,7 @@ const fonts = [
               <p class="og__stop">
                 {FICHE[card.lang].stop} {card.n} · {text.place}
               </p>
-              <h1 class="serif">{project.name}</h1>
+              <h1 class="serif">{nameOf(project, card.lang)}</h1>
               <p class="og__pitch">{typo(card.lang, text.pitch)}</p>
             </article>
           </div>

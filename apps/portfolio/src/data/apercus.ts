@@ -6,13 +6,13 @@
  */
 
 import { getProject } from "@index/projects";
-import type { Lang } from "../i18n/voyage";
+import { inWords, type Lang } from "../i18n/voyage";
 import { STOPS } from "./voyage";
 
 /** La ligne du bas de l'aperçu du site. */
 export const OG_LINE: Record<Lang, string> = {
-  fr: "Un voyage en dix escales · onze projets",
-  en: "A journey in ten stops · eleven projects",
+  fr: `Un voyage en ${inWords("fr", STOPS.length)} escales, une par projet`,
+  en: `A journey in ${inWords("en", STOPS.length)} stops, one per project`,
 };
 
 export type Card =

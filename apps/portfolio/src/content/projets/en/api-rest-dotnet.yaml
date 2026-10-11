@@ -1,2 +1,16 @@
-# .NET REST API : racontée sur l'étagère de Mithril, sans fiche à elle (en anglais). Vérifiée dans le code (le dépôt GitLab de l'école, privé) le 11 octobre 2026.
-shelf: "Shard, the REST API of a space strategy game in C# .NET 7, built as a team: units, mines and battles running in the background, servers linked by wormholes, and six versions all green on the xUnit tests (2023)."
+# .NET REST API (Shard), la fiche en anglais. Vérifiée dans le code (le dépôt GitLab de l'école, privé) le 11 octobre 2026.
+why: "A C# school project: building, as a team, the server of a space strategy game, one version after another. Each version added rules, and the course's tests told us whether the API followed them."
+features:
+  - title: "A universe to explore"
+    text: "Star systems and their planets, generated at start-up. I wrote the first routes, the ones that list the systems and their planets."
+  - title: "Units and buildings"
+    text: "Scouts, builders, fighters, cruisers… travel from system to system, and mines extract their planet's resources, minute after minute."
+  - title: "Battles and wormholes"
+    text: "Every six seconds, armed ships fire at enemy units; a wormhole sends a unit over to another Shard server."
+choices:
+  - title: "ASP.NET Core"
+    text: "REST controllers, dependency injection, and a background service for the battles."
+  - title: "A clock you can swap"
+    text: "Game time goes through the course's clock: the tests move it forward by hand, without waiting six seconds or a minute."
+  - title: "Tests as the judge"
+    text: "Six versions, each validated by the course's xUnit integration tests in GitLab CI: from 8 to 45 tests, all green."

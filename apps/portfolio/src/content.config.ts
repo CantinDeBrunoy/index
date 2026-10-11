@@ -30,8 +30,6 @@ const projets = defineCollection({
       .optional(),
     /** La capture d'écran (src/assets/shots/<slug>-desktop.jpg), sans donnée personnelle. */
     capture: z.object({ alt: z.string(), caption: z.string() }).optional(),
-    /** Un projet raconté sur la fiche d'un autre (l'API REST .NET, sur l'étagère de Mithril) : ce qu'en dit l'étagère. */
-    shelf: z.string().optional(),
   }),
 });
 

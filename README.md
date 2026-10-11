@@ -11,10 +11,10 @@ index/
     galactic-escape/ 001 · Vite + React + Three.js (jeu d'école de 2022)
     magellan/     005 · Expo (export web) + Worker Cloudflare : les voyages du propriétaire (D1)
     cancionero/   006 · Expo (PWA statique)
-    mithril/      007 · C# WinForms (hors pnpm/Turborepo, CI Windows dédiée)
-    tonalli/      008 · Vite + React (PWA) + Supabase
-    gym-picker/   009 · Vite + React + Worker Cloudflare (API TomTom)
-    hublot/       010 · CLI Node (cron GitHub Actions) + page de gestion et son Worker (clé GitHub côté serveur)
+    mithril/      sans numéro · C# WinForms (hors pnpm/Turborepo, CI Windows dédiée), retiré du portfolio
+    tonalli/      007 · Vite + React (PWA) + Supabase
+    gym-picker/   008 · Vite + React + Worker Cloudflare (API TomTom)
+    hublot/       009 · CLI Node (cron GitHub Actions) + page de gestion et son Worker (clé GitHub côté serveur)
   packages/
     projects/     @index/projects : la liste des entrées (source de vérité unique) et les sondes de statut
     auth/         @index/auth : la connexion du propriétaire (GitHub sur le hub, vérifiée par Magellan et Hublot)
@@ -25,6 +25,8 @@ index/
 ```
 
 Les entrées 002 à 004 sont des archives (projets antérieurs, sans démo en ligne) : elles n'existent que dans `packages/projects/src/projects.ts` et dans le portfolio. Galactic Escape (001), un projet d'école de 2022, a été remis en ligne : son code est dans `apps/galactic-escape`, sans son historique, qui reste sur [run4urlife](https://github.com/CantinDeBrunoy/run4urlife).
+
+Mithril, le générateur de mots de passe pour Windows, a quitté le portfolio le 2026-10-11 : son escale, « À la maison », est passée à l'API REST .NET (003). Son code reste dans `apps/mithril`, avec sa CI, mais il n'est plus une entrée de `packages/projects` ; les anciennes adresses des fiches sont redirigées (`apps/portfolio/public/_redirects`).
 
 - **pnpm workspaces + Turborepo.** Chaque app garde ses propres dépendances et versions, et reste buildable seule : `pnpm turbo run build --filter=<app>`.
 - **Historique conservé.** Chaque projet a été importé avec `git filter-repo --to-subdirectory-filter apps/<app>` : `git log` et `git blame` remontent à ses premiers commits.
@@ -98,10 +100,10 @@ Les variables d'environnement de chaque app sont décrites dans son `.env.exampl
 | 001 | galactic-escape | Cloudflare Workers `galactic-escape` | https://galactic-escape.cantin-roquier.workers.dev | `deploy-galactic-escape.yml` |
 | 005 | magellan | Cloudflare Workers `magellan` | https://magellan.cantin-roquier.workers.dev | `deploy-magellan.yml` |
 | 006 | cancionero | Cloudflare Workers `cancionero` | https://cancionero.cantin-roquier.workers.dev | `deploy-cancionero.yml` |
-| 007 | mithril | GitHub Releases (tags `mithril-v*`) | — | à la main (skill `publier-release`), CI `mithril.yml` |
-| 008 | tonalli | Vercel `teinte-du-jour` + Supabase | https://teinte-du-jour-eight.vercel.app | intégration Git Vercel, *Root Directory* `apps/tonalli` |
-| 009 | gym-picker | Cloudflare Workers `gym-picker` | https://gym-picker.cantin-roquier.workers.dev | `deploy-gym-picker.yml` |
-| 010 | hublot | GitHub Actions (cron, ancien dépôt jusqu'à la bascule) + Cloudflare Workers `hublot` (page) | https://hublot.cantin-roquier.workers.dev | `deploy-hublot-page.yml` ; `hublot-check.yml` à la bascule |
+| — | mithril | GitHub Releases (tags `mithril-v*`) | — | à la main (skill `publier-release`), CI `mithril.yml` |
+| 007 | tonalli | Vercel `teinte-du-jour` + Supabase | https://teinte-du-jour-eight.vercel.app | intégration Git Vercel, *Root Directory* `apps/tonalli` |
+| 008 | gym-picker | Cloudflare Workers `gym-picker` | https://gym-picker.cantin-roquier.workers.dev | `deploy-gym-picker.yml` |
+| 009 | hublot | GitHub Actions (cron, ancien dépôt jusqu'à la bascule) + Cloudflare Workers `hublot` (page) | https://hublot.cantin-roquier.workers.dev | `deploy-hublot-page.yml` ; `hublot-check.yml` à la bascule |
 
 Le sous-domaine workers.dev (`cantin-roquier`) est renseigné une seule fois, dans `WORKERS_SUBDOMAIN` (`packages/projects/src/projects.ts`). Toutes les URLs et le statut live en découlent.
 

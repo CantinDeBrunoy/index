@@ -3,9 +3,8 @@
  * Une fiche projet, une par escale du voyage. L'en-tête prend la couleur et la scène de l'escale : la vidéo
  * haute définition sur ordinateur, la boucle du téléphone sous 700 px, une image fixe en mouvement réduit.
  * Le reste est sur papier crème : la démo et, à côté, la carte d'embarquement (la pile, l'hébergeur ; son
- * talon, le statut), pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait, l'étagère (les projets
- * racontés ici), le pied de page, et tout en bas une bande, de la couleur de l'en-tête, qui reprend le voyage à
- * l'escale du projet. La démo tourne d'elle-même quand elle est à l'écran. À droite, le copilote, dans la tenue
+ * talon, le statut), pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait, le pied de page, et tout
+ * en bas une bande, de la couleur de l'en-tête, qui reprend le voyage à l'escale du projet. La démo tourne d'elle-même quand elle est à l'écran. À droite, le copilote, dans la tenue
  * de l'escale, y ramène aussi pendant la lecture ; au bas de la page, il va se poser dans cette bande. À la
  * première fiche ouverte, il accueille (FicheAccueil.astro) : la fiche n'a alors que son en-tête, sans ses
  * boutons ; il dit où l'on est et que c'est lui qui ramène au voyage, puis il saute dans sa pastille.
@@ -15,7 +14,7 @@
 import { getProject, GITHUB_URL } from "@index/projects";
 import { getImage } from "astro:assets";
 import { getEntry } from "astro:content";
-import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
+import { FICHE, nameOf } from "../../data/fiches";
 import { appOf, fill, kindOf, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
@@ -40,6 +39,7 @@ const stop = STOPS[i];
 const project = getProject(slug);
 const entry = await getEntry("projets", `${lang}/${slug}`);
 if (!stop || !project || !entry?.data.why) throw new Error(`Fiche incomplète : ${lang}/${slug}`);
+const name = nameOf(project, lang);
 
 const n = i + 1;
 const text = STOP_TEXTS[lang][slug]!;
@@ -59,17 +59,6 @@ const shotPhoneSet = shotPhone && (await getImage({ src: shotPhone, widths: [390
 // Avec une vidéo ou une capture, la carte d'embarquement se pose à sa droite ; sans, elle reste seule sous la ligne de vol.
 const media = Boolean(video || (capture && shot && shotSet));
 
-// L'étagère : les projets sans fiche à eux, racontés sur celle-ci.
-const shelf = await Promise.all(
-  Object.entries(FICHE_OF)
-    .filter(([, host]) => host === slug)
-    .map(async ([shelved]) => {
-      const p = getProject(shelved)!;
-      const e = await getEntry("projets", `${lang}/${shelved}`);
-      return { project: p, name: nameOf(p, lang), text: e?.data.shelf ?? "" };
-    }),
-);
-
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
 
 // Le retour au voyage, à l'escale du projet : le copilote et le bouton du bas.
@@ -80,7 +69,7 @@ const copilote = { loop: `/voyage/copilote/${stop.scene}.webp`, still: `/voyage/
 const T = (text: string) => typo(lang, text);
 ---
 
-<Voyage lang={lang} title={project.name} description={text.pitch} alternates={alternates} type="article" palette="day">
+<Voyage lang={lang} title={name} description={text.pitch} alternates={alternates} type="article" palette="day">
   <!-- L'accueil du copilote, à la première fiche ouverte (scripts/fiche-accueil.ts) : décidé avant l'affichage,
        pour que la fiche ne se montre pas un instant entière. Pas d'accueil quand le lien vise un endroit de la
        fiche (#…) : on y va. -->
@@ -95,7 +84,7 @@ const T = (text: string) => typo(lang, text);
     <div class="wrap-read">
       <div class="hero__body">
         <div class="hero__text">
-          <h1 class="serif">{project.name}</h1>
+          <h1 class="serif">{name}</h1>
           <p class="hero__kind">
             <span>{kind.line}</span>
             <Badges project={project} lang={lang} />
@@ -143,7 +132,7 @@ const T = (text: string) => typo(lang, text);
 
   <FicheAccueil
     lang={lang}
-    name={project.name}
+    name={name}
     href={resume}
     label={`${f.resume} · ${f.stop} ${n} · ${text.place}`}
     loop={copilote.loop}
@@ -203,30 +192,12 @@ const T = (text: string) => typo(lang, text);
     }
 
 
-    {
-      shelf.length > 0 && (
-        <section class="shelf">
-          <h2 class="label">{f.shelf}</h2>
-          <div class="shelf__list">
-            {shelf.map((s) => (
-              <article class="shelf__item" id={s.project.slug}>
-                <h3 class="serif shelf__name">
-                  {s.name}
-                </h3>
-                <p class="shelf__text">{T(s.text)}</p>
-                <ul class="chips">{s.project.stack.map((tech) => <li class="chip">{tech}</li>)}</ul>
-              </article>
-            ))}
-          </div>
-        </section>
-      )
-    }
   </main>
 
   <div class="wrap-read" data-accueil-cache>
     <footer class="foot" data-resume-from>
       <p>
-        {T(fill(f.question, { name: project.name }))} <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+        {T(fill(f.question, { name }))} <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
       </p>
       <a class="pill" href={GITHUB_URL} target="_blank" rel="noopener">GitHub ↗</a>
     </footer>
@@ -582,9 +553,6 @@ const T = (text: string) => typo(lang, text);
   }
 
   /* — Le papier : les rubriques, séparées d'un filet — */
-  .shelf .label {
-    flex: 1 1 200px;
-  }
   .pictures {
     padding: 56px 0;
     border-bottom: 1px solid var(--line);
@@ -657,36 +625,6 @@ const T = (text: string) => typo(lang, text);
     color: var(--muted);
     font-family: var(--font-mono);
     font-size: 12px;
-  }
-
-  .shelf {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px 56px;
-    padding: 48px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .shelf__list {
-    display: flex;
-    flex: 3 1 560px;
-    flex-direction: column;
-    gap: 32px;
-  }
-  .shelf__item {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .shelf__name {
-    margin: 0;
-    font-size: 32px;
-    line-height: 1.1;
-  }
-  .shelf__text {
-    margin: 0;
-    color: var(--muted);
-    font-size: 16px;
-    line-height: 1.6;
   }
 
   /* — Tout en bas, sous le pied de page, sur toute la largeur : la bande, de la couleur et de la palette de

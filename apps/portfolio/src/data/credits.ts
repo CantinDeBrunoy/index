@@ -15,8 +15,8 @@ const WIKI = link("https://commons.wikimedia.org/wiki/File:Arc_de_Triomphe.stl",
 const OFL = link("https://openfontlicense.org", "SIL Open Font");
 
 export const CREDITS: Record<Lang, string> = {
-  fr: `Crédits, tous repeints : l'avion de ligne est « very cute airplane » d'Akash Rudra, sous licence ${BY3}, via ${POLY} ; l'arc de triomphe est un modèle de Microsoft, sous licence ${BY4}, via ${WIKI} ; la tour Eiffel, d'ingoenius (CC0) ; les voitures, de Quaternius (CC0) ; le coffre-fort, de CreativeTrio (CC0) ; la carte du monde vient de Natural Earth (domaine public).`,
-  en: `Credits, all repainted: the airliner is “very cute airplane” by Akash Rudra, licensed ${BY3}, via ${POLY}; the Arc de Triomphe is a model by Microsoft, licensed ${BY4}, via ${WIKI}; the Eiffel Tower is by ingoenius (CC0); the cars are by Quaternius (CC0); the safe is by CreativeTrio (CC0); the world map comes from Natural Earth (public domain).`,
+  fr: `Crédits, tous repeints : l'avion de ligne est « very cute airplane » d'Akash Rudra, sous licence ${BY3}, via ${POLY} ; l'arc de triomphe est un modèle de Microsoft, sous licence ${BY4}, via ${WIKI} ; la tour Eiffel, d'ingoenius (CC0) ; les voitures, de Quaternius (CC0) ; la carte du monde vient de Natural Earth (domaine public).`,
+  en: `Credits, all repainted: the airliner is “very cute airplane” by Akash Rudra, licensed ${BY3}, via ${POLY}; the Arc de Triomphe is a model by Microsoft, licensed ${BY4}, via ${WIKI}; the Eiffel Tower is by ingoenius (CC0); the cars are by Quaternius (CC0); the world map comes from Natural Earth (public domain).`,
 };
 
 /** La liste des mentions légales : [ce qui est crédité, sa licence et sa source]. */
@@ -26,7 +26,6 @@ export const CREDIT_LIST: Record<Lang, [string, string][]> = {
     ["L'arc de triomphe, de Microsoft", `${BY4}, via ${WIKI}`],
     ["La tour Eiffel : « Eiffel Tower LOW POLY », d'ingoenius", "CC0"],
     ["Les voitures, de Quaternius", "CC0"],
-    ["Le coffre-fort, de CreativeTrio", "CC0"],
     ["La carte du monde, de Natural Earth", "domaine public"],
     ["Les polices Instrument Serif, Geist, Geist Mono et Doto", `licence ${OFL}`],
     ["Les scènes, rendues avec three.js", "licence MIT"],
@@ -36,7 +35,6 @@ export const CREDIT_LIST: Record<Lang, [string, string][]> = {
     ["The Arc de Triomphe, by Microsoft", `${BY4}, via ${WIKI}`],
     ["The Eiffel Tower: “Eiffel Tower LOW POLY”, by ingoenius", "CC0"],
     ["The cars, by Quaternius", "CC0"],
-    ["The safe, by CreativeTrio", "CC0"],
     ["The world map, by Natural Earth", "public domain"],
     ["The Instrument Serif, Geist, Geist Mono and Doto fonts", `${OFL} licence`],
     ["The scenes, rendered with three.js", "MIT licence"],

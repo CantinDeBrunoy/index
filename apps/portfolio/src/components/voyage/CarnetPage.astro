@@ -1,9 +1,8 @@
 ---
 /**
  * Le carnet de voyage, « Les projets » : le sommaire du voyage, de nuit, une carte postale par escale.
- * La carte ouvre la fiche du projet ; le lien du dessous rouvre son escale. Les projets racontés sur la
- * fiche d'un autre (l'API REST .NET, sur l'étagère de Mithril) sont nommés sur sa carte. Puis l'adresse où
- * m'écrire, et les crédits des modèles 3D des scènes.
+ * La carte ouvre la fiche du projet ; le lien du dessous rouvre son escale. Puis l'adresse où m'écrire, et
+ * les crédits des modèles 3D des scènes.
  * En tête, le hub : une pastille par app, qui l'ouvre directement, avec son statut vérifié en direct
  * (scripts/app-status.ts, d'après /api/status). Sur téléphone, les pastilles défilent sur une ligne.
  * Les vignettes sont les images fixes des scènes (public/voyage/stills) : un carnet de cartes postales, et
@@ -17,7 +16,7 @@ import { getProject, GITHUB_URL } from "@index/projects";
 import { getEntry } from "astro:content";
 import { APPS_ANCHOR, CARNET, CHIP_FOCUS } from "../../data/carnet";
 import { CREDITS } from "../../data/credits";
-import { FICHE, FICHE_OF, nameOf } from "../../data/fiches";
+import { FICHE, nameOf } from "../../data/fiches";
 import { appOf, fill, kindOf, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, STRINGS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
@@ -36,14 +35,10 @@ const alternates = { fr: ROUTES.projets.fr, en: ROUTES.projets.en };
 const cards = STOPS.map((stop, i) => {
   const project = getProject(stop.slug)!;
   const text = STOP_TEXTS[lang][stop.slug]!;
-  const shelved = Object.entries(FICHE_OF)
-    .filter(([, host]) => host === stop.slug)
-    .map(([slug]) => getProject(slug)!)
-    .map((p) => nameOf(p, lang));
-  return { ...stop, n: i + 1, project, text, kind: kindOf(project, text, lang).line, shelved, app: appOf(project, text, lang) };
+  return { ...stop, n: i + 1, project, name: nameOf(project, lang), text, kind: kindOf(project, text, lang).line, app: appOf(project, text, lang) };
 });
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
-// La démo de chaque escale, celle de sa fiche (sa vidéo et son image d'attente) ; sans démo (Mithril), sa scène.
+// La démo de chaque escale, celle de sa fiche (sa vidéo et son image d'attente) ; sans démo (l'API REST .NET), sa scène.
 const demos = Object.fromEntries(
   await Promise.all(
     cards.map(async (s) => {
@@ -65,7 +60,7 @@ const focusOf = (scene: string) => {
 const apps = cards.flatMap((s) => {
   const { app } = s;
   if (!("href" in app)) return [];
-  return [{ ...s, app, focus: focusOf(s.scene), name: nameOf(s.project, lang), live: s.project.kind === "web" && s.project.monitors.length > 0 }];
+  return [{ ...s, app, focus: focusOf(s.scene), live: s.project.kind === "web" && s.project.monitors.length > 0 }];
 });
 // Les textes du statut, lus par le script dans la langue de la page.
 const { states, checking, online, asleep, offline, checkedNow, checkedAgo, unavailable } = c;
@@ -143,7 +138,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
                     <img src={still(s.scene, "-mobile")} alt="" width="780" height="760" loading="lazy" decoding="async" style={focusOf(s.scene)} />
                   </span>
                   <span class="row__text">
-                    <span class="serif row__name">{s.project.name}</span>
+                    <span class="serif row__name">{s.name}</span>
                     <span class="row__kind">{s.kind}</span>
                   </span>
                 </a>
@@ -164,7 +159,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
                   <p class="atlas__stop">
                     {f.stop} {s.n} · {s.text.place}
                   </p>
-                  <h2 class="serif atlas__name">{s.project.name}</h2>
+                  <h2 class="serif atlas__name">{s.name}</h2>
                   <p class="atlas__kind">{s.kind}</p>
                   <p class="atlas__pitch">{typo(lang, s.text.pitch)}</p>
                   <div class="atlas__links">
@@ -207,9 +202,8 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
                 <span class="card__stop">
                   {f.stop} {s.n} · {s.text.place}
                 </span>
-                <span class="serif card__name">{s.project.name}</span>
+                <span class="serif card__name">{s.name}</span>
                 <span class="card__kind">{s.kind}</span>
-                {s.shelved.length > 0 && <span class="card__shelf">{typo(lang, fill(c.shelf, { list: s.shelved.join(", ") }))}</span>}
               </a>
               <a class="link card__revisit" href={`${ROUTES.voyage[lang]}#escale-${s.n}`} aria-label={fill(c.revisitAria, { n: s.n, place: s.text.place })}>
                 {c.revisit}
@@ -389,10 +383,6 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
   .card__kind {
     color: var(--muted);
     font-size: 14px;
-  }
-  .card__shelf {
-    color: var(--muted);
-    font-size: 13px;
   }
   .card__revisit {
     align-self: flex-start;

@@ -2,12 +2,25 @@
 # les liens déjà partagés mènent à la bonne fiche. Lu par Cloudflare avec les fichiers du site.
 /004-galaxy-escape        /001-galactic-escape        301
 /001-metro-pathfinder     /002-metro-pathfinder       301
-/002-api-rest-dotnet      /007-mithril#api-rest-dotnet 301
+/002-api-rest-dotnet      /003-api-rest-dotnet        301
 /003-visit-match          /004-visit-match            301
 /en/004-galaxy-escape     /en/001-galactic-escape     301
 /en/001-metro-pathfinder  /en/002-metro-pathfinder    301
-/en/002-api-rest-dotnet   /en/007-mithril#api-rest-dotnet 301
+/en/002-api-rest-dotnet   /en/003-api-rest-dotnet     301
 /en/003-visit-match       /en/004-visit-match         301
+
+# Celles d'avant le départ de Mithril (2026-10-11) : son escale, « À la maison », est passée à l'API REST .NET,
+# et les projets suivants ont perdu un numéro.
+/007-mithril              /003-api-rest-dotnet        301
+/008-tonalli              /007-tonalli                301
+/009-gym-picker           /008-gym-picker             301
+/010-hublot               /009-hublot                 301
+/011-index                /010-index                  301
+/en/007-mithril           /en/003-api-rest-dotnet     301
+/en/008-tonalli           /en/007-tonalli             301
+/en/009-gym-picker        /en/008-gym-picker          301
+/en/010-hublot            /en/009-hublot              301
+/en/011-index             /en/010-index               301
 
 # L'ancienne page « Les apps » (jusqu'au 2026-10-09) : ses raccourcis vivent désormais en tête du carnet.
 /apps                     /projets#apps               301

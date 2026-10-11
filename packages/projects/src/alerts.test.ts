@@ -34,7 +34,7 @@ describe("projectAlerts", () => {
     const { alerts, checkedKeys } = projectAlerts(projects, [asleep, { slug: "hublot", health: "online", results: [] }]);
     expect(checkedKeys).toEqual(["project:tonalli", "project:hublot"]);
     expect(alerts).toHaveLength(1);
-    expect(alerts[0]!.title).toBe("[keep-alive] 008 Tonalli : en veille");
+    expect(alerts[0]!.title).toBe("[keep-alive] 007 Tonalli : en veille");
     expect(alerts[0]!.body).toContain("Restore project");
     expect(alerts[0]!.body).toContain("<!-- keep-alive:project:tonalli -->");
   });
@@ -60,7 +60,7 @@ describe("syncIssues", () => {
 
   it("ferme l'issue quand le service est rétabli", async () => {
     const batch = projectAlerts(projects, [{ ...asleep, health: "online" }]);
-    const issue = { number: 7, title: "[keep-alive] 008 Tonalli : en veille", body: "… <!-- keep-alive:project:tonalli -->" };
+    const issue = { number: 7, title: "[keep-alive] 007 Tonalli : en veille", body: "… <!-- keep-alive:project:tonalli -->" };
     const { github, calls } = fakeGitHub({ "GET /issues": [issue] });
     expect((await syncIssues(github, [batch])).closed).toEqual(["project:tonalli"]);
     expect(calls.at(-1)).toMatchObject({ method: "PATCH", path: "/issues/7", body: { state: "closed" } });

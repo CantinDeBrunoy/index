@@ -130,21 +130,6 @@ export const PROJECTS = [
     monitors: httpMonitor(CANCIONERO_URL),
   },
   {
-    slug: "mithril",
-    name: "Mithril",
-    started: "2026-08",
-    kind: "desktop",
-    badges: ["ia"],
-    app: "mithril",
-    host: "GitHub Releases",
-    pitch: {
-      fr: "Un générateur de mots de passe pour Windows, avec coffre chiffré local et saisie automatique, sans installation ni réseau.",
-    },
-    stack: ["C#", "WinForms", ".NET Framework", "AES-256"],
-    // Les versions publiées de l'ancien dépôt, jusqu'à la première release du monorepo (tag mithril-v*).
-    links: { download: `${GITHUB_URL}/Mithril/releases`, code: code("mithril") },
-  },
-  {
     slug: "tonalli",
     name: "Tonalli",
     started: "2026-08",
