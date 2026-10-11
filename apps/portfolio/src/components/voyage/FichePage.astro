@@ -6,7 +6,9 @@
  * talon, le statut), pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait, l'étagère (les projets
  * racontés ici), le pied de page, et tout en bas une bande, de la couleur de l'en-tête, qui reprend le voyage à
  * l'escale du projet. La démo tourne d'elle-même quand elle est à l'écran. À droite, le copilote, dans la tenue
- * de l'escale, y ramène aussi pendant la lecture ; au bas de la page, il va se poser dans cette bande.
+ * de l'escale, y ramène aussi pendant la lecture ; au bas de la page, il va se poser dans cette bande. À la
+ * première fiche ouverte, il accueille (FicheAccueil.astro) : la fiche n'a alors que son en-tête, sans ses
+ * boutons ; il dit où l'on est et que c'est lui qui ramène au voyage, puis il saute dans sa pastille.
  * Les textes viennent de la collection de contenu (src/content/projets) ; le décor et l'accroche, de
  * data/voyage.ts ; les liens, la pile et l'hébergeur, de @index/projects.
  */
@@ -21,6 +23,7 @@ import { getShot } from "../../lib/shots";
 import Badges from "./Badges.astro";
 import BoardingPass from "./BoardingPass.astro";
 import Colophon from "./Colophon.astro";
+import FicheAccueil from "./FicheAccueil.astro";
 import FichePoints from "./FichePoints.astro";
 import SiteHeader from "./SiteHeader.astro";
 
@@ -78,6 +81,14 @@ const T = (text: string) => typo(lang, text);
 ---
 
 <Voyage lang={lang} title={project.name} description={text.pitch} alternates={alternates} type="article" palette="day">
+  <!-- L'accueil du copilote, à la première fiche ouverte (scripts/fiche-accueil.ts) : décidé avant l'affichage,
+       pour que la fiche ne se montre pas un instant entière. Pas d'accueil quand le lien vise un endroit de la
+       fiche (#…) : on y va. -->
+  <script is:inline>
+    try {
+      if (localStorage.getItem("index:copilote-fiche") !== "vu" && !location.hash) document.documentElement.classList.add("fiche-accueil");
+    } catch {}
+  </script>
   <div class={`hero pal-${stop.palette}`} style={`--stop-bg: ${stop.bg}`}>
     <SiteHeader lang={lang} current="projets" exact={false} alternates={alternates} />
 
@@ -130,7 +141,16 @@ const T = (text: string) => typo(lang, text);
     </div>
   </div>
 
-  <main id="contenu" class="wrap-read">
+  <FicheAccueil
+    lang={lang}
+    name={project.name}
+    href={resume}
+    label={`${f.resume} · ${f.stop} ${n} · ${text.place}`}
+    loop={copilote.loop}
+    still={copilote.still}
+  />
+
+  <main id="contenu" class="wrap-read" data-accueil-cache>
     {
       media && (
         <section class="pictures">
@@ -203,7 +223,7 @@ const T = (text: string) => typo(lang, text);
     }
   </main>
 
-  <div class="wrap-read">
+  <div class="wrap-read" data-accueil-cache>
     <footer class="foot" data-resume-from>
       <p>
         {T(fill(f.question, { name: project.name }))} <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
@@ -215,7 +235,7 @@ const T = (text: string) => typo(lang, text);
 
   <!-- Tout en bas, sous le pied de page, sur toute la largeur, de la couleur de l'en-tête : la bande entière est le
        bouton qui reprend le voyage. Le copilote vient se poser dans son rond. -->
-  <a class={`reprendre pal-${stop.palette}`} href={resume} style={`--stop-bg: ${stop.bg}`}>
+  <a class={`reprendre pal-${stop.palette}`} href={resume} style={`--stop-bg: ${stop.bg}`} data-accueil-cache>
     <span class="reprendre__pad" data-resume-pad>
       <picture>
         <source media="(prefers-reduced-motion: reduce)" srcset={copilote.still} />
@@ -244,6 +264,7 @@ const T = (text: string) => typo(lang, text);
   import "../../scripts/scene-video";
   import "../../scripts/demo-video";
   import "../../scripts/resume-button";
+  import "../../scripts/fiche-accueil";
 </script>
 
 <style>
@@ -279,6 +300,40 @@ const T = (text: string) => typo(lang, text);
     flex-direction: column;
     gap: 16px;
   }
+  /* — Pendant l'accueil du copilote (FicheAccueil.astro), la fiche n'a que son en-tête : ni ses boutons, ni la
+     suite, ni le copilote de la lecture. Quand elle apparaît (.fiche-revele), la suite monte en fondu — */
+  :global(.fiche-accueil) [data-accueil-cache],
+  :global(.fiche-accueil) .resume {
+    display: none;
+  }
+  :global(.fiche-accueil) .hero__links {
+    visibility: hidden;
+  }
+  :global(.fiche-revele) [data-accueil-cache],
+  :global(.fiche-revele) .hero__links {
+    animation: revele 0.6s ease-out;
+  }
+  @keyframes revele {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.fiche-revele) [data-accueil-cache],
+    :global(.fiche-revele) .hero__links {
+      animation-name: revele-fondu;
+    }
+  }
+  @keyframes revele-fondu {
+    from {
+      opacity: 0;
+    }
+  }
+  main:focus {
+    outline: none;
+  }
+
   /* Le copilote, qui suit la lecture dès le haut de la fiche : dans la tenue de l'escale, il dit « Reprends ton
      voyage », dans une bulle crème au liseré de laiton, comme à l'accueil du voyage. En bas à droite au départ ;
      quand on descend, il monte (--rise, de 0 à 1, posé par scripts/resume-button.ts) jusqu'au milieu de l'écran,
@@ -318,6 +373,45 @@ const T = (text: string) => typo(lang, text);
       transition:
         opacity 0.25s,
         visibility 0s linear 0.25s;
+    }
+  }
+  /* Après l'accueil : tant qu'il saute vers elle (scripts/fiche-accueil.ts), la pastille et sa bulle attendent,
+     invisibles ; posé, la pastille rebondit, la bulle s'ouvre, et un anneau de laiton bat autour de lui quelques
+     secondes : c'est lui qui ramène au voyage. */
+  .resume:global(.is-waiting) .resume__bubble,
+  .resume:global(.is-waiting) .resume__dock {
+    opacity: 0;
+  }
+  .resume:global(.is-calling) .resume__dock {
+    animation:
+      touchdown 0.4s ease-out,
+      appel 1.2s 0.4s ease-out 3;
+  }
+  .resume:global(.is-calling) .resume__bubble {
+    transform-origin: right center;
+    animation: pastille-bulle 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  }
+  @keyframes appel {
+    from {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--brass) 80%, transparent);
+    }
+    to {
+      box-shadow: 0 0 0 18px color-mix(in srgb, var(--brass) 0%, transparent);
+    }
+  }
+  @keyframes pastille-bulle {
+    from {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .resume:global(.is-calling) .resume__dock {
+      box-shadow: 0 0 0 3px var(--brass);
+      animation: revele-fondu 0.3s;
+    }
+    .resume:global(.is-calling) .resume__bubble {
+      animation: revele-fondu 0.3s;
     }
   }
   .resume__bubble {

@@ -2,8 +2,9 @@
  * Le copilote du voyage : un petit bonhomme d'argile qui accueille le visiteur à la première escale,
  * puis se range au bout de la barre des escales. Dans l'espace, il porte la combinaison ; dès la Terre, il la
  * laisse et s'habille pour chaque escale (sans le dire : sa tenue se voit). Un clic sur lui rouvre le tuto :
- * les deux façons de visiter. Sur chaque fiche, il attend en bas à droite et ramène au voyage (ses
- * mots y sont dans data/fiches.ts). Ici, tout ce qu'il dit au voyage, en français et en anglais.
+ * les deux façons de visiter. Sur chaque fiche, il attend en bas à droite et ramène au voyage ; à la
+ * première fiche ouverte, il y accueille et le dit (ses mots y sont dans data/fiches.ts). Ici, tout ce
+ * qu'il dit au voyage, en français et en anglais.
  * Les boucles animées sont dans /voyage/copilote/ (design/renders/copilote-site.mjs).
  * Les textes sont des brouillons, à réécrire.
  */

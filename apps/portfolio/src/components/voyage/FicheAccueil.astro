@@ -1,0 +1,314 @@
+---
+/**
+ * L'accueil du copilote sur une fiche, à la première fiche ouverte seulement : la fiche n'a alors que son
+ * en-tête (le reste attend, caché par FichePage.astro). Lui, dans la tenue de l'escale, dit dans une bulle où
+ * l'on est, et que c'est lui qui ramène au voyage : un clic sur lui y ramène, à l'escale du projet. « Voir les
+ * détails », la croix ou Échap montrent la fiche, et il saute dans sa pastille, en bas à droite (le bouton
+ * « Reprends ton voyage »). scripts/fiche-accueil.ts décide de l'afficher. Caché, il ne télécharge rien.
+ */
+import { COPILOTE } from "../../data/copilote";
+import { FICHE } from "../../data/fiches";
+import { fill } from "../../data/voyage";
+import { typo, type Lang } from "../../i18n/voyage";
+
+interface Props {
+  lang: Lang;
+  /** Le nom du projet. */
+  name: string;
+  /** Le retour au voyage, à l'escale du projet, et ce que le lien dit aux lecteurs d'écran. */
+  href: string;
+  label: string;
+  /** Sa boucle dans la tenue de l'escale, et son image fixe en mouvement réduit. */
+  loop: string;
+  still: string;
+}
+
+const { lang, name, href, label, loop, still } = Astro.props;
+const c = COPILOTE[lang];
+const w = FICHE[lang].welcome;
+const T = (text: string) => typo(lang, text);
+---
+
+<div class="fa" data-fiche-accueil hidden>
+  <aside class="fa__bulle" aria-labelledby="fiche-accueil-titre">
+    <button type="button" class="fa__x" aria-label={c.close} data-fiche-accueil-fermer>
+      <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+      </svg>
+    </button>
+    <p class="fa__who">{c.who}</p>
+    <p class="fa__title" id="fiche-accueil-titre">{T(fill(w.title, { name }))}</p>
+    <p class="fa__text">{T(w.text)}</p>
+    <p class="fa__text">
+      {T(w.back)} <b class="d">{T(w.click)}</b><b class="m">{T(w.tap)}</b>
+    </p>
+    <div class="fa__actions">
+      <button type="button" class="go" data-fiche-accueil-fermer>{w.go}</button>
+    </div>
+  </aside>
+  <a class="fa__moi" href={href} aria-label={label} data-fiche-accueil-moi>
+    <picture>
+      <source media="(prefers-reduced-motion: reduce)" srcset={still} />
+      <img src={loop} alt="" width="400" height="400" loading="lazy" decoding="async" />
+    </picture>
+  </a>
+</div>
+
+<style>
+  /* Sur un grand écran : la bulle, puis lui, debout dans le coin bas droit, là où sa pastille l'attend.
+     --a : la taille de son image (400 × 400, lui au milieu). Le lien ne couvre que lui, pas le vide autour :
+     son cadre fait 56 % × 70 % de l'image, qui en déborde. */
+  .fa {
+    --a: clamp(260px, 22vw, 360px);
+    position: fixed;
+    z-index: 6;
+    right: max(12px, 1.6vw);
+    bottom: 10px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .fa[hidden] {
+    display: none;
+  }
+  .fa__moi {
+    position: relative;
+    order: 2;
+    flex: none;
+    width: calc(var(--a) * 0.56);
+    height: calc(var(--a) * 0.7);
+    border-radius: 40px;
+  }
+  .fa__moi img {
+    position: absolute;
+    left: calc(var(--a) * -0.2);
+    top: calc(var(--a) * -0.12);
+    display: block;
+    width: var(--a);
+    height: var(--a);
+    max-width: none;
+    transition: translate 0.2s;
+    animation: moi-in 0.9s 0.25s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+  }
+  .fa__moi:hover img {
+    translate: 0 -6px;
+  }
+  .fa__moi:focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 4px;
+  }
+
+  /* La bulle, comme celles du voyage : crème sur toutes les escales, épais liseré de laiton, et sa grosse pointe
+     à droite, vers son visage (au tiers haut de l'image). */
+  .fa__bulle {
+    --card: #fbf7f0;
+    --ink: #241e18;
+    --muted: #5a4f44;
+    --line: #e3d8c8;
+    --brass-text: #84652f;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 400px;
+    margin-bottom: calc(var(--a) * 0.06);
+    padding: 22px 24px 20px;
+    border: 3px solid var(--brass);
+    border-radius: 22px;
+    background: var(--card);
+    box-shadow: 0 30px 80px rgba(14, 16, 24, 0.3);
+    color: var(--ink);
+    transform-origin: right 70%;
+    animation: bulle-in 0.5s 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+  }
+  .fa__bulle::before {
+    content: "";
+    position: absolute;
+    right: -17px;
+    bottom: calc(var(--a) * 0.42 - 13px);
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--brass);
+    border-left: 0;
+    border-bottom: 0;
+    background: var(--card);
+    transform: rotate(45deg);
+  }
+  .fa__x {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .fa__x:hover {
+    background: var(--line);
+    color: var(--ink);
+  }
+  .fa__who {
+    margin: 0;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .fa__title {
+    margin: 0;
+    padding-right: 36px;
+    font-family: var(--font-serif);
+    font-size: 32px;
+    line-height: 1.05;
+  }
+  .fa__text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  .fa__text b {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .fa__actions {
+    display: flex;
+    padding-top: 6px;
+  }
+  .fa__actions .go {
+    min-height: 48px;
+    padding: 0 22px;
+    font-size: 15px;
+  }
+  .m {
+    display: none;
+  }
+
+  /* Il s'en va : la bulle s'efface ; lui saute dans sa pastille (scripts/fiche-accueil.ts le fait voler). */
+  .fa:global(.bye) {
+    pointer-events: none;
+  }
+  .fa:global(.bye) .fa__bulle {
+    animation: bulle-out 0.25s ease-in forwards;
+  }
+
+  @keyframes moi-in {
+    from {
+      opacity: 0;
+      transform: translate(140px, 60px) rotate(18deg) scale(0.7);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes bulle-in {
+    from {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes bulle-out {
+    to {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+  }
+
+  /* Un écran d'ordinateur étroit ou bas, et le téléphone : la bulle seule en bas, lui debout dessus, à droite. */
+  @media (max-width: 1199px), (max-height: 799px) {
+    .fa {
+      --a: 150px;
+      right: 24px;
+      bottom: 24px;
+      display: block;
+    }
+    .fa__bulle {
+      width: 420px;
+      margin: 0;
+      padding: 18px 20px 16px;
+      gap: 8px;
+      transform-origin: 80% bottom;
+    }
+    .fa__bulle::before {
+      display: none;
+    }
+    .fa__moi {
+      position: absolute;
+      z-index: 2;
+      right: 14px;
+      bottom: calc(100% - 4px);
+    }
+    .fa__title {
+      font-size: 28px;
+    }
+  }
+  @media (max-width: 700px) {
+    .fa {
+      --a: 136px;
+      left: 16px;
+      right: 16px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+    .fa__bulle {
+      width: auto;
+      padding: 16px 18px 14px;
+      border-radius: 18px;
+      transform-origin: center bottom;
+    }
+    .fa__title {
+      font-size: 26px;
+    }
+    .fa__text {
+      font-size: 14px;
+    }
+    .fa__actions .go {
+      flex: 1;
+    }
+    .d {
+      display: none;
+    }
+    .m {
+      display: inline;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fa__moi img,
+    .fa__bulle {
+      animation: fondu 0.3s both;
+    }
+    .fa:global(.bye) .fa__moi img,
+    .fa:global(.bye) .fa__bulle {
+      animation: fondu 0.3s reverse both;
+    }
+    .fa__moi img {
+      transition: none;
+    }
+  }
+  @keyframes fondu {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media print {
+    .fa {
+      display: none;
+    }
+  }
+</style>

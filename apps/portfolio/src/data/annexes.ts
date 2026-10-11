@@ -63,8 +63,9 @@ export const NOT_FOUND: Record<Lang, NotFoundStrings> = {
  * l'adresse et le téléphone de l'hébergeur. Cantin signe de son nom, avec son e-mail : ni adresse ni
  * téléphone à lui. L'hébergeur, d'après ses rapports à la SEC et cloudflare.com (octobre 2026).
  * Les affirmations sur les données restent vraies tant que le site ne dépose aucun cookie chez ses visiteurs
- * (seule la connexion du propriétaire en pose, @index/auth), ne garde rien dans leur navigateur que l'accueil
- * du copilote déjà vu (localStorage, scripts/copilote.ts), ne charge rien d'un autre site (les polices sont
+ * (seule la connexion du propriétaire en pose, @index/auth), ne garde rien dans leur navigateur que les accueils
+ * du copilote déjà vus (localStorage : au voyage, scripts/copilote.ts ; sur les fiches, scripts/fiche-accueil.ts),
+ * ne charge rien d'un autre site (les polices sont
  * auto-hébergées), sauf le script de mesure d'audience sans cookie quand il est actif (data/stats.ts), et n'a
  * aucun formulaire.
  */
@@ -110,7 +111,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
             ? "Ce site ne dépose aucun cookie chez ses visiteurs et n'a aucun formulaire. Il compte ses visites avec Cloudflare Web Analytics, sans cookie ni identifiant : seulement des chiffres d'ensemble (pages vues, pays, navigateur). Si vous m'écrivez, votre adresse sert seulement à vous répondre."
             : "Ce site ne dépose aucun cookie chez ses visiteurs, ne mesure pas l'audience et n'a aucun formulaire. Si vous m'écrivez, votre adresse sert seulement à vous répondre.",
           "Seule exception, le lien « Connexion » en bas des pages, qui ne sert qu'à moi : il passe par GitHub et dépose des cookies strictement nécessaires à la connexion, pour ouvrir mes propres données dans Magellan et Hublot.",
-          "Sinon, votre navigateur ne garde qu'une chose : que vous avez déjà vu l'accueil du copilote, pour ne pas vous le remontrer. Rien n'en est envoyé.",
+          "Sinon, votre navigateur ne garde qu'une chose : que vous avez déjà vu les accueils du copilote, au voyage et sur les fiches, pour ne pas vous les remontrer. Rien n'en est envoyé.",
           "Comme tout hébergeur, Cloudflare tient des journaux techniques, dont l'adresse IP, pour faire fonctionner et protéger le service.",
           `Une question sur vos données ? Écrivez-moi. Vous pouvez aussi vous adresser à la <a href="https://www.cnil.fr" target="_blank" rel="noopener">CNIL</a>.`,
         ],
@@ -149,7 +150,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
             ? "This site sets no cookies on its visitors and has no forms. It counts its visits with Cloudflare Web Analytics, with no cookies and no identifiers: only overall figures (page views, countries, browsers). If you write to me, your address is only used to reply."
             : "This site sets no cookies on its visitors, runs no analytics and has no forms. If you write to me, your address is only used to reply.",
           "The one exception is the “Sign in” link at the bottom of the pages, which is for me only: it goes through GitHub and sets cookies strictly needed to sign in, to open my own data in Magellan and Hublot.",
-          "Otherwise, your browser keeps just one thing: that you have already seen the copilot's welcome, so it isn't shown again. None of it is sent anywhere.",
+          "Otherwise, your browser keeps just one thing: that you have already seen the copilot's welcomes, on the journey and on the project pages, so they aren't shown again. None of it is sent anywhere.",
           "Like any host, Cloudflare keeps technical logs, including IP addresses, to run and protect the service.",
           `A question about your data? Write to me. You can also contact the <a href="https://www.cnil.fr/en" target="_blank" rel="noopener">CNIL</a>, the French data protection authority.`,
         ],

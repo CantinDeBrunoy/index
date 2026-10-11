@@ -16,6 +16,11 @@ export const FICHE: Record<
     resume: string;
     /** Le copilote, qui suit la lecture en bas à droite et ramène au voyage, lui aussi. */
     copilot: string;
+    /**
+     * Son accueil, à la première fiche ouverte : il dit où l'on est, et que c'est lui qui ramène au voyage.
+     * {name} : le projet. « tap » remplace « click » sur téléphone.
+     */
+    welcome: { title: string; text: string; back: string; click: string; tap: string; go: string };
     /** La ligne de vol : le pourquoi, ce que ça fait et comment c'est fait, un point à la fois. */
     pointsAria: string;
     prevPoint: string;
@@ -47,6 +52,14 @@ export const FICHE: Record<
   fr: {
     resume: "Reprendre le voyage",
     copilot: "Reprends ton voyage",
+    welcome: {
+      title: "Ici, c'est la fiche du projet {name}.",
+      text: "Tu vas pouvoir en voir tous les détails.",
+      back: "Et si tu veux reprendre ton voyage,",
+      click: "clique sur moi !",
+      tap: "touche-moi !",
+      go: "Voir les détails →",
+    },
     pointsAria: "Le projet, point par point",
     prevPoint: "Point précédent",
     nextPoint: "Point suivant",
@@ -70,6 +83,14 @@ export const FICHE: Record<
   en: {
     resume: "Resume the journey",
     copilot: "Back to your journey",
+    welcome: {
+      title: "This is the {name} project page.",
+      text: "Here you can see all its details.",
+      back: "And if you want to get back to your journey,",
+      click: "click me!",
+      tap: "tap me!",
+      go: "See the details →",
+    },
     pointsAria: "The project, point by point",
     prevPoint: "Previous point",
     nextPoint: "Next point",

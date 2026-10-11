@@ -8,7 +8,8 @@
 // l'écran à moitié : pas pour quelques pixels. Sa pastille reste un cercle plein, de nuit au-dessus de la page ;
 // elle prend la couleur du rond quand elle entre entièrement dans la bande, et la quitte quand elle en sort.
 // Sans script, il reste visible en bas et le rond le montre aussi ; en mouvement réduit, il ne vole pas : il
-// s'efface, et le rond le montre.
+// s'efface, et le rond le montre. Pendant l'accueil du copilote (scripts/fiche-accueil.ts), la fiche n'a que son
+// en-tête : il reste à sa place, caché, et la reprend d'emblée, sans bond, quand la fiche apparaît.
 const button = document.querySelector<HTMLElement>("[data-resume]");
 const dock = document.querySelector<HTMLElement>("[data-resume-dock]");
 const from = document.querySelector<HTMLElement>("[data-resume-from]");
@@ -68,6 +69,7 @@ if (button && dock && from && pad) {
   };
   // Il se pose quand le rond est entièrement à l'écran ; posé, il n'en repart que si le rond le quitte à moitié.
   const wanted = () => {
+    if (!pad.getClientRects().length) return 0;
     const r = pad.getBoundingClientRect();
     return r.bottom <= innerHeight - 8 || (to === 1 && r.top + r.height / 2 < innerHeight) ? 1 : 0;
   };
@@ -99,8 +101,13 @@ if (button && dock && from && pad) {
   addEventListener("resize", now);
   desktop.addEventListener("change", now);
   reduced.addEventListener("change", now);
-  // Au chargement, il est déjà où il doit être : posé si la page s'ouvre en bas, sans bond.
-  to = wanted();
-  at = to;
-  now();
+  // Au chargement, il est déjà où il doit être : posé si la page s'ouvre en bas, sans bond. De même quand la fiche
+  // apparaît, après l'accueil du copilote.
+  const settle = () => {
+    to = wanted();
+    at = to;
+    now();
+  };
+  document.addEventListener("fiche:revele", settle);
+  settle();
 }
