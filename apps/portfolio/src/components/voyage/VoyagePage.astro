@@ -272,6 +272,13 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     align-items: center;
     gap: 24px;
   }
+  /* Juste au-dessus du téléphone, au même bord que l'en-tête des autres pages (styles/voyage.css). */
+  @media (min-width: 701px) and (max-width: 760px) {
+    .vhead {
+      left: 24px;
+      right: 24px;
+    }
+  }
 
   /* — Une escale : sans script, une par écran, à la suite ; avec, une seule à la fois — */
   .stop {

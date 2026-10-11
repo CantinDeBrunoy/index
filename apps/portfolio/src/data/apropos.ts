@@ -114,10 +114,10 @@ interface AproposStrings {
 
 export const APROPOS: Record<Lang, AproposStrings> = {
   fr: {
-    pageTitle: "À propos",
+    pageTitle: "À propos de moi",
     description:
       "Cantin Roquier, ingénieur développeur fullstack et mobile à la DSI du Groupement Les Mousquetaires : son itinéraire, ses langues, ses outils.",
-    label: "À propos · le passeport",
+    label: "À propos de moi · le passeport",
     role: "Ingénieur développeur fullstack & mobile",
     where: "Brunoy (91), près de Paris",
     status: "Ingénieur en CDI chez la STIME",
@@ -158,7 +158,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
         today: ["Aujourd'hui", "fullstack mobile, en CDI"],
       },
       school: {
-        title: "À l'école",
+        title: "Formation",
         sub: "En alternance de 2020 à 2025",
         items: [
           ["2019 – 2021", "DUT Informatique", "UPEC", "", "school"],
@@ -168,8 +168,8 @@ export const APROPOS: Record<Lang, AproposStrings> = {
         ],
       },
       work: {
-        title: "Chez la STIME",
-        sub: "DSI du Groupement Les Mousquetaires · Paris",
+        title: "Expérience professionnelle",
+        sub: "La STIME, DSI du Groupement Les Mousquetaires · Paris",
         items: [
           ["2020 – 2021", "Développeur frontend, en alternance", "", "Une application web mobile-first de flex office.", "work"],
           ["2020 – 2025", "Développeur fullstack, en alternance", "", "L'app mobile de plus de 3 000 points de vente, deux apps React pour le SAV et leur BFF Node.js.", "work"],
@@ -210,10 +210,10 @@ export const APROPOS: Record<Lang, AproposStrings> = {
     carousel: { prev: "Loisir précédent", next: "Loisir suivant", slide: "Loisir {n} sur {count}" },
   },
   en: {
-    pageTitle: "About",
+    pageTitle: "About me",
     description:
       "Cantin Roquier, full-stack and mobile software engineer in the IT department of Les Mousquetaires Group: his itinerary, his languages, his tools.",
-    label: "About · the passport",
+    label: "About me · the passport",
     role: "Full-stack & mobile software engineer",
     where: "Brunoy, Paris area, France",
     status: "Engineer at STIME, on a permanent contract",
@@ -254,7 +254,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
         today: ["Today", "full-stack mobile, permanent"],
       },
       school: {
-        title: "At school",
+        title: "Education",
         sub: "Work-study from 2020 to 2025",
         items: [
           ["2019 – 2021", "Two-year technical degree (DUT) in computer science", "UPEC", "", "school"],
@@ -264,8 +264,8 @@ export const APROPOS: Record<Lang, AproposStrings> = {
         ],
       },
       work: {
-        title: "At STIME",
-        sub: "IT department of Les Mousquetaires Group · Paris",
+        title: "Professional experience",
+        sub: "STIME, IT department of Les Mousquetaires Group · Paris",
         items: [
           ["2020 – 2021", "Front-end developer, work-study", "", "A mobile-first flex-office web app.", "work"],
           ["2020 – 2025", "Full-stack developer, work-study", "", "The mobile app of over 3,000 stores, two React apps for after-sales support and their Node.js back-for-front.", "work"],

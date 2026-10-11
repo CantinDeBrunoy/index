@@ -41,7 +41,7 @@ export const NOT_FOUND: Record<Lang, NotFoundStrings> = {
     spot: "Reprendre le voyage",
     alt: "Un tapis à bagages tourne à vide dans un terminal de nuit, sous le panneau du tapis 404 ; à côté, une valise couleur terre cuite attend seule, l'étiquette « 404 » pendue à sa poignée.",
     projects: `Voir les ${inWords("fr", projects.length)} projets →`,
-    about: "À propos →",
+    about: "À propos de moi →",
   },
   en: {
     pageTitle: "Stop not found",
@@ -53,7 +53,7 @@ export const NOT_FOUND: Record<Lang, NotFoundStrings> = {
     spot: "Resume the journey",
     alt: "A baggage carousel turns empty in a terminal at night, under the sign for belt 404; beside it, a terracotta suitcase waits alone, a “404” tag hanging from its handle.",
     projects: `See all ${inWords("en", projects.length)} projects →`,
-    about: "About →",
+    about: "About me →",
   },
 };
 
