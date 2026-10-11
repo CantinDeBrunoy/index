@@ -361,7 +361,7 @@ ${header}
 ${header}
 <sc-if value="{{s.hasTag}}" hint-placeholder-val="{{ false }}"><p class="tag ui" style="left:{{s.tagX}}%;top:{{s.tagY}}%"><i aria-hidden="true"></i><span>{{s.tag}}</span></p></sc-if>
 <sc-if value="{{notLast}}" hint-placeholder-val="{{ true }}"><button type="button" class="spot" onClick="{{dive}}" style="left:{{s.spotX}}%;top:{{s.spotY}}%"><span class="ring" aria-hidden="true"></span><span class="lab">{{s.cta}} →</span></button></sc-if>
-<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}"><a class="spot" href="${F("Carnet")}" style="left:{{s.spotX}}%;top:{{s.spotY}}%"><span class="ring" aria-hidden="true"></span><span class="lab">{{s.cta}} →</span></a></sc-if>
+<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}"><a class="spot" href="${F("Apropos")}" style="left:{{s.spotX}}%;top:{{s.spotY}}%"><span class="ring" aria-hidden="true"></span><span class="lab">{{s.cta}} →</span></a></sc-if>
 <article class="ui" style="position:absolute;left:40px;bottom:40px;width:460px;box-sizing:border-box;padding:22px 24px 14px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;gap:10px">
 <p class="mono" style="margin:0;font-size:12px;color:var(--brass-text)">{{s.num}} · {{s.kind}}</p>
 <h1 class="serif" style="margin:0;font-size:48px;line-height:1">{{s.name}}</h1>
@@ -502,7 +502,7 @@ ${mHeader}
 <div style="position:absolute;left:0;top:${MTOP}px;width:${MW}px;height:${MSH}px;overflow:hidden">
 <img class="scene" src="{{s.mImg}}" alt="{{s.alt}}" style="position:absolute;left:0;top:0;width:${MW}px;height:${MSH}px;transform-origin:{{s.mOrigin}}">
 <sc-if value="{{notLast}}" hint-placeholder-val="{{ true }}"><button type="button" class="spot" onClick="{{dive}}" aria-label="{{s.cta}}" style="left:{{s.mSpotX}}px;top:{{s.mSpotY}}px"><span class="ring" aria-hidden="true"></span></button></sc-if>
-<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}"><a class="spot" href="${F("Carnet")}" aria-label="{{s.cta}}" style="left:{{s.mSpotX}}px;top:{{s.mSpotY}}px"><span class="ring" aria-hidden="true"></span></a></sc-if>
+<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}"><a class="spot" href="${F("Apropos")}" aria-label="{{s.cta}}" style="left:{{s.mSpotX}}px;top:{{s.mSpotY}}px"><span class="ring" aria-hidden="true"></span></a></sc-if>
 </div>
 ${mHeader}
 <article class="ui m-card">
@@ -520,7 +520,7 @@ ${mHeader}
 <nav class="ui m-nav" aria-label="${t.dotsAria}">
 <button type="button" class="pill" onClick="{{back}}" aria-label="{{backLabel}}">←</button>
 <sc-if value="{{notLast}}" hint-placeholder-val="{{ true }}"><button type="button" class="go" onClick="{{dive}}">{{s.cta}} →</button></sc-if>
-<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}"><a class="go" href="${F("Carnet")}">{{s.cta}} →</a></sc-if>
+<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}"><a class="go" href="${F("Apropos")}">{{s.cta}} →</a></sc-if>
 </nav>
 </sc-if>
 ${mSheet}

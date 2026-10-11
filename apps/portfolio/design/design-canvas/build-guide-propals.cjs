@@ -360,7 +360,7 @@ const C_LOGIC = `
   }`;
 const helpRows = `<div class="h-rows">
 <sc-if value="{{notLast}}" hint-placeholder-val="{{ true }}"><button type="button" class="h-row" onClick="{{dive}}">Escale suivante <span>{{nextPlace}} →</span></button></sc-if>
-<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}"><a class="h-row" href="Carnet.dc.html">Fin du voyage <span>le carnet →</span></a></sc-if>
+<sc-if value="{{isLast}}" hint-placeholder-val="{{ false }}"><a class="h-row" href="Apropos.dc.html">Fin du voyage <span>faire connaissance →</span></a></sc-if>
 <a class="h-row" href="Carnet.dc.html">Le détail des projets <span>Les projets →</span></a>
 <a class="h-row" href="Apps.dc.html">Ouvrir une app <span>Les apps →</span></a>
 <button type="button" class="h-row" onClick="{{home}}">Revenir au départ <span>←</span></button>
