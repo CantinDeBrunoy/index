@@ -37,6 +37,9 @@ const fr = {
   lostPhone: "Perdu ? Je me range en bas : touche-moi.",
   close: "Fermer",
   dock: "Ton copilote : comment visiter ?",
+  /** À l'escale 1, au bout du décollage, une petite bulle vers sa pastille (scripts/decollage.ts). */
+  hint: "Bon voyage ! Si tu as besoin de moi en route, je suis juste là, en bas à droite de ton écran.",
+  hintPhone: "Bon voyage ! Si tu as besoin de moi en route, je suis juste là, en bas de ton écran.",
 };
 
 const en: { [K in keyof typeof fr]: string } = {
@@ -58,6 +61,8 @@ const en: { [K in keyof typeof fr]: string } = {
   lostPhone: "Lost? I'll wait at the bottom: tap me.",
   close: "Close",
   dock: "Your co-pilot: how to visit?",
+  hint: "Have a good trip! If you need me along the way, I'm right here, at the bottom right of your screen.",
+  hintPhone: "Have a good trip! If you need me along the way, I'm right here, at the bottom of your screen.",
 };
 
 export const COPILOTE: Record<Lang, typeof en> = { fr, en };

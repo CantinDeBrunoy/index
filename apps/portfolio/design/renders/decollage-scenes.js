@@ -467,6 +467,22 @@ function poseEnter(t) {
   return p;
 }
 
+// ——— La fusée en croisière, à l'escale 1 ———
+// Après l'envol, elle reste dans le cadre de l'espace : entre la planète et la Terre (56 % / 46 % de l'image), le nez
+// vers la Terre, le hublot vers nous. Elle flotte et sa flamme vacille au rythme de la boucle de l'espace (phi, 8 s).
+// Sa taille est celle d'un dessin : à l'échelle de la planète, elle ne ferait qu'un pixel.
+const CRUISE = { pos: new THREE.Vector3(0.734, -0.462, 1), roll: -0.85, scale: 0.1, flame: 0.55 };
+CRUISE.heading = new THREE.Vector3(-Math.sin(CRUISE.roll), Math.cos(CRUISE.roll), 0);
+const cruise = (phi) => ({
+  pos: CRUISE.pos.clone().add(new THREE.Vector3(0.02 * Math.sin(2 * phi), 0.035 * Math.sin(phi), 0)),
+  quat: new THREE.Quaternion().setFromEuler(new THREE.Euler(0.06 * Math.sin(phi + 1), 0.1 * Math.sin(phi), CRUISE.roll + 0.05 * Math.sin(phi + 0.5))),
+});
+// Les trois gouttes de sa flamme, en croisière (des multiples entiers de phi : la boucle reste sans couture).
+const cruiseFlame = (i, phi) => {
+  const fl = 1 + 0.12 * Math.sin(37 * phi + i) + 0.07 * Math.sin(23 * phi + 2 * i);
+  return [CRUISE.flame * (1 + 0.04 * Math.sin(41 * phi + i)), CRUISE.flame * fl, CRUISE.flame * (1 + 0.04 * Math.sin(43 * phi + i))];
+};
+
 // La caméra, plan par plan. Les plans rapprochés se règlent dans le repère local (position, cible, focale) ; la fin
 // de l'envol rejoint la caméra de la scène « espace », dans le monde.
 const SHOTS = {
@@ -659,20 +675,41 @@ function decollage(M, clip) {
     }
   }
 
-  // — La trajectoire de la fusée (repère local), puis son cap vers le haut du cadre de l'espace —
-  // Altitude : un départ lent, puis de plus en plus vite (τ en secondes depuis le décollage).
+  // — La trajectoire de la fusée : d'abord droit vers le ciel de la planète, à l'échelle du pas de tir (τ en secondes
+  //   depuis le décollage : un départ lent, puis de plus en plus vite) ; puis, pendant que la caméra recule, une courbe
+  //   dans le monde jusqu'à sa croisière (cruise(0)), où elle grandit pour rester lisible. —
   const altitude = (tau) => (tau <= 0 ? 0 : 0.9 * tau * tau + 0.3 * Math.pow(tau, 5));
-  // Une fois haute, elle s'incline vers le haut de l'image de l'espace (le ciel « du monde »).
-  const skyLocal = (() => {
-    const w = new THREE.Vector3(0.15, 1, 0.1).normalize().applyQuaternion(LAUNCH.Q.clone().invert());
-    return w.normalize();
-  })();
-  const rocketPos = (tau) => {
-    const h = altitude(tau);
-    const bend = ease.inOut(span(h, 6, 60));
-    const dir = new THREE.Vector3(0, 1, 0).lerp(skyLocal, bend).normalize();
-    // La position intègre approximativement la courbe : hauteur le long de y, puis dérive vers le cap.
-    return SITE.R0.clone().setY(SITE.PAD_Y).add(new THREE.Vector3(0, h, 0).lerp(dir.multiplyScalar(h), bend * 0.85));
+  const rocketLocal = (tau) => SITE.R0.clone().setY(SITE.PAD_Y + altitude(tau));
+  const FREE = 6.0; // l'instant où elle quitte la verticale pour la courbe
+  const toSite = new THREE.Matrix4().compose(LAUNCH.P, LAUNCH.Q, new THREE.Vector3(LAUNCH.KL, LAUNCH.KL, LAUNCH.KL)).invert();
+  const end = cruise(0);
+  const B0 = L2W(rocketLocal(FREE - ENVOL.liftoff));
+  const B1 = B0.clone().addScaledVector(LAUNCH.U, 0.7);
+  const B2 = end.pos.clone().addScaledVector(CRUISE.heading, -0.9);
+  const B3 = end.pos.clone();
+  const bezier = (s) => {
+    const a = 1 - s;
+    return B0.clone().multiplyScalar(a * a * a).addScaledVector(B1, 3 * a * a * s).addScaledVector(B2, 3 * a * s * s).addScaledVector(B3, s * s * s);
+  };
+  // La courbe part à la vitesse de la montée (sans à-coup) et arrive à l'arrêt.
+  const tau0 = FREE - ENVOL.liftoff;
+  const v0 = (1.8 * tau0 + 1.5 * tau0 ** 4) * LAUNCH.KL;
+  const m0 = (v0 * (ENVOL.duration - FREE)) / (3 * B1.distanceTo(B0));
+  const hermite = (u) => m0 * (u ** 3 - 2 * u ** 2 + u) + 3 * u ** 2 - 2 * u ** 3;
+  /** La fusée dans le monde après le décollage : position, orientation, et la taille d'une unité locale. */
+  const flight = (t) => {
+    if (t <= FREE) return { pos: L2W(rocketLocal(t - ENVOL.liftoff)), quat: LAUNCH.Q.clone(), scale: LAUNCH.KL };
+    return {
+      pos: bezier(hermite(span(t, FREE, ENVOL.duration))),
+      quat: LAUNCH.Q.clone().slerp(end.quat, ease.inOut(span(t, FREE, ENVOL.duration - 0.3))),
+      scale: Math.exp(mix(Math.log(LAUNCH.KL), Math.log(CRUISE.scale), ease.inOut(span(t, FREE + 0.4, ENVOL.duration)))),
+    };
+  };
+  // La fusée vit dans le repère du pas de tir : on y ramène sa place dans le monde.
+  const placeShip = (w) => {
+    ship.position.copy(w.pos).applyMatrix4(toSite);
+    ship.quaternion.copy(LAUNCH.Q).invert().multiply(w.quat);
+    ship.scale.setScalar(w.scale / LAUNCH.KL);
   };
 
   const animate = (phi, cur) => {
@@ -682,7 +719,7 @@ function decollage(M, clip) {
     setWorld(worldPhase(t));
     const R = ship.userData;
     // Par défaut : trappe ouverte, échelle posée, feux éteints, pas de flamme ni de fumée.
-    let doorOpen = 1, ladderTilt = -SITE.lean, lit = 0, flameK = 0, shake = 0, h = 0, faceK = 0, cleanup = 0, starFade = 0;
+    let doorOpen = 1, ladderTilt = -SITE.lean, lit = 0, flameK = 0, shake = 0, faceK = 0, cleanup = 0, starFade = 0;
     let pose;
     if (clip === "pied") pose = poseA(u);
     else if (clip === "echelle") pose = poseClimb(t);
@@ -695,7 +732,6 @@ function decollage(M, clip) {
       lit = ENVOL.lights.filter((x) => t >= x).length;
       shake = span(t, ENVOL.lights[2], ENVOL.ignite) * (1 - span(t, ENVOL.liftoff + 1.2, ENVOL.liftoff + 2));
       flameK = ease.out(span(t, ENVOL.ignite, ENVOL.ignite + 0.4));
-      h = altitude(t - ENVOL.liftoff);
       cleanup = ease.inOut(span(t, 7.4, 8.6));
       starFade = ease.inOut(span(t, 6.6, 8.4));
     }
@@ -713,20 +749,24 @@ function decollage(M, clip) {
       m.emissiveIntensity = i < lit ? 2.2 : 0;
       m.color.setHex(i < lit ? 0xffe9c2 : 0x9a8b78);
     });
-    // La fusée : elle tremble, s'allume, monte.
-    const jitter = shake * 0.025;
-    const pos = clip === "envol" && t > ENVOL.liftoff ? rocketPos(t - ENVOL.liftoff) : SITE.R0.clone().setY(SITE.PAD_Y);
-    ship.position.set(pos.x + jitter * Math.sin(t * 61), pos.y + jitter * 0.5 * Math.sin(t * 47 + 1), pos.z + jitter * Math.sin(t * 53 + 2));
-    if (clip === "envol" && h > 6) {
-      const bend = ease.inOut(span(h, 6, 60));
-      ship.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 1, 0).lerp(skyLocal, bend).normalize());
-    } else ship.quaternion.identity();
+    // La fusée : elle tremble, s'allume, monte, puis file vers sa croisière.
+    if (clip === "envol" && t > FREE) placeShip(flight(t));
+    else {
+      const jitter = shake * 0.025;
+      const pos = clip === "envol" && t > ENVOL.liftoff ? rocketLocal(t - ENVOL.liftoff) : SITE.R0.clone().setY(SITE.PAD_Y);
+      ship.position.set(pos.x + jitter * Math.sin(t * 61), pos.y + jitter * 0.5 * Math.sin(t * 47 + 1), pos.z + jitter * Math.sin(t * 53 + 2));
+      ship.quaternion.identity();
+      ship.scale.setScalar(1);
+    }
+    // La flamme : celle du décollage, puis, à l'approche de la croisière, la sienne (comme la boucle de l'espace).
     R.flame.visible = flameK > 0;
+    const calm = ease.inOut(span(t, 7.4, 8.8));
     R.flames.forEach((f, i) => {
       const fl = 1 + 0.12 * Math.sin(t * 37 + i) + 0.07 * Math.sin(t * 23 + 2 * i);
-      f.scale.set(flameK * (1 + 0.04 * Math.sin(t * 41 + i)), flameK * fl * (1 + 0.6 * span(t, ENVOL.liftoff, ENVOL.liftoff + 1.5)), flameK * (1 + 0.04 * Math.sin(t * 43 + i)));
+      const lift = [flameK * (1 + 0.04 * Math.sin(t * 41 + i)), flameK * fl * (1 + 0.6 * span(t, ENVOL.liftoff, ENVOL.liftoff + 1.5)), flameK * (1 + 0.04 * Math.sin(t * 43 + i))];
+      f.scale.set(...mixV(lift, cruiseFlame(i, worldPhase(t)), calm));
     });
-    R.glow.intensity = flameK * 0.0011 * (1 + 0.15 * Math.sin(t * 31));
+    R.glow.intensity = flameK * 0.0011 * (1 + 0.15 * Math.sin(t * 31)) * (1 - ease.inOut(span(t, FREE, 7.6)));
     // La fumée de la dalle : chaque bouffée roule vers l'extérieur en ralentissant, grossit, monte un peu.
     for (const p of puffs) {
       const tau = clip === "envol" ? t - p.t0 : -1;
@@ -743,16 +783,17 @@ function decollage(M, clip) {
       const tau = clip === "envol" ? t - p.t0 : -1;
       p.o.visible = tau > 0 && cleanup < 1;
       if (!p.o.visible) continue;
-      const at = rocketPos(p.t0 - ENVOL.liftoff);
-      p.o.position.set(at.x + p.j[0] * 0.3, at.y - 0.4 + p.j[1] * 0.3, at.z + p.j[2] * 0.3);
-      const s = p.s * (0.4 + 1.2 * (1 - Math.exp(-tau / 0.5))) * Math.max(0, 1 - tau / 2.6) * (1 + (at.y - SITE.PAD_Y) * 0.04) * (1 - cleanup);
+      // Sous la tuyère, là où était la fusée à l'instant où la bouffée est partie, à sa taille d'alors.
+      const w = flight(p.t0);
+      const k = w.scale / LAUNCH.KL;
+      const at = w.pos.addScaledVector(new THREE.Vector3(0, 1, 0).applyQuaternion(w.quat), -0.4 * w.scale).applyMatrix4(toSite);
+      p.o.position.set(at.x + p.j[0] * 0.3 * k, at.y + p.j[1] * 0.3 * k, at.z + p.j[2] * 0.3 * k);
+      const s = p.s * k * (0.4 + 1.2 * (1 - Math.exp(-tau / 0.5))) * Math.max(0, 1 - tau / 2.6) * (1 - cleanup);
       p.o.scale.setScalar(Math.max(0.0001, s));
     }
     local.scale.setScalar(1 - cleanup * 0.9999);
     more.material.opacity = 1 - starFade;
     more.visible = starFade < 1;
-    // La fusée elle-même : quand elle n'est plus qu'un point, elle s'efface aussi.
-    ship.scale.setScalar(Math.max(0.0001, 1 - ease.inOut(span(t, 7.6, 8.4)) * (clip === "envol" ? 1 : 0)));
 
     if (!cur) return;
     // — La caméra —
@@ -774,7 +815,8 @@ function decollage(M, clip) {
       const kc = ease.inOut(span(t, 1.2, 3.6));
       let p = b.pos.lerp(c.pos, kc), tg = b.target.lerp(c.target, kc);
       // Suivre : la cible monte avec la fusée (un peu en retard), la caméra se soulève.
-      const rocketW = L2W(rocketPos(Math.max(0, t - ENVOL.liftoff)).add(new THREE.Vector3(0, 2.2, 0)));
+      const fw = flight(Math.max(t, ENVOL.liftoff));
+      const rocketW = fw.pos.addScaledVector(new THREE.Vector3(0, 1, 0).applyQuaternion(fw.quat), 2.2 * fw.scale);
       const kf = ease.inOut(span(t, ENVOL.follow[0], ENVOL.follow[1]));
       tg = tg.lerp(rocketW, kf * 0.85);
       p = p.add(L2Wdir(new THREE.Vector3(0, 1, 0)).multiplyScalar(LAUNCH.KL * 3 * kf));
@@ -813,6 +855,31 @@ function decollage(M, clip) {
 }
 
 for (const clip of ["pied", "echelle", "trappe", "envol"]) SCENES[`decollage-${clip}`] = (M) => decollage(M, clip);
+
+// L'escale 1 : l'espace, avec la fusée en croisière (où l'envol la laisse). Le départ, lui, garde l'espace d'avant le
+// décollage, sans elle : la scène « depart » (START.scene sur le site).
+{
+  const espace = SCENES.espace;
+  SCENES.depart = espace;
+  SCENES.espace = (M) => {
+    const g = espace(M);
+    const ship = rocket(M);
+    const R = ship.userData;
+    ship.scale.setScalar(CRUISE.scale);
+    R.flame.visible = true;
+    g.add(ship);
+    const base = g.userData.animate;
+    g.userData.animate = (phi, cur) => {
+      base(phi, cur);
+      const c = cruise(phi);
+      ship.position.copy(c.pos);
+      ship.quaternion.copy(c.quat);
+      R.flames.forEach((f, i) => f.scale.set(...cruiseFlame(i, phi)));
+    };
+    g.userData.animate(0);
+    return g;
+  };
+}
 
 // Le moteur passe l'état courant (caméra, lumière, cadrage) aux scènes animées : ces plans bougent la caméra.
 {

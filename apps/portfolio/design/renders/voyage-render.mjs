@@ -16,7 +16,7 @@ const { chromium } = createRequire(pathToFileURL(join(process.env.REPO_DIR, "pac
 const MODE = process.env.MODE ?? "shot";
 const ACCENT = 0xb08a4f;
 const BG = {
-  espace: "#0B0C14", terre: "#10131C", avion: "#DCE9F0", paris: "#DCE3EA", monuments: "#E0E8DA",
+  espace: "#0B0C14", depart: "#0B0C14", terre: "#10131C", avion: "#DCE9F0", paris: "#DCE3EA", monuments: "#E0E8DA",
   route: "#F2DFD3", maison: "#F1E7DA", salon: "#F3D5B5", tonalliA: "#D8C2C6", tonalliB: "#D8C2C6", calendrier: "#D8C2C6",
   passeport: "#0E1018", dossiers: "#E6D5B8", bagage: "#121522", astronaute: "#0B0C14",
   "dossiers-ferme": "#E6D5B8",
@@ -29,6 +29,8 @@ const BG = {
 // Le décollage (decollage-scenes.js) : deux boucles d'une seconde (le salut), la montée de 2,5 s, l'envol de 9 s.
 const LOOPS = {
   terre: [72, 8000, 45], passeport: [120, 6000, 72], espace: [120, 8000], avion: [120, 8000], route: [120, 8000],
+  // Le départ : l'espace d'avant le décollage, sans la fusée (decollage-scenes.js).
+  depart: [120, 8000],
   "decollage-pied": [24, 1000], "decollage-echelle": [60, 2500], "decollage-trappe": [24, 1000], "decollage-envol": [216, 9000],
 };
 
@@ -71,6 +73,7 @@ const MOBILE = !!process.env.MOBILE || (!!process.env.SIZE && MODE !== "video");
 const [MW, MH] = process.env.SIZE ? process.env.SIZE.split("x").map(Number) : [780, 760];
 const BOXES = {
   espace: [0.06, 0.1, 0.76, 0.66],
+  depart: [0.06, 0.1, 0.76, 0.66],
   terre: [0.22, 0.06, 0.94, 0.92],
   avion: [0.24, -0.04, 0.8, 1.02],
   paris: [0.12, 0.1, 0.96, 0.94],

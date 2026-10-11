@@ -54,7 +54,10 @@ Le décollage (au premier « Décoller », ou rejoué par le retour de l'escale 
 explique le voyage, y grimpe, et la fusée part) est fait de quatre plans : les scènes `decollage-pied`, `decollage-echelle`, `decollage-trappe` et
 `decollage-envol` de `decollage-scenes.js`, que `build-voyage.cjs` ajoute après celles du voyage. Chaque plan commence
 là où finit le précédent, et la dernière image de l'envol précède la première de la boucle de l'espace : la caméra
-de l'escale 1 et sa planète ne changent pas sans que l'envol soit refait. Pour les rendre :
+de l'escale 1 et sa planète ne changent pas sans que l'envol soit refait. La fusée reste ensuite à l'escale 1, en
+croisière entre la planète et la Terre : la scène `espace` l'inclut (`CRUISE` dans `decollage-scenes.js`, où l'envol
+la laisse), tandis que le départ, avant le décollage, a sa scène sans elle, `depart` (`START.scene` sur le site).
+Pour les rendre :
 - `MODE=video CODEC=av01.0.12M.08 QP=32` pour les deux boucles, `RATE=variable BITRATE=2500000` pour la montée et
   l'envol (à qualité constante, l'envol pesait 8 Mo) ;
 - `MODE=video CODEC=avc1.640034 BITRATE=3500000` pour le H.264 ;

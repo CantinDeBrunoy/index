@@ -23,6 +23,9 @@ const WELCOME_KEY = "index:copilote-accueil";
 const BUBBLE_MS = 800;
 /** Le temps de lire l'escale 1 : son anneau bat plus fort. */
 const NUDGE_MS = 4000;
+/** Puis le copilote dit où le trouver (une petite bulle vers sa pastille), le temps de le lire. */
+const HINT_AT_MS = 1400;
+const HINT_MS = 9000;
 
 function stored(key: string): boolean {
   try {
@@ -149,6 +152,32 @@ function start(root: HTMLElement, layer: HTMLElement) {
       stop.classList.add("nudge");
       window.setTimeout(() => stop.classList.remove("nudge"), NUDGE_MS);
     }
+    window.clearTimeout(hintLater);
+    hintLater = window.setTimeout(showHint, HINT_AT_MS);
+  };
+
+  /** La petite bulle du copilote, à l'escale 1 : « je suis juste là » ; un clic, Échap, ou quitter l'escale la range. */
+  const hint = root.querySelector<HTMLElement>("#escale-1 [data-copilote-hint]");
+  let here = -1;
+  let hintLater = 0;
+  let hintEnd = 0;
+  const showHint = () => {
+    if (!hint || here !== 1 || active) return;
+    hint.classList.remove("out");
+    hint.hidden = false;
+    hint.parentElement?.classList.add("hinting");
+    window.clearTimeout(hintEnd);
+    hintEnd = window.setTimeout(hideHint, HINT_MS);
+  };
+  const hideHint = () => {
+    window.clearTimeout(hintLater);
+    window.clearTimeout(hintEnd);
+    if (!hint || hint.hidden) return;
+    hint.parentElement?.classList.remove("hinting");
+    hint.classList.add("out");
+    window.setTimeout(() => {
+      if (hint.classList.contains("out")) hint.hidden = true;
+    }, 300);
   };
   const close = () => {
     active = false;
@@ -236,7 +265,13 @@ function start(root: HTMLElement, layer: HTMLElement) {
 
   skip.addEventListener("click", () => arrive(false));
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && active && !layer.hidden) arrive(false);
+    if (event.key !== "Escape") return;
+    if (active && !layer.hidden) arrive(false);
+    else hideHint();
+  });
+  // Un clic n'importe où range la petite bulle (sur la pastille, il ouvre en plus le tuto).
+  document.addEventListener("click", (event) => {
+    if (!active && !layer.contains(event.target as Node)) hideHint();
   });
 
   // Les premiers plans se chargent d'avance (pas en mouvement réduit, ni en économie de données) : sur le départ,
@@ -250,8 +285,11 @@ function start(root: HTMLElement, layer: HTMLElement) {
   };
   let later = 0;
   root.addEventListener("voyage:escale", (event) => {
+    const { i } = (event as CustomEvent<{ i: number }>).detail;
+    here = i;
+    if (i !== 1) hideHint();
     window.clearTimeout(later);
-    if ((event as CustomEvent<{ i: number }>).detail.i === 0 && !stored(SEEN_KEY)) later = window.setTimeout(preload, 2500);
+    if (i === 0 && !stored(SEEN_KEY)) later = window.setTimeout(preload, 2500);
   });
   for (const type of ["pointerenter", "focusin"]) {
     for (const button of root.querySelectorAll("[data-replay]")) button.addEventListener(type, preload, { once: true });
