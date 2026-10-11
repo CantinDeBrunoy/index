@@ -206,10 +206,9 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
 /** Les textes du voyage. Le nombre d'escales et de projets suit les listes ; {i}, {k}, {place}, {name} : remplacés à l'affichage. */
 export const VOYAGE: Record<Lang, Record<string, string>> = {
   fr: {
-    introLabel: "Index · depuis 2022",
+    introLabel: "Le portfolio de Cantin Roquier",
     introTitle: `Un voyage en ${inWords("fr", STOPS.length)} <em>escales</em>.`,
-    introText:
-      "Quand un outil me manque, je le fabrique. Ici, chaque projet devient un objet du décor, de la planète au tourne-disque : clique dessus et le voyage continue.",
+    introText: `Je suis développeur full-stack et mobile, et voici mes ${inWords("fr", STOPS.length)} projets. Chacun est une escale : une scène en 3D, sa fiche et son app quand elle est en ligne. À chaque escale, tu auras le choix : découvrir la fiche projet ou passer au suivant.`,
     takeOff: "Décoller →",
     start: "Le départ",
     announce: "Escale {i} : {place}, {name}",
@@ -229,10 +228,9 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     where: "Escale {i} / {n} · {place}",
   },
   en: {
-    introLabel: "Index · since 2022",
+    introLabel: "Cantin Roquier's portfolio",
     introTitle: `A journey in ${inWords("en", STOPS.length)} <em>stops</em>.`,
-    introText:
-      "When I'm missing a tool, I build it. Here, each project becomes part of the scenery, from the planet to the record player: click it and the journey goes on.",
+    introText: `I'm a full-stack and mobile developer, and these are my ${inWords("en", STOPS.length)} projects. Each one is a stop: a 3D scene, its project page and its app when it's live. At each stop, you'll have a choice: discover the project page or move on to the next one.`,
     takeOff: "Take off →",
     start: "Departure",
     announce: "Stop {i}: {place}, {name}",
