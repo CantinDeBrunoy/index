@@ -3,8 +3,8 @@
 // sa fiche, comme le bouton du panneau. Les lignes restent des liens vers la fiche : sans script, elles y mènent
 // directement. L'image d'attente de la démo s'affiche tout de suite ; la vidéo (muette, en boucle) la recouvre si
 // on s'y attarde, sans mouvement réduit ni économie de données : seules les démos regardées se chargent. Sans
-// démo (l'API REST .NET), c'est la scène de l'escale, et sa boucle animée. Sous 1 280 px, la liste est cachée (les
-// cartes postales la remplacent) et rien ne se charge. Les démos tournent en accéléré (scripts/demo-rate.ts).
+// démo, c'est la scène de l'escale, et sa boucle animée. Sous 1 280 px, la liste est cachée (les cartes postales la
+// remplacent) et rien ne se charge. Les démos tournent en accéléré (scripts/demo-rate.ts).
 import { speedUp } from "./demo-rate";
 
 const root = document.querySelector<HTMLElement>("[data-atlas]");

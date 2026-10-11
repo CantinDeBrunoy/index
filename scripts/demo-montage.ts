@@ -13,9 +13,12 @@
  * commun (scripts/demo/lib.ts). Ce qui passe dans l'appareil vient :
  *   - d'un enregistrement de Cantin, recadré et accéléré (Visit Match), ou de plans arrêtés qu'on parcourt
  *     (Métro Pathfinder). Ces sources, lourdes, restent hors du dépôt : scripts/.demo-sources/<nom>.mp4 ;
- *   - ou de l'app elle-même, servie depuis son build local dans son mode démo (gym-picker, Hublot).
+ *   - ou de l'app elle-même, servie depuis son build local dans son mode démo (gym-picker, Hublot) ;
+ *   - ou d'une partie jouée sur l'API, rejouée dans une console (l'API REST .NET : scripts/demo/shard-capture.ts
+ *     enregistre requêtes et réponses dans scripts/.demo-sources/shard.json, scripts/demo/api-console.html les montre).
  */
 
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium, type Browser, type Locator, type Page } from "playwright-core";
 import { CURSOR, filmPage, Hand, ROOT, serveDist, serveEncoder, serveFiles, writeDemo, type Frame } from "./demo/lib.ts";
@@ -90,6 +93,8 @@ interface Montage {
   sources?: string[];
   /** Une app à filmer dans son mode démo : son build local, servi à part. */
   dist?: string;
+  /** Des pages à servir avec le plateau, à leur adresse (fichiers du dépôt). */
+  pages?: Record<string, string>;
   play: (s: { stage: Stage; hand: Hand; page: Page; wait: (ms: number) => Promise<void>; app?: string }) => Promise<void>;
 }
 
@@ -306,7 +311,119 @@ const MONTAGES: Montage[] = [
       await wait(3000);
     },
   },
+  {
+    // Une vraie partie sur l'API, jouée en local par scripts/demo/shard-capture.ts : la console la rejoue, requête
+    // après requête, en sautant les attentes (le temps passé s'affiche au-dessus de la requête).
+    slug: "api-rest-dotnet",
+    posterAt: 9,
+    pages: { "/console": "scripts/demo/api-console.html" },
+    async play({ stage, page, wait }) {
+      const { steps } = JSON.parse(await readFile(join(SOURCES, "shard.json"), "utf8")) as { steps: ShardStep[] };
+      const find = (method: string, path: RegExp, from = 0) => {
+        const i = steps.findIndex((s, k) => k >= from && s.method === method && path.test(s.path));
+        if (i < 0) throw new Error(`Shard : pas de ${method} ${path} dans scripts/.demo-sources/shard.json`);
+        return i;
+      };
+      let last = 0;
+      /** Montre l'échange n° i dans la console, avec le temps passé depuis celui d'avant, puis attend `ms`. */
+      const show = async (i: number, ms: number, opts: { marks?: string[]; bodyKeys?: string[]; body?: boolean } = {}) => {
+        const gap = steps[i]!.at - steps[last]!.at;
+        const later = gap >= 55 ? `${Math.round(gap / 60)} min plus tard` : gap >= 4 ? `${Math.round(gap)} s plus tard` : undefined;
+        last = i;
+        await page.evaluate(
+          ([step, o]) => ((document.querySelector("#app") as HTMLIFrameElement).contentWindow as unknown as { api: ApiConsole }).api.show(step, o),
+          [steps[i], { ...opts, later }] as const,
+        );
+        await wait(ms);
+      };
+      // Les ressources qui ont bougé entre deux relevés du joueur.
+      const gained = (a: number, b: number) => {
+        const [r0, r1] = [a, b].map((k) => (steps[k]!.response as { resourcesQuantity: Record<string, number> }).resourcesQuantity);
+        return Object.keys(r1!).filter((k) => r1![k] !== r0![k]);
+      };
+
+      await stage.theme(
+        { bg: "#0e1121", ink: "#eef0f7", muted: "#a3abc2", accent: "#9b87f5", card: "#171b36", line: "rgba(255,255,255,.08)", bezel: "#0a0c18", shadow: "0 30px 70px rgba(0,0,0,.5)" },
+        ["#512bd4", "#7a5af5", "#9b87f5", "#5ec2a0", "#e6b450"],
+      );
+      await stage.title({ name: "API REST .NET", tag: "Shard : le serveur d'un jeu de stratégie spatiale, en C# .NET.", meta: ["2023", "Projet d'école", "C# · ASP.NET Core"] });
+      await wait(4200);
+      await stage.device("window");
+      await stage.app({ src: "/console", width: 600, height: 554 });
+
+      await stage.chapter({ kicker: "L'univers", title: "Dix systèmes, leurs planètes", text: "<b>GET /systems</b> : l'univers du jeu, généré au démarrage. J'ai écrit ces premières routes, celles des <b>systèmes</b> et des <b>planètes</b>." });
+      await wait(700);
+      await show(find("GET", /^\/systems$/), 3400);
+      await show(find("GET", /^\/systems\/.+\/planets\/.+/), 2300);
+
+      await stage.chapter({ kicker: "Un joueur", title: "Un compte, deux unités", text: "Un <b>PUT</b> crée le joueur, et ses ressources de départ. Il reçoit un <b>éclaireur</b> et un <b>constructeur</b>, quelque part dans l'univers." });
+      await show(find("PUT", /^\/users\/cantin$/), 2800, { marks: ["resourcesQuantity"] });
+      const units = find("GET", /^\/users\/cantin\/units$/);
+      await show(units, 3000, { marks: ["type"] });
+
+      await stage.chapter({ kicker: "Le voyage", title: "Une minute d'un système à l'autre", text: "On renvoie l'unité avec sa destination : l'API répond avec son <b>heure d'arrivée</b>, puis la déplace." });
+      const scoutId = (steps[units]!.response as { id: string; type: string }[]).find((u) => u.type === "scout")!.id;
+      await show(find("PUT", new RegExp(`/units/${scoutId}$`)), 3000, { marks: ["destinationSystem", "estimatedTimeOfArrival"], bodyKeys: ["destinationSystem"] });
+      await show(find("GET", new RegExp(`/units/${scoutId}$`)), 2800, { marks: ["system"] });
+
+      await stage.chapter({ kicker: "La mine", title: "Cinq minutes de chantier", text: "Le constructeur, posé sur une planète, y bâtit une mine : <b>cinq minutes</b> de travaux, puis du minerai, <b>minute après minute</b>." });
+      const mine = find("POST", /^\/users\/cantin\/buildings$/);
+      await show(mine, 2900, { marks: ["isBuilt", "estimatedBuildTime"] });
+      await show(find("GET", /^\/users\/cantin\/buildings\/.+/), 2400, { marks: ["isBuilt"] });
+      const r0 = find("GET", /^\/users\/cantin$/, mine);
+      const r1 = find("GET", /^\/users\/cantin$/, r0 + 1);
+      const r2 = find("GET", /^\/users\/cantin$/, r1 + 1);
+      await show(r0, 1800);
+      await show(r1, 2200, { marks: gained(r0, r1) });
+      await show(r2, 2200, { marks: gained(r1, r2) });
+
+      await stage.chapter({ kicker: "Le combat", title: "Toutes les six secondes", text: "Un croiseur et un chasseur, posés par l'administrateur dans le même système : un service en tâche de fond les fait <b>tirer toutes les six secondes</b>." });
+      const cruiser = find("PUT", /\/units\/croiseur-1$/);
+      await show(cruiser, 2300, { marks: ["health"] });
+      await show(find("PUT", /\/units\/chasseur-1$/), 2300, { marks: ["health"] });
+      for (let i = find("GET", /\/units\/chasseur-1$/); steps[i]?.path.endsWith("/chasseur-1"); i++) await show(i, steps[i]!.status === 404 ? 2600 : 1900, { marks: ["health"] });
+      await show(find("GET", /\/units\/croiseur-1$/, cruiser + 1), 2400, { marks: ["health"] });
+
+      await stage.chapter({ kicker: "Les tests", title: "Six versions, toutes au vert", text: "À chaque version, la CI GitLab lance les <b>tests d'intégration xUnit</b> du cours : de 8 à 45 tests, tous passés." });
+      // Les notes de la CI de l'école, relevées dans le dépôt (tests/version<n>.txt, écrits par la CI).
+      const notes = [8, 15, 21, 21, 45, 21].map((total, k) => ({ name: `v${k + 1}`, total, passed: total }));
+      await page.evaluate((rows) => ((document.querySelector("#app") as HTMLIFrameElement).contentWindow as unknown as { api: ApiConsole }).api.tests({ title: "CI GitLab · tests d'intégration", text: "Tests passés, version par version", rows }), notes);
+      await wait(5200);
+
+      await stage.capot({
+        title: "Le serveur d'un jeu, en C#",
+        sub: "Un projet d'école, en équipe, de septembre 2023 à janvier 2024.",
+        cards: [
+          { name: "ASP.NET Core", lines: ["Des contrôleurs REST", "Un service en tâche de fond pour les combats"] },
+          { name: "Une horloge qu'on remplace", lines: ["Le temps du jeu passe par l'horloge du cours", "Les tests l'avancent à la main"], dot: "#5ec2a0" },
+          { name: "xUnit et la CI GitLab", lines: ["Six versions notées par les tests", "De 8 à 45 tests, tous au vert"], dot: "#e6b450" },
+        ],
+        meta: ["Partie réelle, lancée en local", "C# · .NET 7", "Projet d'école"],
+      });
+      await wait(6000);
+      await stage.outro({ name: "API REST .NET", tag: "Projet d'école, 2023 · Cantin Roquier" });
+      await wait(3000);
+    },
+  },
 ];
+
+/** La console de scripts/demo/api-console.html, dans le cadre de l'app du plateau. */
+interface ApiConsole {
+  show(step: unknown, options: unknown): Promise<void>;
+  tests(options: { title: string; text: string; rows: { name: string; total: number; passed: number }[] }): Promise<void>;
+}
+
+/** Un échange enregistré par scripts/demo/shard-capture.ts. */
+interface ShardStep {
+  at: number;
+  method: string;
+  path: string;
+  body?: unknown;
+  admin?: boolean;
+  status: number;
+  ms: number;
+  response: unknown;
+}
 
 /**
  * Le centre, sur la page, d'un élément de l'app filmée dans son cadre réduit : l'élément est d'abord amené
@@ -340,6 +457,7 @@ async function film(browser: Browser, montage: Montage): Promise<Frame[]> {
   const routes: Record<string, string> = { "/": join(ROOT, "scripts/demo/stage.html") };
   for (const [path, file] of Object.entries(FONTS)) routes[path] = join(ROOT, file);
   for (const name of montage.sources ?? []) routes[`/media/${name}`] = join(SOURCES, name);
+  for (const [path, file] of Object.entries(montage.pages ?? {})) routes[path] = join(ROOT, file);
   const site = await serveFiles(routes);
   const app = montage.dist ? await serveDist(montage.dist) : undefined;
   const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1, locale: "fr-FR", colorScheme: "light" });

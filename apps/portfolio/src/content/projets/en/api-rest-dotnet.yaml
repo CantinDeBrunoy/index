@@ -14,3 +14,8 @@ choices:
     text: "Game time goes through the course's clock: the tests move it forward by hand, without waiting six seconds or a minute."
   - title: "Tests as the judge"
     text: "Six versions, each validated by the course's xUnit integration tests in GitLab CI: from 8 to 45 tests, all green."
+video:
+  src: "/demos/api-rest-dotnet.mp4"
+  caption: "A real game on the API, run locally: the universe, a player, a journey, a mine, a battle, then the CI tests. Real requests and responses, with the waits cut."
+  width: 1280
+  height: 720

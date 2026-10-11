@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Console</title>
+<!--
+  La console de la démo de l'API REST .NET (Shard), filmée dans la fenêtre du plateau (scripts/demo/stage.html) :
+  une requête, puis la réponse de l'API, telles qu'enregistrées par scripts/demo/shard-capture.ts. Le montage la
+  pilote par window.api : show() pour un échange, tests() pour les notes de la CI.
+-->
+<style>
+  @font-face { font-family: "Geist"; src: url("/fonts/geist.woff2") format("woff2-variations"); font-weight: 100 900; }
+  @font-face { font-family: "Geist Mono"; src: url("/fonts/geist-mono.woff2") format("woff2-variations"); font-weight: 100 900; }
+  :root {
+    --bg: #11142a; --panel: #171b36; --ink: #e9ebf5; --muted: #8e96b3; --line: rgba(255, 255, 255, 0.07);
+    --key: #a99bff; --str: #e6c07b; --num: #7fd1b9; --lit: #f08c9b; --get: #5ec2a0; --put: #e6b450; --post: #7aa7ff;
+    --mark: rgba(169, 155, 255, 0.22);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 600px; height: 554px; overflow: hidden; background: var(--bg); color: var(--ink);
+    font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .top { display: flex; align-items: center; justify-content: space-between; height: 38px; padding: 0 18px;
+    border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+  .top b { color: var(--ink); font-weight: 600; letter-spacing: 0.01em; }
+  .top span { font-family: "Geist Mono", monospace; }
+  main { position: relative; height: 516px; padding: 16px 18px 0; }
+  .view { position: absolute; inset: 16px 18px 0; display: flex; flex-direction: column; gap: 12px; transition: opacity 0.25s ease; }
+  .view.out { opacity: 0; }
+  .later { align-self: flex-start; display: none; padding: 4px 10px; border-radius: 999px; background: var(--mark); color: var(--key);
+    font-family: "Geist Mono", monospace; font-size: 12px; }
+  .later.on { display: inline-block; }
+  .req { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 10px; background: var(--panel); }
+  .verb { flex: none; padding: 3px 8px; border-radius: 6px; font-family: "Geist Mono", monospace; font-size: 12px; font-weight: 700; color: #11142a; }
+  .verb.GET { background: var(--get); } .verb.PUT { background: var(--put); } .verb.POST { background: var(--post); }
+  .path { flex: 1; min-height: 20px; padding-top: 2px; font-family: "Geist Mono", monospace; font-size: 13px; line-height: 1.45; word-break: break-all; }
+  .admin { flex: none; padding: 3px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-family: "Geist Mono", monospace; font-size: 11px; }
+  .body { margin: -4px 0 0; padding: 0 14px; color: var(--muted); font-family: "Geist Mono", monospace; font-size: 11.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+  .res { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; opacity: 0; transform: translateY(6px);
+    transition: opacity 0.3s ease, transform 0.3s ease; }
+  .res.in { opacity: 1; transform: none; }
+  .status { display: flex; align-items: center; gap: 10px; font-family: "Geist Mono", monospace; font-size: 12px; color: var(--muted); }
+  .status b { padding: 3px 8px; border-radius: 6px; background: rgba(94, 194, 160, 0.16); color: var(--get); font-weight: 700; }
+  .status b.ko { background: rgba(240, 140, 155, 0.16); color: var(--lit); }
+  pre { margin: 0; }
+  .json { position: relative; flex: 1; overflow: hidden; font-family: "Geist Mono", monospace; font-size: 12.5px; line-height: 1.55;
+    -webkit-mask-image: linear-gradient(180deg, #000 82%, transparent); mask-image: linear-gradient(180deg, #000 82%, transparent); }
+  .json .k { color: var(--key); } .json .s { color: var(--str); } .json .n { color: var(--num); } .json .l { color: var(--lit); } .json .p { color: var(--muted); }
+  .json .hl { border-radius: 4px; background: var(--mark); box-shadow: 0 0 0 3px var(--mark); }
+  .json .line { display: block; opacity: 0; transition: opacity 0.25s ease; }
+  .json .line.in { opacity: 1; }
+  /* Les notes de la CI */
+  .ci h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+  .ci p { margin: 0 0 8px; color: var(--muted); font-size: 12.5px; }
+  .row { display: grid; grid-template-columns: 34px 1fr 74px; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; background: var(--panel);
+    font-family: "Geist Mono", monospace; font-size: 13px; opacity: 0; transform: translateY(6px); transition: opacity 0.3s ease, transform 0.3s ease; }
+  .row.in { opacity: 1; transform: none; }
+  .bar { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--get); transition: width 0.9s cubic-bezier(.3,.1,.3,1); }
+  .row .score { color: var(--get); text-align: right; }
+</style>
+</head>
+<body>
+<div class="top"><b>Shard · API REST</b><span>http://localhost:5293</span></div>
+<main>
+  <section class="view" id="exchange">
+    <span class="later"></span>
+    <div class="req"><span class="verb"></span><span class="path"></span><span class="admin" hidden>admin</span></div>
+    <pre class="body" hidden></pre>
+    <div class="res"><div class="status"><b></b><span class="ms"></span></div><pre class="json"></pre></div>
+  </section>
+  <section class="view ci out" id="ci" hidden></section>
+</main>
+<script>
+  const $ = (s) => document.querySelector(s);
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const REASONS = { 200: "OK", 201: "Created", 400: "Bad Request", 404: "Not Found", 500: "Internal Server Error" };
+
+  /** Le JSON indenté, coloré, une ligne par élément ; les clés de `marks` sont surlignées. */
+  function render(value, marks = []) {
+    const lines = [];
+    const walk = (v, indent, prefix, comma) => {
+      const pad = "  ".repeat(indent);
+      const tail = comma ? '<span class="p">,</span>' : "";
+      const open = (ch) => `${pad}${prefix}<span class="p">${ch}</span>`;
+      if (Array.isArray(v) || (v && typeof v === "object")) {
+        const entries = Array.isArray(v) ? v.map((x) => [null, x]) : Object.entries(v);
+        const [o, c] = Array.isArray(v) ? ["[", "]"] : ["{", "}"];
+        if (!entries.length) return lines.push(`${open(o + c)}${tail}`);
+        lines.push(open(o));
+        entries.forEach(([k, x], i) => {
+          const key = k === null ? "" : `<span class="k">"${esc(k)}"</span><span class="p">: </span>`;
+          const at = lines.length;
+          walk(x, indent + 1, key, i < entries.length - 1);
+          // La ligne de la clé surlignée : sa valeur, ou l'ouverture de son objet.
+          if (k !== null && marks.includes(k)) lines[at] = lines[at].replace(/^(\s*)(.*)$/, '$1<span class="hl">$2</span>');
+        });
+        lines.push(`${pad}<span class="p">${c}</span>${tail}`);
+      } else {
+        const cls = typeof v === "string" ? "s" : typeof v === "number" ? "n" : "l";
+        const text = typeof v === "string" ? `"${esc(v)}"` : String(v);
+        lines.push(`${pad}${prefix}<span class="${cls}">${text}</span>${tail}`);
+      }
+    };
+    if (typeof value === "string") lines.push(`<span class="s">${esc(value)}</span>`);
+    else walk(value, 0, "", false);
+    return lines;
+  }
+
+  /** Le corps d'une requête, sur une ligne ; `keys` : seulement ces champs-là, le reste résumé par « … ». */
+  const bodyText = (body, keys) => {
+    if (!keys) return JSON.stringify(body).replace(/,"/g, ', "').replace(/":/g, '": ');
+    return `{ …, ${keys.map((k) => `"${k}": ${JSON.stringify(body[k])}`).join(", ")} }`;
+  };
+
+  window.api = {
+    /** Un échange : la requête s'écrit, puis la réponse paraît. `later` : le temps passé depuis l'échange d'avant. */
+    async show(step, { later, marks = [], body = true, bodyKeys } = {}) {
+      const view = $("#exchange");
+      $("#ci").classList.add("out");
+      view.hidden = false;
+      view.classList.add("out");
+      await wait(250);
+      $(".later").textContent = later ? `⏱ ${later}` : "";
+      $(".later").classList.toggle("on", Boolean(later));
+      $(".verb").className = `verb ${step.method}`;
+      $(".verb").textContent = step.method;
+      $(".admin").hidden = !step.admin;
+      $(".path").textContent = "";
+      const b = $(".body");
+      b.hidden = !(body && step.body);
+      b.textContent = body && step.body ? bodyText(step.body, bodyKeys) : "";
+      const res = $(".res");
+      res.classList.remove("in");
+      view.classList.remove("out");
+      // La requête s'écrit en 700 ms au plus.
+      const per = Math.min(24, 700 / step.path.length);
+      for (let i = 1; i <= step.path.length; i += 2) {
+        $(".path").textContent = step.path.slice(0, i + 1);
+        await wait(per * 2);
+      }
+      $(".path").textContent = step.path;
+      await wait(260);
+      const ok = step.status < 400;
+      $(".status b").textContent = `${step.status} ${REASONS[step.status] ?? ""}`;
+      $(".status b").classList.toggle("ko", !ok);
+      $(".status .ms").textContent = `${step.ms} ms`;
+      const lines = render(step.response, marks).slice(0, 40);
+      $(".json").innerHTML = lines.map((l) => `<span class="line">${l || " "}</span>`).join("");
+      res.classList.add("in");
+      const spans = [...document.querySelectorAll(".json .line")];
+      spans.forEach((s, i) => setTimeout(() => s.classList.add("in"), Math.min(i, 24) * 18));
+      // Une clé surlignée hors de l'écran : on fait défiler le JSON jusqu'à elle.
+      const hl = document.querySelector(".json .hl");
+      if (hl) {
+        const pre = $(".json");
+        const y = hl.parentElement.offsetTop - pre.clientHeight * 0.4;
+        if (y > 0) { await wait(500); pre.scrollTo({ top: y, behavior: "smooth" }); } else pre.scrollTop = 0;
+      } else $(".json").scrollTop = 0;
+    },
+    /** Les notes de la CI : une ligne par version, ses tests passés sur ses tests. */
+    async tests({ title, text, rows }) {
+      const ci = $("#ci");
+      $("#exchange").classList.add("out");
+      await wait(250);
+      $("#exchange").hidden = true;
+      ci.innerHTML = `<h3>${title}</h3><p>${text}</p>` + rows.map((r) =>
+        `<div class="row"><span>${r.name}</span><span class="bar"><i></i></span><span class="score">${r.passed}/${r.total} ✓</span></div>`).join("");
+      ci.hidden = false;
+      ci.classList.remove("out");
+      const max = Math.max(...rows.map((r) => r.total));
+      for (const [i, row] of [...ci.querySelectorAll(".row")].entries()) {
+        await wait(260);
+        row.classList.add("in");
+        row.querySelector(".bar i").style.width = `${(rows[i].passed / max) * 100}%`;
+      }
+    },
+  };
+  window.ready = true;
+</script>
+</body>
+</html>

@@ -38,7 +38,7 @@ const cards = STOPS.map((stop, i) => {
   return { ...stop, n: i + 1, project, name: nameOf(project, lang), text, kind: kindOf(project, text, lang).line, app: appOf(project, text, lang) };
 });
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
-// La démo de chaque escale, celle de sa fiche (sa vidéo et son image d'attente) ; sans démo (l'API REST .NET), sa scène.
+// La démo de chaque escale, celle de sa fiche (sa vidéo et son image d'attente) ; sans démo, sa scène.
 const demos = Object.fromEntries(
   await Promise.all(
     cards.map(async (s) => {

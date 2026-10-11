@@ -14,3 +14,8 @@ choices:
     text: "Le temps du jeu passe par l'horloge du cours : les tests l'avancent à la main, sans attendre six secondes ni une minute."
   - title: "Les tests pour juge"
     text: "Six versions, chacune validée par les tests d'intégration xUnit du cours, dans la CI GitLab : de 8 à 45 tests, tous au vert."
+video:
+  src: "/demos/api-rest-dotnet.mp4"
+  caption: "Une vraie partie sur l'API, lancée en local : l'univers, un joueur, un voyage, une mine, un combat, puis les tests de la CI. Requêtes et réponses réelles, attentes coupées."
+  width: 1280
+  height: 720
