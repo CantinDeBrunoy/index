@@ -11,6 +11,8 @@ import { STOPS } from "./voyage";
 export const FICHE: Record<
   Lang,
   {
+    /** Le bouton de l'en-tête vers une app web (le voyage et le carnet disent « Ouvrir l'app »). */
+    tryApp: string;
     /** Le bouton du bas de la fiche, qui reprend le voyage à l'escale du projet. */
     resume: string;
     /** Le copilote, qui suit la lecture en bas à droite et ramène au voyage, lui aussi. */
@@ -48,6 +50,7 @@ export const FICHE: Record<
   }
 > = {
   fr: {
+    tryApp: "Essayer l'app ↗",
     resume: "Reprendre le voyage",
     copilot: "Reprends ton voyage",
     welcome: {
@@ -78,6 +81,7 @@ export const FICHE: Record<
     question: "Une question sur {name} ?",
   },
   en: {
+    tryApp: "Try the app ↗",
     resume: "Resume the journey",
     copilot: "Back to your journey",
     welcome: {
