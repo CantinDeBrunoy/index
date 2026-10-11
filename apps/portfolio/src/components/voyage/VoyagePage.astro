@@ -2,7 +2,7 @@
 /**
  * Le voyage, l'accueil du site : le départ, puis dix escales, une par projet. Chaque escale montre
  * sa scène (une boucle 3D précalculée), son cartel et l'objet à cliquer, qui mène à l'escale
- * suivante ; la dernière mène au carnet.
+ * suivante ; la dernière mène à « À propos de moi ».
  *
  * Toutes les escales sont dans la page : sans script, elles se lisent à la suite, une par écran.
  * Avec le script (scripts/voyage.ts), une seule à la fois, et des transitions entre elles.
@@ -136,7 +136,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
         stops.map((s) => {
           const app = appOf(s.project, s.text, lang);
           const last = s.n === stops.length;
-          const next = last ? ROUTES.projets[lang] : `#escale-${s.n + 1}`;
+          const next = last ? ROUTES.apropos[lang] : `#escale-${s.n + 1}`;
           const prev = s.n === 1 ? "#depart" : `#escale-${s.n - 1}`;
           const left = s.spot[0] > 70;
           const style = [
