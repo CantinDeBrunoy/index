@@ -2,7 +2,8 @@
  * Le voyage animé : une escale à la fois.
  * - L'objet cliqué (ou « Décoller ») : la scène plonge vers lui sous un voile de la couleur de
  *   l'escale suivante, puis la suivante se pose ; le cartel et l'anneau arrivent en dernier.
- * - Le retour et la marque : un simple fondu.
+ * - Le retour, la marque et les points de la barre : un simple fondu (le point de l'escale suivante
+ *   plonge, comme l'objet).
  * - Flèches gauche et droite du clavier ; l'adresse (#escale-3) garde l'escale, l'interrupteur
  *   FR / EN aussi. Sans ce script, les escales se lisent à la suite, une par écran.
  */

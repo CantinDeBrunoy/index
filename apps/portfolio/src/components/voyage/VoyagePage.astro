@@ -217,14 +217,24 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                     {places[s.n - 1]}
                   </span>
                 </a>
-                <p class="where" aria-hidden="true">
-                  <span class="where__label">{fill(v.where, { i: s.n, n: stops.length, place: s.text.place })}</span>
+                <div class="where">
+                  <span class="where__label" aria-hidden="true">
+                    {fill(v.where, { i: s.n, n: stops.length, place: s.text.place })}
+                  </span>
                   <span class="where__dots">
                     {stops.map((o) => (
-                      <i class:list={[{ done: o.n < s.n, now: o.n === s.n }]} />
+                      <a
+                        class:list={[{ done: o.n < s.n, now: o.n === s.n }]}
+                        href={`#escale-${o.n}`}
+                        data-go={o.n}
+                        data-soft={o.n === s.n + 1 ? undefined : ""}
+                        data-place={o.text.place}
+                        aria-label={fill(v.announce, { i: o.n, place: o.text.place, name: o.project.name })}
+                        aria-current={o.n === s.n ? "step" : undefined}
+                      />
                     ))}
                   </span>
-                </p>
+                </div>
                 <a class="go next" href={next} data-go={last ? undefined : s.n + 1}>
                   {s.text.cta}
                   <span class="arrow" aria-hidden="true">→</span>
@@ -659,27 +669,78 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     text-transform: uppercase;
     white-space: nowrap;
   }
+  /* Chaque point mène à son escale. Le lien déborde le point (3 px de côté, 6 px dessus et dessous) pour
+     se viser sans peine, sans changer la mise en page ; au survol, une bulle au-dessus de la barre dit le lieu. */
   .where__dots {
     display: flex;
     align-items: center;
-    gap: 6px;
   }
-  .where__dots i {
+  .where__dots a {
+    position: relative;
+    display: block;
+    margin-block: -6px;
+    padding: 6px 3px;
+  }
+  .where__dots a::before {
+    content: "";
     display: block;
     width: 6px;
     height: 6px;
     box-sizing: border-box;
     border: 1.5px solid var(--dot);
     border-radius: var(--radius-pill);
+    transition:
+      border-color 0.15s,
+      scale 0.15s;
   }
-  .where__dots i.done,
-  .where__dots i.now {
+  .where__dots a.done::before,
+  .where__dots a.now::before {
     border-color: var(--brass);
     background: var(--brass);
   }
-  .where__dots i.now {
+  .where__dots a.now::before {
     width: 10px;
     height: 10px;
+  }
+  .where__dots a:not(.now):hover::before {
+    border-color: var(--brass);
+    scale: 1.4;
+  }
+  .where__dots a:focus-visible {
+    outline: none;
+  }
+  .where__dots a:focus-visible::before {
+    outline: 2px solid var(--brass);
+    outline-offset: 2px;
+  }
+  .where__dots a::after {
+    content: attr(data-place);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 42px);
+    padding: 7px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--bar);
+    box-shadow: 0 8px 20px var(--shadow);
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0;
+    translate: -50% 4px;
+    pointer-events: none;
+    transition:
+      opacity 0.15s,
+      translate 0.15s;
+  }
+  .where__dots a:not(.now):hover::after,
+  .where__dots a:not(.now):focus-visible::after {
+    opacity: 1;
+    translate: -50% 0;
   }
   .next {
     min-height: 48px;
