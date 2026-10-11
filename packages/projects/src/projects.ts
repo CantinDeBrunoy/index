@@ -82,9 +82,9 @@ export const PROJECTS = [
     kind: "archive",
     badges: ["ecole"],
     pitch: {
-      fr: "Une API REST en microservices C# .NET, développée en TDD et conteneurisée avec Docker.",
+      fr: "L'API REST d'un jeu de stratégie spatiale en C# .NET, faite en équipe et validée version après version par des tests xUnit.",
     },
-    stack: ["C#", ".NET", "SQL Server", "Docker", "xUnit"],
+    stack: ["C#", "ASP.NET Core", ".NET 7", "xUnit", "GitLab CI"],
     links: {},
   },
   {

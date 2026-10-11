@@ -1,2 +1,2 @@
-# API REST .NET : racontée sur l'étagère de Mithril, sans fiche à elle. Relue et vérifiée dans le code le 10 octobre 2026.
-shelf: "Une API REST en microservices C# .NET, écrite en TDD avec xUnit, dont un microservice asynchrone avec persistance, le tout dans Docker (2023)."
+# API REST .NET : racontée sur l'étagère de Mithril, sans fiche à elle. Vérifiée dans le code (le dépôt GitLab de l'école, privé) le 11 octobre 2026.
+shelf: "Shard, l'API REST d'un jeu de stratégie spatiale en C# .NET 7, faite en équipe : unités, mines et combats en tâche de fond, des serveurs reliés par des trous de ver, et six versions toutes au vert sur les tests xUnit (2023)."
