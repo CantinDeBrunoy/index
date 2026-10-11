@@ -1,5 +1,5 @@
 # Galactic Escape, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "Un projet d'école, à cinq, en 2022 : faire un jeu complet qui tourne dans le navigateur. Nous sommes partis du jeu du plombier, où l'on pose des tuyaux pour guider l'eau, et nous l'avons emmené dans l'espace, un monstre à nos trousses."
+why: "Un projet d'école, à cinq, en 2022 : faire un jeu complet qui tourne dans le navigateur. Nous sommes partis de Temple Run, où l'on court pour échapper à un monstre, et nous l'avons emmené dans l'espace : ici, c'est le joueur qui pose les cases du chemin."
 features:
   - title: "Un chemin case par case"
     text: "On pose des cases à une, deux ou trois sorties pour prolonger sa route, et un aperçu montre si elle se raccorde."

@@ -1,5 +1,5 @@
 # Galactic Escape, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "A school project, five of us, in 2022: build a complete game that runs in the browser. We started from Pipe Mania, where you lay pipes to guide the water, and took it to space, with a monster hot on our heels."
+why: "A school project, five of us, in 2022: build a complete game that runs in the browser. We started from Temple Run, where you run to escape a monster, and took it to space: here, the player lays the tiles of the path."
 features:
   - title: "A path, tile by tile"
     text: "You lay tiles with one, two or three exits to extend your route, and a preview shows whether it connects."

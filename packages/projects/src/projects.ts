@@ -54,7 +54,7 @@ export const PROJECTS = [
     kind: "web",
     badges: ["ecole"],
     pitch: {
-      fr: "Un jeu de survie en 3D inspiré du jeu du plombier : poser des cases pour se tracer un chemin dans l'espace, entre les météores, un monstre aux trousses.",
+      fr: "Un runner en 3D inspiré de Temple Run : fuir un monstre à travers l'espace, en posant les cases de son chemin entre les météores.",
     },
     stack: ["React", "Three.js", "JavaScript", "Sass"],
     app: "galactic-escape",

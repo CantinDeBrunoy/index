@@ -64,7 +64,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "L'espace",
       alt: "L'espace : une planète à l'anneau de laiton et aux bandes lavande, ses lunes, et la Terre au loin parmi les étoiles.",
       kind: "Jeu 3D · 2022 · En ligne",
-      pitch: "Un jeu de survie en 3D inspiré du jeu du plombier : poser des cases pour se tracer un chemin dans l'espace, entre les météores, un monstre aux trousses.",
+      pitch: "Un runner en 3D inspiré de Temple Run : fuir un monstre à travers l'espace, en posant les cases de son chemin entre les météores.",
       cta: "Descendre vers la Terre",
     },
     magellan: {
@@ -139,7 +139,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "Space",
       alt: "Space: a planet with a brass ring and lavender bands, its moons, and the Earth far off among the stars.",
       kind: "3D game · 2022 · Live",
-      pitch: "A 3D survival game inspired by Pipe Mania: lay tiles to carve a path through space, between the meteors, with a monster on your heels.",
+      pitch: "A 3D runner inspired by Temple Run: flee a monster through space, laying the tiles of your path between the meteors.",
       cta: "Descend to Earth",
     },
     magellan: {
