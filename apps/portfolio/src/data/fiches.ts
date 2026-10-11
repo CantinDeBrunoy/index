@@ -54,7 +54,7 @@ export const FICHE: Record<
     copilot: "Reprends ton voyage",
     welcome: {
       title: "Ici, c'est la fiche du projet {name}.",
-      text: "Tu vas pouvoir en voir tous les détails.",
+      text: "Tu vas pouvoir voir tous les détails de ce projet.",
       back: "Et si tu veux reprendre ton voyage,",
       click: "clique sur moi !",
       tap: "touche-moi !",
@@ -85,7 +85,7 @@ export const FICHE: Record<
     copilot: "Back to your journey",
     welcome: {
       title: "This is the {name} project page.",
-      text: "Here you can see all its details.",
+      text: "Here you can see all the details of this project.",
       back: "And if you want to get back to your journey,",
       click: "click me!",
       tap: "tap me!",
