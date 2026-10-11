@@ -3,7 +3,7 @@
 ## Principe du jeu
 
 <p style='text-align: justify;'>
-    Inspiré du jeu du plombier, galactic escape est un jeu de "survie" basé sur la rapidité du joueur. L'objectif est de survivre le plus longtemps possible en gagnant un maximum d'avance sur le monstre qui vous poursuit. Pour se faire, le joueur dispose de cases à 2-4 entrées pour se créer un chemin dans l'espace. Sur le chemin du joueur, se dresseront des météores qu'il devra éviter.
+    Inspiré de Temple Run, Galactic Escape est un runner de "survie" basé sur la rapidité du joueur. L'objectif est de survivre le plus longtemps possible en gagnant un maximum d'avance sur le monstre qui vous poursuit. Pour ce faire, le joueur dispose de cases à 2-4 entrées pour se créer un chemin dans l'espace. Sur le chemin du joueur, se dresseront des météores qu'il devra éviter.
 </p>
 
 ## L'équipe
