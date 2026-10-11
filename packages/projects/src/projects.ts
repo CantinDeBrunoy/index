@@ -85,7 +85,8 @@ export const PROJECTS = [
       fr: "L'API REST d'un jeu de stratégie spatiale en C# .NET, faite en équipe et validée version après version par des tests xUnit.",
     },
     stack: ["C#", "ASP.NET Core", ".NET 7", "xUnit", "GitLab CI"],
-    links: {},
+    // Le dépôt de l'école, sur GitLab (projet d'équipe, avec les tests de notation du cours).
+    links: { code: "https://gitlab.com/Cant1/efrei-p2025-csharp" },
   },
   {
     slug: "visit-match",
