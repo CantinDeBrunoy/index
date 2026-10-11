@@ -2,7 +2,8 @@
 /**
  * L'accueil du copilote, à la première escale : il arrive en flottant dans le coin libre, en combinaison
  * spatiale, et donne le tuto (les deux façons de visiter : le voyage, ou le détail des projets).
- * « Faire le voyage » ou la croix le rangent au bout de la barre des escales. Il accueille à chaque départ (le
+ * « Faire le voyage » ou la croix le rangent au bout de la barre des escales, et l'anneau doré naît sur le bouton
+ * puis file se poser sur la planète. Il accueille à chaque départ (le
  * bouton « Décoller ») : scripts/copilote.ts décide de l'afficher. Caché, il ne télécharge rien.
  */
 import type { Lang } from "../../i18n/voyage";
@@ -118,6 +119,21 @@ const { lang } = Astro.props;
   }
   .accueil:global(.bye) .bulle__peek {
     animation: peek-dock 0.75s cubic-bezier(0.5, 0, 0.6, 1) forwards;
+  }
+  /* L'anneau de l'escale attend la fin de l'accueil : il naît alors sur « Faire le voyage » et file se poser sur
+     la planète (scripts/copilote.ts), pour qu'on voie où cliquer. visibility, car l'arrivée de l'escale anime
+     déjà son opacité. La copie en vol est posée sur lui, et part du bouton. */
+  :global(.voyage.copilote-accueil .spot),
+  :global(.stop.ring-flying .spot) {
+    visibility: hidden;
+  }
+  :global(.ring-flight) {
+    position: fixed;
+    z-index: 3;
+    pointer-events: none;
+  }
+  :global(.ring-flight > span) {
+    display: block;
   }
   /* Rangé, il laisse l'anneau battre plus fort quelques secondes : c'est par là qu'on avance. */
   :global(.stop.nudge .ring::after) {
