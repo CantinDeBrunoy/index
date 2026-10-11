@@ -40,6 +40,15 @@ export const STOPS: Stop[] = [
 /** Le départ : la scène de l'espace, de nuit. */
 export const START = { scene: "espace", bg: "#0b0c14", palette: "night" as Palette };
 
+/**
+ * La sortie du voyage, par « Faire connaissance » à la dernière escale : le stylo se couche, le dossier se ferme,
+ * puis « À propos » s'ouvre (scripts/voyage-sortie.ts). Sur ordinateur, le clip /voyage/sortie/<clip>(-av1).mp4
+ * (scène « dossiers-ferme », FERME dans design/renders/voyage-scenes.js) : `starts` départs de `segment` images,
+ * un par huitième de la boucle, dont `lift` de geste, puis la fermeture, commune à tous. Sur téléphone,
+ * <clip>-mobile.mp4 (780 × 760, cadré comme la boucle) : la fermeture seule.
+ */
+export const EXIT = { clip: "dossiers-ferme", starts: 8, segment: 17, lift: 11, fps: 24 };
+
 export interface StopText {
   /** Le lieu de l'escale. */
   place: string;

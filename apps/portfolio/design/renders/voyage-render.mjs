@@ -19,6 +19,7 @@ const BG = {
   espace: "#0B0C14", terre: "#10131C", avion: "#DCE9F0", paris: "#DCE3EA", monuments: "#E0E8DA",
   route: "#F2DFD3", maison: "#F1E7DA", salon: "#F3D5B5", tonalliA: "#D8C2C6", tonalliB: "#D8C2C6", calendrier: "#D8C2C6",
   passeport: "#0E1018", dossiers: "#E6D5B8", bagage: "#121522", astronaute: "#0B0C14",
+  "dossiers-ferme": "#E6D5B8",
   "decollage-pied": "#0B0C14", "decollage-echelle": "#0B0C14", "decollage-trappe": "#0B0C14", "decollage-envol": "#0B0C14",
 };
 // Boucles plus longues là où un tour complet doit rester lent (le globe) : [images, durée, qualité].
@@ -81,6 +82,7 @@ const BOXES = {
   salon: [0.18, 0.04, 0.9, 0.96],
   calendrier: [0.14, 0.02, 0.86, 0.98],
   dossiers: [0.14, 0.08, 0.86, 0.92],
+  "dossiers-ferme": [0.14, 0.08, 0.86, 0.92],
   // La 404 : tout le socle, le panneau du tapis compris.
   bagage: [0.14, 0.12, 0.84, 0.96],
 };
@@ -111,12 +113,15 @@ for (const name of names) {
   } else if (MODE === "video") {
     // MP4 pour l'ordinateur : 2560 × 1440 par défaut (SIZE), 24 images/s, fond opaque de l'escale.
     // QP (quantizer) : plus bas, plus net et plus lourd. CODEC : avc1.640034 (H.264) ou av01.0.12M.08 (AV1).
+    // Un clip (la sortie du voyage) donne lui-même son nombre d'images : userData.frames. FROM : n'en garder que
+    // la fin, à partir de cette image (le téléphone ne joue que la fermeture).
     const [, LOOP] = LOOPS[name] ?? [96, 4000];
     const fps = Number(process.env.FPS ?? 24);
-    const frames = Number(process.env.FRAMES ?? Math.round((Number(process.env.LOOP_MS ?? LOOP) / 1000) * fps));
+    const own = await page.evaluate(() => window.__current.obj.userData.frames ?? null);
+    const frames = Number(process.env.FRAMES ?? own ?? Math.round((Number(process.env.LOOP_MS ?? LOOP) / 1000) * fps));
     const codec = process.env.CODEC ?? "avc1.640034";
     await page.evaluate((hex) => window.setBackground(hex), BG[name] ?? "#888888");
-    const b64 = await page.evaluate((o) => window.encodeVideo(o), { frames, fps, codec, quantizer: Number(process.env.QP ?? 32), bitrate: Number(process.env.BITRATE ?? 3e6), rate: process.env.RATE });
+    const b64 = await page.evaluate((o) => window.encodeVideo(o), { frames, from: Number(process.env.FROM ?? 0), fps, codec, quantizer: Number(process.env.QP ?? 32), bitrate: Number(process.env.BITRATE ?? 3e6), rate: process.env.RATE });
     const out = `${name}${process.env.SUFFIX ?? ""}${codec.startsWith("av01") ? "-av1" : ""}.mp4`;
     await writeFile(join(dir, "anim", out), Buffer.from(b64, "base64"));
     console.log(`✓ ${out}  ${frames} images  ${Math.round(Buffer.byteLength(b64, "base64") / 1024)} Ko  ${((Date.now() - t0) / 1000).toFixed(1)} s`);

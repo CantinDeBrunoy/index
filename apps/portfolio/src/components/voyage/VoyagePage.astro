@@ -11,7 +11,7 @@
  */
 import { getProject } from "@index/projects";
 import { nameOf } from "../../data/fiches";
-import { appOf, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
+import { appOf, EXIT, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import Copilote from "./Copilote.astro";
@@ -166,12 +166,41 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                   <source src={`/voyage/${s.scene}-av1.mp4`} type='video/mp4; codecs="av01.0.12M.08"' />
                   <source src={`/voyage/${s.scene}.mp4`} type='video/mp4; codecs="avc1.640034"' />
                 </video>
+                {/* La sortie du voyage : le clip où le dossier se ferme, chargé une fois l'escale affichée. */}
+                {last && (
+                  <video
+                    class="scene scene--video scene--exit"
+                    muted
+                    playsinline
+                    disablepictureinpicture
+                    preload="none"
+                    aria-hidden="true"
+                    data-exit-clip={JSON.stringify(EXIT)}
+                  >
+                    <source src={`/voyage/sortie/${EXIT.clip}-av1.mp4`} type='video/mp4; codecs="av01.0.12M.08"' />
+                    <source src={`/voyage/sortie/${EXIT.clip}.mp4`} type='video/mp4; codecs="avc1.640034"' />
+                  </video>
+                )}
                 <picture>
                   <source media="(max-width: 700px)" srcset={`/voyage/stills/${s.scene}-mobile.webp`} data-loop={`/voyage/${s.scene}-mobile.webp`} />
                   <img class="scene scene--still" src={`/voyage/${s.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
                 </picture>
+                {/* Sur téléphone, la fermeture seule : téléchargée d'avance, elle se lit sans attendre le réseau. */}
+                {
+                  last && (
+                    <video
+                      class="scene scene--exit-phone"
+                      muted
+                      playsinline
+                      disablepictureinpicture
+                      preload="none"
+                      aria-hidden="true"
+                      data-exit-phone={`/voyage/sortie/${EXIT.clip}-mobile.mp4`}
+                    />
+                  )
+                }
                 <div class="poster-veil ui" aria-hidden="true" />
-                <a class:list={["spot", { "spot--left": left }]} href={next} data-go={last ? undefined : s.n + 1}>
+                <a class:list={["spot", { "spot--left": left }]} href={next} data-go={last ? undefined : s.n + 1} data-exit={last ? "" : undefined}>
                   <span class="ring" aria-hidden="true" />
                   <span class="lab">
                     {s.text.cta}
@@ -227,7 +256,7 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
                     ))}
                   </span>
                 </div>
-                <a class="go next" href={next} data-go={last ? undefined : s.n + 1}>
+                <a class="go next" href={next} data-go={last ? undefined : s.n + 1} data-exit={last ? "" : undefined}>
                   {s.text.cta}
                   <span class="arrow" aria-hidden="true">→</span>
                 </a>
@@ -345,6 +374,9 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     }
     :global(.is-live) .stop:global(.no-video) .scene--still {
       display: block;
+    }
+    .scene--exit-phone {
+      display: none;
     }
   }
 
@@ -853,6 +885,38 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
     }
   }
 
+  /* — La sortie du voyage (« Faire connaissance », scripts/voyage-sortie.ts) : le cartel, son voile, l'anneau et
+     la barre des escales s'effacent ; le clip prend la place de la boucle, le stylo se couche, le dossier se ferme. — */
+  .stop:global(.exit) .ui,
+  .stop:global(.exit) .spot {
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.45s ease,
+      translate 0.45s ease;
+  }
+  .stop:global(.exit) .cartel,
+  .stop:global(.exit) .stop-nav {
+    translate: 0 8px;
+  }
+  /* Cachés par visibility : l'arrivée de l'escale anime l'opacité de toutes ses scènes. */
+  .scene--exit,
+  .scene--exit-phone {
+    visibility: hidden;
+  }
+  .stop:global(.exit-clip) .scene--exit,
+  .stop:global(.exit-clip) .scene--exit-phone {
+    visibility: visible;
+  }
+  /* Sur téléphone, la fermeture arrive en fondu sur la boucle, qu'on ne peut pas suivre image par image. */
+  .scene--exit-phone {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .stop:global(.exit-clip) .scene--exit-phone {
+    opacity: 1;
+  }
+
   /* — Le téléphone : la scène recadrée en haut, le cartel dessous, la navigation au pouce — */
   @media (max-width: 700px) {
     :global(.voyage.is-live) {
@@ -913,6 +977,10 @@ const places = [v.start, ...stops.map((s) => s.text.place)];
       width: auto;
       height: 26%;
       background: linear-gradient(180deg, transparent 0%, var(--stop-bg) 100%);
+    }
+    /* Ici, le voile fond le bas de la scène dans la page : il reste pendant la sortie du voyage. */
+    .stop:global(.exit) .poster-veil {
+      opacity: 1;
     }
     .cartel {
       position: relative;

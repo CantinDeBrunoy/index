@@ -857,8 +857,31 @@ const DOSSIER = (() => {
       for (let x = end; x < W - 160; x += 16) c.fillRect(x, y - 6, 4, 4);
     });
   });
-  return { title, list, W, H, ROW, TOP };
+  // L'étiquette de la couverture, dehors : on la lit quand le dossier se ferme (la sortie du voyage).
+  const label = canvasTex(600, 300, (c) => {
+    c.fillStyle = PAPER;
+    c.fillRect(0, 0, 600, 300);
+    c.strokeStyle = "#CDBFAE";
+    c.lineWidth = 4;
+    c.strokeRect(16, 16, 568, 268);
+    c.textAlign = "center";
+    c.fillStyle = "#2B241D";
+    c.font = "italic 112px Georgia, serif";
+    c.fillText("Index", 300, 152);
+    c.fillStyle = "#B08A4F";
+    c.fillRect(240, 184, 120, 4);
+    c.fillStyle = "#8A6A35";
+    c.font = "bold 30px 'Courier New', monospace";
+    c.letterSpacing = "6px";
+    c.fillText(`001 → ${INDEX_LIST.at(-1)[0]}`, 300, 244);
+    c.letterSpacing = "0px";
+  });
+  return { title, list, label, W, H, ROW, TOP };
 })();
+// La sortie du voyage (« dossiers-ferme ») : un départ toutes les `every` images de la boucle des dossiers (96),
+// le stylo couché en `lift` images, `hold` images d'attente, puis la couverture se ferme (`swing`) et le clip
+// tient `end` images. Le site lit les mêmes nombres (EXIT dans src/data/voyage.ts).
+const FERME = { starts: 8, every: 12, lift: 11, hold: 6, swing: 20, end: 8 };
 // Une pile de dossiers : n dossiers fermés, puis celui du dessus, ouvert (sa couverture pivote sur le bord gauche).
 // `pages` : la page de titre et le sommaire, posés dans le dossier ouvert (pour l'escale d'INDEX).
 function folderPile(M, { n = 5, w = 0.9, d = 0.66, pages = false } = {}) {
@@ -897,6 +920,9 @@ function folderPile(M, { n = 5, w = 0.9, d = 0.66, pages = false } = {}) {
     const inside = mesh(new THREE.PlaneGeometry(sheetW, sheetD).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ map: DOSSIER.title, roughness: 0.85 }), w / 2, -0.001, 0);
     inside.rotation.y = Math.PI;
     hinge.add(inside);
+    // Dehors, l'étiquette : face au sol tant que le dossier est ouvert.
+    const lw = 0.56 * w;
+    hinge.add(mesh(new THREE.PlaneGeometry(lw, lw / 2).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: DOSSIER.label, roughness: 0.85 }), w / 2, 0.0135, -0.06 * d));
   }
   g.userData.hinge = hinge;
   g.userData.sheet = sheet;
@@ -1990,13 +2016,56 @@ const SCENES = {
     spot.position.set(w / 2 + 0.15, top, rowZ(5));
     g.add(spot);
     g.userData.hotspot = spot;
+    // Le stylo et la couverture à l'instant phi de la boucle : la sortie (« dossiers-ferme ») en repart.
+    const tilt = new THREE.Euler(0.5, 0, -0.55);
+    const penAt = (phi) => new THREE.Vector3(rowX + 0.04, top + 0.02, rowZ((INDEX_LIST.length - 1) * pingpong(phi)));
+    const hingeAt = (phi) => 3.08 - 0.04 * Math.sin(phi);
     g.userData.animate = (phi) => {
-      const k = (INDEX_LIST.length - 1) * pingpong(phi);
-      pen.position.set(rowX + 0.04, top + 0.02, rowZ(k));
-      pen.rotation.set(0.5, 0, -0.55);
-      pile.userData.hinge.rotation.z = 3.08 - 0.04 * Math.sin(phi);
+      pen.position.copy(penAt(phi));
+      pen.rotation.copy(tilt);
+      pile.userData.hinge.rotation.z = hingeAt(phi);
     };
+    g.userData.parts = { pen, hinge: pile.userData.hinge, tilt, penAt, hingeAt };
     g.userData.camera = { pos: [0.35, 3.7, 2.9], target: [0.05, 0.1, 0.2], fov: 38 };
+    return g;
+  },
+  // 010 INDEX, la sortie du voyage (« Faire connaissance ») : le stylo quitte la liste et se couche sur le socle,
+  // puis la couverture se referme sur le sommaire ; le site ouvre ensuite « À propos ». Le clip a huit départs
+  // (FERME), un par huitième de la boucle : le site attend le prochain pour passer de la boucle au clip sans saut,
+  // joue ce départ, puis saute à la fermeture, commune à tous. Images clés au début de chaque morceau.
+  "dossiers-ferme"(M) {
+    const g = SCENES.dossiers(M);
+    const { pen, hinge, tilt, penAt, hingeAt } = g.userData.parts;
+    const { starts, every, lift, hold, swing, end } = FERME;
+    const seg = lift + hold, close = starts * seg, frames = close + swing + end;
+    const from = new THREE.Quaternion().setFromEuler(tilt);
+    // Couché sur le socle devant la pile, sous les onglets, à peine de biais, le capuchon de laiton à droite.
+    const restPos = new THREE.Vector3(0.32, 0.032, 1.42);
+    const restQuat = new THREE.Quaternion()
+      .setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.12)
+      .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -Math.PI / 2));
+    const ease = (u) => u * u * u * (u * (6 * u - 15) + 10);
+    g.userData.frames = frames;
+    g.userData.keys = [...Array.from({ length: starts }, (_, s) => s * seg), close];
+    g.userData.animate = (phi) => {
+      const i = Math.round((phi / (Math.PI * 2)) * frames);
+      if (i < close) {
+        // Le départ s : la boucle continue (le stylo glisse encore) pendant que le geste l'emporte.
+        const s = Math.floor(i / seg), f = i - s * seg;
+        const at = (Math.PI * 2 * (s * every + f)) / 96;
+        const e = ease(Math.min(1, f / lift));
+        pen.position.copy(penAt(at)).lerp(restPos, e);
+        pen.position.y += 0.5 * Math.sin(Math.PI * e);
+        pen.quaternion.copy(from).slerp(restQuat, e);
+        hinge.rotation.z = hingeAt(at) + (3.08 - hingeAt(at)) * e;
+        return;
+      }
+      // La fermeture : la couverture se lève doucement, retombe de plus en plus vite, rebondit à peine.
+      const c = i - close;
+      pen.position.copy(restPos);
+      pen.quaternion.copy(restQuat);
+      hinge.rotation.z = c < swing ? 3.08 * Math.cos((Math.PI / 2) * (c / swing)) : 0.07 * Math.sin(Math.PI * Math.min(1, (c - swing) / 4));
+    };
     return g;
   },
   // 007 Tonalli, piste A : deux verres d'eau, deux gouttes d'encre — la couleur du jour de chacun
@@ -2562,7 +2631,7 @@ window.drawFrame = (i, n) => {
 window.setBackground = (hex) => renderer.setClearColor(new THREE.Color(hex), 1);
 
 // Encode la boucle en MP4 (WebCodecs, logiciel) : `quantizer` fixe la qualité, image par image.
-window.encodeVideo = async ({ frames, fps, codec, quantizer, bitrate, rate }) => {
+window.encodeVideo = async ({ frames, from = 0, fps, codec, quantizer, bitrate, rate }) => {
   const { Muxer, ArrayBufferTarget } = await import(new URL("vendor/mp4-muxer.mjs", location.href).href);
   const { width, height } = canvas;
   const muxer = new Muxer({
@@ -2584,11 +2653,13 @@ window.encodeVideo = async ({ frames, fps, codec, quantizer, bitrate, rate }) =>
     hardwareAcceleration: "prefer-software",
     ...(codec.startsWith("avc") ? { avc: { format: "avc" } } : {}),
   });
+  // Images clés en plus, là où le site saute dans le clip (la sortie du voyage : un départ par morceau).
+  const keys = new Set(current.obj.userData.keys ?? []);
   const perFrame = rate === "variable" ? {} : codec.startsWith("av01") ? { av1: { quantizer } } : codec.startsWith("vp09") ? { vp9: { quantizer } } : {};
-  for (let i = 0; i < frames; i++) {
+  for (let i = from; i < frames; i++) {
     window.drawFrame(i, frames);
-    const frame = new VideoFrame(canvas, { timestamp: Math.round((i * 1e6) / fps), duration: Math.round(1e6 / fps) });
-    encoder.encode(frame, { keyFrame: i === 0, ...perFrame });
+    const frame = new VideoFrame(canvas, { timestamp: Math.round(((i - from) * 1e6) / fps), duration: Math.round(1e6 / fps) });
+    encoder.encode(frame, { keyFrame: i === from || keys.has(i), ...perFrame });
     frame.close();
     while (encoder.encodeQueueSize > 2) await new Promise((r) => encoder.addEventListener("dequeue", r, { once: true }));
     if (failure) throw failure;

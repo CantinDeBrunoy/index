@@ -6,11 +6,13 @@
  *   plonge, comme l'objet).
  * - Flèches gauche et droite du clavier ; l'adresse (#escale-3) garde l'escale, l'interrupteur
  *   FR / EN aussi. Sans ce script, les escales se lisent à la suite, une par écran.
+ * - La dernière escale mène à « À propos » : avant, le dossier se ferme (scripts/voyage-sortie.ts).
  * - « Décoller » passe par la fusée du copilote (scripts/decollage.ts) : « voyage:decoller » lui laisse la main,
  *   « voyage:fusee » la lui donne une fois la plongée finie, « voyage:arrivee » la rend à l'escale 1.
  */
 
 import { animatePhoneScene } from "./phone-loop";
+import { leaveVoyage, prepareExit, resetExit } from "./voyage-sortie";
 
 const LEAVE_MS = 750;
 const LEAVE_SOFT_MS = 400;
@@ -47,7 +49,8 @@ function start(root: HTMLElement) {
   const videoOf = (i: number) => stops[i]?.querySelector<HTMLVideoElement>("video");
 
   // Une vidéo illisible (fichier absent, format non pris en charge) : l'escale garde sa boucle WebP.
-  for (const video of root.querySelectorAll("video")) {
+  // Le clip de la sortie, lui, manque sans rien changer : l'escale s'efface sans lui.
+  for (const video of root.querySelectorAll("video:not([data-exit-clip])")) {
     video.querySelector("source:last-of-type")?.addEventListener("error", () => video.closest("[data-stop]")?.classList.add("no-video"));
   }
 
@@ -68,7 +71,8 @@ function start(root: HTMLElement) {
   /** Une scène chargée d'avance : elle est prête quand le voile se lève. */
   const preload = (i: number) => {
     const stop = stops[i];
-    if (!stop) return;
+    // Après la dernière escale, la sortie du voyage : le dossier qui se ferme.
+    if (!stop) return void (i === stops.length && prepareExit(stops[i - 1]!));
     if (desktop.matches) {
       const video = videoOf(i);
       if (video && video.readyState === HTMLMediaElement.HAVE_NOTHING && video.preload !== "auto") {
@@ -175,8 +179,24 @@ function start(root: HTMLElement) {
     }, SETTLE_MS);
   });
 
+  /** « Faire connaissance » : le dossier se ferme, puis la page s'ouvre ; tout de suite si l'escale arrive encore. */
+  let leaving = false;
+  const leave = (href: string) => {
+    if (leaving) return;
+    leaving = true;
+    if (busy) return location.assign(href);
+    busy = true;
+    void leaveVoyage(stops[current]!, videoOf(current) ?? null).then(() => location.assign(href));
+  };
+
   root.addEventListener("click", (event) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const exit = (event.target as Element).closest<HTMLAnchorElement>("a[data-exit]");
+    if (exit) {
+      event.preventDefault();
+      leave(exit.href);
+      return;
+    }
     const link = (event.target as Element).closest<HTMLElement>("[data-go]");
     if (!link) return;
     event.preventDefault();
@@ -196,6 +216,13 @@ function start(root: HTMLElement) {
   // Onglet ou fenêtre en arrière-plan : le navigateur met les vidéos muettes en pause ; elles repartent au retour.
   document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && play(current));
   addEventListener("focus", () => play(current));
+  // Retour depuis « À propos », la page restaurée telle qu'on l'a quittée : le dossier rouvert, la boucle repart.
+  addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    for (const stop of stops) resetExit(stop);
+    busy = leaving = false;
+    play(current);
+  });
 }
 
 const root = document.querySelector<HTMLElement>("[data-voyage]");
