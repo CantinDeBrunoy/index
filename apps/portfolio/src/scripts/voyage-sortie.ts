@@ -17,6 +17,8 @@ type Clip = typeof EXIT;
 const FADE_MS = 450;
 /** Quoi qu'il arrive (vidéo bloquée, page cachée), la page suivante s'ouvre au bout de ce temps. */
 const MAX_MS = 5000;
+/** Le dossier fermé, tenu à l'écran avant que la page suivante ne s'ouvre. */
+const HOLD_MS = 800;
 /** Le temps laissé au clip pour se placer sur son départ, avant que la boucle n'y arrive. */
 const LEAD_S = 0.2;
 
@@ -150,7 +152,9 @@ export async function leaveVoyage(stop: HTMLElement, loop: HTMLVideoElement | nu
   const started = performance.now();
   stop.classList.add("exit");
   const closing = (desktop.matches ? closeOnDesktop(stop, loop) : closeOnPhone(stop)).catch(() => false);
-  await Promise.race([closing, wait(MAX_MS)]);
+  const closed = await Promise.race([closing, wait(MAX_MS).then(() => false)]);
+  // Le dossier fermé reste un instant à l'écran avant la page suivante.
+  if (closed) await wait(HOLD_MS);
   // Sans clip, l'effacement suffit.
   const left = FADE_MS - (performance.now() - started);
   if (left > 0) await wait(left);
