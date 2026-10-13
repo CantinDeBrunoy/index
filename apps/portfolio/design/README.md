@@ -78,19 +78,33 @@ ferme) est la scène `dossiers-ferme`, un clip de 164 images. Ses nombres sont `
 
 Les trois fichiers vont dans `../public/voyage/sortie/`, à part : `stills.mjs` prend tout `-mobile` de `voyage/` pour une escale.
 
-La fusée qui repart (de l'escale 1 vers la 2, elle remet les gaz vers la Terre et s'y fond) n'est pas une vidéo : la
-boucle de l'espace continue, et le site dessine la fusée par-dessus, dans un canvas (`src/scripts/voyage-fusee.ts`),
-depuis une planche de sprites : la fusée et sa traînée seules, image par image, et une pièce de ciel vide qui cache
-celle de la boucle. Sa trajectoire est `FUSEE` dans `fusee-scenes.js` ; `fusee-render.mjs` rend les planches
-(ordinateur et téléphone) dans `../public/voyage/fusee/` et leurs coordonnées dans `../src/data/fusee.json`, et
-prévient si quelque chose passe derrière la fusée de la boucle. À refaire si la croisière (`CRUISE`), la caméra de
-l'espace ou son cadrage téléphone changent :
+Les passages : au clic vers l'escale suivante, l'objet de l'escale part vers elle (la fusée vers la Terre, l'avion au
+loin, la rame jusqu'au terminus, la voiture à la maison…), puis le site plonge vers la suivante
+(`src/scripts/voyage-passage.ts`). Ils sont tous dans `passage-scenes.js` (`PASSAGES` : la boucle, les départs, l'instant
+du plongeon), que `build-voyage.cjs` ajoute après le décollage. Deux sortes :
+- « sprites » (espace, terre : derrière l'objet, des étoiles fixes) : la boucle continue, et le site dessine l'objet
+  par-dessus, dans un canvas, depuis une planche : l'objet seul, image par image, et une pièce du fond vide qui cache
+  celui de la boucle. `passage-render.mjs` les rend dans `../public/voyage/passage/` et prévient si quelque chose
+  passe derrière l'objet de la boucle ;
+- « clip » (les autres) : une vidéo de la scène `<escale>-passage`, un départ par huitième de la boucle (le monde
+  continue à sa phase, l'objet part de sa place à cet instant) ; le site attend le prochain pour y passer sans saut.
+  Sur téléphone, le premier départ seul, en fondu.
+
+`passage-render.mjs` écrit aussi `../src/data/passages.json`, ce que le site en lit. À refaire si une scène, sa caméra
+ou son cadrage téléphone changent :
 
 ```bash
 cd apps/portfolio/design/renders
-node fusee-render.mjs
-MODE=sheet OUT=depart.png node fusee-render.mjs   # pour la régler : une planche du départ, monde compris
+node passage-render.mjs                                    # les planches et passages.json
+MODE=sheet SCENE=route START=3 OUT=x.png node passage-render.mjs   # pour régler un passage : une planche, monde compris
+node build-voyage.cjs
+MODE=video CODEC=av01.0.12M.08 QP=36 node voyage-render.mjs route-passage
+MODE=video CODEC=avc1.640034 BITRATE=2500000 node voyage-render.mjs route-passage
+MOBILE=1 MODE=video SUFFIX=-mobile TO=53 CODEC=avc1.64001F BITRATE=1000000 node voyage-render.mjs route-passage
 ```
+
+`TO` : la longueur d'un départ (`length` dans passages.json). Les trois vidéos `anim/<escale>-passage(-av1|-mobile).mp4`
+se copient dans `../public/voyage/passage/`.
 
 ## La maquette
 

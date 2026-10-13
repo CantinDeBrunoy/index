@@ -265,6 +265,7 @@ const BUILD = {
       rec.rotation.y = -phi;
       arm.rotation.y = 0.04 * Math.sin(phi);
     };
+    g.userData.parts = { rec, arm };
     g.userData.sway = 0.12;
     return g;
   },

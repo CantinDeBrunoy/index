@@ -12,12 +12,12 @@
  *   l'escale quittée effacée, « voyage:arrivee » la rend à l'escale 1.
  * - La fiche de chaque escale est dessous (scripts/voyage-fiche.ts) : pendant qu'on la lit, la scène de l'escale est
  *   en pause et les flèches ne changent pas d'escale ; on change d'escale, elle se referme sous le voile.
- * - De l'escale 1 à la 2, la fusée remet d'abord les gaz vers la Terre (scripts/voyage-fusee.ts) ; le plongeon suit.
+ * - D'une escale à la suivante, son objet part d'abord vers elle (scripts/voyage-passage.ts) ; le plongeon suit.
  */
 
 import { animatePhoneScene } from "./phone-loop";
 import { startFiches } from "./voyage-fiche";
-import { departFusee, prepareFusee, resetFusee } from "./voyage-fusee";
+import { departPassage, preparePassage, resetPassage } from "./voyage-passage";
 import { leaveVoyage, prepareExit, resetExit } from "./voyage-sortie";
 
 const LEAVE_MS = 750;
@@ -57,8 +57,8 @@ function start(root: HTMLElement) {
   const videoOf = (i: number) => stops[i]?.querySelector<HTMLVideoElement>("video");
 
   // Une vidéo illisible (fichier absent, format non pris en charge) : l'escale garde sa boucle WebP.
-  // Le clip de la sortie, lui, manque sans rien changer : l'escale s'efface sans lui.
-  for (const video of root.querySelectorAll("video:not([data-exit-clip])")) {
+  // Les clips de la sortie et des passages, eux, manquent sans rien changer : l'escale s'efface sans eux.
+  for (const video of root.querySelectorAll("video:not([data-exit-clip], [data-passage-clip], [data-passage-phone])")) {
     video.querySelector("source:last-of-type")?.addEventListener("error", () => video.closest("[data-stop]")?.classList.add("no-video"));
   }
 
@@ -89,11 +89,17 @@ function start(root: HTMLElement) {
       }
     } else if (stop.dataset.imgPhone) new Image().src = stop.dataset.imgPhone;
   };
-  /** L'escale suivante, une fois la scène affichée chargée, et pas en mode économie de données. */
+  /**
+   * L'escale suivante, une fois la scène affichée chargée, et pas en mode économie de données ; avec elle, le passage
+   * de l'escale affichée vers elle (scripts/voyage-passage.ts).
+   */
   const preloadLater = (i: number) => {
     window.clearTimeout(later);
     if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
-    later = window.setTimeout(() => preload(i), 1500);
+    later = window.setTimeout(() => {
+      if (stops[i - 1]) preparePassage(stops[i - 1]!);
+      preload(i);
+    }, 1500);
   };
 
   const show = (i: number) => {
@@ -118,8 +124,6 @@ function start(root: HTMLElement) {
       stop.querySelector("img")?.setAttribute("loading", "eager");
       animatePhoneScene(stop);
     }
-    // La planche de la fusée qui repart vers l'escale 2.
-    if (i === 1) prepareFusee(stop);
     preloadLater(i + 1);
     // Le copilote suit le voyage (scripts/copilote.ts).
     root.dispatchEvent(new CustomEvent("voyage:escale", { detail: { i } }));
@@ -141,9 +145,9 @@ function start(root: HTMLElement) {
     }
 
     preload(next);
-    // De l'escale 1 à la 2 (pas en sautant d'escale, ni la fiche ouverte) : la fusée part d'abord vers la Terre.
-    const rocket = current === 1 && next === 2 && !soft && !reading ? departFusee(from, videoOf(1)) : Promise.resolve(false);
-    void rocket.then(() => dive(from, to, next, soft, launch, hadFocus));
+    // Vers l'escale suivante (pas en sautant d'escale, ni la fiche ouverte) : son objet part d'abord vers elle.
+    const passage = next === current + 1 && current > 0 && !soft && !reading ? departPassage(from, videoOf(current)) : Promise.resolve(false);
+    void passage.then(() => dive(from, to, next, soft, launch, hadFocus));
   };
 
   /** Le plongeon vers l'escale suivante sous son voile, puis son arrivée (ou la fusée du décollage, `launch`). */
@@ -156,11 +160,11 @@ function start(root: HTMLElement) {
 
     window.setTimeout(
       () => {
-        // Sous le voile : la fiche de l'escale quittée se referme, la page revient en haut ; la fusée partie de
-        // l'escale 1 y reprend sa place.
+        // Sous le voile : la fiche de l'escale quittée se referme, la page revient en haut ; l'objet parti y reprend
+        // sa place.
         fiches.close();
         window.scrollTo({ top: 0 });
-        resetFusee(from);
+        resetPassage(from);
         from.classList.remove("leave", "soft");
         root.classList.remove("leaving");
         root.classList.add("entering");

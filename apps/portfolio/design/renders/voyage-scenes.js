@@ -529,6 +529,8 @@ function calendarSheet(M, W = 2.0) {
     geo.computeVertexNormals();
   };
   g.userData.today = under;
+  // La case du jour (ses deux couches et sa forme) : le passage vers l'escale suivante la détache (passage-scenes.js).
+  g.userData.cell = { under, over, geo: cellGeo };
   g.userData.animate = (phi) => {
     curl((0.08 + 0.015 * Math.sin(phi)) * W);
     const t = (phi / (Math.PI * 2)) * CYCLE.length;
@@ -1586,6 +1588,8 @@ const SCENES = {
       jet.lookAt(p.clone().add(heading));
       jet.rotateZ(-0.42 + 0.06 * Math.sin(2 * phi + 0.8));
     };
+    // Ce que le passage vers l'escale suivante fait partir (passage-scenes.js).
+    g.userData.parts = { jet, heading };
     g.userData.camera = { pos: [0.6, 0.9, 7.4], target: [0, 0, 0], fov: 32 };
     return g;
   },
@@ -1650,6 +1654,7 @@ const SCENES = {
       const u = phi / (Math.PI * 2);
       for (const { c, x0 } of clouds) c.position.x = ((((x0 + 60 + u * 120) % 120) + 120) % 120) - 60;
     };
+    g.userData.parts = { clouds, wing: w, sky, shade };
     g.userData.camera = { pos: [-0.75, 0.3, 2.5], target: [0, -0.05, -0.4], fov: 40 };
     return g;
   },
@@ -1685,6 +1690,7 @@ const SCENES = {
       train.position.set(p.x, p.y + 0.06, p.z);
       train.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), path.getTangentAt(u));
     };
+    g.userData.parts = { train, path, stations };
     g.userData.camera = { pos: [0.6, 5.6, 5.0], target: [0, 0, 0.2], fov: 34 };
     return g;
   },
@@ -1732,6 +1738,7 @@ const SCENES = {
       travelers[1].position.copy(link.getPoint(1 - 0.5 * go));
       for (const tr of travelers) tr.scale.setScalar(Math.max(0.001, s));
     };
+    g.userData.parts = { travelers, link };
     g.userData.camera = { pos: [0.2, 2.4, 6.2], target: [0, 0.88, 0], fov: 35 };
     return g;
   },
@@ -1798,6 +1805,7 @@ const SCENES = {
       const tg = best.getTangentAt(u).multiplyScalar(Math.sin(phi) < 0 ? -1 : 1);
       mine.rotation.y = Math.atan2(tg.x, tg.z);
     };
+    g.userData.parts = { mine, best, home };
     g.userData.camera = { pos: [1.2, 5.0, 5.6], target: [0, 0, 0.2], fov: 34 };
     return g;
   },
@@ -1892,6 +1900,7 @@ const SCENES = {
       rack.userData.animate(phi);
       deck.userData.animate(phi);
     };
+    g.userData.parts = { deck };
     g.userData.camera = { pos: [0.9, 2.3, 4.6], target: [0.1, 0.8, -0.4], fov: 38 };
     return g;
   },
@@ -1956,6 +1965,7 @@ const SCENES = {
         n.rotation.z = 0.25 * Math.sin(u * 5 + k * 7);
       }
     };
+    g.userData.parts = { notes, from, to, cal, deck };
     g.userData.camera = { pos: [0.45, 2.7, 5.1], target: [0.1, 0.95, -0.5], fov: 38 };
     return g;
   },
@@ -1995,6 +2005,7 @@ const SCENES = {
       // La couverture du dossier ouvert respire un peu.
       pile.userData.hinge.rotation.z = 2.92 + 0.08 * Math.sin(phi);
     };
+    g.userData.parts = { cal, pile };
     g.userData.camera = { pos: [-1.1, 2.0, 6.8], target: [0.2, 1.5, 0], fov: 34 };
     return g;
   },
@@ -2638,7 +2649,7 @@ window.drawFrame = (i, n) => {
 window.setBackground = (hex) => renderer.setClearColor(new THREE.Color(hex), 1);
 
 // Encode la boucle en MP4 (WebCodecs, logiciel) : `quantizer` fixe la qualité, image par image.
-window.encodeVideo = async ({ frames, from = 0, fps, codec, quantizer, bitrate, rate }) => {
+window.encodeVideo = async ({ frames, from = 0, to = frames, fps, codec, quantizer, bitrate, rate }) => {
   const { Muxer, ArrayBufferTarget } = await import(new URL("vendor/mp4-muxer.mjs", location.href).href);
   const { width, height } = canvas;
   const muxer = new Muxer({
@@ -2664,7 +2675,7 @@ window.encodeVideo = async ({ frames, from = 0, fps, codec, quantizer, bitrate, 
   const keys = new Set(current.obj.userData.keys ?? []);
   const perFrame = rate === "variable" ? {} : codec.startsWith("av01") ? { av1: { quantizer } } : codec.startsWith("vp09") ? { vp9: { quantizer } } : {};
   const laps = current.obj.userData.laps ?? 1;
-  for (let i = from; i < frames; i++) {
+  for (let i = from; i < to; i++) {
     window.drawFrame(i * laps, frames);
     const frame = new VideoFrame(canvas, { timestamp: Math.round(((i - from) * 1e6) / fps), duration: Math.round(1e6 / fps) });
     encoder.encode(frame, { keyFrame: i === from || keys.has(i), ...perFrame });

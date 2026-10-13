@@ -96,6 +96,14 @@ const BOXES = {
   bagage: [0.14, 0.12, 0.84, 0.96],
 };
 if (process.env.BOX) BOXES[names[0]] = process.env.BOX.split(",").map(Number);
+// Les passages (passage-scenes.js) : le cadrage et le fond de leur escale.
+for (const name of names) {
+  const m = /^(.+)-passage$/.exec(name);
+  if (m) {
+    BOXES[name] ??= BOXES[m[1]];
+    BG[name] ??= BG[m[1]];
+  }
+}
 const suffix = process.env.SUFFIX ?? (MOBILE ? "-mobile" : "");
 for (const name of names) {
   const t0 = Date.now();
@@ -123,7 +131,8 @@ for (const name of names) {
     // MP4 pour l'ordinateur : 2560 × 1440 par défaut (SIZE), 24 images/s, fond opaque de l'escale.
     // QP (quantizer) : plus bas, plus net et plus lourd. CODEC : avc1.640034 (H.264) ou av01.0.12M.08 (AV1).
     // Un clip (la sortie du voyage) donne lui-même son nombre d'images : userData.frames. FROM : n'en garder que
-    // la fin, à partir de cette image (le téléphone ne joue que la fermeture).
+    // la fin, à partir de cette image (le téléphone ne joue que la fermeture). TO : s'arrêter avant celle-là (le
+    // téléphone ne joue que le premier départ d'un passage).
     const [, LOOP] = LOOPS[name] ?? [96, 4000];
     const fps = Number(process.env.FPS ?? 24);
     const own = await page.evaluate(() => window.__current.obj.userData.frames ?? null);
@@ -132,7 +141,7 @@ for (const name of names) {
     const av1 = codec.startsWith("av01");
     const [rate, bitrate] = av1 && RATES[name] ? ["variable", RATES[name][0]] : [undefined, RATES[name]?.[1] ?? 3e6];
     await page.evaluate((hex) => window.setBackground(hex), BG[name] ?? "#888888");
-    const b64 = await page.evaluate((o) => window.encodeVideo(o), { frames, from: Number(process.env.FROM ?? 0), fps, codec, quantizer: Number(process.env.QP ?? 32), bitrate: Number(process.env.BITRATE ?? bitrate), rate: process.env.RATE ?? rate });
+    const b64 = await page.evaluate((o) => window.encodeVideo(o), { frames, from: Number(process.env.FROM ?? 0), to: Number(process.env.TO ?? frames), fps, codec, quantizer: Number(process.env.QP ?? 32), bitrate: Number(process.env.BITRATE ?? bitrate), rate: process.env.RATE ?? rate });
     const out = `${name}${process.env.SUFFIX ?? ""}${codec.startsWith("av01") ? "-av1" : ""}.mp4`;
     await writeFile(join(dir, "anim", out), Buffer.from(b64, "base64"));
     console.log(`✓ ${out}  ${frames} images  ${Math.round(Buffer.byteLength(b64, "base64") / 1024)} Ko  ${((Date.now() - t0) / 1000).toFixed(1)} s`);

@@ -11,6 +11,7 @@
  */
 
 import type { EXIT } from "../data/voyage";
+import { catchStart, once, shownTime, until, wait } from "./video-sync";
 
 type Clip = typeof EXIT;
 
@@ -19,8 +20,6 @@ const FADE_MS = 450;
 const MAX_MS = 5000;
 /** Le dossier fermé, tenu à l'écran avant que la page suivante ne s'ouvre. */
 const HOLD_MS = 800;
-/** Le temps laissé au clip pour se placer sur son départ, avant que la boucle n'y arrive. */
-const LEAD_S = 0.2;
 
 const desktop = matchMedia("(min-width: 701px)");
 const reduce = matchMedia("(prefers-reduced-motion: reduce)");
@@ -29,43 +28,6 @@ let phoneClip: Promise<Blob | null> | null = null;
 
 const clipOf = (stop: HTMLElement) => stop.querySelector<HTMLVideoElement>("video[data-exit-clip]");
 const phoneOf = (stop: HTMLElement) => stop.querySelector<HTMLVideoElement>("video[data-exit-phone]");
-
-const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
-/** L'image suivante ; dans une page cachée, qui n'en dessine plus, au plus tard après 100 ms. */
-const nextFrame = () =>
-  new Promise<void>((resolve) => {
-    requestAnimationFrame(() => resolve());
-    window.setTimeout(resolve, 100);
-  });
-/** Attend que `test` soit vrai, image après image ; faux au bout de `ms`. */
-async function until(test: () => boolean, ms: number): Promise<boolean> {
-  const end = performance.now() + ms;
-  while (!test()) {
-    if (performance.now() > end) return false;
-    await nextFrame();
-  }
-  return true;
-}
-/**
- * Le temps de l'image à l'écran (requestVideoFrameCallback) : quand le décodage peine, il traîne derrière
- * currentTime, et c'est sur lui que les raccords doivent tomber. À défaut, currentTime.
- */
-function shownTime(video: HTMLVideoElement): { time: () => number; stop: () => void } {
-  if (typeof video.requestVideoFrameCallback !== "function") return { time: () => video.currentTime, stop: () => {} };
-  let shown = video.currentTime;
-  let id = 0;
-  const on: VideoFrameRequestCallback = (_, frame) => {
-    shown = frame.mediaTime;
-    id = video.requestVideoFrameCallback(on);
-  };
-  id = video.requestVideoFrameCallback(on);
-  return { time: () => shown, stop: () => video.cancelVideoFrameCallback(id) };
-}
-const once = (target: EventTarget, type: string, ms: number) =>
-  new Promise<boolean>((resolve) => {
-    const timer = window.setTimeout(() => resolve(false), ms);
-    target.addEventListener(type, () => (window.clearTimeout(timer), resolve(true)), { once: true });
-  });
 
 /** Charge la sortie de l'escale, une fois sa scène affichée. */
 export function prepareExit(stop: HTMLElement): void {
@@ -88,26 +50,8 @@ async function closeOnDesktop(stop: HTMLElement, loop: HTMLVideoElement | null):
   if (!clip || !loop || loop.paused || stop.classList.contains("no-video")) return false;
   if (clip.readyState < HTMLMediaElement.HAVE_FUTURE_DATA || !(loop.duration > 0)) return false;
   const { starts, segment, lift, fps } = JSON.parse(clip.dataset.exitClip ?? "{}") as Clip;
-  const length = loop.duration;
-  const step = length / starts;
   const half = 0.5 / fps;
-  // Le chemin parcouru par la boucle depuis le clic, tour compris, d'après l'image affichée.
-  const loopShown = shownTime(loop);
-  const t0 = loop.currentTime;
-  const run = () => (loopShown.time() - t0 + length) % length;
-
-  // Le prochain départ, assez loin pour que le clip ait le temps de s'y placer. S'il est passé pendant ce temps,
-  // ou si la boucle l'a dépassé de plus d'une image (page ralentie), le suivant.
-  let next = Math.ceil((t0 + LEAD_S) / step);
-  let start = -1;
-  for (let tries = 0; tries < 4 && start < 0; tries++, next++) {
-    const k = next % starts;
-    clip.currentTime = (k * segment) / fps + half;
-    if (!(await once(clip, "seeked", 1000))) return false;
-    const at = next * step - t0 - half;
-    if (run() < at && (await until(() => run() >= at, 2000)) && run() - at < 2 / fps) start = k;
-  }
-  loopShown.stop();
+  const start = await catchStart(loop, clip, { starts, segment, fps });
   if (start < 0) return false;
 
   loop.pause();

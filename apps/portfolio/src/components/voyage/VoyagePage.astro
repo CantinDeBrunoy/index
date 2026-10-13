@@ -13,6 +13,7 @@
  */
 import { getProject } from "@index/projects";
 import { nameOf } from "../../data/fiches";
+import PASSAGES from "../../data/passages.json";
 import { appOf, EXIT, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { ficheFragmentPath, fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
@@ -143,6 +144,8 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
           const next = last ? ROUTES.apropos[lang] : `#escale-${s.n + 1}`;
           const prev = s.n === 1 ? "#depart" : `#escale-${s.n - 1}`;
           const left = s.spot[0] > 70;
+          // Le passage vers l'escale suivante (scripts/voyage-passage.ts) : une planche de sprites ou un clip.
+          const passage = (PASSAGES as Record<string, { kind: string; desktop: { src: string }; phone: { src: string } }>)[s.scene];
           const style = [
             `--stop-bg: ${s.bg}`,
             `--x: ${s.spot[0]}%`,
@@ -160,6 +163,7 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
               data-pal={s.palette}
               data-place={s.text.place}
               data-name={s.name}
+              data-scene={s.scene}
               data-img-phone={`/voyage/${s.scene}-mobile.webp`}
               style={style}
             >
@@ -188,8 +192,17 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
                   <source media="(max-width: 700px)" srcset={`/voyage/stills/${s.scene}-mobile.webp`} data-loop={`/voyage/${s.scene}-mobile.webp`} />
                   <img class="scene scene--still" src={`/voyage/${s.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
                 </picture>
-                {/* L'escale 1 : la fusée qui repart vers la Terre, dessinée par-dessus la boucle (scripts/voyage-fusee.ts). */}
-                {s.n === 1 && <canvas class="scene scene--fusee" width="1" height="1" aria-hidden="true" data-fusee />}
+                {/* Le passage vers l'escale suivante : l'objet qui part, dessiné par-dessus la boucle, ou son clip. */}
+                {passage?.kind === "sprites" && <canvas class="scene scene--passage" width="1" height="1" aria-hidden="true" data-passage />}
+                {
+                  passage?.kind === "clip" && (
+                    <video class="scene scene--video scene--passage" muted playsinline disablepictureinpicture preload="none" aria-hidden="true" data-passage-clip>
+                      <source src={`${passage.desktop.src}-av1.mp4`} type='video/mp4; codecs="av01.0.12M.08"' />
+                      <source src={`${passage.desktop.src}.mp4`} type='video/mp4; codecs="avc1.640034"' />
+                    </video>
+                  )
+                }
+                {passage?.kind === "clip" && <video class="scene scene--passage-phone" muted playsinline disablepictureinpicture preload="none" aria-hidden="true" data-passage-phone />}
                 {/* Sur téléphone, la fermeture seule : téléchargée d'avance, elle se lit sans attendre le réseau. */}
                 {
                   last && (
@@ -401,7 +414,8 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
     :global(.is-live) .stop:global(.no-video) .scene--still {
       display: block;
     }
-    .scene--exit-phone {
+    .scene--exit-phone,
+    .scene--passage-phone {
       display: none;
     }
   }
@@ -943,34 +957,44 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
     opacity: 1;
   }
 
-  /* — La fusée de l'escale 1 qui repart vers la Terre (scripts/voyage-fusee.ts) : son canvas couvre la boucle ; le
-     cartel, l'anneau et la barre des escales s'effacent pendant qu'elle part. — */
-  .scene--fusee {
+  /* — Le passage vers l'escale suivante (scripts/voyage-passage.ts) : l'objet de l'escale part vers elle, son canvas
+     ou son clip couvre la boucle ; le cartel, l'anneau et la barre des escales s'effacent pendant qu'il part. — */
+  .scene--passage,
+  .scene--passage-phone {
     visibility: hidden;
     pointer-events: none;
   }
-  .stop:global(.fusee) .scene--fusee {
+  .stop:global(.passage-on) .scene--passage,
+  .stop:global(.passage-on) .scene--passage-phone {
     visibility: visible;
   }
-  .stop:global(.fusee) .ui,
-  .stop:global(.fusee) .spot {
+  /* Sur téléphone, le clip arrive en fondu sur la boucle, qu'on ne peut pas suivre image par image. */
+  .scene--passage-phone {
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .stop:global(.passage-on) .scene--passage-phone {
+    opacity: 1;
+  }
+  .stop:global(.passage) .ui,
+  .stop:global(.passage) .spot {
     opacity: 0;
     pointer-events: none;
     transition:
       opacity 0.45s ease,
       translate 0.45s ease;
   }
-  .stop:global(.fusee) .cartel,
-  .stop:global(.fusee) .stop-nav {
+  .stop:global(.passage) .cartel,
+  .stop:global(.passage) .stop-nav {
     translate: 0 8px;
   }
-  /* Le plongeon emporte la scène d'un bloc (la boucle et le canvas par-dessus) : si chacune s'effaçait de son côté,
-     la fusée de la boucle réapparaîtrait sous la pièce de ciel. */
-  .stop:global(.fusee.leave) .scene {
+  /* Le plongeon emporte la scène d'un bloc (la boucle et ce qui la couvre) : si chacune s'effaçait de son côté,
+     l'objet de la boucle réapparaîtrait sous la pièce de fond. Il plonge vers l'objet parti (--dive-x, --dive-y). */
+  .stop:global(.passage.leave) .scene {
     animation: none;
   }
-  .stop:global(.fusee.leave) .scene-box {
-    transform-origin: var(--x) var(--y);
+  .stop:global(.passage.leave) .scene-box {
+    transform-origin: var(--dive-x, var(--x)) var(--dive-y, var(--y));
     animation: dive-box 0.75s cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
   }
   @keyframes dive-box {
@@ -1043,9 +1067,11 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
       overflow: hidden;
       translate: none;
     }
-    .scene,
-    .stop:global(.fusee.leave) .scene-box {
+    .scene {
       transform-origin: var(--mx) var(--my);
+    }
+    .stop:global(.passage.leave) .scene-box {
+      transform-origin: var(--dive-x, var(--mx)) var(--dive-y, var(--my));
     }
     .spot,
     .spot--left {
@@ -1070,9 +1096,9 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
       height: 26%;
       background: linear-gradient(180deg, transparent 0%, var(--stop-bg) 100%);
     }
-    /* Ici, le voile fond le bas de la scène dans la page : il reste pendant la sortie du voyage et le départ de la fusée. */
+    /* Ici, le voile fond le bas de la scène dans la page : il reste pendant la sortie du voyage et les passages. */
     .stop:global(.exit) .poster-veil,
-    .stop:global(.fusee) .poster-veil {
+    .stop:global(.passage) .poster-veil {
       opacity: 1;
     }
     .cartel {
