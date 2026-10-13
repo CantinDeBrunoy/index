@@ -1,0 +1,168 @@
+---
+/**
+ * « Sous le capot » et « L'équipage », après les écrans : l'architecture, en une phrase puis en schéma
+ * (FicheSchema.astro) ; puis seul ou en équipe, mon rôle, et le carnet de bord du projet (durée, méthode, outils…). Les textes
+ * sont les champs `architecture` et `crew` de la fiche ; l'une ou l'autre partie peut manquer.
+ */
+import { FICHE } from "../../data/fiches";
+import { typo, type Lang } from "../../i18n/voyage";
+import FicheSchema, { type SchemaGroup, type SchemaLink, type SchemaNode } from "./FicheSchema.astro";
+
+type Item = { title: string; text: string };
+interface Props {
+  lang: Lang;
+  slug: string;
+  architecture?: { intro: string; nodes: SchemaNode[]; links: SchemaLink[]; groups: SchemaGroup[] };
+  crew?: { title: string; text: string; log: Item[] };
+}
+
+const { lang, slug, architecture, crew } = Astro.props;
+const f = FICHE[lang];
+const T = (text: string) => typo(lang, text);
+---
+
+{
+  architecture && (
+    <section class="hood" aria-labelledby={`capot-${slug}`}>
+      <p class="kicker">{f.hood.kicker}</p>
+      <h2 id={`capot-${slug}`} class="serif title">
+        {f.hood.title}
+      </h2>
+      <p class="hood__intro">{T(architecture.intro)}</p>
+      <FicheSchema
+        lang={lang}
+        slug={slug}
+        nodes={architecture.nodes}
+        links={architecture.links}
+        groups={architecture.groups}
+        aria={f.hood.aria}
+        swipe={f.hood.swipe}
+      />
+    </section>
+  )
+}
+
+{
+  crew && (
+    <section class="crew" aria-labelledby={`equipage-${slug}`}>
+      <div class="crew__head">
+        <p class="kicker">{f.crew.kicker}</p>
+        <h2 id={`equipage-${slug}`} class="serif title">
+          {T(crew.title)}
+        </h2>
+        <p class="crew__text">{T(crew.text)}</p>
+      </div>
+      {crew.log.length > 0 && (
+        <div class="log">
+          <h3 class="log__title">{f.crew.log}</h3>
+          <dl>
+            {crew.log.map((item) => (
+              <div>
+                <dt>{item.title}</dt>
+                <dd>{T(item.text)}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+    </section>
+  )
+}
+
+<style>
+  .hood,
+  .crew {
+    padding: 72px 0 64px;
+    border-bottom: 1px solid var(--line);
+  }
+  .kicker {
+    margin: 0 0 14px;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .title {
+    margin: 0;
+    font-size: clamp(36px, 3.8vw, 52px);
+    line-height: 1.02;
+  }
+  .hood__intro,
+  .crew__text {
+    max-width: 640px;
+    margin: 18px 0 0;
+    font-size: 19px;
+    line-height: 1.6;
+  }
+
+  /* — L'équipage : le titre et mon rôle à gauche ; le carnet de bord à droite, comme une carte — */
+  .crew {
+    display: grid;
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    align-items: start;
+    gap: 40px 64px;
+  }
+  .log {
+    padding: 22px 28px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--card);
+  }
+  .log__title {
+    margin: 0 0 6px;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .log dl {
+    margin: 0;
+  }
+  .log dl > div {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 4px 18px;
+    padding: 14px 0;
+  }
+  .log dl > div + div {
+    border-top: 1px dashed var(--line);
+  }
+  .log dt {
+    padding-top: 3px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .log dd {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  @media (max-width: 900px) {
+    .crew {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (max-width: 700px) {
+    .hood,
+    .crew {
+      padding: 48px 0 44px;
+    }
+    .hood__intro,
+    .crew__text {
+      font-size: 17px;
+    }
+    .log {
+      padding: 18px 20px 6px;
+    }
+    .log dl > div {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

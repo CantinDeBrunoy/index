@@ -15,3 +15,44 @@ video:
   caption: "Gyms ranked by driving time, the ranking that follows the traffic, then the fallback home. With fictional gyms and trips."
   width: 1280
   height: 720
+screens:
+  - image: "classement"
+    title: "The ranking"
+    text: "Gyms sorted by driving time, traffic included, the fastest in green. The calculation takes a second or two, shown at the top."
+    alt: "gym-picker in demo mode: four fictional gyms ranked, Palais-Royal first at 7 minutes."
+  - image: "actualiser"
+    title: "Traffic changes"
+    text: "“Actualiser” (refresh) runs the calculation again: from one search to the next, the nearest gym isn't always the same."
+    alt: "The same ranking after a refresh: Odéon moves to first, Palais-Royal drops to 15 minutes."
+  - image: "domicile"
+    title: "Without GPS"
+    text: "If the GPS doesn't answer, routes start from the backup home, saved on the phone and nowhere else."
+    alt: "The message “GPS indisponible : trajets calculés depuis ton domicile” above the ranking."
+architecture:
+  intro: "A small React app you install on your phone, and a Cloudflare Worker that queries TomTom on its behalf. No database: the gyms are in the code, and the home address stays on the phone."
+  groups:
+    - { label: "On the phone", from: [1, 1], to: [2, 2] }
+    - { label: "Cloudflare", from: [3, 1], to: [3, 1] }
+  nodes:
+    - { id: "local", at: [1, 1], kind: "data", title: "GPS · home", text: "A fix that's fast rather than precise; otherwise, the backup home, kept here." }
+    - { id: "app", at: [2, 1], kind: "app", title: "The React app", text: "Opens from cache; travel times are always computed live." }
+    - { id: "waze", at: [2, 2], kind: "ext", title: "Waze · Google Maps", text: "Tapping a gym opens the route." }
+    - { id: "worker", at: [3, 1], kind: "server", title: "gym-picker Worker", text: "Checks the position, allows 20 calls a minute, sorts the gyms." }
+    - { id: "tomtom", at: [4, 1], kind: "ext", title: "TomTom Matrix Routing", text: "Travel times to every gym at once, traffic included." }
+  links:
+    - { from: "app", to: "local", label: "the position" }
+    - { from: "app", to: "worker", label: "the position, in the body", both: true }
+    - { from: "worker", to: "tomtom", label: "one call, 4 s at most", both: true }
+    - { from: "app", to: "waze", label: "a tap" }
+crew:
+  title: "Solo flight"
+  text: "A tool for myself, built on my own with the help of Claude Code, from a real brief: the need, a success criterion (an answer in under 5 seconds), then the decisions and their reasons."
+  log:
+    - title: "Timeline"
+      text: "Late September 2026, then the demo mode in October."
+    - title: "Method"
+      text: "A handover document: the need, the architecture, the decisions, the pitfalls. Conventional commits."
+    - title: "Quality"
+      text: "About twenty Vitest tests on the pure functions, oxlint and TypeScript on every push."
+    - title: "Shipping"
+      text: "GitHub Actions deploys the Worker on every push; the TomTom key is a Worker secret."

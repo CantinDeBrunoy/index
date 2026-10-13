@@ -18,3 +18,46 @@ video:
 capture:
   alt: "Screenshot of Magellan: the globe and its coloured countries, with the counter of the demo data (14 trips, 22 cities, 13 countries)."
   caption: "The globe, with the demo trips."
+screens:
+  - image: "globe"
+    title: "The globe"
+    text: "Visited countries in green, a flag on each city, and the count of trips, cities and countries. It spins under your finger; tapping a country shows its trips."
+    alt: "Magellan on a phone: the globe, visited countries in green and the counter “14 voyages · 22 villes · 13 pays”."
+  - image: "voyages"
+    title: "The trips"
+    text: "Sorted by year, filtered into road trips or single-city stays, with three sticky notes for the totals at the top."
+    alt: "The list of demo trips: three sticky notes (14 trips, 22 cities, 13 countries), the filters, then Oslo and Japan in 2025."
+  - image: "voyage"
+    title: "One trip"
+    text: "On a walnut table, the route stop by stop as pinned sticky notes, with the days and budget of each city."
+    alt: "The demo trip to Japan: 3 stops, 10 days, a €2,050 budget, then Tokyo, Kyoto and Osaka as sticky notes."
+architecture:
+  intro: "A single Expo app, exported as a static site and served by a Cloudflare Worker. A visitor sees demo trips, kept in their browser; once I'm signed in, I get my own from a separate database."
+  groups:
+    - { label: "In the browser", from: [1, 1], to: [2, 2] }
+    - { label: "Cloudflare", from: [3, 1], to: [4, 2] }
+  nodes:
+    - { id: "globe", at: [1, 1], kind: "app", title: "globe.gl · three.js", text: "The 3D globe, in a frame on the web, a WebView on phones." }
+    - { id: "app", at: [2, 1], kind: "app", title: "The Expo app", text: "One React Native codebase, exported as a static site." }
+    - { id: "local", at: [2, 2], kind: "data", title: "localStorage · IndexedDB", text: "A visitor's trips; the photo folder and its thumbnails." }
+    - { id: "worker", at: [3, 1], kind: "server", title: "magellan Worker", text: "Serves the site; its API only answers me." }
+    - { id: "d1", at: [3, 2], kind: "data", title: "Cloudflare D1", text: "My real trips, never in the repository." }
+    - { id: "hub", at: [4, 1], kind: "server", title: "INDEX Worker", text: "GitHub sign-in: it tells whether the session is mine." }
+  links:
+    - { from: "app", to: "globe", label: "the camera" }
+    - { from: "app", to: "local", label: "no account", both: true }
+    - { from: "app", to: "worker", label: "the site, /api/trips", both: true }
+    - { from: "worker", to: "d1", label: "one versioned row", both: true }
+    - { from: "worker", to: "hub", label: "whose session?" }
+crew:
+  title: "Solo flight"
+  text: "I came up with it, built it and shipped it on my own, then redesigned it from top to bottom in September, with Claude Code as an assistant."
+  log:
+    - title: "Timeline"
+      text: "The skeleton in January 2026, the first real version in late June, the redesign in September."
+    - title: "Method"
+      text: "A phased roadmap in the README, a working guide, conventional commits; a branch and a pull request for the redesign."
+    - title: "Quality"
+      text: "ESLint and TypeScript on every push; CI also checks that the Android app builds."
+    - title: "Shipping"
+      text: "Every push to main redeploys the Worker, through GitHub Actions."

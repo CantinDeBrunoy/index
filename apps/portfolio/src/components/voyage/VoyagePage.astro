@@ -8,18 +8,17 @@
  * Avec le script (scripts/voyage.ts), une seule à la fois, et des transitions entre elles.
  * Sous 700 px, la disposition du téléphone : la scène recadrée en haut, le cartel dessous,
  * le retour et l'escale suivante au pouce.
- * Sous l'écran des escales, la fiche de chacune (FichePage.astro, la même que sur sa page) : on y descend sans quitter le voyage
+ * Sous l'écran des escales, la place de la fiche de chacune : la même que sur sa page, chargée à l'ouverture (pages/fiches) ; on y descend sans quitter le voyage
  * (scripts/voyage-fiche.ts).
  */
 import { getProject } from "@index/projects";
 import { nameOf } from "../../data/fiches";
 import { appOf, EXIT, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
-import { fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
+import { ficheFragmentPath, fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import Copilote from "./Copilote.astro";
 import CopiloteAccueil from "./CopiloteAccueil.astro";
 import Decollage from "./Decollage.astro";
-import FichePage from "./FichePage.astro";
 
 interface Props {
   lang: Lang;
@@ -272,14 +271,19 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
       }
     </main>
 
-    <!-- Sous l'écran des escales, la fiche de chacune, sur papier crème : seule celle de l'escale affichée s'ouvre,
-         quand on y descend (scripts/voyage-fiche.ts). Sans script, le bouton de la fiche mène à sa page. -->
+    <!-- Sous l'écran des escales, la place de la fiche de chacune : vide, elle se remplit quand on l'ouvre
+         (scripts/voyage-fiche.ts charge son fragment, pages/fiches). Sans script, le bouton de la fiche mène à sa page. -->
     <div class="fiches">
       {
         stops.map((s) => (
-          <section class="fiche-sous pal-day" data-fiche-of={s.n} aria-label={`${v.ficheTab} · ${s.name}`} tabindex="-1">
-            <FichePage lang={lang} slug={s.slug} embedded />
-          </section>
+          <section
+            class="fiche-sous pal-day"
+            data-fiche-of={s.n}
+            data-fiche-src={ficheFragmentPath(lang, s.project)}
+            aria-label={`${v.ficheTab} · ${s.name}`}
+            tabindex="-1"
+            style={`--stop-bg: ${s.bg}`}
+          />
         ))
       }
     </div>
@@ -942,7 +946,9 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
      son texte se sélectionne. Son copilote n'apparaît qu'une fois la fiche ouverte, pas pendant qu'on la tire. — */
   .fiche-sous {
     display: none;
-    background: var(--paper);
+    /* Le temps qu'elle arrive, sa place a la couleur de son en-tête, sur un écran ; ensuite, le papier crème. */
+    min-height: 100svh;
+    background: var(--stop-bg);
     color: var(--ink);
     -webkit-user-select: text;
     user-select: text;
@@ -950,6 +956,10 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
   }
   .fiche-sous:global(.is-open) {
     display: block;
+  }
+  .fiche-sous:global(.is-loaded) {
+    min-height: 0;
+    background: var(--paper);
   }
   .fiche-sous:focus {
     outline: none;

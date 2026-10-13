@@ -15,3 +15,44 @@ video:
   caption: "Les salles classées par temps de trajet, le classement qui suit le trafic, puis le domicile de secours. Avec des salles et des trajets fictifs."
   width: 1280
   height: 720
+screens:
+  - image: "classement"
+    title: "Le classement"
+    text: "Les salles triées par temps de trajet en voiture, bouchons compris, la plus rapide en vert. Le calcul prend une ou deux secondes, affichées en haut."
+    alt: "gym-picker en mode démo : quatre salles fictives classées, Palais-Royal en tête à 7 minutes."
+  - image: "actualiser"
+    title: "Le trafic change"
+    text: "« Actualiser » refait le calcul : d'une recherche à l'autre, la plus proche n'est plus forcément la même."
+    alt: "Le même classement après « Actualiser » : Odéon passe en tête, Palais-Royal tombe à 15 minutes."
+  - image: "domicile"
+    title: "Sans GPS"
+    text: "Si le GPS ne répond pas, les trajets partent du domicile de secours, enregistré sur le téléphone et nulle part ailleurs."
+    alt: "Le message « GPS indisponible : trajets calculés depuis ton domicile » au-dessus du classement."
+architecture:
+  intro: "Une petite app React qu'on installe sur son téléphone, et un Worker Cloudflare qui interroge TomTom à sa place. Pas de base de données : les salles sont dans le code, et le domicile reste sur le téléphone."
+  groups:
+    - { label: "Sur le téléphone", from: [1, 1], to: [2, 2] }
+    - { label: "Cloudflare", from: [3, 1], to: [3, 1] }
+  nodes:
+    - { id: "local", at: [1, 1], kind: "data", title: "GPS · domicile", text: "Une position rapide plutôt que précise ; sinon, le domicile de secours, gardé ici." }
+    - { id: "app", at: [2, 1], kind: "app", title: "L'app React", text: "S'ouvre depuis le cache ; les temps de trajet se calculent toujours en direct." }
+    - { id: "waze", at: [2, 2], kind: "ext", title: "Waze · Google Maps", text: "Toucher une salle ouvre le trajet." }
+    - { id: "worker", at: [3, 1], kind: "server", title: "Worker gym-picker", text: "Vérifie la position, limite à 20 appels par minute, trie les salles." }
+    - { id: "tomtom", at: [4, 1], kind: "ext", title: "TomTom Matrix Routing", text: "Les temps de trajet vers toutes les salles d'un coup, trafic compris." }
+  links:
+    - { from: "app", to: "local", label: "la position" }
+    - { from: "app", to: "worker", label: "la position, dans le corps", both: true }
+    - { from: "worker", to: "tomtom", label: "un appel, 4 s au plus", both: true }
+    - { from: "app", to: "waze", label: "un toucher" }
+crew:
+  title: "Seul à bord"
+  text: "Un outil pour moi, construit seul avec l'aide de Claude Code, à partir d'un vrai cahier des charges : le besoin, un critère de réussite (la réponse en moins de 5 secondes), puis les décisions et leurs raisons."
+  log:
+    - title: "Période"
+      text: "Fin septembre 2026, puis le mode démo en octobre."
+    - title: "Méthode"
+      text: "Un document de passation : le besoin, l'architecture, les décisions, les pièges. Des commits conventionnels."
+    - title: "Qualité"
+      text: "Une vingtaine de tests Vitest sur les fonctions pures, oxlint et TypeScript à chaque push."
+    - title: "Mise en ligne"
+      text: "GitHub Actions déploie le Worker à chaque push ; la clé TomTom est un secret du Worker."

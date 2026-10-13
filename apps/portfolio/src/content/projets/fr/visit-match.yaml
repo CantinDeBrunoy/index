@@ -19,3 +19,40 @@ video:
   caption: "L'inscription, les lieux à garder ou à passer, les carnets, les likes, la carte et le profil, avec un compte de test."
   width: 1280
   height: 720
+screens:
+  - image: "carte-lieu"
+    title: "Un lieu"
+    text: "Les lieux autour de soi arrivent un par un, avec leur distance, leur catégorie et leur prix : on passe, on le met dans un carnet, ou on l'aime."
+    alt: "La carte du Panthéon : à 2 km, monument, deux dollars, et les boutons passer, carnet et aimer."
+  - image: "detail"
+    title: "Sa fiche"
+    text: "Une description, des photos, et un bouton pour le voir sur le plan."
+    alt: "La fiche du Panthéon : distance, catégorie, prix, description, photo et « Voir sur le plan »."
+  - image: "likes"
+    title: "Les lieux aimés"
+    text: "Ils se trient par date, par gamme de prix ou par catégorie."
+    alt: "La liste des lieux aimés, Notre-Dame et le Trocadéro, sous le menu de tri : chronologique, gamme de prix, catégorie."
+  - image: "plan"
+    title: "La carte"
+    text: "Les lieux sur une carte Mapbox, chacun avec l'icône de sa catégorie."
+    alt: "Une carte où une vingtaine d'épingles se regroupent au centre."
+architecture:
+  intro: "Une app mobile Flutter, avec Firebase pour les comptes et les données, et Mapbox pour la carte."
+  groups: []
+  nodes:
+    - { id: "user", at: [1, 1], kind: "user", title: "Le voyageur", text: "Garde ou passe les lieux autour de lui." }
+    - { id: "app", at: [2, 1], kind: "app", title: "L'app Flutter", text: "iOS et Android, cinq onglets : autour de moi, likes, carte, carnets, profil." }
+    - { id: "firebase", at: [3, 1], kind: "ext", title: "Firebase", text: "Les comptes, les centres d'intérêt, les lieux aimés et les carnets." }
+    - { id: "mapbox", at: [2, 2], kind: "ext", title: "Mapbox", text: "La carte et ses épingles." }
+  links:
+    - { from: "user", to: "app", label: "un geste" }
+    - { from: "app", to: "firebase", label: "le compte", both: true }
+    - { from: "app", to: "mapbox", label: "la carte" }
+crew:
+  title: "À six"
+  text: "Un projet d'école d'ingénieur, à six, mené jusqu'au business plan. J'y étais développeur."
+  log:
+    - title: "Période"
+      text: "2023."
+    - title: "Méthode"
+      text: "L'agilité avec Scrum ; les écrans dessinés dans Figma et montrés à de futurs utilisateurs avant la première ligne de code."

@@ -45,6 +45,12 @@ export const FICHE: Record<
       states: Record<"online" | "asleep" | "offline", string>;
     };
     pictures: string;
+    /** « En images » : les écrans de l'app, chacun avec ce qu'il montre ({name} : le projet). */
+    screens: string;
+    /** « Sous le capot » : l'architecture, en schéma (FicheSchema.astro) ; `swipe`, sur un écran étroit. */
+    hood: { kicker: string; title: string; aria: string; swipe: string };
+    /** « L'équipage » : seul ou en équipe ; puis le carnet de bord. */
+    crew: { kicker: string; log: string };
     /** {name} : le projet. */
     question: string;
   }
@@ -78,6 +84,9 @@ export const FICHE: Record<
       states: { online: "En ligne", asleep: "Se réveille", offline: "Hors ligne" },
     },
     pictures: "En images",
+    screens: "{name}, écran par écran",
+    hood: { kicker: "Sous le capot", title: "L'architecture", aria: "Le schéma de l'architecture", swipe: "Fais glisser le schéma de côté →" },
+    crew: { kicker: "L'équipage", log: "Carnet de bord" },
     question: "Une question sur {name} ?",
   },
   en: {
@@ -109,6 +118,9 @@ export const FICHE: Record<
       states: { online: "Live", asleep: "Waking up", offline: "Offline" },
     },
     pictures: "In pictures",
+    screens: "{name}, screen by screen",
+    hood: { kicker: "Under the hood", title: "The architecture", aria: "The architecture diagram", swipe: "Swipe the diagram sideways →" },
+    crew: { kicker: "The crew", log: "Logbook" },
     question: "A question about {name}?",
   },
 };

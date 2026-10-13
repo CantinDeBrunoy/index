@@ -4,16 +4,51 @@ features:
   - title: "Two stations, one route"
     text: "Pick the start and the end, and the shortest path appears."
   - title: "The network as a graph"
-    text: "Stations are the nodes, and the sections between them, the edges."
+    text: "Each station is a node, once per line that serves it; the sections between them are the edges."
   - title: "A desktop app"
-    text: "A Java window to pick your stations and read the route."
+    text: "A Java window: two clicks on the map, and the route is drawn on it."
 choices:
   - title: "Dijkstra"
     text: "It finds the shortest path in a graph with positive distances, with an exact result that's easy to check by hand."
   - title: "Java and Swing"
-    text: "A language and a toolkit I already knew, so all the effort could go into the algorithm."
+    text: "A language the team already knew, so all the effort could go into the algorithm."
 video:
   src: "/demos/metro-pathfinder.mp4"
   caption: "The metro map as a graph, a computed route, then Dijkstra and the code. Edited from the 2022 recording."
   width: 1280
   height: 720
+screens:
+  - image: "plan"
+    title: "The map"
+    text: "The metro map in a Swing window: click the departure station, then the arrival."
+    alt: "The Métro Pathfinder window: the Paris metro and RER map."
+  - image: "trajet"
+    title: "The route"
+    text: "The shortest path is drawn as blue dots on the map; the station-by-station detail is printed in the console."
+    alt: "The same map, with a route in blue dots from Pont de Levallois to the east of Paris."
+architecture:
+  intro: "A Java desktop application, with no database or network: the metro and its travel times fit in two text files, read at launch."
+  groups: []
+  nodes:
+    - { id: "files", at: [1, 1], kind: "file", title: "Two text files", text: "376 vertices, 473 sections and their durations; where each station sits on the map." }
+    - { id: "graph", at: [2, 1], kind: "data", title: "The graph", text: "A station served by three lines counts as three vertices." }
+    - { id: "algos", at: [3, 1], kind: "app", title: "The algorithms", text: "Depth-first search, Dijkstra for the shortest path, Kruskal for the spanning tree." }
+    - { id: "user", at: [2, 2], kind: "user", title: "Me", text: "Two clicks on the map." }
+    - { id: "ui", at: [3, 2], kind: "app", title: "The Swing window", text: "The map, and the route in blue dots; the detail is printed in the console." }
+  links:
+    - { from: "files", to: "graph", label: "read at launch" }
+    - { from: "graph", to: "algos", label: "vertices, edges" }
+    - { from: "user", to: "ui", label: "two clicks" }
+    - { from: "ui", to: "algos", label: "two stations, the route", both: true }
+crew:
+  title: "A crew of four"
+  text: "A graph theory project, with four of us. I wrote most of the code: reading the network, the graph and its three algorithms."
+  log:
+    - title: "Timeline"
+      text: "October 2022."
+    - title: "The course"
+      text: "“Métro, Boulot, Dodo”, in graph theory, at EFREI."
+    - title: "Method"
+      text: "One branch per person, then an eight-page report: the task split, the choice of language, the class diagram, and each algorithm explained."
+    - title: "Tools"
+      text: "Java, Swing, Eclipse and a Makefile."

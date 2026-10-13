@@ -17,3 +17,45 @@ choices:
 video:
   src: "/demos/index.mp4"
   caption: "Le départ, trois escales, la fiche de Hublot, puis le carnet et ses raccourcis vers les apps."
+screens:
+  - image: "escale"
+    title: "Le voyage"
+    text: "Chaque projet est une escale : une scène 3D, son accroche, et le choix entre sa fiche et l'escale suivante. Ici, celle d'INDEX."
+    alt: "L'escale d'INDEX sur ordinateur : un dossier ouvert sur le sommaire des dix projets, et le bouton « Faire connaissance »."
+  - image: "carnet"
+    title: "Le carnet"
+    text: "Les dix projets dans l'ordre et, en tête, les apps à ouvrir : leur point vert vient du Worker, qui vérifie qu'elles répondent."
+    alt: "Le carnet de voyage : les raccourcis des six apps en ligne, « statut vérifié il y a 3 min », et la liste des projets."
+  - image: "a-propos"
+    title: "À propos"
+    text: "Le passeport : mon parcours, en chiffres puis en lignes de métro."
+    alt: "La page À propos : mon nom, ma présentation, et la scène du passeport tamponné."
+architecture:
+  intro: "Un seul dépôt pnpm et Turborepo pour tous mes projets. Le portfolio est un site Astro statique, avec des scènes 3D rendues à l'avance, servi par un Worker Cloudflare qui vérifie aussi que les autres apps répondent."
+  groups:
+    - { label: "GitHub", from: [1, 1], to: [2, 1] }
+  nodes:
+    - { id: "repo", at: [1, 1], kind: "file", title: "Le dépôt", text: "pnpm et Turborepo : les apps, le site Astro, les paquets partagés." }
+    - { id: "gha", at: [2, 1], kind: "job", title: "GitHub Actions", text: "La CI sur ce qui change, un déploiement par app, un réveil toutes les 6 h." }
+    - { id: "apps", at: [3, 1], span: [1, 2], kind: "app", title: "Les apps", text: "Sur Cloudflare Workers ; Tonalli sur Vercel, avec sa base Supabase." }
+    - { id: "visitor", at: [1, 2], kind: "user", title: "Le visiteur", text: "Le voyage, les fiches, le carnet." }
+    - { id: "worker", at: [2, 2], kind: "server", title: "Worker index", text: "Sert le site et ses vidéos, /api/status et la connexion GitHub ; une tâche toutes les heures." }
+    - { id: "issues", at: [2, 3], kind: "ext", title: "Tickets GitHub", text: "Ouverts quand une app tombe, refermés quand elle revient." }
+  links:
+    - { from: "repo", to: "gha", label: "un push" }
+    - { from: "gha", to: "apps", label: "déploie, réveille" }
+    - { from: "visitor", to: "worker", label: "les pages, le statut", both: true }
+    - { from: "worker", to: "apps", label: "sonde toutes les heures" }
+    - { from: "worker", to: "issues", label: "si une app tombe" }
+crew:
+  title: "Seul à bord"
+  text: "Conçu et construit seul, avec l'aide de Claude Code. Je choisis, je relis chaque texte, et rien ne part en ligne sans mon accord."
+  log:
+    - title: "Période"
+      text: "Depuis octobre 2026."
+    - title: "Méthode"
+      text: "Les maquettes d'abord, variantes côte à côte ; puis le code, en commits conventionnels. Chaque texte des fiches relu et vérifié dans le code des projets."
+    - title: "Qualité"
+      text: "Une CI Turborepo qui ne vérifie que ce qui change (lint, types, tests, build) ; des tests Vitest sur la liste des projets et la connexion."
+    - title: "Mise en ligne"
+      text: "Un workflow de déploiement par app. Tout tient dans les offres gratuites, sans carte bancaire."

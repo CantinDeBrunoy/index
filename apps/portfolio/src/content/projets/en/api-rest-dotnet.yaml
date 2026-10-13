@@ -1,4 +1,4 @@
-# .NET REST API (Shard), la fiche en anglais. Vérifiée dans le code (le dépôt GitLab de l'école, privé) le 11 octobre 2026.
+# .NET REST API (Shard), la fiche en anglais. Vérifiée dans le code (le dépôt GitLab de l'école, public depuis) le 11 octobre 2026.
 why: "A C# school project: building, as a team, the server of a space strategy game, one version after another. Each version added rules, and the course's tests told us whether the API followed them."
 features:
   - title: "A universe to explore"
@@ -19,3 +19,49 @@ video:
   caption: "A real game on the API, run locally: the universe, a player, a journey, a mine, a battle, then the CI tests. Real requests and responses, with the waits cut."
   width: 1280
   height: 720
+screens:
+  - image: "systemes"
+    title: "The planets"
+    text: "A system, then one of its planets: the first version's routes, the ones I wrote."
+    alt: "The demo console: GET on a planet of a system, and its JSON response, a name and a size."
+  - image: "voyage"
+    title: "The journey"
+    text: "One game minute later, the scout has arrived: the response gives its system, its destination and its resources."
+    alt: "GET on a “scout” unit one minute later: its arrival system is highlighted."
+  - image: "combat"
+    title: "The fight"
+    text: "The admin places a fighter in the system; its weapons fire every six seconds, following a list of priority targets."
+    alt: "PUT of a fighter as admin: its health, priority targets and weapons."
+  - image: "tests"
+    title: "The tests"
+    text: "The GitLab CI results, version by version: from 8 to 45 integration tests, all passing."
+    alt: "Six green bars, v1 to v6: 8/8, 15/15, 21/21, 21/21, 45/45 and 21/21 tests passed."
+architecture:
+  intro: "The server for a space strategy game in ASP.NET Core: a REST API, a world kept in memory, and a clock you can swap out to test minutes of play in an instant."
+  groups:
+    - { label: "The server, in .NET 7", from: [1, 2], to: [3, 2] }
+  nodes:
+    - { id: "tests", at: [1, 1], kind: "ext", title: "The course's tests", text: "xUnit: whole games played against the API, with a fake clock." }
+    - { id: "api", at: [2, 1], kind: "server", title: "The ASP.NET Core API", text: "Systems, players, units, buildings; Basic authentication, an admin role." }
+    - { id: "other", at: [3, 1], kind: "ext", title: "Another Shard server", text: "A ship can jump there through a wormhole." }
+    - { id: "clock", at: [1, 2], kind: "job", title: "The clock", text: "The course's own: journeys, construction and combat wait on it." }
+    - { id: "game", at: [2, 2], kind: "app", title: "The game", text: "Units, mines, starports; a background job runs combat every 6 s." }
+    - { id: "memory", at: [3, 2], kind: "data", title: "In memory", text: "The world, generated at startup; MongoDB tried in v7, unfinished." }
+  links:
+    - { from: "tests", to: "api", label: "HTTP" }
+    - { from: "api", to: "other", label: "the jump: PUT, then 308" }
+    - { from: "api", to: "game", label: "dependency injection" }
+    - { from: "game", to: "clock", label: "waits" }
+    - { from: "game", to: "memory", label: "the world", both: true }
+crew:
+  title: "A crew of two"
+  text: "A course project, with two of us, mostly in pair programming. I wrote the beginning: the systems and planets routes, the first player and unit models, and moving the scouts; for the rest, from mines to combat, my teammate took the keyboard."
+  log:
+    - title: "Timeline"
+      text: "September 2023 to January 2024."
+    - title: "The course"
+      text: "A C# course at EFREI: the template, the clock and the grading tests came from the teacher."
+    - title: "Method"
+      text: "Pair programming, one branch per version, v1 to v7; each reaches prod through a merge request."
+    - title: "Quality"
+      text: "GitLab CI compiles, then runs the grading tests a day after each push; a bot writes the grade into the repository."

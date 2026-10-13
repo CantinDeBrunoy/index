@@ -9,33 +9,35 @@ import { speedUp } from "./demo-rate";
 
 const reduce = matchMedia("(prefers-reduced-motion: reduce)");
 
-for (const video of document.querySelectorAll<HTMLVideoElement>("video[data-demo]")) {
-  speedUp(video);
-  /** Mise en pause par le visiteur : on ne la relance plus. */
-  let held = false;
-  /** La pause qui vient d'ici (la démo a quitté l'écran), pas du visiteur. */
-  let ours = false;
+/** Les démos de la page, ou d'une fiche posée sous son escale au voyage (scripts/voyage-fiche.ts). */
+export function startDemos(scope: Document | Element = document) {
+  for (const video of scope.querySelectorAll<HTMLVideoElement>("video[data-demo]")) {
+    speedUp(video);
+    /** Mise en pause par le visiteur : on ne la relance plus. */
+    let held = false;
+    /** La pause qui vient d'ici (la démo a quitté l'écran), pas du visiteur. */
+    let ours = false;
 
-  video.addEventListener("pause", () => {
-    if (!ours) held = true;
-    ours = false;
-  });
-  video.addEventListener("play", () => (held = false));
+    video.addEventListener("pause", () => {
+      if (!ours) held = true;
+      ours = false;
+    });
+    video.addEventListener("play", () => (held = false));
 
-  new IntersectionObserver(
-    ([entry]) => {
-      if (reduce.matches || held || !entry) return;
-      if (entry.isIntersecting) {
-        video.preload = "auto";
-        void video.play().catch((error: unknown) => console.debug("fiche : lecture de la démo refusée", error));
-      } else if (!video.paused) {
-        ours = true;
-        video.pause();
-      }
-    },
-    { threshold: 0.4 },
-  ).observe(video);
+    new IntersectionObserver(
+      ([entry]) => {
+        if (reduce.matches || held || !entry) return;
+        if (entry.isIntersecting) {
+          video.preload = "auto";
+          void video.play().catch((error: unknown) => console.debug("fiche : lecture de la démo refusée", error));
+        } else if (!video.paused) {
+          ours = true;
+          video.pause();
+        }
+      },
+      { threshold: 0.4 },
+    ).observe(video);
+  }
 }
 
-// Un module : ses noms ne se mêlent pas à ceux des autres scripts.
-export {};
+startDemos();

@@ -1,6 +1,8 @@
 /**
  * La fiche sous l'escale (components/voyage/VoyagePage.astro, .fiche-sous) : on ne quitte pas le voyage pour la lire.
- * C'est la fiche de sa page (FichePage.astro, embedded), posée sous l'écran des escales.
+ * C'est la fiche de sa page (FichePage.astro, embedded), posée sous l'écran des escales. Le voyage ne la porte pas :
+ *   il la charge quand on l'ouvre (ou qu'on approche son bouton), depuis sa page seule (pages/fiches), avec les
+ *   feuilles de style qui lui manquent, puis démarre ce qu'elle contient. Sans réponse, on va sur sa page.
  * - « La fiche du projet » l'ouvre et la page y glisse, jusqu'à son haut ; sa bande « Reprendre le voyage » et son
  *   copilote ramènent à l'escale.
  * - À la molette ou au doigt, l'escale est retenue en haut : un petit coup laisse dépasser le bord de la fiche, qui
@@ -11,6 +13,13 @@
  * Le voyage (scripts/voyage.ts) dit sur quelle escale on est et si l'on peut l'ouvrir ; il la referme sous son
  * voile quand on change d'escale.
  */
+
+import { watchStatus } from "./brief-status";
+import { startDemos } from "./demo-video";
+import { startPoints } from "./fiche-points";
+import { watchOwner } from "./owner";
+import { startResume } from "./resume-button";
+import { startScenes } from "./scene-video";
 
 /** Jusqu'où le bord de la fiche dépasse quand on tire, et la souplesse de cette résistance. */
 const PEEK_PX = 96;
@@ -28,6 +37,26 @@ const MAGNET_MS = 450;
 
 const easeOut = (k: number) => 1 - (1 - k) ** 4;
 const easeInOut = (k: number) => (k < 0.5 ? 4 * k ** 3 : 1 - (-2 * k + 2) ** 3 / 2);
+
+/** Une feuille de style de la fiche que le voyage n'a pas encore : la fiche attend qu'elle soit là pour s'afficher. */
+const stylesheet = (href: string) => {
+  if ([...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].some((link) => link.href === href)) return Promise.resolve();
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  const ready = new Promise<void>((done) => (link.onload = link.onerror = () => done()));
+  document.head.appendChild(link);
+  return ready;
+};
+/** Ses styles écrits dans la page (les petits, et tous pendant le développement), une fois chacun. */
+const styles = new Set<string>();
+const inlineStyle = (css: string) => {
+  if (!css || styles.has(css)) return;
+  styles.add(css);
+  const style = document.createElement("style");
+  style.textContent = css;
+  document.head.appendChild(style);
+};
 
 export interface FicheHooks {
   /** L'escale affichée, si l'on peut ouvrir sa fiche (pas pendant une transition ni l'accueil du copilote) ; -1 sinon. */
@@ -70,16 +99,61 @@ export function startFiches(root: HTMLElement, hooks: FicheHooks) {
     root.classList.toggle("fiche-reading", on);
     hooks.reading(on);
   };
+  /** La fiche à l'écran : les affiches de ses vidéos se chargent (data-poster), son copilote se met à sa place. */
+  const reveal = (fiche: HTMLElement) => {
+    for (const video of fiche.querySelectorAll<HTMLVideoElement>("video[data-poster]")) video.poster ||= video.dataset.poster ?? "";
+    document.dispatchEvent(new CustomEvent("fiche:revele"));
+  };
+
+  /** La fiche, chargée une fois pour toutes ; sa place, d'ici là, a la couleur de son en-tête. */
+  const loads = new Map<number, Promise<boolean>>();
+  const fill = async (fiche: HTMLElement) => {
+    const src = new URL(fiche.dataset.ficheSrc ?? "", location.href);
+    const response = await fetch(src);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const page = new DOMParser().parseFromString(await response.text(), "text/html");
+    const links = [...page.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')];
+    await Promise.all(links.map((link) => stylesheet(new URL(link.getAttribute("href") ?? "", src).href)));
+    for (const style of page.head.querySelectorAll("style")) inlineStyle(style.textContent ?? "");
+    // Ses scripts ne tournent pas ici : le voyage démarre lui-même ce qu'elle contient.
+    for (const script of page.body.querySelectorAll("script")) script.remove();
+    fiche.replaceChildren(...[...page.body.childNodes].map((node) => document.importNode(node, true)));
+    fiche.classList.add("is-loaded");
+    startScenes(fiche);
+    startDemos(fiche);
+    startPoints(fiche);
+    watchStatus(fiche);
+    startResume(fiche);
+    void watchOwner(fiche);
+    if (open === fiche) reveal(fiche);
+    return true;
+  };
+  const load = (n: number) => {
+    const fiche = fiches.get(n);
+    if (!fiche) return Promise.resolve(false);
+    let loading = loads.get(n);
+    if (!loading) {
+      loading = fill(fiche).catch((error: unknown) => {
+        console.debug("voyage : fiche introuvable", error);
+        loads.delete(n);
+        // Ouverte entre-temps : on va sur sa page, comme sans script.
+        const page = root.querySelector<HTMLAnchorElement>(`[data-stop="${n}"] [data-fiche-open]`);
+        if (open === fiche && page) location.assign(page.href);
+        return false;
+      });
+      loads.set(n, loading);
+    }
+    return loading;
+  };
+
   const show = (n: number) => {
     const fiche = fiches.get(n);
     if (!fiche) return false;
     open = fiche;
     openStop = n;
-    // L'affiche de sa démo ne se charge qu'à l'ouverture (FicheCorps.astro, lazyPoster).
-    for (const video of fiche.querySelectorAll<HTMLVideoElement>("video[data-poster]")) video.poster ||= video.dataset.poster ?? "";
+    void load(n);
     fiche.classList.add("is-open");
-    // Son copilote se met à sa place, maintenant qu'elle est là (scripts/resume-button.ts).
-    document.dispatchEvent(new CustomEvent("fiche:revele"));
+    if (fiche.classList.contains("is-loaded")) reveal(fiche);
     return true;
   };
   const hide = () => {
@@ -238,6 +312,15 @@ export function startFiches(root: HTMLElement, hooks: FicheHooks) {
     event.preventDefault();
     openFiche(n, false);
   });
+
+  // On approche du bouton de la fiche : elle se charge déjà, elle sera là au clic.
+  const soon = (event: Event) => {
+    const opener = (event.target as Element).closest<HTMLElement>("[data-fiche-open]");
+    const n = Number(opener?.closest<HTMLElement>("[data-stop]")?.dataset.stop);
+    if (n > 0) void load(n);
+  };
+  root.addEventListener("pointerover", soon);
+  root.addEventListener("focusin", soon);
 
   root.addEventListener("click", (event) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

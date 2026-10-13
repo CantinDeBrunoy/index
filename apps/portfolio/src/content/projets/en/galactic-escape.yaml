@@ -11,7 +11,47 @@ choices:
   - title: "Three.js for the scene, React for the rest"
     text: "The game itself is 3D; the menus, the inventory and the timer are plain React components."
   - title: "Game logic kept apart, and tested"
-    text: "Tile placement, the inventory and map generation live outside the 3D code, checked by Vitest tests."
+    text: "Tile placement, the inventory and map generation live outside the 3D code, checked by tests: Jest back then, Vitest since the 2026 port."
 video:
   src: "/demos/galactic-escape.mp4"
   caption: "The menu on Mars, then a game: every tile laid extends the path, with the monster in pursuit."
+screens:
+  - image: "menu"
+    title: "The menu on Mars"
+    text: "A planet spinning in 3D behind the menus: play, scores, settings, help and credits."
+    alt: "The Galactic Escape menu: six green entries on the left, and Mars spinning on the right."
+  - image: "depart"
+    title: "The first tile"
+    text: "The inventory on the left; around Michel, three places to lay a tile. The preview turns red when its doors don't connect."
+    alt: "The start of a game: the inventory on the left, three places around the alien, the top one in red, and “Place une case pour commencer”."
+  - image: "chemin"
+    title: "The path"
+    text: "Tiles laid down draw the road in blue; at the top, the timer and the score, which climbs faster the longer the game lasts."
+    alt: "A game after 21 seconds: a path of blue tiles under the alien, the timer and a score of 14."
+architecture:
+  intro: "A React game with no server. The game logic is plain JavaScript; a Three.js scene redraws it on every frame."
+  groups: []
+  nodes:
+    - { id: "ui", at: [1, 1], kind: "app", title: "React", text: "The menus, the five-slot inventory, the timer and the score." }
+    - { id: "store", at: [2, 1], kind: "app", title: "The store", text: "A context and a reducer: every action goes to the logic and to the 3D." }
+    - { id: "core", at: [3, 1], kind: "file", title: "The logic", text: "Plain JavaScript: the grid, four-door tiles, the crumbling edge." }
+    - { id: "storage", at: [1, 2], kind: "data", title: "localStorage", text: "Settings, and the best score for each difficulty." }
+    - { id: "three", at: [2, 2], span: [2, 1], kind: "app", title: "Three.js", text: "Redraws the grid every frame; a ray under the mouse aims at the places to lay a tile." }
+  links:
+    - { from: "ui", to: "store", label: "the moves" }
+    - { from: "store", to: "core", label: "the actions" }
+    - { from: "ui", to: "storage", label: "settings, scores", both: true }
+    - { from: "three", to: "store", label: "the clicks" }
+    - { from: "core", to: "three", label: "the grid's state" }
+crew:
+  title: "A crew of five"
+  text: "A school project, with five of us. I loaded the character and the first meteors in 3D, then built the inventory and tile rotation, the difficulty menu, the timer, the score, and the help and credits pages. The game engine and the 3D scene were a teammate's work."
+  log:
+    - title: "Timeline"
+      text: "January to April 2022; brought into INDEX in 2026."
+    - title: "Method"
+      text: "Git flow: master, develop and one branch per ticket. 78 tickets labelled “must have” or “nice to have”, four milestones, 60 reviewed pull requests."
+    - title: "Quality"
+      text: "ESLint and Prettier; Jest tests on the game logic, moved to Vitest in the 2026 port."
+    - title: "Shipping"
+      text: "On Heroku back then; today, in a Cloudflare Worker."

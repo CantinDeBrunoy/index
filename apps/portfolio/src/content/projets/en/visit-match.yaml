@@ -19,3 +19,40 @@ video:
   caption: "Sign-up, places to keep or skip, trip notebooks, likes, the map and the profile, with a test account."
   width: 1280
   height: 720
+screens:
+  - image: "carte-lieu"
+    title: "A place"
+    text: "Places around you come one at a time, with their distance, category and price: skip it, add it to a notebook, or like it."
+    alt: "The Panthéon card: 2 km away, monument, two dollar signs, and the skip, notebook and like buttons."
+  - image: "detail"
+    title: "Its page"
+    text: "A description, photos, and a button to see it on the map."
+    alt: "The Panthéon page: distance, category, price, description, photo and “Voir sur le plan”."
+  - image: "likes"
+    title: "Liked places"
+    text: "They can be sorted by date, price range or category."
+    alt: "The list of liked places, Notre-Dame and the Trocadéro, under the sort menu: chronological, price range, category."
+  - image: "plan"
+    title: "The map"
+    text: "Places on a Mapbox map, each with its category icon."
+    alt: "A map where about twenty pins cluster in the centre."
+architecture:
+  intro: "A Flutter mobile app, with Firebase for accounts and data, and Mapbox for the map."
+  groups: []
+  nodes:
+    - { id: "user", at: [1, 1], kind: "user", title: "The traveller", text: "Keeps or skips the places around them." }
+    - { id: "app", at: [2, 1], kind: "app", title: "The Flutter app", text: "iOS and Android, five tabs: around me, likes, map, notebooks, profile." }
+    - { id: "firebase", at: [3, 1], kind: "ext", title: "Firebase", text: "Accounts, interests, liked places and notebooks." }
+    - { id: "mapbox", at: [2, 2], kind: "ext", title: "Mapbox", text: "The map and its pins." }
+  links:
+    - { from: "user", to: "app", label: "a swipe" }
+    - { from: "app", to: "firebase", label: "the account", both: true }
+    - { from: "app", to: "mapbox", label: "the map" }
+crew:
+  title: "A crew of six"
+  text: "An engineering school project, with six of us, taken all the way to a business plan. I was a developer."
+  log:
+    - title: "Timeline"
+      text: "2023."
+    - title: "Method"
+      text: "Agile, with Scrum; screens drawn in Figma and shown to future users before the first line of code."

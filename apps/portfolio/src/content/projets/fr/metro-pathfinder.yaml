@@ -4,16 +4,51 @@ features:
   - title: "Deux stations, un trajet"
     text: "On choisit le départ et l'arrivée, et le plus court chemin s'affiche."
   - title: "Le réseau en graphe"
-    text: "Les stations sont les nœuds, et les tronçons entre elles, les arêtes."
+    text: "Chaque station est un nœud, une fois par ligne qui la dessert ; les tronçons entre elles sont les arêtes."
   - title: "Une application de bureau"
-    text: "Une fenêtre Java pour choisir ses stations et lire l'itinéraire."
+    text: "Une fenêtre Java : deux clics sur le plan, et le trajet s'y dessine."
 choices:
   - title: "Dijkstra"
     text: "Il trouve le plus court chemin dans un graphe aux distances positives, avec un résultat exact et simple à vérifier à la main."
   - title: "Java et Swing"
-    text: "Un langage et une interface que je connaissais déjà, pour mettre tout l'effort sur l'algorithme."
+    text: "Un langage que l'équipe connaissait déjà, pour mettre tout l'effort sur l'algorithme."
 video:
   src: "/demos/metro-pathfinder.mp4"
   caption: "Le plan du métro en graphe, un trajet calculé, puis Dijkstra et le code. Monté d'après l'enregistrement de 2022."
   width: 1280
   height: 720
+screens:
+  - image: "plan"
+    title: "Le plan"
+    text: "Le plan du métro dans une fenêtre Swing : on clique la station de départ, puis celle d'arrivée."
+    alt: "La fenêtre de Métro Pathfinder : le plan du métro et du RER parisiens."
+  - image: "trajet"
+    title: "Le trajet"
+    text: "Le plus court chemin se dessine en points bleus sur le plan ; le détail, station par station, s'écrit dans la console."
+    alt: "Le même plan, avec un trajet en points bleus de Pont de Levallois jusqu'à l'est de Paris."
+architecture:
+  intro: "Une application Java de bureau, sans base ni réseau : le métro et ses temps de trajet tiennent dans deux fichiers texte, lus au lancement."
+  groups: []
+  nodes:
+    - { id: "files", at: [1, 1], kind: "file", title: "Deux fichiers texte", text: "376 sommets, 473 tronçons et leurs durées ; la place de chaque station sur le plan." }
+    - { id: "graph", at: [2, 1], kind: "data", title: "Le graphe", text: "Une station desservie par trois lignes compte trois sommets." }
+    - { id: "algos", at: [3, 1], kind: "app", title: "Les algorithmes", text: "Parcours en profondeur, Dijkstra pour le plus court chemin, Kruskal pour l'arbre couvrant." }
+    - { id: "user", at: [2, 2], kind: "user", title: "Moi", text: "Deux clics sur le plan." }
+    - { id: "ui", at: [3, 2], kind: "app", title: "La fenêtre Swing", text: "Le plan, et le trajet en points bleus ; le détail s'écrit dans la console." }
+  links:
+    - { from: "files", to: "graph", label: "lus au lancement" }
+    - { from: "graph", to: "algos", label: "sommets, arêtes" }
+    - { from: "user", to: "ui", label: "deux clics" }
+    - { from: "ui", to: "algos", label: "deux stations, le trajet", both: true }
+crew:
+  title: "À quatre"
+  text: "Un projet de théorie des graphes, à quatre. J'ai écrit l'essentiel du code : la lecture du réseau, le graphe et ses trois algorithmes."
+  log:
+    - title: "Période"
+      text: "Octobre 2022."
+    - title: "Le cours"
+      text: "« Métro, Boulot, Dodo », en théorie des graphes, à l'EFREI."
+    - title: "Méthode"
+      text: "Une branche par personne, puis un rapport de huit pages : le partage des tâches, le choix du langage, le diagramme de classes, et chaque algorithme expliqué."
+    - title: "Outils"
+      text: "Java, Swing, Eclipse et un Makefile."

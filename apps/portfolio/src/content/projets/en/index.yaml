@@ -17,3 +17,45 @@ choices:
 video:
   src: "/demos/index.mp4"
   caption: "The departure, three stops, Hublot's page, then the journal and its shortcuts to the apps."
+screens:
+  - image: "escale"
+    title: "The journey"
+    text: "Each project is a stop: a 3D scene, its pitch, and the choice between its page and the next stop. Here, INDEX's own."
+    alt: "The INDEX stop on a computer: a folder open on the contents of the ten projects, and the “Faire connaissance” button."
+  - image: "carnet"
+    title: "The logbook"
+    text: "The ten projects in order and, at the top, the apps to open: their green dot comes from the Worker, which checks that they answer."
+    alt: "The travel logbook: shortcuts to the six live apps, “statut vérifié il y a 3 min”, and the list of projects."
+  - image: "a-propos"
+    title: "About"
+    text: "The passport: my background, in figures and then as metro lines."
+    alt: "The About page: my name, my introduction, and the stamped passport scene."
+architecture:
+  intro: "A single pnpm and Turborepo repository for all my projects. The portfolio is a static Astro site, with 3D scenes rendered ahead of time, served by a Cloudflare Worker that also checks the other apps answer."
+  groups:
+    - { label: "GitHub", from: [1, 1], to: [2, 1] }
+  nodes:
+    - { id: "repo", at: [1, 1], kind: "file", title: "The repository", text: "pnpm and Turborepo: the apps, the Astro site, the shared packages." }
+    - { id: "gha", at: [2, 1], kind: "job", title: "GitHub Actions", text: "CI on whatever changed, one deployment per app, a wake-up call every 6 h." }
+    - { id: "apps", at: [3, 1], span: [1, 2], kind: "app", title: "The apps", text: "On Cloudflare Workers; Tonalli on Vercel, with its Supabase database." }
+    - { id: "visitor", at: [1, 2], kind: "user", title: "The visitor", text: "The journey, the project pages, the logbook." }
+    - { id: "worker", at: [2, 2], kind: "server", title: "index Worker", text: "Serves the site and its videos, /api/status and GitHub sign-in; a job every hour." }
+    - { id: "issues", at: [2, 3], kind: "ext", title: "GitHub issues", text: "Opened when an app goes down, closed when it comes back." }
+  links:
+    - { from: "repo", to: "gha", label: "a push" }
+    - { from: "gha", to: "apps", label: "deploys, wakes" }
+    - { from: "visitor", to: "worker", label: "pages, status", both: true }
+    - { from: "worker", to: "apps", label: "probes every hour" }
+    - { from: "worker", to: "issues", label: "if an app goes down" }
+crew:
+  title: "Solo flight"
+  text: "Designed and built on my own, with the help of Claude Code. I choose, I review every text, and nothing goes live without my say-so."
+  log:
+    - title: "Timeline"
+      text: "Since October 2026."
+    - title: "Method"
+      text: "Mock-ups first, variants side by side; then the code, in conventional commits. Every project page text reviewed and checked against the projects' code."
+    - title: "Quality"
+      text: "Turborepo CI that only checks what changed (lint, types, tests, build); Vitest tests on the project list and the sign-in."
+    - title: "Shipping"
+      text: "One deployment workflow per app. Everything fits in free tiers, with no credit card."

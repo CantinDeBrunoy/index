@@ -6,7 +6,7 @@ features:
   - title: "Every six hours"
     text: "A bot checks the round-trip prices of each watch."
   - title: "An alert, not a flood"
-    text: "A notification when a price drops below the threshold; the same deal then stays quiet for 30 days, and only a cheaper one rings again."
+    text: "A notification when a price drops below the threshold: on each check, at most one per watch and per departure month, for the cheapest deal. A deal already sent, at the same price, then stays quiet for 30 days."
 choices:
   - title: "GitHub Actions as the server"
     text: "The bot runs as a free scheduled job, with no machine to look after."
@@ -19,3 +19,48 @@ video:
   caption: "Deals under the threshold, the watches, then a new one to Reykjavik. With fictional watches and prices."
   width: 1280
   height: 720
+screens:
+  - image: "bons-plans"
+    title: "The deals"
+    text: "Offers under the threshold, with dates, airports, stops and how far below my maximum price they are."
+    alt: "Hublot in demo mode: three deals to Lisbon, from €84 to €96, each under the €120 threshold."
+  - image: "surveillances"
+    title: "My watches"
+    text: "A destination, a period, a length of stay and a maximum price; below, the best price for each departure month."
+    alt: "The Lisbon watch, €120 at most, with the table of the best price per departure month."
+  - image: "nouvelle"
+    title: "A new watch"
+    text: "Cities are searched by name. Once the watch is saved, the robot is restarted and the page waits for its first prices."
+    alt: "The “Nouvelle surveillance” dialog: “Rey” typed, Reykjavik suggested, then the period, the stay and the maximum price."
+architecture:
+  intro: "No server to maintain: a GitHub Actions robot checks the prices, stores them in JSON files in the repository and alerts me on my phone. A page, served by a Cloudflare Worker, lets me manage my watches."
+  groups:
+    - { label: "Cloudflare", from: [2, 1], to: [3, 1] }
+    - { label: "GitHub", from: [2, 2], to: [2, 3] }
+  nodes:
+    - { id: "page", at: [1, 1], kind: "app", title: "The page", text: "The deals and my watches; read-only for visitors." }
+    - { id: "worker", at: [2, 1], kind: "server", title: "hublot Worker", text: "The only one holding the GitHub key; lets just a few requests through." }
+    - { id: "hub", at: [3, 1], kind: "server", title: "INDEX Worker", text: "GitHub sign-in: it tells whether the session is mine." }
+    - { id: "repo", at: [2, 2], kind: "file", title: "JSON files", text: "The watches, latest prices, history and alerts already sent." }
+    - { id: "robot", at: [2, 3], kind: "job", title: "The robot", text: "GitHub Actions, every 6 hours: checks prices, decides on alerts." }
+    - { id: "tp", at: [1, 3], kind: "ext", title: "Travelpayouts", text: "Round-trip prices from Paris." }
+    - { id: "ntfy", at: [3, 3], kind: "ext", title: "ntfy", text: "The alert, on my phone." }
+  links:
+    - { from: "page", to: "worker", label: "once signed in", both: true }
+    - { from: "worker", to: "hub", label: "whose session?" }
+    - { from: "worker", to: "repo", label: "watches, prices", both: true }
+    - { from: "robot", to: "repo", label: "the checks", both: true }
+    - { from: "robot", to: "tp", label: "the prices", both: true }
+    - { from: "robot", to: "ntfy", label: "under the threshold" }
+crew:
+  title: "Solo flight"
+  text: "A tool for myself, built on my own with the help of Claude Code. The robot works too: most of the project's commits are its price checks."
+  log:
+    - title: "Timeline"
+      text: "Late September 2026; in October, the page moved to Cloudflare, with GitHub sign-in."
+    - title: "Method"
+      text: "Conventional commits; the API's rules, discovered on the real API, kept as tests."
+    - title: "Quality"
+      text: "About 80 Vitest tests, including real API responses; TypeScript checked in three passes (the robot, the page, the Worker)."
+    - title: "Shipping"
+      text: "The robot runs in GitHub Actions; the page, in a Cloudflare Worker redeployed on every push."

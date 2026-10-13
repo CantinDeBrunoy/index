@@ -1,0 +1,433 @@
+---
+/**
+ * Le schéma de l'architecture d'un projet (« Sous le capot ») : des boîtes posées sur une grille, des flèches
+ * droites entre elles, avec ce qui circule écrit dessus, et des zones en pointillés autour de ce qui tourne au
+ * même endroit (le navigateur, Cloudflare, GitHub…).
+ *
+ * La grille alterne les pistes : une colonne de boîtes, une colonne de flèches, une colonne de boîtes…, et de même
+ * pour les rangées. Une flèche occupe les pistes entre ses deux boîtes : elle tombe juste sans rien mesurer, et
+ * sans script. Deux boîtes reliées partagent donc une rangée (flèche horizontale) ou une colonne (verticale) ;
+ * une flèche en diagonale arrête la construction. Sur un écran étroit, le schéma garde sa largeur et défile de côté.
+ */
+import { typo, type Lang } from "../../i18n/voyage";
+
+type Cell = [number, number];
+export interface SchemaNode {
+  id: string;
+  /** [colonne, rangée], à partir de 1. */
+  at: Cell;
+  /** [colonnes, rangées] occupées, [1, 1] par défaut. */
+  span?: Cell;
+  kind: "user" | "app" | "server" | "data" | "job" | "ext" | "file";
+  title: string;
+  text: string;
+}
+export interface SchemaLink {
+  from: string;
+  to: string;
+  label?: string;
+  both: boolean;
+}
+export interface SchemaGroup {
+  label: string;
+  from: Cell;
+  to: Cell;
+}
+interface Props {
+  lang: Lang;
+  slug: string;
+  nodes: SchemaNode[];
+  links: SchemaLink[];
+  groups: SchemaGroup[];
+  aria: string;
+  /** L'invitation à faire défiler, sur un écran étroit. */
+  swipe: string;
+}
+
+const { lang, slug, nodes, links, groups, aria, swipe } = Astro.props;
+const T = (text: string) => typo(lang, text);
+
+const box = (n: SchemaNode) => {
+  const [cols, rows] = n.span ?? [1, 1];
+  return { c1: n.at[0], r1: n.at[1], c2: n.at[0] + cols - 1, r2: n.at[1] + rows - 1 };
+};
+const byId = new Map(nodes.map((n) => [n.id, n]));
+const columns = Math.max(...nodes.map((n) => box(n).c2));
+const rows = Math.max(...nodes.map((n) => box(n).r2));
+
+// Les pistes : boîtes en 1fr, flèches de largeur fixe entre elles ; rangées de boîtes à leur hauteur, flèches fixes.
+const tracks = (count: number, node: string, gap: string) =>
+  Array.from({ length: count }, (_, k) => (k ? `${gap} ${node}` : node)).join(" ");
+const gridStyle = [
+  `grid-template-columns: ${tracks(columns, "minmax(0, 1fr)", "var(--gap-x)")}`,
+  `grid-template-rows: ${tracks(rows, "auto", "var(--gap-y)")}`,
+  `--min: ${columns * 190 + (columns - 1) * 116 + 40}px`,
+].join("; ");
+
+const area = (c1: number, r1: number, c2: number, r2: number) =>
+  `grid-column: ${2 * c1 - 1} / ${2 * c2}; grid-row: ${2 * r1 - 1} / ${2 * r2}`;
+
+const arrows = links.map((link) => {
+  const from = byId.get(link.from);
+  const to = byId.get(link.to);
+  if (!from || !to) throw new Error(`Schéma de ${slug} : boîte inconnue dans ${link.from} → ${link.to}`);
+  const a = box(from);
+  const b = box(to);
+  const rowsShared = [Math.max(a.r1, b.r1), Math.min(a.r2, b.r2)] as const;
+  const colsShared = [Math.max(a.c1, b.c1), Math.min(a.c2, b.c2)] as const;
+  const label = link.label ? T(link.label) : undefined;
+  const said = `${from.title} ${link.both ? "↔" : "→"} ${to.title}`;
+  // Côte à côte : la flèche occupe les colonnes entre elles, sur les rangées qu'elles partagent.
+  if (rowsShared[0] <= rowsShared[1] && (a.c2 < b.c1 || b.c2 < a.c1)) {
+    const [left, right] = a.c2 < b.c1 ? [a, b] : [b, a];
+    return {
+      axis: "h",
+      dir: link.both ? "both" : a.c2 < b.c1 ? "forward" : "back",
+      style: `grid-column: ${2 * left.c2} / ${2 * right.c1 - 1}; grid-row: ${2 * rowsShared[0] - 1} / ${2 * rowsShared[1]}`,
+      label,
+      said,
+    };
+  }
+  // L'une au-dessus de l'autre : la flèche occupe les rangées entre elles, au milieu des colonnes qu'elles partagent.
+  if (colsShared[0] <= colsShared[1] && (a.r2 < b.r1 || b.r2 < a.r1)) {
+    const [top, bottom] = a.r2 < b.r1 ? [a, b] : [b, a];
+    return {
+      axis: "v",
+      dir: link.both ? "both" : a.r2 < b.r1 ? "forward" : "back",
+      style: `grid-column: ${2 * colsShared[0] - 1} / ${2 * colsShared[1]}; grid-row: ${2 * top.r2} / ${2 * bottom.r1 - 1}`,
+      label,
+      said,
+    };
+  }
+  throw new Error(`Schéma de ${slug} : ${link.from} → ${link.to} n'est ni sur une rangée ni sur une colonne.`);
+});
+
+// Les pictogrammes, au trait de laiton : 24 × 24.
+const ICONS: Record<SchemaNode["kind"], string> = {
+  user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20.5c.8-3.6 3.8-6 7.5-6s6.7 2.4 7.5 6",
+  app: "M7 2.5h10a1.5 1.5 0 0 1 1.5 1.5v16a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 20V4A1.5 1.5 0 0 1 7 2.5zM10.5 18.5h3",
+  server: "M4 4.5h16v6H4zM4 13.5h16v6H4zM7.5 7.5h.01M7.5 16.5h.01",
+  data: "M4.5 6c0-1.7 3.4-3 7.5-3s7.5 1.3 7.5 3-3.4 3-7.5 3-7.5-1.3-7.5-3zM4.5 6v12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6M4.5 12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3",
+  job: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
+  ext: "M7 18.5h10.5a4 4 0 0 0 .6-8 6 6 0 0 0-11.5 1.6A3.3 3.3 0 0 0 7 18.5z",
+  file: "M6.5 2.5h7l4 4v15h-11zM13.5 2.5v4h4M9 12.5h6M9 16h6",
+};
+---
+
+<p class="schema-swipe" aria-hidden="true">{swipe}</p>
+<div class="schema-scroll">
+  <div class="schema" style={gridStyle} role="group" aria-label={aria}>
+    {
+      groups.map((g) => (
+        <div class="zone" style={area(g.from[0], g.from[1], g.to[0], g.to[1])}>
+          <span class="zone__label">{g.label}</span>
+        </div>
+      ))
+    }
+    {
+      nodes.map((n) => {
+        const b = box(n);
+        return (
+          <div class:list={["node", `node--${n.kind}`, { "node--tall": b.r2 > b.r1 }]} style={area(b.c1, b.r1, b.c2, b.r2)}>
+            <span class="node__head">
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path d={ICONS[n.kind]} />
+              </svg>
+              <b>{n.title}</b>
+            </span>
+            <span class="node__text">{T(n.text)}</span>
+          </div>
+        );
+      })
+    }
+    {
+      arrows.map((arrow, k) => (
+        <div class:list={["link", `link--${arrow.axis}`, `link--${arrow.dir}`]} style={arrow.style}>
+          <span class="link__line" aria-hidden="true">
+            <span class="link__bead" style={`animation-delay: ${(k % 4) * 0.6}s`} />
+          </span>
+          <span class="link__label">
+            <span class="visually-hidden">{arrow.said}{arrow.label ? " : " : ""}</span>
+            {arrow.label}
+          </span>
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  /* Sur un écran étroit, le schéma garde sa largeur et défile de côté, sans barre visible. */
+  .schema-scroll {
+    margin: 40px calc(-1 * clamp(20px, 4vw, 48px)) 0;
+    padding: 0 clamp(20px, 4vw, 48px);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .schema-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .schema {
+    --gap-x: 116px;
+    --gap-y: 64px;
+    display: grid;
+    min-width: var(--min);
+    padding: 22px 18px 18px;
+  }
+
+  /* — Les zones : un cadre en pointillés autour de leurs boîtes, son nom posé sur le trait — */
+  .zone {
+    position: relative;
+    z-index: 0;
+    margin: -16px -14px;
+    border: 1.5px dashed color-mix(in srgb, var(--brass) 55%, transparent);
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--brass) 5%, transparent);
+  }
+  .zone__label {
+    position: absolute;
+    left: 18px;
+    top: -9px;
+    padding: 0 8px;
+    background: var(--paper);
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 16px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* — Les boîtes — */
+  .node {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px 15px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    background: var(--card);
+    box-shadow: 0 6px 18px rgba(36, 30, 24, 0.06);
+  }
+  .node__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .node__head svg {
+    flex: none;
+    fill: none;
+    stroke: var(--brass);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .node b {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+  .node__text {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  /* Sur plusieurs rangées : le texte au milieu, à hauteur des flèches. */
+  .node--tall {
+    justify-content: center;
+  }
+  /* Ce qui n'est pas à moi (un service, une API) : en pointillés, sur le papier. */
+  .node--ext {
+    border-style: dashed;
+    background: var(--paper);
+    box-shadow: none;
+  }
+  /* Les gens : sans cadre. */
+  .node--user {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* — Les flèches : un trait pointillé de laiton, sa pointe, une perle qui y passe, et ce qui circule — */
+  .link {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    min-width: 0;
+  }
+  .link__line {
+    position: absolute;
+    --dash: color-mix(in srgb, var(--brass) 85%, transparent);
+  }
+  .link__label {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .link__bead {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-pill);
+    background: var(--brass);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brass) 22%, transparent);
+  }
+
+  /* À l'horizontale : le trait au milieu de la rangée, le texte au-dessus. */
+  .link--h {
+    align-items: center;
+    justify-content: center;
+  }
+  .link--h .link__line {
+    left: 4px;
+    right: 4px;
+    top: 50%;
+    height: 2px;
+    margin-top: -1px;
+    background: repeating-linear-gradient(to right, var(--dash) 0 5px, transparent 5px 10px);
+  }
+  .link--h .link__label {
+    position: absolute;
+    bottom: calc(50% + 9px);
+    left: 50%;
+    width: max-content;
+    max-width: calc(100% - 8px);
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: var(--paper);
+    text-align: center;
+    transform: translateX(-50%);
+  }
+  .link--h .link__bead {
+    top: -2.5px;
+    animation: perle-h 2.6s ease-in-out infinite;
+  }
+  /* À la verticale : le trait au milieu de la colonne, le texte à sa droite. */
+  .link--v .link__line {
+    left: 50%;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    margin-left: -1px;
+    background: repeating-linear-gradient(to bottom, var(--dash) 0 5px, transparent 5px 10px);
+  }
+  .link--v .link__label {
+    position: absolute;
+    top: 50%;
+    left: calc(50% + 10px);
+    max-width: calc(50% - 10px);
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: var(--paper);
+    transform: translateY(-50%);
+  }
+  .link--v .link__bead {
+    left: -2.5px;
+    animation: perle-v 2.6s ease-in-out infinite;
+  }
+
+  /* Les pointes : vers l'avant (droite ou bas), vers l'arrière, ou les deux. */
+  .link__line::before,
+  .link__line::after {
+    content: "";
+    position: absolute;
+    display: none;
+    width: 0;
+    height: 0;
+    border: 0 solid transparent;
+  }
+  .link--h.link--forward .link__line::after,
+  .link--h.link--both .link__line::after {
+    display: block;
+    right: -2px;
+    top: -4px;
+    border-width: 5px 0 5px 9px;
+    border-left-color: var(--brass);
+  }
+  .link--h.link--back .link__line::before,
+  .link--h.link--both .link__line::before {
+    display: block;
+    left: -2px;
+    top: -4px;
+    border-width: 5px 9px 5px 0;
+    border-right-color: var(--brass);
+  }
+  .link--v.link--forward .link__line::after,
+  .link--v.link--both .link__line::after {
+    display: block;
+    bottom: -2px;
+    left: -4px;
+    border-width: 9px 5px 0;
+    border-top-color: var(--brass);
+  }
+  .link--v.link--back .link__line::before,
+  .link--v.link--both .link__line::before {
+    display: block;
+    top: -2px;
+    left: -4px;
+    border-width: 0 5px 9px;
+    border-bottom-color: var(--brass);
+  }
+
+  /* La perle file dans le sens de la flèche ; dans les deux sens, elle fait l'aller-retour. */
+  @keyframes perle-h {
+    from {
+      left: 0;
+      opacity: 0;
+    }
+    15%,
+    85% {
+      opacity: 1;
+    }
+    to {
+      left: calc(100% - 7px);
+      opacity: 0;
+    }
+  }
+  @keyframes perle-v {
+    from {
+      top: 0;
+      opacity: 0;
+    }
+    15%,
+    85% {
+      opacity: 1;
+    }
+    to {
+      top: calc(100% - 7px);
+      opacity: 0;
+    }
+  }
+  .link--back .link__bead {
+    animation-direction: reverse;
+  }
+  .link--both .link__bead {
+    animation-direction: alternate;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .link__bead {
+      display: none;
+    }
+  }
+
+  .schema-swipe {
+    display: none;
+    margin: 28px 0 0;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  @media (max-width: 700px) {
+    .schema-scroll {
+      margin-top: 8px;
+    }
+    .schema-swipe {
+      display: block;
+    }
+  }
+</style>

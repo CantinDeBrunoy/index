@@ -1,0 +1,28 @@
+---
+/**
+ * La page minimale d'une fiche posée sous son escale (pages/fiches) : son contenu (FichePage.astro, embedded) et,
+ * dans son <head>, les feuilles de style qu'Astro y met. Le voyage n'en garde que ça (scripts/voyage-fiche.ts) :
+ * ses scripts ne tournent pas, le voyage démarre lui-même ce que la fiche contient.
+ */
+import type { Lang } from "../../i18n/voyage";
+import FichePage from "./FichePage.astro";
+
+interface Props {
+  lang: Lang;
+  slug: string;
+}
+
+const { lang, slug } = Astro.props;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>INDEX</title>
+  </head>
+  <body>
+    <FichePage lang={lang} slug={slug} embedded />
+  </body>
+</html>

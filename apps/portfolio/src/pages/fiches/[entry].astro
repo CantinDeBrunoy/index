@@ -1,0 +1,21 @@
+---
+/**
+ * La fiche d'une escale, seule, pour le voyage, en français : /fiches/005-magellan. Le voyage la charge quand on
+ * l'ouvre et pose son contenu sous l'escale, avec les feuilles de style de son en-tête qu'il n'a pas encore
+ * (scripts/voyage-fiche.ts). Une page minimale, que les moteurs ignorent (noindex, robots.txt, hors du plan du site).
+ */
+import FicheSeule from "../../components/voyage/FicheSeule.astro";
+import { fichePaths } from "../../data/fiches";
+
+export function getStaticPaths() {
+  return fichePaths();
+}
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+---
+
+<FicheSeule lang="fr" slug={slug} />

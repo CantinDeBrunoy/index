@@ -1,0 +1,19 @@
+---
+/**
+ * La fiche d'une escale, seule, pour le voyage, en anglais : /en/fiches/005-magellan (voir pages/fiches/[entry]).
+ */
+import FicheSeule from "../../../components/voyage/FicheSeule.astro";
+import { fichePaths } from "../../../data/fiches";
+
+export function getStaticPaths() {
+  return fichePaths();
+}
+
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+---
+
+<FicheSeule lang="en" slug={slug} />

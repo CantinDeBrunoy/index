@@ -42,7 +42,9 @@ const seen = new IntersectionObserver((entries) => {
     void check(entry.target as HTMLElement);
   }
 });
-for (const box of document.querySelectorAll<HTMLElement>("[data-brief-live]")) seen.observe(box);
+/** Les cartes de la page, ou d'une fiche posée sous son escale au voyage (scripts/voyage-fiche.ts). */
+export function watchStatus(scope: Document | Element = document) {
+  for (const box of scope.querySelectorAll<HTMLElement>("[data-brief-live]")) seen.observe(box);
+}
 
-// Un module : ses noms ne se mêlent pas à ceux des autres scripts (ni à window.status).
-export {};
+watchStatus();

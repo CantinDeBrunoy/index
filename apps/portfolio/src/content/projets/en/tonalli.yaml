@@ -24,3 +24,51 @@ video:
 capture:
   alt: "Screenshot of Tonalli: the home screen, the drop character and the sign-in buttons."
   caption: "The home screen."
+screens:
+  - image: "emotion"
+    title: "Today's emotion"
+    text: "Twelve emotions and three intensities, 36 shades in all; the character strikes the pose of the one you pick."
+    alt: "The “Comment te sens-tu ?” screen: twelve emotions, Colère selected, and three intensities."
+  - image: "aujourdhui"
+    title: "Today"
+    text: "The two characters act out a scene based on both emotions; the other person's day waits until you've filled in yours."
+    alt: "The “Aujourd'hui” screen: two characters side by side, “Ma journée” and “La journée de Léa”."
+  - image: "calendrier"
+    title: "The calendar"
+    text: "One square per day, hatched when it's missing or still hidden, and the year's breakdown of emotions."
+    alt: "The year calendar: a row of coloured squares per month, then the year's breakdown by emotion."
+  - image: "personnage"
+    title: "The character"
+    text: "Accessories to choose; it keeps the colour of the day and wears them in every scene."
+    alt: "The “Mon personnage” screen: the orange character with ears and a scarf, and the accessories to choose from."
+architecture:
+  intro: "A React web app you install on your phone, hosted on Vercel, with Supabase behind it: sign-in, the Postgres database, the photos, and two functions that send the notifications."
+  groups:
+    - { label: "Supabase", from: [2, 1], to: [3, 2] }
+  nodes:
+    - { id: "app", at: [1, 1], span: [1, 2], kind: "app", title: "The React app", text: "On the phone, installed like an app. A day saved offline waits for the network to come back." }
+    - { id: "db", at: [2, 1], kind: "data", title: "Postgres", text: "Days and reactions; the other person's day stays hidden until you've filled in yours." }
+    - { id: "storage", at: [2, 2], kind: "data", title: "Auth · Storage", text: "Email sign-in; the photos, private, read through signed links." }
+    - { id: "fn", at: [3, 1], kind: "server", title: "Edge Functions", text: "Tell the other person, and remind you to fill in your day." }
+    - { id: "cron", at: [3, 2], kind: "job", title: "Scheduled job", text: "Every quarter of an hour, finds who is due a reminder." }
+    - { id: "push", at: [4, 1], kind: "ext", title: "Push service", text: "The browser's own: it wakes the phone up." }
+    - { id: "sw", at: [4, 2], kind: "app", title: "Service worker", text: "Shows the notification, even with the app closed." }
+  links:
+    - { from: "app", to: "db", label: "days, reactions", both: true }
+    - { from: "app", to: "storage", label: "sign-in, photos", both: true }
+    - { from: "db", to: "fn", label: "a trigger" }
+    - { from: "cron", to: "fn", label: "reminder time" }
+    - { from: "fn", to: "push", label: "Web Push" }
+    - { from: "push", to: "sw", label: "the notification" }
+crew:
+  title: "Solo flight"
+  text: "A personal project, from mock-up to launch: I made every decision, coded it with the help of Claude Code, and reviewed every branch before merging it."
+  log:
+    - title: "Timeline"
+      text: "From late August to late September 2026, then into INDEX in October."
+    - title: "Method"
+      text: "A handover guide of over a thousand lines: the rules, the pitfalls already met, what's left to do. One branch per piece of work, merged after review."
+    - title: "Quality"
+      text: "About 250 home-made checks (dates and time zones, shades, reactions…), oxlint and TypeScript on every push."
+    - title: "Shipping"
+      text: "Vercel for the site; the database and its functions deployed by hand; a robot keeps Supabase awake."

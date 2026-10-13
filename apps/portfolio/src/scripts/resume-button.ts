@@ -119,7 +119,9 @@ function start(button: HTMLElement) {
   settle();
 }
 
-for (const button of document.querySelectorAll<HTMLElement>("[data-resume]")) start(button);
+/** Le copilote de la page, ou celui d'une fiche posée sous son escale au voyage (scripts/voyage-fiche.ts). */
+export function startResume(scope: Document | Element = document) {
+  for (const button of scope.querySelectorAll<HTMLElement>("[data-resume]")) start(button);
+}
 
-// Un module : ses noms (start) ne se mêlent pas à ceux des autres scripts.
-export {};
+startResume();

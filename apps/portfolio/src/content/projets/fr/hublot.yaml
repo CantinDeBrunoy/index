@@ -6,7 +6,7 @@ features:
   - title: "Toutes les six heures"
     text: "Un robot relève le prix des allers-retours de chaque surveillance."
   - title: "Une alerte, pas une rafale"
-    text: "Une notification quand un prix passe sous le seuil ; la même offre se tait ensuite pendant 30 jours, et seule une offre moins chère sonne à nouveau."
+    text: "Une notification quand un prix passe sous le seuil : à chaque relevé, au plus une par surveillance et par mois de départ, pour l'offre la moins chère. Une offre déjà signalée, au même prix, se tait ensuite 30 jours."
 choices:
   - title: "GitHub Actions comme serveur"
     text: "Le robot tourne dans une tâche planifiée gratuite, sans machine à entretenir."
@@ -19,3 +19,48 @@ video:
   caption: "Les bons plans sous le seuil, les surveillances, puis une nouvelle vers Reykjavik. Avec des surveillances et des prix fictifs."
   width: 1280
   height: 720
+screens:
+  - image: "bons-plans"
+    title: "Les bons plans"
+    text: "Les offres sous le seuil, avec les dates, les aéroports, les escales et l'écart avec mon prix maximum."
+    alt: "Hublot en mode démo : trois offres pour Lisbonne, de 84 à 96 €, chacune sous le seuil de 120 €."
+  - image: "surveillances"
+    title: "Mes surveillances"
+    text: "Une destination, une période, une durée de séjour et un prix maximum ; dessous, le meilleur prix de chaque mois de départ."
+    alt: "La surveillance Lisbonne, au plus 120 €, avec le tableau du meilleur prix par mois de départ."
+  - image: "nouvelle"
+    title: "Une nouvelle surveillance"
+    text: "La ville se cherche par son nom. Une fois la surveillance enregistrée, le robot est relancé et la page guette ses premiers prix."
+    alt: "La fenêtre « Nouvelle surveillance » : « Rey » tapé, Reykjavik proposé, puis la période, la durée et le prix maximum."
+architecture:
+  intro: "Pas de serveur à entretenir : un robot GitHub Actions relève les prix, les range dans des fichiers JSON du dépôt et m'alerte sur mon téléphone. Une page, servie par un Worker Cloudflare, me laisse gérer mes surveillances."
+  groups:
+    - { label: "Cloudflare", from: [2, 1], to: [3, 1] }
+    - { label: "GitHub", from: [2, 2], to: [2, 3] }
+  nodes:
+    - { id: "page", at: [1, 1], kind: "app", title: "La page", text: "Les bons plans et mes surveillances ; en lecture seule pour un visiteur." }
+    - { id: "worker", at: [2, 1], kind: "server", title: "Worker hublot", text: "Seul à tenir la clé GitHub ; ne laisse passer que quelques requêtes." }
+    - { id: "hub", at: [3, 1], kind: "server", title: "Worker INDEX", text: "La connexion GitHub : il dit si la session est la mienne." }
+    - { id: "repo", at: [2, 2], kind: "file", title: "Des fichiers JSON", text: "Les surveillances, les derniers prix, l'historique, les alertes envoyées." }
+    - { id: "robot", at: [2, 3], kind: "job", title: "Le robot", text: "GitHub Actions, toutes les 6 heures : relève les prix, décide des alertes." }
+    - { id: "tp", at: [1, 3], kind: "ext", title: "Travelpayouts", text: "Les prix des allers-retours depuis Paris." }
+    - { id: "ntfy", at: [3, 3], kind: "ext", title: "ntfy", text: "L'alerte, sur mon téléphone." }
+  links:
+    - { from: "page", to: "worker", label: "une fois connecté", both: true }
+    - { from: "worker", to: "hub", label: "la session ?" }
+    - { from: "worker", to: "repo", label: "surveillances, prix", both: true }
+    - { from: "robot", to: "repo", label: "les relevés", both: true }
+    - { from: "robot", to: "tp", label: "les prix", both: true }
+    - { from: "robot", to: "ntfy", label: "sous le seuil" }
+crew:
+  title: "Seul à bord"
+  text: "Un outil pour moi, construit seul avec l'aide de Claude Code. Le robot, lui, travaille aussi : la plupart des commits du projet sont ses relevés de prix."
+  log:
+    - title: "Période"
+      text: "Fin septembre 2026 ; en octobre, la page passe sur Cloudflare, avec la connexion GitHub."
+    - title: "Méthode"
+      text: "Des commits conventionnels ; les règles de l'API, découvertes sur la vraie API, gardées en tests."
+    - title: "Qualité"
+      text: "Environ 80 tests Vitest, dont des réponses réelles de l'API ; TypeScript vérifié en trois passes (le robot, la page, le Worker)."
+    - title: "Mise en ligne"
+      text: "Le robot tourne dans GitHub Actions ; la page, dans un Worker Cloudflare redéployé à chaque push."

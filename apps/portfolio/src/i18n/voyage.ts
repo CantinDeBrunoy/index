@@ -22,6 +22,10 @@ export const ROUTES: Record<PageKey, Record<Lang, string>> = {
 export const fichePath = (lang: Lang, project: Pick<Project, "path">): string =>
   lang === "fr" ? project.path : `/en${project.path}`;
 
+/** La fiche seule, sur une page minimale, que le voyage charge pour la poser sous l'escale : /fiches/005-magellan. */
+export const ficheFragmentPath = (lang: Lang, project: Pick<Project, "path">): string =>
+  `${lang === "fr" ? "" : "/en"}/fiches${project.path}`;
+
 /** L'adresse où m'écrire, au pied des pages. */
 export const EMAIL = "cantin.roquier@gmail.com";
 

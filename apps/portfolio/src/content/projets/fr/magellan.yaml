@@ -18,3 +18,46 @@ video:
 capture:
   alt: "Capture de Magellan : le globe et ses pays colorés, avec le compteur « 14 voyages, 22 villes, 13 pays » des données de démonstration."
   caption: "Le globe, avec les voyages de démonstration."
+screens:
+  - image: "globe"
+    title: "Le globe"
+    text: "Les pays visités en vert, un drapeau sur chaque ville, et le compte des voyages, des villes et des pays. Il tourne au doigt ; toucher un pays montre ses voyages."
+    alt: "Magellan sur téléphone : le globe, les pays visités en vert et le compteur « 14 voyages · 22 villes · 13 pays »."
+  - image: "voyages"
+    title: "Les voyages"
+    text: "Rangés par année, triés en road trips ou séjours d'une ville, avec en tête trois post-it pour les totaux."
+    alt: "La liste des voyages de démonstration : trois post-it (14 voyages, 22 villes, 13 pays), les filtres, puis Oslo et le Japon en 2025."
+  - image: "voyage"
+    title: "Un voyage"
+    text: "Sur une table en noyer, l'itinéraire étape par étape en post-it épinglés, avec les jours et le budget de chaque ville."
+    alt: "Le voyage de démonstration au Japon : 3 étapes, 10 jours, 2 050 € de budget, puis Tokyo, Kyoto et Osaka en post-it."
+architecture:
+  intro: "Une seule app Expo, exportée en site statique et servie par un Worker Cloudflare. Un visiteur voit des voyages de démonstration, gardés dans son navigateur ; moi, une fois connecté, je retrouve les miens dans une base à part."
+  groups:
+    - { label: "Dans le navigateur", from: [1, 1], to: [2, 2] }
+    - { label: "Cloudflare", from: [3, 1], to: [4, 2] }
+  nodes:
+    - { id: "globe", at: [1, 1], kind: "app", title: "globe.gl · three.js", text: "Le globe 3D, dans un cadre sur le web, une WebView sur téléphone." }
+    - { id: "app", at: [2, 1], kind: "app", title: "L'app Expo", text: "Un seul code React Native, exporté en site statique." }
+    - { id: "local", at: [2, 2], kind: "data", title: "localStorage · IndexedDB", text: "Les voyages d'un visiteur ; le dossier de photos et ses vignettes." }
+    - { id: "worker", at: [3, 1], kind: "server", title: "Worker magellan", text: "Sert le site ; son API ne répond qu'à moi." }
+    - { id: "d1", at: [3, 2], kind: "data", title: "Cloudflare D1", text: "Mes vrais voyages, jamais dans le dépôt." }
+    - { id: "hub", at: [4, 1], kind: "server", title: "Worker INDEX", text: "La connexion GitHub : il dit si la session est la mienne." }
+  links:
+    - { from: "app", to: "globe", label: "la caméra" }
+    - { from: "app", to: "local", label: "sans compte", both: true }
+    - { from: "app", to: "worker", label: "le site, /api/trips", both: true }
+    - { from: "worker", to: "d1", label: "une ligne versionnée", both: true }
+    - { from: "worker", to: "hub", label: "la session ?" }
+crew:
+  title: "Seul à bord"
+  text: "Je l'ai imaginé, construit et mis en ligne seul, puis refait de fond en comble en septembre, avec Claude Code comme assistant."
+  log:
+    - title: "Période"
+      text: "Le squelette en janvier 2026, la première vraie version fin juin, la refonte en septembre."
+    - title: "Méthode"
+      text: "Une feuille de route en phases dans le README, un guide de travail, des commits conventionnels ; une branche et une pull request pour la refonte."
+    - title: "Qualité"
+      text: "ESLint et TypeScript à chaque push ; la CI vérifie aussi que l'app Android se construit."
+    - title: "Mise en ligne"
+      text: "Chaque push sur main redéploie le Worker, par GitHub Actions."

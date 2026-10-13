@@ -1,0 +1,208 @@
+---
+/**
+ * « En images », sous le projet point par point : trois ou quatre écrans de l'app, chacun avec ce qu'il montre.
+ * Les écrans de téléphone (plus hauts que larges) se rangent côte à côte, leur texte dessous ; sur téléphone, ils
+ * défilent de côté. Les autres alternent, l'image d'un côté, son texte de l'autre. Les images sont
+ * src/assets/screens/<slug>/<image>.jpg (scripts/fiche-screens.ts) ; les textes, le champ `screens` de la fiche.
+ */
+import { getImage } from "astro:assets";
+import { FICHE } from "../../data/fiches";
+import { fill } from "../../data/voyage";
+import { typo, type Lang } from "../../i18n/voyage";
+import { getScreen } from "../../lib/screens";
+
+interface Props {
+  lang: Lang;
+  slug: string;
+  name: string;
+  screens: { image: string; title: string; text: string; alt: string }[];
+}
+
+const { lang, slug, name, screens } = Astro.props;
+const f = FICHE[lang];
+const T = (text: string) => typo(lang, text);
+
+const shots = await Promise.all(
+  screens.map(async (screen, k) => {
+    const src = getScreen(slug, screen.image);
+    if (!src) throw new Error(`Écran introuvable : src/assets/screens/${slug}/${screen.image}.jpg`);
+    const phone = src.height > src.width;
+    const set = await getImage({ src, widths: phone ? [300, 600] : [720, 1080, 1440], format: "webp" });
+    return { ...screen, n: String(k + 1).padStart(2, "0"), src, phone, set };
+  }),
+);
+// Que des téléphones : côte à côte. Sinon, en rangées alternées (un téléphone y garde sa taille de téléphone).
+const phones = shots.every((s) => s.phone);
+const titleId = `ecrans-${slug}`;
+---
+
+{
+  shots.length > 0 && (
+    <section class="screens" aria-labelledby={titleId}>
+      <p class="kicker">{f.pictures}</p>
+      <h2 id={titleId} class="serif title">
+        {fill(f.screens, { name })}
+      </h2>
+      <ol class:list={["screens__list", phones ? "is-phones" : "is-rows"]}>
+        {shots.map((s) => (
+          <li class:list={["screen", { "screen--phone": s.phone }]}>
+            <img
+              class="screen__img"
+              src={s.set.src}
+              srcset={s.set.srcSet.attribute}
+              sizes={s.phone ? "(max-width: 700px) 64vw, 260px" : "(max-width: 900px) calc(100vw - 40px), 660px"}
+              width={s.src.width}
+              height={s.src.height}
+              alt={s.alt}
+              loading="lazy"
+              decoding="async"
+            />
+            <div class="screen__text">
+              <span class="screen__num" aria-hidden="true">
+                {s.n}
+              </span>
+              <h3 class="serif">{T(s.title)}</h3>
+              <p>{T(s.text)}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+<style>
+  .screens {
+    padding: 72px 0 64px;
+    border-bottom: 1px solid var(--line);
+  }
+  .kicker {
+    margin: 0 0 14px;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .title {
+    margin: 0;
+    font-size: clamp(36px, 3.8vw, 52px);
+    line-height: 1.02;
+  }
+  .screens__list {
+    margin: 44px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .screen__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--card);
+    box-shadow: 0 18px 48px rgba(36, 30, 24, 0.12);
+  }
+  .screen--phone .screen__img {
+    max-width: 260px;
+    border-radius: 30px;
+  }
+  .screen__num {
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .screen h3 {
+    margin: 6px 0 8px;
+    font-size: 28px;
+    line-height: 1.1;
+  }
+  .screen p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* — Les téléphones, côte à côte : l'écran puis son texte — */
+  .is-phones {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px 32px;
+  }
+  .is-phones .screen {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .is-phones .screen__text {
+    max-width: 300px;
+  }
+
+  /* — Les rangées : l'image sur sept douzièmes, le texte à côté, de part et d'autre à tour de rôle — */
+  .is-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
+  .is-rows .screen {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: center;
+    gap: 24px 56px;
+  }
+  .is-rows .screen--phone {
+    justify-items: center;
+  }
+  .is-rows .screen:nth-child(even) {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+  .is-rows .screen:nth-child(even) .screen__img {
+    order: 2;
+  }
+  .is-rows .screen p {
+    font-size: 17px;
+  }
+
+  @media (max-width: 900px) {
+    .is-rows .screen {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .is-rows .screen:nth-child(even) .screen__img {
+      order: 0;
+    }
+  }
+
+  /* Sur téléphone, les téléphones défilent de côté, un peu plus d'un à l'écran pour qu'on devine la suite. */
+  @media (max-width: 700px) {
+    .screens {
+      padding: 48px 0 44px;
+    }
+    .screens__list {
+      margin-top: 32px;
+    }
+    .is-phones {
+      display: flex;
+      gap: 20px;
+      margin-inline: calc(-1 * clamp(20px, 4vw, 48px));
+      padding: 0 clamp(20px, 4vw, 48px) 8px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: clamp(20px, 4vw, 48px);
+      scrollbar-width: none;
+    }
+    .is-phones::-webkit-scrollbar {
+      display: none;
+    }
+    .is-phones .screen {
+      flex: 0 0 64vw;
+      scroll-snap-align: start;
+    }
+    .is-rows {
+      gap: 44px;
+    }
+    .screen h3 {
+      font-size: 24px;
+    }
+  }
+</style>

@@ -24,3 +24,51 @@ video:
 capture:
   alt: "Capture de Tonalli : l'écran d'accueil, le personnage-goutte et les boutons de connexion."
   caption: "L'écran d'accueil."
+screens:
+  - image: "emotion"
+    title: "L'émotion du jour"
+    text: "Douze émotions et trois intensités, soit 36 teintes ; le personnage prend la pose de celle qu'on choisit."
+    alt: "L'écran « Comment te sens-tu ? » : douze émotions, Colère choisie, et trois intensités."
+  - image: "aujourdhui"
+    title: "Aujourd'hui"
+    text: "Les deux personnages jouent une scène selon nos deux émotions ; la journée de l'autre attend qu'on ait rempli la sienne."
+    alt: "L'écran « Aujourd'hui » : deux personnages côte à côte, « Ma journée » et « La journée de Léa »."
+  - image: "calendrier"
+    title: "Le calendrier"
+    text: "Une case par jour, hachurée quand elle manque ou reste masquée, et la répartition des émotions de l'année."
+    alt: "Le calendrier de l'année : une ligne de cases colorées par mois, puis la répartition de l'année par émotion."
+  - image: "personnage"
+    title: "Le personnage"
+    text: "Des accessoires à choisir ; il garde la couleur du jour et les porte dans chaque scène."
+    alt: "L'écran « Mon personnage » : le personnage orange avec des oreilles et une écharpe, et les accessoires à choisir."
+architecture:
+  intro: "Une app web React qu'on installe sur son téléphone, hébergée sur Vercel, avec Supabase derrière : la connexion, la base Postgres, les photos, et deux fonctions qui envoient les notifications."
+  groups:
+    - { label: "Supabase", from: [2, 1], to: [3, 2] }
+  nodes:
+    - { id: "app", at: [1, 1], span: [1, 2], kind: "app", title: "L'app React", text: "Sur le téléphone, installée comme une app. Une journée validée hors ligne attend le retour du réseau." }
+    - { id: "db", at: [2, 1], kind: "data", title: "Postgres", text: "Les journées et les réactions ; celle de l'autre reste cachée tant qu'on n'a pas rempli la sienne." }
+    - { id: "storage", at: [2, 2], kind: "data", title: "Auth · Storage", text: "La connexion par e-mail ; les photos, privées, lues par liens signés." }
+    - { id: "fn", at: [3, 1], kind: "server", title: "Edge Functions", text: "Préviennent l'autre, et rappellent de remplir sa journée." }
+    - { id: "cron", at: [3, 2], kind: "job", title: "Tâche planifiée", text: "Tous les quarts d'heure, cherche qui doit recevoir son rappel." }
+    - { id: "push", at: [4, 1], kind: "ext", title: "Service push", text: "Celui du navigateur : il réveille le téléphone." }
+    - { id: "sw", at: [4, 2], kind: "app", title: "Service worker", text: "Affiche la notification, même app fermée." }
+  links:
+    - { from: "app", to: "db", label: "journées, réactions", both: true }
+    - { from: "app", to: "storage", label: "connexion, photos", both: true }
+    - { from: "db", to: "fn", label: "un déclencheur" }
+    - { from: "cron", to: "fn", label: "l'heure du rappel" }
+    - { from: "fn", to: "push", label: "Web Push" }
+    - { from: "push", to: "sw", label: "la notification" }
+crew:
+  title: "Seul à bord"
+  text: "Un projet personnel, de la maquette à la mise en ligne : j'ai tout décidé, codé avec l'aide de Claude Code, et relu chaque branche avant de la fusionner."
+  log:
+    - title: "Période"
+      text: "De fin août à fin septembre 2026, puis l'arrivée dans INDEX en octobre."
+    - title: "Méthode"
+      text: "Un guide de reprise de plus de mille lignes : les règles, les pièges déjà rencontrés, ce qui reste à faire. Une branche par chantier, fusionnée après relecture."
+    - title: "Qualité"
+      text: "Environ 250 vérifications maison (dates et fuseaux, teintes, réactions…), oxlint et TypeScript à chaque push."
+    - title: "Mise en ligne"
+      text: "Vercel pour le site ; la base et ses fonctions déployées à la main ; un robot garde Supabase éveillé."
