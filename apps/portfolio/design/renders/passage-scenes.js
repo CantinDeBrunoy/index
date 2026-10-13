@@ -15,11 +15,13 @@
 const PASSAGE_FPS = 24;
 // Par escale : la boucle de sa scène (s), le cycle de l'objet dans la boucle (s, pour les sprites), le nombre de
 // départs (les clips), l'instant où le site plonge vers l'escale suivante (s depuis le départ) et, si l'objet ne
-// part pas vers le point qu'on clique, le point du monde vers lequel plonger (`origin`).
+// part pas vers le point qu'on clique, le point du monde vers lequel plonger (`origin`). `off` : le site ne le joue
+// pas (passage-render.mjs le laisse hors de passages.json).
 const PASSAGES = {
   espace: { kind: "sprites", loop: 24, cycle: 8, end: 2.15, dive: 1.35 },
-  terre: { kind: "sprites", loop: 24, cycle: 4, end: 2.2, dive: 1.45 },
-  avion: { kind: "clip", loop: 8, starts: 8, dive: 1.35 },
+  terre: { kind: "sprites", loop: 24, cycle: 4, end: 4.35, dive: 3.55 },
+  // Désactivé (Cantin, 2026-10-13) : le Hublot plonge tout de suite, sans traverser les nuages.
+  avion: { kind: "clip", loop: 8, starts: 8, dive: 1.35, off: true },
   paris: { kind: "clip", loop: 4, starts: 8, dive: 1.2 },
   monuments: { kind: "clip", loop: 4, starts: 8, dive: 1.35, origin: [1.3, 2.35, -6] },
   route: { kind: "clip", loop: 8, starts: 8, dive: 1.4 },
@@ -305,11 +307,12 @@ const bezier3 = (a, b, c, d) => (s) => {
   return a.clone().multiplyScalar(k * k * k).addScaledVector(b, 3 * k * k * s).addScaledVector(c, 3 * k * s * s).addScaledVector(d, s * s * s);
 };
 
-// ——— 005 → 009 : l'avion met les gaz et s'éloigne ———
-// Il file un peu vers le globe, vire sur l'aile vers nous, fait demi-tour à droite du globe, puis monte et s'éloigne en
-// rapetissant, deux traînées derrière ses réacteurs. Il reste du côté droit du globe (rien ne le cache) et dans le
-// cadre du téléphone.
-const AVION = { go: 0.2, lead: 0.22, turn: 3.85, r: 0.22, climb: 0.3, straight: 4.2, arrive: 1.95, far: 0.28 };
+// ——— 005 → 009 : l'avion fait le tour de la Terre et s'y pose ———
+// Comme la fusée autour de la planète à anneau : il part de sa place, à droite du globe, passe devant lui vers la
+// gauche, le contourne par derrière (le globe le cache), revient devant, puis descend en spirale et se pose sur sa
+// face, en rapetissant (sa taille est celle d'un dessin). Le globe le cache par sa profondeur seule (`occluders` :
+// une sphère qui n'écrit que dans le tampon de profondeur) : sa silhouette ne change pas quand il tourne.
+const AVION = { go: 0.15, land: 3.4, turns: 1.2, r: 2.05, tilt: 0.42, ground: 1.53, far: 0.3 };
 SCENES["terre-passage"] = (M) => {
   const g = SCENES.terre(M);
   const { jet, heading } = g.userData.parts;
@@ -317,94 +320,89 @@ SCENES["terre-passage"] = (M) => {
   const base = g.userData.animate;
   base(0);
   g.updateMatrixWorld(true);
-  const p0 = jet.position.clone(), s0 = jet.scale.x;
-  const roll0 = -0.42 + 0.06 * Math.sin(0.8);
-  const up = new THREE.Vector3(0, 1, 0);
-  const h = heading.clone().normalize();
-  const left = new THREE.Vector3().crossVectors(up, h).normalize();
-  // Tout droit un instant, puis le virage : un arc de cercle à gauche (vers nous), qui monte un peu ; puis tout droit,
-  // en montant.
-  const c = p0.clone().addScaledVector(h, AVION.lead).addScaledVector(left, AVION.r);
-  const arcAt = (a) => c.clone().addScaledVector(left, -AVION.r * Math.cos(a)).addScaledVector(h, AVION.r * Math.sin(a)).add(new THREE.Vector3(0, 0.12 * (a / AVION.turn) ** 2, 0));
-  const out = h.clone().multiplyScalar(Math.cos(AVION.turn)).addScaledVector(left, Math.sin(AVION.turn)).add(new THREE.Vector3(0, AVION.climb, 0)).normalize();
-  const arcLen = AVION.lead + AVION.r * AVION.turn;
-  const path = arcLength((s) => {
-    const d = s * (arcLen + AVION.straight);
-    if (d < AVION.lead) return p0.clone().addScaledVector(h, d);
-    return d < arcLen ? arcAt((d - AVION.lead) / AVION.r) : arcAt(AVION.turn).addScaledVector(out, d - arcLen);
-  });
-  const dist = (t) => path.L * Math.pow(span(t, AVION.go, AVION.arrive), 1.55);
-  const look = new THREE.Object3D();
-  /** L'avion t secondes après le clic : position, orientation (le nez sur la trajectoire, incliné dans le virage), taille. */
-  const avionAt = (t) => {
-    const d = dist(t);
-    const pos = path.along(d);
-    const dir = t <= AVION.go ? h.clone() : path.dirAlong(d);
-    look.position.set(0, 0, 0);
-    look.quaternion.identity();
-    look.lookAt(dir);
-    // Incliné vers la Terre au départ, davantage dans le virage, à plat une fois sorti.
-    const inTurn = span(d, AVION.lead, arcLen);
-    const bank = d < arcLen ? mix(roll0, -0.8, Math.sin(Math.PI * Math.min(1, inTurn * 1.4)) ** 0.6 * (inTurn < 0.7 ? 1 : 1 - span(inTurn, 0.7, 1))) : 0;
-    look.rotateZ(t <= AVION.go ? roll0 : mix(roll0, bank, ease.inOut(span(t, AVION.go, AVION.go + 0.25))));
-    const far = Math.exp(mix(0, Math.log(AVION.far), ease.inOut(span(d, arcLen * 0.6, path.L))));
-    const scale = s0 * far * (1 - ease.in(span(t, AVION.arrive - 0.15, AVION.arrive)));
-    return { pos, quat: look.quaternion.clone(), scale };
+  const p0 = jet.position.clone(), q0 = jet.quaternion.clone(), s0 = jet.scale.x;
+  // Le plan du tour : celui du point de départ et du cap de l'avion (il part sans à-coup), qui se penche ensuite vers
+  // nous autour de l'axe du départ, pour que le tour s'ouvre comme un anneau vu de biais.
+  const e1 = p0.clone().normalize();
+  const e2 = heading.clone().addScaledVector(e1, -heading.dot(e1)).normalize();
+  const n = new THREE.Vector3().crossVectors(e1, e2).normalize();
+  const r0 = p0.length();
+  const END = AVION.turns * Math.PI * 2;
+  // Où il se pose : sur la face du globe tournée vers nous, un peu au-dessus de son centre.
+  const cam = new THREE.Vector3(0.6, 0.9, 7.4);
+  const landDir = cam.clone().normalize().add(new THREE.Vector3(0.12, 0.22, 0)).normalize();
+  const orbitDir = (a) => {
+    // Le plan se penche dans le premier quart de tour : devant le globe, l'avion passe plus bas ; derrière, plus haut.
+    const tilt = AVION.tilt * ease.inOut(Math.min(1, a / (Math.PI / 2)));
+    const m = e2.clone().multiplyScalar(Math.cos(tilt)).addScaledVector(n, Math.sin(tilt));
+    return e1.clone().multiplyScalar(Math.cos(a)).addScaledVector(m, Math.sin(a)).normalize();
   };
-  // Les réacteurs : le centre des deux nacelles, dans le repère de l'avion.
-  const engines = (() => {
-    const pts = [];
-    jet.traverse((o) => {
-      if (!o.isMesh || o.material !== M.clay2 || !o.visible) return;
-      const b = new THREE.Box3().setFromObject(o);
-      pts.push(jet.worldToLocal(b.getCenter(new THREE.Vector3())));
-    });
-    const l = pts.filter((p) => p.x > 0), r = pts.filter((p) => p.x < 0);
-    const avg = (a) => a.reduce((s, p) => s.add(p), new THREE.Vector3()).divideScalar(Math.max(1, a.length));
-    return l.length && r.length ? [avg(l), avg(r)] : [new THREE.Vector3(0.25, -0.03, 0).divideScalar(s0), new THREE.Vector3(-0.25, -0.03, 0).divideScalar(s0)];
-  })();
-  // Les traînées naissent à la sortie du virage, quand il file tout droit : deux lignes qui se rejoignent au loin.
-  const tStraight = AVION.go + (AVION.arrive - AVION.go) * Math.pow(arcLen / path.L, 1 / 1.55);
-  const trails = engines.map((e, i) =>
-    smokeTrail(g, {
-      from: tStraight + 0.03,
-      to: AVION.arrive - 0.12,
-      every: 0.006,
-      life: 0.85,
-      wide: 0.35,
-      size: [0.2, 0.15],
-      seed: 23 + i,
-      emit: (t0) => {
-        const a = avionAt(t0);
-        // Derrière la nacelle (le nez de l'avion est son +z).
-        const local = e.clone().add(new THREE.Vector3(0, 0, -0.2 / s0)).multiplyScalar(a.scale);
-        return { pos: local.applyQuaternion(a.quat).add(a.pos), scale: 0.05 * (a.scale / s0) };
-      },
-    }),
-  );
+  // La descente : sur le dernier tiers de tour, la direction glisse vers le point d'atterrissage et le rayon fond.
+  const DESCENT = END - (2 * Math.PI) / 3;
+  const pathAt = (a) => {
+    const k = ease.inOut(span(a, DESCENT, END));
+    const d = orbitDir(a);
+    const dir = k > 0 ? d.clone().lerp(landDir, k).normalize() : d;
+    // Il se rapproche un peu du globe dans le premier demi-tour (il reste dans le cadre du téléphone), puis descend.
+    return dir.multiplyScalar(mix(mix(r0, AVION.r, ease.inOut(span(a, 0, Math.PI))), AVION.ground, k));
+  };
+  // L'angle parcouru : un départ en douceur, puis vite, puis il ralentit pour se poser.
+  const angleAt = (t) => {
+    const u = span(t, AVION.go, AVION.land);
+    return END * (0.3 * u + 0.7 * ease.inOut(u));
+  };
+  const look = new THREE.Matrix4();
+  const upLoop = new THREE.Vector3(0, 1, 0).applyQuaternion(q0);
+  const quatAt = (t) => {
+    const a = angleAt(t);
+    const f = pathAt(Math.min(END, a + 1e-3)).sub(pathAt(Math.max(0, a - 1e-3))).normalize();
+    // Le ventre vers la Terre : son haut passe, sur un demi-tour, de celui de sa pose dans la boucle à la verticale du
+    // lieu (sans se mettre sur la tranche d'un coup) ; sa droite suit.
+    const up = upLoop.clone().lerp(pathAt(a).normalize(), ease.inOut(span(a, 0, Math.PI))).normalize();
+    const x = new THREE.Vector3().crossVectors(up, f).normalize();
+    const y = new THREE.Vector3().crossVectors(f, x);
+    return new THREE.Quaternion().setFromRotationMatrix(look.makeBasis(x, y, f));
+  };
+  /** L'avion t secondes après le clic : position, orientation, taille. */
+  const avionAt = (t) => {
+    const a = angleAt(t);
+    const pos = pathAt(a);
+    // De sa pose dans la boucle à celle du tour, en un instant.
+    const q = q0.clone().slerp(quatAt(Math.min(t, AVION.land - 1e-3)), ease.inOut(span(t, 0, AVION.go + 0.15)));
+    // Il rapetisse vite au début : devant le globe, il ne le cache pas.
+    const far = Math.exp(mix(0, Math.log(AVION.far), ease.out(span(a, 0, END))));
+    // Posé : un petit rebond des roues.
+    pos.addScaledVector(pos.clone().normalize(), 0.03 * Math.sin(Math.PI * span(t, AVION.land, AVION.land + 0.25)) * far);
+    return { pos, quat: q, scale: s0 * far };
+  };
+  // Le globe, pour la profondeur seule : il cache l'avion qui passe derrière lui.
+  const occluder = new THREE.Mesh(new THREE.SphereGeometry(1.5, 128, 96), new THREE.MeshBasicMaterial({ colorWrite: false }));
+  occluder.renderOrder = -1;
+  occluder.visible = false;
+  g.add(occluder);
   g.userData.sprite = {
     world,
-    objects: [jet, ...trails.flatMap((tr) => tr.puffs)],
+    objects: [jet],
+    occluders: [occluder],
     loopAt(phi) {
       base(phi);
       jet.scale.setScalar(s0);
       jet.visible = true;
-      for (const tr of trails) tr.place(-1);
     },
     departAt(t) {
       const a = avionAt(t);
       jet.position.copy(a.pos);
       jet.quaternion.copy(a.quat);
-      jet.scale.setScalar(Math.max(1e-5, a.scale));
-      jet.visible = a.scale > 1e-4;
-      for (const tr of trails) tr.place(t);
+      jet.scale.setScalar(a.scale);
+      jet.visible = true;
     },
-    origin: path.along(path.L),
+    origin: pathAt(END),
   };
   g.userData.passage = { ...PASSAGES.terre, laps: 3 };
   g.userData.animate = (phi) => {
     g.userData.sprite.loopAt(0);
     g.userData.sprite.departAt((phi / (Math.PI * 2)) * PASSAGES.terre.end);
+    occluder.visible = false;
   };
   g.userData.sprite.loopAt(0);
   return g;

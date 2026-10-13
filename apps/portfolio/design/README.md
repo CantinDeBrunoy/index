@@ -78,10 +78,12 @@ ferme) est la scène `dossiers-ferme`, un clip de 164 images. Ses nombres sont `
 
 Les trois fichiers vont dans `../public/voyage/sortie/`, à part : `stills.mjs` prend tout `-mobile` de `voyage/` pour une escale.
 
-Les passages : au clic vers l'escale suivante, l'objet de l'escale part vers elle (la fusée vers la Terre, l'avion au
-loin, la rame jusqu'au terminus, la voiture à la maison…), puis le site plonge vers la suivante
+Les passages : au clic vers l'escale suivante, l'objet de l'escale part vers elle (la fusée vers la Terre, l'avion qui
+fait le tour de la Terre et s'y pose, la rame jusqu'au terminus, la voiture à la maison…), puis le site plonge vers la
+suivante
 (`src/scripts/voyage-passage.ts`). Ils sont tous dans `passage-scenes.js` (`PASSAGES` : la boucle, les départs, l'instant
-du plongeon), que `build-voyage.cjs` ajoute après le décollage. Deux sortes :
+du plongeon ; `off` en retire un du site, comme celui du Hublot), que `build-voyage.cjs` ajoute après le décollage. Deux
+sortes :
 - « sprites » (espace, terre : derrière l'objet, des étoiles fixes) : la boucle continue, et le site dessine l'objet
   par-dessus, dans un canvas, depuis une planche : l'objet seul, image par image, et une pièce du fond vide qui cache
   celui de la boucle. `passage-render.mjs` les rend dans `../public/voyage/passage/` et prévient si quelque chose

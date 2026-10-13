@@ -86,9 +86,11 @@ async function sprites({ name, w, h, box, bg, pad, feather, sheetW }) {
   const P = PASSAGES[name];
   const S = cur.obj.userData.sprite;
   const laps = cur.obj.userData.passage.laps ?? 1;
+  // Les objets seuls (le monde caché, sauf ce qui les cache par sa profondeur : `occluders`), ou le monde seul.
   const show = (world, objects) => {
     for (const o of S.world) o.visible = world;
     for (const o of S.objects) o.visible = objects && o.visible;
+    for (const o of S.occluders ?? []) o.visible = objects && !world;
   };
   const scratch = Object.assign(document.createElement("canvas"), { width: w, height: h });
   const sc = scratch.getContext("2d", { willReadFrequently: true });
@@ -261,6 +263,7 @@ if (MODE === "sheet") {
   await mkdir(out, { recursive: true });
   const data = {};
   for (const [name, P] of Object.entries(PASSAGES)) {
+    if (P.off) continue;
     const t0 = Date.now();
     const entry = { kind: P.kind, fps, dive: P.dive };
     if (P.kind === "sprites") {
