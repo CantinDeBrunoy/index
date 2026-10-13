@@ -1,5 +1,5 @@
 /**
- * Le copilote du voyage : un petit bonhomme d'argile qui accueille le visiteur à la première escale,
+ * Le copilote du voyage, Adam : un petit bonhomme d'argile qui accueille le visiteur à la première escale,
  * puis se range au bout de la barre des escales. Dans l'espace, il porte la combinaison ; dès la Terre, il la
  * laisse et s'habille pour chaque escale (sans le dire : sa tenue se voit). Un clic sur lui rouvre le tuto :
  * les deux façons de visiter. Sur chaque fiche, il attend en bas à droite et ramène au voyage ; à la
@@ -19,7 +19,7 @@ export const TENUES = ["espace", "terre", "avion", "paris", "monuments", "route"
  * façons de visiter : le voyage (l'objet entouré d'or) et le détail (la fiche, « Les projets »).
  */
 const fr = {
-  who: "Ton copilote",
+  who: "Adam, ton copilote",
   hello: "Salut, voyageur !",
   intro: "Ici, chaque escale est l'un de mes projets. Deux façons de les visiter :",
   again: "Deux façons de visiter",
@@ -31,19 +31,19 @@ const fr = {
   detailText: "« La fiche du projet », sous le nom de chaque escale, le raconte en détail. « Les projets » les montre tous.",
   detailTextPhone: "Chaque projet a sa fiche, ouverte depuis son escale. Le menu les montre tous.",
   go: "Faire le voyage →",
-  goOn: "Continuer le voyage →",
+  goOn: "Reprendre le voyage →",
   projects: "Voir les projets",
   lost: "Perdu en route ? Je me range dans le coin.",
   lostPhone: "Perdu ? Je me range en bas : touche-moi.",
   close: "Fermer",
-  dock: "Ton copilote : comment visiter ?",
+  dock: "Adam, ton copilote : comment visiter ?",
   /** À l'escale 1, au bout du décollage, une petite bulle vers sa pastille (scripts/decollage.ts). */
   hint: "Bon voyage ! Si tu as besoin de moi en route, je suis juste là, en bas à droite de ton écran.",
   hintPhone: "Bon voyage ! Si tu as besoin de moi en route, je suis juste là, en bas de ton écran.",
 };
 
 const en: { [K in keyof typeof fr]: string } = {
-  who: "Your co-pilot",
+  who: "Adam, your co-pilot",
   hello: "Hi, traveller!",
   intro: "Each stop here is one of my projects. Two ways to visit them:",
   again: "Two ways to visit",
@@ -55,12 +55,12 @@ const en: { [K in keyof typeof fr]: string } = {
   detailText: "“Project page”, under each stop's name, tells its whole story. “Projects” shows them all.",
   detailTextPhone: "Each project has its own page, opened from its stop. The menu shows them all.",
   go: "Start the journey →",
-  goOn: "Carry on →",
+  goOn: "Resume the journey →",
   projects: "See the projects",
   lost: "Lost along the way? I'll wait in the corner.",
   lostPhone: "Lost? I'll wait at the bottom: tap me.",
   close: "Close",
-  dock: "Your co-pilot: how to visit?",
+  dock: "Adam, your co-pilot: how to visit?",
   hint: "Have a good trip! If you need me along the way, I'm right here, at the bottom right of your screen.",
   hintPhone: "Have a good trip! If you need me along the way, I'm right here, at the bottom of your screen.",
 };
@@ -73,7 +73,7 @@ export const COPILOTE: Record<Lang, typeof en> = { fr, en };
  * tuto (voyage, voyageText, detail, detailText ci-dessus). {n} : le nombre de projets, en lettres.
  */
 const decollageFr = {
-  aria: "Le décollage : le copilote explique le voyage",
+  aria: "Le décollage : Adam, le copilote, explique le voyage",
   hello: "Salut, voyageur !",
   intro: "On part visiter mes {n} projets. Chacun est une escale : une scène en 3D, sa fiche, et son app quand elle est en ligne.",
   next: "Suivant →",
@@ -84,7 +84,7 @@ const decollageFr = {
 };
 
 const decollageEn: { [K in keyof typeof decollageFr]: string } = {
-  aria: "Take-off: the co-pilot explains the journey",
+  aria: "Take-off: Adam, the co-pilot, explains the journey",
   hello: "Hi, traveller!",
   intro: "We're off to visit my {n} projects. Each one is a stop: a 3D scene, its project page, and its app when it's live.",
   next: "Next →",

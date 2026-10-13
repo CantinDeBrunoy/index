@@ -6,7 +6,7 @@
  *   L'anneau doré de l'escale attend la fin de l'accueil : il naît alors sur le bouton « Faire le voyage » et
  *   file se poser sur la planète, pour qu'on voie où cliquer.
  * - Rangé, à chaque escale, au bout de la barre des escales : sa pastille porte la tenue de l'escale. Un clic sur elle rouvre le tuto ;
- *   « Continuer le voyage », la croix, Échap ou un clic ailleurs le referment.
+ *   « Reprendre le voyage », la croix, Échap ou un clic ailleurs le referment.
  * Il suit le voyage par l'évènement « voyage:escale » de scripts/voyage.ts : ce module se charge avant lui.
  */
 

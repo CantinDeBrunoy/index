@@ -67,7 +67,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
   fr: {
     "galactic-escape": {
       place: "L'espace",
-      alt: "L'espace : une planète à l'anneau de laiton et aux bandes lavande, ses lunes, la fusée du copilote en route, et la Terre au loin parmi les étoiles.",
+      alt: "L'espace : une planète à l'anneau de laiton et aux bandes lavande, ses lunes, la fusée du copilote Adam en route, et la Terre au loin parmi les étoiles.",
       kind: "Jeu 3D · 2022 · En ligne",
       pitch: "Un runner en 3D inspiré de Temple Run : fuir un monstre à travers l'espace, en posant les cases de son chemin entre les météores.",
       cta: "Descendre vers la Terre",
@@ -140,7 +140,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
   en: {
     "galactic-escape": {
       place: "Space",
-      alt: "Space: a planet with a brass ring and lavender bands, its moons, the co-pilot's rocket on its way, and the Earth far off among the stars.",
+      alt: "Space: a planet with a brass ring and lavender bands, its moons, co-pilot Adam's rocket on its way, and the Earth far off among the stars.",
       kind: "3D game · 2022 · Live",
       pitch: "A 3D runner inspired by Temple Run: flee a monster through space, laying the tiles of your path between the meteors.",
       cta: "Descend to Earth",
