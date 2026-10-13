@@ -668,9 +668,10 @@ function decollage(M, clip) {
   })();
   g.add(more);
   // La phase du monde : les lunes, l'anneau et la Terre tournent comme dans la boucle de l'espace. Figés pendant les
-  // bulles, ils repartent au décollage et arrivent à la phase 0 (2π) à la fin de l'envol, à la vitesse de la boucle.
+  // bulles, ils repartent quand la trappe se ferme et arrivent à la phase 0 (2π) à la fin de l'envol, à la vitesse de
+  // la boucle. Ce départ place la grosse lune loin de la fusée pendant son tour de la planète (0,3 au plus près).
   const LOOP_S = 8;
-  const RAMP = ENVOL.duration - ENVOL.liftoff + 0.6; // la montée en vitesse, jusqu'à la fin
+  const RAMP = ENVOL.duration - ENVOL.door[0]; // la montée en vitesse, jusqu'à la fin
   const PHI0 = 2 * Math.PI - (2 * Math.PI / LOOP_S) * (RAMP / 2);
   const worldPhase = (t) => {
     if (clip !== "envol") return PHI0;
@@ -679,9 +680,9 @@ function decollage(M, clip) {
     return PHI0 + (2 * Math.PI / LOOP_S) * (x * x) / (2 * RAMP);
   };
   const setWorld = (phi) => {
-    m1.position.set(Math.cos(phi) * 1.45, 1.0 + Math.sin(phi) * 0.35, Math.sin(phi) * 1.0);
+    m1.position.copy(MOON_ORBITS.big(phi));
     m1.rotation.set(phi, phi, 0);
-    m2.position.set(Math.cos(-phi + 1) * 1.05, 1.0 + Math.cos(phi) * 0.55, Math.sin(-phi + 1) * 0.8);
+    m2.position.copy(MOON_ORBITS.small(phi));
     m2.rotation.set(phi, 0, phi);
     ringMesh.rotation.z = 0.2 + 0.08 * Math.sin(phi);
     // La Terre tourne EARTH_LAPS fois moins vite que le reste (voyage-scenes.js) et retrouve -1,75 à la coupure.

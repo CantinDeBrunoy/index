@@ -57,6 +57,18 @@ function roundRect(w, h, r) {
 const pingpong = (phi) => (1 - Math.cos(phi)) / 2;
 
 // Chaque objet renvoie son groupe ; userData.animate(phi) le fait vivre, phi ∈ [0, 2π) bouclant sans couture.
+// Les lunes de la planète à anneau (Galaxy Escape), sur des cercles qui ne croisent jamais l'anneau (rayon 1,18,
+// tube 0,035) : la grosse au-dehors (1,45), la petite entre lui et la planète (0,95). Elles gardent le plan et le sens
+// de leurs anciennes ellipses, qui traversaient l'anneau. Le décollage (decollage-scenes.js) les reprend.
+const MOON_ORBITS = (() => {
+  const center = new THREE.Vector3(0, 1.0, 0), x = new THREE.Vector3(1, 0, 0);
+  const tiltBig = new THREE.Vector3(0, 0.35, 1.0).normalize(), tiltSmall = new THREE.Vector3(0, 0.55, 0.8).normalize();
+  return {
+    big: (phi) => center.clone().addScaledVector(x, 1.45 * Math.cos(phi)).addScaledVector(tiltBig, 1.45 * Math.sin(phi)),
+    small: (phi) => center.clone().addScaledVector(x, 0.95 * Math.cos(1 - phi)).addScaledVector(tiltSmall, 0.95 * Math.sin(1 - phi)),
+  };
+})();
+
 const BUILD = {
   hero(M) {
     const g = new THREE.Group();
@@ -174,10 +186,10 @@ const BUILD = {
     const m2 = mesh(new THREE.IcosahedronGeometry(0.1, 0), M.clay2);
     g.add(m1, m2);
     g.userData.animate = (phi) => {
-      m1.position.set(Math.cos(phi) * 1.45, 1.0 + Math.sin(phi) * 0.35, Math.sin(phi) * 1.0);
+      m1.position.copy(MOON_ORBITS.big(phi));
       // Un tour par boucle pour chaque lune (la petite en faisait deux) : la scène de l'espace reste calme.
       m1.rotation.set(phi, phi, 0);
-      m2.position.set(Math.cos(-phi + 1) * 1.05, 1.0 + Math.cos(phi) * 0.55, Math.sin(-phi + 1) * 0.8);
+      m2.position.copy(MOON_ORBITS.small(phi));
       m2.rotation.set(phi, 0, phi);
       ring.rotation.z = 0.2 + 0.08 * Math.sin(phi);
     };
