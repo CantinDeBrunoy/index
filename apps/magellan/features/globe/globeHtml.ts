@@ -182,8 +182,7 @@ export function buildGlobeHtml(visitedCountries: string[] = [], trips: Trip[] = 
 
     const controls = world.controls();
     controls.autoRotate = true;
-    // 0,3 ≈ 1,8°/s, un tour en 3 min 20 (OrbitControls : 2 = un tour en 30 s).
-    controls.autoRotateSpeed = 0.3;
+    controls.autoRotateSpeed = 0.6;
     controls.enableZoom = true;
 
     // Barre espace : stoppe / relance la rotation automatique (si l'iframe a le focus).
