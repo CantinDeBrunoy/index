@@ -21,16 +21,16 @@ capture:
 screens:
   - image: "globe"
     title: "Le globe"
-    text: "Les pays visités en vert, un drapeau sur chaque ville, et le compte des voyages, des villes et des pays. Il tourne au doigt ; toucher un pays montre ses voyages."
-    alt: "Magellan sur téléphone : le globe, les pays visités en vert et le compteur « 14 voyages · 22 villes · 13 pays »."
+    text: "Les pays visités en vert, un drapeau sur chaque ville, et le compte des voyages, des villes et des pays. Il tourne à la souris ; cliquer sur un pays montre ses voyages."
+    alt: "Magellan sur ordinateur : le globe, les pays visités en vert et le compteur « 14 voyages · 22 villes · 13 pays »."
   - image: "voyages"
     title: "Les voyages"
     text: "Rangés par année, triés en road trips ou séjours d'une ville, avec en tête trois post-it pour les totaux."
-    alt: "La liste des voyages de démonstration : trois post-it (14 voyages, 22 villes, 13 pays), les filtres, puis Oslo et le Japon en 2025."
+    alt: "La liste des voyages de démonstration : trois post-it (14 voyages, 22 villes, 13 pays), les filtres, puis les voyages de 2025, 2024 et 2023 en fiches."
   - image: "voyage"
     title: "Un voyage"
-    text: "Sur une table en noyer, l'itinéraire étape par étape en post-it épinglés, avec les jours et le budget de chaque ville."
-    alt: "Le voyage de démonstration au Japon : 3 étapes, 10 jours, 2 050 € de budget, puis Tokyo, Kyoto et Osaka en post-it."
+    text: "Sur une table en noyer, l'itinéraire étape par étape en post-it épinglés, avec les jours et le budget de chaque ville ; à côté, le budget par poste et avec qui on part."
+    alt: "Le voyage de démonstration au Japon : 3 étapes, 10 jours, 2 050 € de budget, Tokyo, Kyoto et Osaka en post-it, et le budget détaillé."
 architecture:
   intro: "Une seule app Expo, exportée en site statique et servie par un Worker Cloudflare. Un visiteur voit des voyages de démonstration, gardés dans son navigateur ; moi, une fois connecté, je retrouve les miens dans une base à part."
   groups:

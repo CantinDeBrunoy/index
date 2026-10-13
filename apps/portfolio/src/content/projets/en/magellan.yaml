@@ -21,16 +21,16 @@ capture:
 screens:
   - image: "globe"
     title: "The globe"
-    text: "Visited countries in green, a flag on each city, and the count of trips, cities and countries. It spins under your finger; tapping a country shows its trips."
-    alt: "Magellan on a phone: the globe, visited countries in green and the counter “14 voyages · 22 villes · 13 pays”."
+    text: "Visited countries in green, a flag on each city, and the count of trips, cities and countries. It spins with the mouse; clicking a country shows its trips."
+    alt: "Magellan on a computer: the globe, visited countries in green and the counter “14 voyages · 22 villes · 13 pays”."
   - image: "voyages"
     title: "The trips"
     text: "Sorted by year, filtered into road trips or single-city stays, with three sticky notes for the totals at the top."
-    alt: "The list of demo trips: three sticky notes (14 trips, 22 cities, 13 countries), the filters, then Oslo and Japan in 2025."
+    alt: "The list of demo trips: three sticky notes (14 trips, 22 cities, 13 countries), the filters, then the trips of 2025, 2024 and 2023 as cards."
   - image: "voyage"
     title: "One trip"
-    text: "On a walnut table, the route stop by stop as pinned sticky notes, with the days and budget of each city."
-    alt: "The demo trip to Japan: 3 stops, 10 days, a €2,050 budget, then Tokyo, Kyoto and Osaka as sticky notes."
+    text: "On a walnut table, the route stop by stop as pinned sticky notes, with the days and budget of each city; beside it, the budget by category and who's coming along."
+    alt: "The demo trip to Japan: 3 stops, 10 days, a €2,050 budget, Tokyo, Kyoto and Osaka as sticky notes, and the detailed budget."
 architecture:
   intro: "A single Expo app, exported as a static site and served by a Cloudflare Worker. A visitor sees demo trips, kept in their browser; once I'm signed in, I get my own from a separate database."
   groups:

@@ -68,10 +68,10 @@ const VISIT_MATCH_SCREEN = { left: 480, top: 68, width: 245, height: 532 };
 
 const TARGETS: Target[] = [
   {
-    // Les voyages de démo (data/initialTrips.ts).
+    // Les voyages de démo (data/initialTrips.ts), sur ordinateur.
     slug: "magellan",
     url: "https://magellan.cantin-roquier.workers.dev",
-    device: "phone",
+    device: "desktop",
     settleMs: 6000,
     shots: [
       { name: "globe" },
