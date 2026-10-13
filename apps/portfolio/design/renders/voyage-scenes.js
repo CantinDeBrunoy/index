@@ -1512,6 +1512,11 @@ function copilot(M, outfit = "espace", { tether = true } = {}) {
   return g;
 }
 
+// La Terre (escales 1 et 2) fait un tour en trois cycles de la boucle, 24 s au lieu de 8 (2026-10-13, « la
+// Terre tourne trop vite ») ; le reste garde son rythme. Une scène à `userData.laps` reçoit phi de 0 à
+// 2π × laps sur la boucle entière : le moteur dessine l'image i comme l'image i × laps (encodeVideo, voyage-render.mjs).
+const EARTH_LAPS = 3;
+
 const SCENES = {
   // 001 Galactic Escape : l'espace, la planète à anneau ; la Terre au loin
   espace(M) {
@@ -1530,10 +1535,11 @@ const SCENES = {
     g.add(earth);
     g.add(starField(500, 7));
     g.userData.hotspot = earth;
+    g.userData.laps = EARTH_LAPS;
     g.userData.animate = (phi) => {
       gal.userData.animate(phi);
       gal.rotation.y = 0.2 * Math.sin(phi);
-      earth.rotation.y = -1.75 + phi;
+      earth.rotation.y = -1.75 + phi / EARTH_LAPS;
     };
     // Recul et visée basse (2026-10-09, « dézoomer la planète ») : rognée en 16:10 sur le site, la
     // planète passait derrière le cartel ; elle tient maintenant entière au-dessus de lui.
@@ -1572,8 +1578,9 @@ const SCENES = {
     g.add(jet);
     g.userData.hotspot = jet;
     const heading = new THREE.Vector3(-0.85, 0, 0.53).normalize();
+    g.userData.laps = EARTH_LAPS;
     g.userData.animate = (phi) => {
-      spin.rotation.y = -1.75 + phi;
+      spin.rotation.y = -1.75 + phi / EARTH_LAPS;
       const p = new THREE.Vector3(2.35, 0.3 + 0.05 * Math.sin(2 * phi), 0.4);
       jet.position.copy(p);
       jet.lookAt(p.clone().add(heading));
@@ -2656,8 +2663,9 @@ window.encodeVideo = async ({ frames, from = 0, fps, codec, quantizer, bitrate, 
   // Images clés en plus, là où le site saute dans le clip (la sortie du voyage : un départ par morceau).
   const keys = new Set(current.obj.userData.keys ?? []);
   const perFrame = rate === "variable" ? {} : codec.startsWith("av01") ? { av1: { quantizer } } : codec.startsWith("vp09") ? { vp9: { quantizer } } : {};
+  const laps = current.obj.userData.laps ?? 1;
   for (let i = from; i < frames; i++) {
-    window.drawFrame(i, frames);
+    window.drawFrame(i * laps, frames);
     const frame = new VideoFrame(canvas, { timestamp: Math.round(((i - from) * 1e6) / fps), duration: Math.round(1e6 / fps) });
     encoder.encode(frame, { keyFrame: i === from || keys.has(i), ...perFrame });
     frame.close();

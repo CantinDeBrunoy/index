@@ -27,12 +27,17 @@ const BG = {
 // Le passeport : le tampon s'encre, traverse, tamponne et revient ; 6 s pour que le geste reste posé.
 // L'espace, l'avion et la route : 8 s plutôt que 4, pour que tout y bouge deux fois moins vite (2026-10-09).
 // Le décollage (decollage-scenes.js) : deux boucles d'une seconde (le salut), la montée de 2,5 s, l'envol de 9 s.
+// La Terre de l'espace et du globe : un tour en 24 s (EARTH_LAPS, voyage-scenes.js), trois cycles de 8 s du reste.
+// Le globe passe à 6 images/s en WebP (un pas de 2,5°, la moitié d'avant) pour rester léger sur téléphone.
 const LOOPS = {
-  terre: [72, 8000, 45], passeport: [120, 6000, 72], espace: [120, 8000], avion: [120, 8000], route: [120, 8000],
+  terre: [144, 24000, 45], passeport: [120, 6000, 72], espace: [360, 24000], avion: [120, 8000], route: [120, 8000],
   // Le départ : l'espace d'avant le décollage, sans la fusée (decollage-scenes.js).
-  depart: [120, 8000],
+  depart: [360, 24000],
   "decollage-pied": [24, 1000], "decollage-echelle": [60, 2500], "decollage-trappe": [24, 1000], "decollage-envol": [216, 9000],
 };
+// Les boucles de 24 s de la Terre, en vidéo : [AV1, H.264] en débit variable (bit/s). Au quantizer 32, l'espace
+// pesait 6,9 Mo en AV1 ; ainsi, chaque fichier reste autour de 3 Mo. RATE / BITRATE / QP gardent la main.
+const RATES = { terre: [1e6, 1.2e6], espace: [1e6, 1.2e6], depart: [1e6, 1.2e6] };
 
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".glb": "model/gltf-binary", ".geojson": "application/json" };
 const server = createServer(async (req, res) => {
@@ -123,8 +128,10 @@ for (const name of names) {
     const own = await page.evaluate(() => window.__current.obj.userData.frames ?? null);
     const frames = Number(process.env.FRAMES ?? own ?? Math.round((Number(process.env.LOOP_MS ?? LOOP) / 1000) * fps));
     const codec = process.env.CODEC ?? "avc1.640034";
+    const av1 = codec.startsWith("av01");
+    const [rate, bitrate] = av1 && RATES[name] ? ["variable", RATES[name][0]] : [undefined, RATES[name]?.[1] ?? 3e6];
     await page.evaluate((hex) => window.setBackground(hex), BG[name] ?? "#888888");
-    const b64 = await page.evaluate((o) => window.encodeVideo(o), { frames, from: Number(process.env.FROM ?? 0), fps, codec, quantizer: Number(process.env.QP ?? 32), bitrate: Number(process.env.BITRATE ?? 3e6), rate: process.env.RATE });
+    const b64 = await page.evaluate((o) => window.encodeVideo(o), { frames, from: Number(process.env.FROM ?? 0), fps, codec, quantizer: Number(process.env.QP ?? 32), bitrate: Number(process.env.BITRATE ?? bitrate), rate: process.env.RATE ?? rate });
     const out = `${name}${process.env.SUFFIX ?? ""}${codec.startsWith("av01") ? "-av1" : ""}.mp4`;
     await writeFile(join(dir, "anim", out), Buffer.from(b64, "base64"));
     console.log(`✓ ${out}  ${frames} images  ${Math.round(Buffer.byteLength(b64, "base64") / 1024)} Ko  ${((Date.now() - t0) / 1000).toFixed(1)} s`);
@@ -141,8 +148,9 @@ for (const name of names) {
   } else {
     const [N, LOOP, Q = 74] = process.env.FRAMES ? [Number(process.env.FRAMES), Number(process.env.LOOP_MS ?? 4000), Number(process.env.Q ?? 74)] : (LOOPS[name] ?? [96, 4000]);
     const frames = [];
+    const laps = await page.evaluate(() => window.__current.obj.userData.laps ?? 1);
     for (let i = 0; i < N; i++) {
-      const url = await page.evaluate(([i, n]) => window.renderFrame(i, n), [i, N]);
+      const url = await page.evaluate(([i, n]) => window.renderFrame(i, n), [i * laps, N]);
       frames.push(Buffer.from(url.split(",")[1], "base64"));
     }
     const out = MOBILE ? `${name}${suffix}.webp` : `${name}-light-laiton.webp`;
