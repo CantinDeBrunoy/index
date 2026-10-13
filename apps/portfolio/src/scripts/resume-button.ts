@@ -10,12 +10,17 @@
 // Sans script, il reste visible en bas et le rond le montre aussi ; en mouvement réduit, il ne vole pas : il
 // s'efface, et le rond le montre. Pendant l'accueil du copilote (scripts/fiche-accueil.ts), la fiche n'a que son
 // en-tête : il reste à sa place, caché, et la reprend d'emblée, sans bond, quand la fiche apparaît.
-const button = document.querySelector<HTMLElement>("[data-resume]");
-const dock = document.querySelector<HTMLElement>("[data-resume-dock]");
-const from = document.querySelector<HTMLElement>("[data-resume-from]");
-const pad = document.querySelector<HTMLElement>("[data-resume-pad]");
+// Au voyage, chaque escale porte sa fiche dessous (VoyagePage.astro, [data-fiche-of]) : un copilote par fiche, qui
+// suit la lecture depuis le haut de la sienne.
 
-if (button && dock && from && pad) {
+function start(button: HTMLElement) {
+  const scope = button.closest<HTMLElement>("[data-fiche-of]");
+  const within = scope ?? document;
+  const dock = button.querySelector<HTMLElement>("[data-resume-dock]");
+  const from = within.querySelector<HTMLElement>("[data-resume-from]");
+  const pad = within.querySelector<HTMLElement>("[data-resume-pad]");
+  if (!dock || !from || !pad) return;
+
   const desktop = matchMedia("(min-width: 701px)");
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   // Dans la bande, sa pastille prend le fond et le liseré du rond, ceux de la palette de l'escale.
@@ -76,7 +81,9 @@ if (button && dock && from && pad) {
 
   const tick = (now: number) => {
     frame = 0;
-    const rise = desktop.matches ? Math.min(1, scrollY / (innerHeight / 2)) : 0;
+    // Ce qu'on a lu de sa fiche : depuis le haut de la page, ou de la fiche sous son escale.
+    const read = scope ? -scope.getBoundingClientRect().top : scrollY;
+    const rise = desktop.matches ? Math.min(1, Math.max(0, read) / (innerHeight / 2)) : 0;
     button.style.setProperty("--rise", rise.toFixed(3));
     to = wanted();
     if (reduced.matches) at = to;
@@ -111,3 +118,8 @@ if (button && dock && from && pad) {
   document.addEventListener("fiche:revele", settle);
   settle();
 }
+
+for (const button of document.querySelectorAll<HTMLElement>("[data-resume]")) start(button);
+
+// Un module : ses noms (start) ne se mêlent pas à ceux des autres scripts.
+export {};

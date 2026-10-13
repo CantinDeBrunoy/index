@@ -226,6 +226,8 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     dotsAria: "Les escales du voyage",
     fiche: "La fiche du projet →",
     ficheShort: "La fiche →",
+    /** Au voyage, le nom de la fiche posée sous l'escale (scripts/voyage-fiche.ts). */
+    ficheTab: "La fiche du projet",
     app: "Ouvrir l'app ↗",
     appShort: "L'app ↗",
     download: "Télécharger ↓",
@@ -249,6 +251,7 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     dotsAria: "The journey's stops",
     fiche: "Project page →",
     ficheShort: "Project page →",
+    ficheTab: "Project page",
     app: "Open the app ↗",
     appShort: "The app ↗",
     download: "Download ↓",

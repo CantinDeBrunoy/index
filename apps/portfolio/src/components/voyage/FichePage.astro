@@ -10,54 +10,43 @@
  * boutons ; il dit où l'on est et que c'est lui qui ramène au voyage, puis il saute dans sa pastille.
  * Les textes viennent de la collection de contenu (src/content/projets) ; le décor et l'accroche, de
  * data/voyage.ts ; les liens, la pile et l'hébergeur, de @index/projects.
+ * Au voyage, la même fiche est posée sous son escale (`embedded`, VoyagePage.astro) : sans la page autour ni
+ * l'accueil du copilote, et la bande comme le copilote y remontent à l'escale (scripts/voyage-fiche.ts).
  */
 import { getProject, GITHUB_URL } from "@index/projects";
-import { getImage } from "astro:assets";
-import { getEntry } from "astro:content";
 import { FICHE, nameOf } from "../../data/fiches";
 import { appOf, fill, kindOf, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
-import { getShot } from "../../lib/shots";
 import Badges from "./Badges.astro";
-import BoardingPass from "./BoardingPass.astro";
+import Bare from "./Bare.astro";
 import Colophon from "./Colophon.astro";
 import FicheAccueil from "./FicheAccueil.astro";
-import FichePoints from "./FichePoints.astro";
+import FicheCorps from "./FicheCorps.astro";
 import SiteHeader from "./SiteHeader.astro";
 
 interface Props {
   lang: Lang;
   /** Le projet de l'escale (slug de @index/projects). */
   slug: string;
+  /** Posée sous son escale, dans le voyage, plutôt que seule sur sa page. */
+  embedded?: boolean;
 }
 
-const { lang, slug } = Astro.props;
+const { lang, slug, embedded = false } = Astro.props;
 const f = FICHE[lang];
 const i = STOPS.findIndex((s) => s.slug === slug);
 const stop = STOPS[i];
 const project = getProject(slug);
-const entry = await getEntry("projets", `${lang}/${slug}`);
-if (!stop || !project || !entry?.data.why) throw new Error(`Fiche incomplète : ${lang}/${slug}`);
+if (!stop || !project) throw new Error(`Fiche sans escale : ${lang}/${slug}`);
 const name = nameOf(project, lang);
 
 const n = i + 1;
 const text = STOP_TEXTS[lang][slug]!;
-const { why, features, choices, capture, video } = entry.data;
 const kind = kindOf(project, text, lang);
 const app = appOf(project, text, lang);
 const code = project.links.code;
 const alternates = { fr: fichePath("fr", project), en: fichePath("en", project) };
-
-// La vidéo de démo : son affiche est à côté d'elle (<slug>.webp), sa taille dans la fiche.
-const demoPoster = (src: string) => src.replace(/\.mp4$/, ".webp");
-// La capture : celle d'ordinateur, et sous 700 px celle du téléphone, s'il y en a une.
-const shot = capture ? getShot(slug, "desktop") : undefined;
-const shotPhone = capture ? getShot(slug, "mobile") : undefined;
-const shotSet = shot && (await getImage({ src: shot, widths: [640, 1040, 1440], format: "webp" }));
-const shotPhoneSet = shotPhone && (await getImage({ src: shotPhone, widths: [390, 780], format: "webp" }));
-// Avec une vidéo ou une capture, la carte d'embarquement se pose à sa droite ; sans, elle reste seule sous la ligne de vol.
-const media = Boolean(video || (capture && shot && shotSet));
 
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
 
@@ -67,24 +56,35 @@ const resume = `${ROUTES.voyage[lang]}#escale-${n}`;
 const copilote = { loop: `/voyage/copilote/${stop.scene}.webp`, still: `/voyage/copilote/${stop.scene}-fixe.webp` };
 // Les textes en prose, à la typographie de la langue (les espaces insécables du français).
 const T = (text: string) => typo(lang, text);
+
+// Sous son escale, la fiche est dans la page du voyage : ni <html> autour, ni second <main>, ni second <h1> ; ses
+// affiches attendent qu'on l'ouvre (data-poster), et la bande comme le copilote y remontent (data-fiche-up).
+const Shell = embedded ? Bare : Voyage;
+const Main = embedded ? "div" : "main";
+const Title = embedded ? "h2" : "h1";
+const up = embedded ? "" : undefined;
 ---
 
-<Voyage lang={lang} title={name} description={text.pitch} alternates={alternates} type="article" palette="day">
+<Shell lang={lang} title={name} description={text.pitch} alternates={alternates} type="article" palette="day">
   <!-- L'accueil du copilote, à la première fiche ouverte (scripts/fiche-accueil.ts) : décidé avant l'affichage,
        pour que la fiche ne se montre pas un instant entière. Pas d'accueil quand le lien vise un endroit de la
        fiche (#…) : on y va. -->
-  <script is:inline>
-    try {
-      if (localStorage.getItem("index:copilote-fiche") !== "vu" && !location.hash) document.documentElement.classList.add("fiche-accueil");
-    } catch {}
-  </script>
+  {
+    !embedded && (
+      <script is:inline>
+        try {
+          if (localStorage.getItem("index:copilote-fiche") !== "vu" && !location.hash) document.documentElement.classList.add("fiche-accueil");
+        } catch {}
+      </script>
+    )
+  }
   <div class={`hero pal-${stop.palette}`} style={`--stop-bg: ${stop.bg}`}>
     <SiteHeader lang={lang} current="projets" exact={false} alternates={alternates} />
 
     <div class="wrap-read">
       <div class="hero__body">
         <div class="hero__text">
-          <h1 class="serif">{name}</h1>
+          <Title class="serif hero__title">{name}</Title>
           <p class="hero__kind">
             <span>{kind.line}</span>
             <Badges project={project} lang={lang} />
@@ -113,7 +113,8 @@ const T = (text: string) => typo(lang, text);
             playsinline
             disablepictureinpicture
             preload="none"
-            poster={still(stop.scene)}
+            poster={embedded ? undefined : still(stop.scene)}
+            data-poster={embedded ? still(stop.scene) : undefined}
             aria-hidden="true"
           >
             <source src={`/voyage/${stop.scene}-av1.mp4`} type='video/mp4; codecs="av01.0.12M.08"' />
@@ -130,69 +131,22 @@ const T = (text: string) => typo(lang, text);
     </div>
   </div>
 
-  <FicheAccueil
-    lang={lang}
-    name={name}
-    href={resume}
-    label={`${f.resume} · ${f.stop} ${n} · ${text.place}`}
-    loop={copilote.loop}
-    still={copilote.still}
-  />
+  {
+    !embedded && (
+      <FicheAccueil
+        lang={lang}
+        name={name}
+        href={resume}
+        label={`${f.resume} · ${f.stop} ${n} · ${text.place}`}
+        loop={copilote.loop}
+        still={copilote.still}
+      />
+    )
+  }
 
-  <main id="contenu" class="wrap-read" data-accueil-cache>
-    {
-      media && (
-        <section class="pictures">
-          <h2 class:list={["label", { "visually-hidden": video }]}>{video ? f.demo : f.pictures}</h2>
-          <div class="pictures__row">
-          <figure>
-            {video ? (
-              <video class="shot shot--video" src={video.src} poster={demoPoster(video.src)} controls muted loop playsinline preload="none" width={video.width} height={video.height} data-demo />
-            ) : (
-            shot && shotSet && capture && <picture>
-              {shotPhone && shotPhoneSet && (
-                <source
-                  media="(max-width: 700px)"
-                  srcset={shotPhoneSet.srcSet.attribute}
-                  sizes="300px"
-                  width={shotPhone.width}
-                  height={shotPhone.height}
-                  type="image/webp"
-                />
-              )}
-              <source srcset={shotSet.srcSet.attribute} sizes="(min-width: 1140px) 1040px, calc(100vw - 40px)" type="image/webp" />
-              <img class="shot" src={shotSet.src} width={shot.width} height={shot.height} alt={capture.alt} loading="lazy" decoding="async" />
-            </picture>
-            )}
-            <figcaption>{T(video ? video.caption : (capture?.caption ?? ""))}</figcaption>
-          </figure>
-          <BoardingPass lang={lang} project={project} stop={stop} text={text} compact />
-          </div>
-        </section>
-      )
-    }
-    <FichePoints
-      id="points"
-      aria={f.pointsAria}
-      prev={f.prevPoint}
-      next={f.nextPoint}
-      groups={[
-        { label: f.depart, points: [{ title: f.why, text: T(why) }] },
-        { label: f.what, points: features.map((item) => ({ title: T(item.title), text: T(item.text) })) },
-        { label: f.how, points: choices.map((item) => ({ title: T(item.title), text: T(item.text) })) },
-      ]}
-    />
-
-    {
-      !media && (
-        <section class="boarding">
-          <BoardingPass lang={lang} project={project} stop={stop} text={text} level={2} />
-        </section>
-      )
-    }
-
-
-  </main>
+  <Main id={embedded ? undefined : "contenu"} class="wrap-read" data-accueil-cache>
+    <FicheCorps lang={lang} slug={slug} pointsId={embedded ? `points-${slug}` : "points"} lazyPoster={embedded} />
+  </Main>
 
   <div class="wrap-read" data-accueil-cache>
     <footer class="foot" data-resume-from>
@@ -206,7 +160,7 @@ const T = (text: string) => typo(lang, text);
 
   <!-- Tout en bas, sous le pied de page, sur toute la largeur, de la couleur de l'en-tête : la bande entière est le
        bouton qui reprend le voyage. Le copilote vient se poser dans son rond. -->
-  <a class={`reprendre pal-${stop.palette}`} href={resume} style={`--stop-bg: ${stop.bg}`} data-accueil-cache>
+  <a class={`reprendre pal-${stop.palette}`} href={resume} style={`--stop-bg: ${stop.bg}`} data-accueil-cache data-fiche-up={up}>
     <span class="reprendre__pad" data-resume-pad>
       <picture>
         <source media="(prefers-reduced-motion: reduce)" srcset={copilote.still} />
@@ -217,7 +171,7 @@ const T = (text: string) => typo(lang, text);
     <span class="reprendre__arrow" aria-hidden="true">→</span>
   </a>
 
-  <a class="resume" href={resume} data-resume>
+  <a class="resume" href={resume} data-resume data-fiche-up={up}>
     <span class="resume__bubble">
       <b>{f.copilot}</b>
       <small>{f.stop} {n} · {text.place} <span aria-hidden="true">→</span></small>
@@ -229,11 +183,10 @@ const T = (text: string) => typo(lang, text);
       </picture>
     </span>
   </a>
-</Voyage>
+</Shell>
 
 <script>
   import "../../scripts/scene-video";
-  import "../../scripts/demo-video";
   import "../../scripts/resume-button";
   import "../../scripts/fiche-accueil";
 </script>
@@ -480,7 +433,7 @@ const T = (text: string) => typo(lang, text);
       display: none;
     }
   }
-  .hero h1 {
+  .hero__title {
     margin: 0;
     font-size: clamp(56px, 6.6vw, 96px);
     line-height: 0.95;
@@ -550,81 +503,6 @@ const T = (text: string) => typo(lang, text);
     .hero__scene:global(.js.no-video) .scene--still {
       display: block;
     }
-  }
-
-  /* — Le papier : les rubriques, séparées d'un filet — */
-  .pictures {
-    padding: 56px 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  /* La carte d'embarquement, seule sous la ligne de vol, quand la fiche n'a ni démo ni capture. */
-  .boarding {
-    display: flex;
-    justify-content: center;
-    padding: 64px 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  /* La démo (ou la capture) sur les trois quarts ; la carte d'embarquement à sa droite, centrée sur la démo
-     elle-même, pas sur sa légende : la démo et la légende occupent deux rangées (une sous-grille), la carte la
-     première. Plus étroit, elle passe dessous. */
-  .pictures__row {
-    display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
-    grid-template-rows: auto auto;
-    gap: 14px 48px;
-    margin-top: 28px;
-  }
-  .pictures__row :global(.pass) {
-    grid-column: 2;
-    grid-row: 1;
-    align-self: center;
-    justify-self: center;
-  }
-  /* Sans titre visible au-dessus (la vidéo de démo se passe de légende) : rien à décaler. */
-  .visually-hidden + .pictures__row {
-    margin-top: 0;
-  }
-  .pictures figure {
-    display: grid;
-    grid-column: 1;
-    grid-row: 1 / span 2;
-    grid-template-rows: subgrid;
-    justify-items: start;
-    margin: 0;
-  }
-  .pictures figure .shot {
-    align-self: center;
-  }
-  @media (max-width: 1000px) {
-    .pictures__row {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .pictures__row :global(.pass) {
-      grid-column: 1;
-      grid-row: 3;
-      margin-top: 22px;
-    }
-    .pictures figure {
-      justify-items: center;
-    }
-  }
-  .shot {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: var(--radius-l);
-    border: 1px solid var(--line);
-    box-shadow: 0 18px 48px rgba(36, 30, 24, 0.12);
-  }
-  .pictures picture {
-    display: contents;
-  }
-  .pictures figcaption {
-    color: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
   }
 
   /* — Tout en bas, sous le pied de page, sur toute la largeur : la bande, de la couleur et de la palette de
@@ -761,10 +639,6 @@ const T = (text: string) => typo(lang, text);
     .hero__pitch {
       font-size: 18px;
     }
-    .pictures,
-    .boarding {
-      padding: 40px 0;
-    }
     .reprendre {
       gap: 14px;
       min-height: 112px;
@@ -779,15 +653,6 @@ const T = (text: string) => typo(lang, text);
     }
     .reprendre__arrow {
       margin-left: 4px;
-    }
-    /* La capture du téléphone, à la taille d'un téléphone ; la vidéo, filmée sur ordinateur, garde toute la largeur. */
-    .shot {
-      width: min(100%, 300px);
-      border-radius: 28px;
-    }
-    .shot--video {
-      width: 100%;
-      border-radius: var(--radius-m);
     }
   }
 </style>

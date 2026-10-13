@@ -10,9 +10,12 @@
  * - Le premier « Décoller » passe par la fusée du copilote (scripts/decollage.ts), que le retour de l'escale 1,
  *   « Le décollage », rejoue : « voyage:decoller » lui laisse la main, « voyage:fusee » la lui donne une fois
  *   l'escale quittée effacée, « voyage:arrivee » la rend à l'escale 1.
+ * - La fiche de chaque escale est dessous (scripts/voyage-fiche.ts) : pendant qu'on la lit, la scène de l'escale est
+ *   en pause et les flèches ne changent pas d'escale ; on change d'escale, elle se referme sous le voile.
  */
 
 import { animatePhoneScene } from "./phone-loop";
+import { startFiches } from "./voyage-fiche";
 import { leaveVoyage, prepareExit, resetExit } from "./voyage-sortie";
 
 const LEAVE_MS = 750;
@@ -46,6 +49,8 @@ function start(root: HTMLElement) {
   let later = 0;
   /** Pendant le décollage, la fusée couvre le départ : sa scène reste en pause. */
   let aboard = false;
+  /** Pendant qu'on lit la fiche, sous l'escale : sa scène, hors de l'écran, reste en pause. */
+  let reading = false;
 
   const videoOf = (i: number) => stops[i]?.querySelector<HTMLVideoElement>("video");
 
@@ -58,7 +63,7 @@ function start(root: HTMLElement) {
   /** La vidéo de l'escale affichée tourne en boucle ; en mouvement réduit, elle reste sur sa première image. */
   const play = (i: number) => {
     const video = videoOf(i);
-    if (!video || !desktop.matches || aboard) return;
+    if (!video || !desktop.matches || aboard || reading) return;
     video.preload = "auto";
     if (reduce.matches) {
       if (video.readyState === HTMLMediaElement.HAVE_NOTHING) video.load();
@@ -140,6 +145,9 @@ function start(root: HTMLElement) {
 
     window.setTimeout(
       () => {
+        // Sous le voile : la fiche de l'escale quittée se referme, la page revient en haut.
+        fiches.close();
+        window.scrollTo({ top: 0 });
         from.classList.remove("leave", "soft");
         root.classList.remove("leaving");
         root.classList.add("entering");
@@ -154,7 +162,6 @@ function start(root: HTMLElement) {
         to.classList.add("enter");
         to.classList.toggle("soft", soft);
         show(next);
-        window.scrollTo({ top: 0 });
         // Le focus suit le voyage : sur le titre de l'escale, sans faire défiler la page.
         if (hadFocus) to.querySelector<HTMLElement>("[data-focus]")?.focus({ preventScroll: true });
         window.setTimeout(() => {
@@ -169,6 +176,15 @@ function start(root: HTMLElement) {
 
   show(current);
   root.classList.add("is-live", "is-ready");
+
+  const fiches = startFiches(root, {
+    stop: () => (busy || leaving || stops[current]?.querySelector<HTMLElement>(".cartel")?.inert ? -1 : current),
+    reading: (on) => {
+      reading = on;
+      if (on) pause(current);
+      else play(current);
+    },
+  });
 
   // Le décollage rend la main : l'escale 1 apparaît sous la fusée, sans transition au bout de l'envol (`cut` : sa
   // scène commence où l'envol s'arrête), en fondu si l'on a passé l'intro.
@@ -218,6 +234,8 @@ function start(root: HTMLElement) {
   document.addEventListener("keydown", (event) => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     if ((event.target as Element).closest("input, textarea, select, [contenteditable]")) return;
+    // La fiche ouverte se lit : ses flèches sont les siennes (sa ligne de vol).
+    if (fiches.isOpen()) return;
     if (event.key === "ArrowRight") go(current + 1);
     // À l'escale 1, reculer rejoue le décollage, comme son bouton retour.
     else if (event.key === "ArrowLeft") go(current === 1 ? 1 : current - 1, true, current === 1);

@@ -8,6 +8,8 @@
  * Avec le script (scripts/voyage.ts), une seule à la fois, et des transitions entre elles.
  * Sous 700 px, la disposition du téléphone : la scène recadrée en haut, le cartel dessous,
  * le retour et l'escale suivante au pouce.
+ * Sous l'écran des escales, la fiche de chacune (FichePage.astro, la même que sur sa page) : on y descend sans quitter le voyage
+ * (scripts/voyage-fiche.ts).
  */
 import { getProject } from "@index/projects";
 import { nameOf } from "../../data/fiches";
@@ -17,6 +19,7 @@ import Voyage from "../../layouts/Voyage.astro";
 import Copilote from "./Copilote.astro";
 import CopiloteAccueil from "./CopiloteAccueil.astro";
 import Decollage from "./Decollage.astro";
+import FichePage from "./FichePage.astro";
 
 interface Props {
   lang: Lang;
@@ -218,7 +221,7 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
                 </h2>
                 <p class="cartel__pitch">{typo(lang, s.text.pitch)}</p>
                 <div class="cartel__links">
-                  <a class="go" href={fichePath(lang, s.project)}>
+                  <a class="go" href={fichePath(lang, s.project)} data-fiche-open>
                     <span class="lg">{v.fiche}</span>
                     <span class="sm">{v.ficheShort}</span>
                   </a>
@@ -269,6 +272,18 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
       }
     </main>
 
+    <!-- Sous l'écran des escales, la fiche de chacune, sur papier crème : seule celle de l'escale affichée s'ouvre,
+         quand on y descend (scripts/voyage-fiche.ts). Sans script, le bouton de la fiche mène à sa page. -->
+    <div class="fiches">
+      {
+        stops.map((s) => (
+          <section class="fiche-sous pal-day" data-fiche-of={s.n} aria-label={`${v.ficheTab} · ${s.name}`} tabindex="-1">
+            <FichePage lang={lang} slug={s.slug} embedded />
+          </section>
+        ))
+      }
+    </div>
+
     <Decollage lang={lang} count={stops.length} />
     <div class="veil" aria-hidden="true"></div>
     <p class="visually-hidden" aria-live="polite" data-announce></p>
@@ -287,6 +302,8 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
      flèche (les liens et les boutons, eux, gardent leur main). Les fiches restent du texte à lire. */
   .voyage {
     position: relative;
+    /* Rien ne dépasse sous l'escale (l'annonce cachée des lecteurs d'écran) : la page s'arrête à son bas. */
+    overflow: clip;
     background: var(--bg);
     color: var(--ink);
     -webkit-user-select: none;
@@ -322,7 +339,9 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
     background: var(--stop-bg);
     color: var(--ink);
   }
-  :global(.voyage.is-live) {
+  /* Avec le script, l'écran des escales tient dans l'écran ; la fiche de l'escale, une fois ouverte, est dessous. */
+  :global(.voyage.is-live) main {
+    position: relative;
     height: 100svh;
     overflow: hidden;
   }
@@ -918,11 +937,32 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
     opacity: 1;
   }
 
+  /* — La fiche sous l'escale (scripts/voyage-fiche.ts), telle que sur sa page : son en-tête de la couleur de l'escale,
+     puis le papier crème. Fermée, elle n'existe pas : la page s'arrête au bas de l'escale. Celle-là se lit, elle :
+     son texte se sélectionne. Son copilote n'apparaît qu'une fois la fiche ouverte, pas pendant qu'on la tire. — */
+  .fiche-sous {
+    display: none;
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-user-select: text;
+    user-select: text;
+    cursor: auto;
+  }
+  .fiche-sous:global(.is-open) {
+    display: block;
+  }
+  .fiche-sous:focus {
+    outline: none;
+  }
+  :global(.voyage:not(.fiche-reading)) .fiche-sous :global(.resume) {
+    visibility: hidden;
+    opacity: 0;
+  }
+
   /* — Le téléphone : la scène recadrée en haut, le cartel dessous, la navigation au pouce — */
   @media (max-width: 700px) {
-    :global(.voyage.is-live) {
+    :global(.voyage.is-live) main {
       height: auto;
-      min-height: 100svh;
       overflow: visible;
     }
     :global(.is-live) .stop {

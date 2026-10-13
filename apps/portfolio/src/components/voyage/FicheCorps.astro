@@ -1,0 +1,198 @@
+---
+/**
+ * Le corps d'une fiche projet, sur papier crème : la démo (ou la capture) et, à côté, la carte d'embarquement,
+ * puis le projet point par point (pourquoi je l'ai fabriqué, ce que ça fait, comment c'est fait). Sans démo ni
+ * capture, la carte reste seule sous la ligne de vol. La page de la fiche (FichePage.astro) le pose sous son
+ * en-tête ; le voyage (VoyagePage.astro), sous chaque escale.
+ */
+import { getProject } from "@index/projects";
+import { getImage } from "astro:assets";
+import { getEntry } from "astro:content";
+import { FICHE } from "../../data/fiches";
+import { STOP_TEXTS, STOPS } from "../../data/voyage";
+import { typo, type Lang } from "../../i18n/voyage";
+import { getShot } from "../../lib/shots";
+import BoardingPass from "./BoardingPass.astro";
+import FichePoints from "./FichePoints.astro";
+
+interface Props {
+  lang: Lang;
+  /** Le projet de l'escale (slug de @index/projects). */
+  slug: string;
+  /** Préfixe des id de la ligne de vol : unique dans la page (le voyage en porte dix). */
+  pointsId?: string;
+  /** Au voyage, les fiches sont fermées : l'affiche de la démo attend dans data-poster qu'on ouvre la sienne. */
+  lazyPoster?: boolean;
+}
+
+const { lang, slug, pointsId = "points", lazyPoster = false } = Astro.props;
+const f = FICHE[lang];
+const stop = STOPS.find((s) => s.slug === slug);
+const project = getProject(slug);
+const entry = await getEntry("projets", `${lang}/${slug}`);
+if (!stop || !project || !entry?.data.why) throw new Error(`Fiche incomplète : ${lang}/${slug}`);
+
+const text = STOP_TEXTS[lang][slug]!;
+const { why, features, choices, capture, video } = entry.data;
+
+// La vidéo de démo : son affiche est à côté d'elle (<slug>.webp), sa taille dans la fiche.
+const demoPoster = (src: string) => src.replace(/\.mp4$/, ".webp");
+// La capture : celle d'ordinateur, et sous 700 px celle du téléphone, s'il y en a une.
+const shot = capture ? getShot(slug, "desktop") : undefined;
+const shotPhone = capture ? getShot(slug, "mobile") : undefined;
+const shotSet = shot && (await getImage({ src: shot, widths: [640, 1040, 1440], format: "webp" }));
+const shotPhoneSet = shotPhone && (await getImage({ src: shotPhone, widths: [390, 780], format: "webp" }));
+// Avec une vidéo ou une capture, la carte d'embarquement se pose à sa droite ; sans, elle reste seule sous la ligne de vol.
+const media = Boolean(video || (capture && shot && shotSet));
+
+// Les textes en prose, à la typographie de la langue (les espaces insécables du français).
+const T = (text: string) => typo(lang, text);
+---
+
+{
+  media && (
+    <section class="pictures">
+      <h2 class:list={["label", { "visually-hidden": video }]}>{video ? f.demo : f.pictures}</h2>
+      <div class="pictures__row">
+      <figure>
+        {video ? (
+          <video class="shot shot--video" src={video.src} poster={lazyPoster ? undefined : demoPoster(video.src)} data-poster={lazyPoster ? demoPoster(video.src) : undefined} controls muted loop playsinline preload="none" width={video.width} height={video.height} data-demo />
+        ) : (
+        shot && shotSet && capture && <picture>
+          {shotPhone && shotPhoneSet && (
+            <source
+              media="(max-width: 700px)"
+              srcset={shotPhoneSet.srcSet.attribute}
+              sizes="300px"
+              width={shotPhone.width}
+              height={shotPhone.height}
+              type="image/webp"
+            />
+          )}
+          <source srcset={shotSet.srcSet.attribute} sizes="(min-width: 1140px) 1040px, calc(100vw - 40px)" type="image/webp" />
+          <img class="shot" src={shotSet.src} width={shot.width} height={shot.height} alt={capture.alt} loading="lazy" decoding="async" />
+        </picture>
+        )}
+        <figcaption>{T(video ? video.caption : (capture?.caption ?? ""))}</figcaption>
+      </figure>
+      <BoardingPass lang={lang} project={project} stop={stop} text={text} compact />
+      </div>
+    </section>
+  )
+}
+<FichePoints
+  id={pointsId}
+  aria={f.pointsAria}
+  prev={f.prevPoint}
+  next={f.nextPoint}
+  groups={[
+    { label: f.depart, points: [{ title: f.why, text: T(why) }] },
+    { label: f.what, points: features.map((item) => ({ title: T(item.title), text: T(item.text) })) },
+    { label: f.how, points: choices.map((item) => ({ title: T(item.title), text: T(item.text) })) },
+  ]}
+/>
+
+{
+  !media && (
+    <section class="boarding">
+      <BoardingPass lang={lang} project={project} stop={stop} text={text} level={2} />
+    </section>
+  )
+}
+
+<script>
+  import "../../scripts/demo-video";
+</script>
+
+<style>
+  /* — Le papier : les rubriques, séparées d'un filet — */
+  .pictures {
+    padding: 56px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* La carte d'embarquement, seule sous la ligne de vol, quand la fiche n'a ni démo ni capture. */
+  .boarding {
+    display: flex;
+    justify-content: center;
+    padding: 64px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* La démo (ou la capture) sur les trois quarts ; la carte d'embarquement à sa droite, centrée sur la démo
+     elle-même, pas sur sa légende : la démo et la légende occupent deux rangées (une sous-grille), la carte la
+     première. Plus étroit, elle passe dessous. */
+  .pictures__row {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(300px, 1fr);
+    grid-template-rows: auto auto;
+    gap: 14px 48px;
+    margin-top: 28px;
+  }
+  .pictures__row :global(.pass) {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    justify-self: center;
+  }
+  /* Sans titre visible au-dessus (la vidéo de démo se passe de légende) : rien à décaler. */
+  .visually-hidden + .pictures__row {
+    margin-top: 0;
+  }
+  .pictures figure {
+    display: grid;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    grid-template-rows: subgrid;
+    justify-items: start;
+    margin: 0;
+  }
+  .pictures figure .shot {
+    align-self: center;
+  }
+  @media (max-width: 1000px) {
+    .pictures__row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .pictures__row :global(.pass) {
+      grid-column: 1;
+      grid-row: 3;
+      margin-top: 22px;
+    }
+    .pictures figure {
+      justify-items: center;
+    }
+  }
+  .shot {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-l);
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 48px rgba(36, 30, 24, 0.12);
+  }
+  .pictures picture {
+    display: contents;
+  }
+  .pictures figcaption {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  @media (max-width: 700px) {
+    .pictures,
+    .boarding {
+      padding: 40px 0;
+    }
+    /* La capture du téléphone, à la taille d'un téléphone ; la vidéo, filmée sur ordinateur, garde toute la largeur. */
+    .shot {
+      width: min(100%, 300px);
+      border-radius: 28px;
+    }
+    .shot--video {
+      width: 100%;
+      border-radius: var(--radius-m);
+    }
+  }
+</style>
