@@ -12,10 +12,12 @@
  *   l'escale quittée effacée, « voyage:arrivee » la rend à l'escale 1.
  * - La fiche de chaque escale est dessous (scripts/voyage-fiche.ts) : pendant qu'on la lit, la scène de l'escale est
  *   en pause et les flèches ne changent pas d'escale ; on change d'escale, elle se referme sous le voile.
+ * - De l'escale 1 à la 2, la fusée remet d'abord les gaz vers la Terre (scripts/voyage-fusee.ts) ; le plongeon suit.
  */
 
 import { animatePhoneScene } from "./phone-loop";
 import { startFiches } from "./voyage-fiche";
+import { departFusee, prepareFusee, resetFusee } from "./voyage-fusee";
 import { leaveVoyage, prepareExit, resetExit } from "./voyage-sortie";
 
 const LEAVE_MS = 750;
@@ -116,6 +118,8 @@ function start(root: HTMLElement) {
       stop.querySelector("img")?.setAttribute("loading", "eager");
       animatePhoneScene(stop);
     }
+    // La planche de la fusée qui repart vers l'escale 2.
+    if (i === 1) prepareFusee(stop);
     preloadLater(i + 1);
     // Le copilote suit le voyage (scripts/copilote.ts).
     root.dispatchEvent(new CustomEvent("voyage:escale", { detail: { i } }));
@@ -136,18 +140,27 @@ function start(root: HTMLElement) {
       return go(0, true);
     }
 
+    preload(next);
+    // De l'escale 1 à la 2 (pas en sautant d'escale, ni la fiche ouverte) : la fusée part d'abord vers la Terre.
+    const rocket = current === 1 && next === 2 && !soft && !reading ? departFusee(from, videoOf(1)) : Promise.resolve(false);
+    void rocket.then(() => dive(from, to, next, soft, launch, hadFocus));
+  };
+
+  /** Le plongeon vers l'escale suivante sous son voile, puis son arrivée (ou la fusée du décollage, `launch`). */
+  const dive = (from: HTMLElement, to: HTMLElement, next: number, soft: boolean, launch: boolean, hadFocus: boolean) => {
     root.style.setProperty("--veil", to.dataset.bg ?? "");
     root.classList.toggle("soft", soft);
     root.classList.add("leaving");
     from.classList.add("leave");
     from.classList.toggle("soft", soft);
-    preload(next);
 
     window.setTimeout(
       () => {
-        // Sous le voile : la fiche de l'escale quittée se referme, la page revient en haut.
+        // Sous le voile : la fiche de l'escale quittée se referme, la page revient en haut ; la fusée partie de
+        // l'escale 1 y reprend sa place.
         fiches.close();
         window.scrollTo({ top: 0 });
+        resetFusee(from);
         from.classList.remove("leave", "soft");
         root.classList.remove("leaving");
         root.classList.add("entering");

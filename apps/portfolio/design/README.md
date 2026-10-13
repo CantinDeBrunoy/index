@@ -78,6 +78,20 @@ ferme) est la scène `dossiers-ferme`, un clip de 164 images. Ses nombres sont `
 
 Les trois fichiers vont dans `../public/voyage/sortie/`, à part : `stills.mjs` prend tout `-mobile` de `voyage/` pour une escale.
 
+La fusée qui repart (de l'escale 1 vers la 2, elle remet les gaz vers la Terre et s'y fond) n'est pas une vidéo : la
+boucle de l'espace continue, et le site dessine la fusée par-dessus, dans un canvas (`src/scripts/voyage-fusee.ts`),
+depuis une planche de sprites : la fusée et sa traînée seules, image par image, et une pièce de ciel vide qui cache
+celle de la boucle. Sa trajectoire est `FUSEE` dans `fusee-scenes.js` ; `fusee-render.mjs` rend les planches
+(ordinateur et téléphone) dans `../public/voyage/fusee/` et leurs coordonnées dans `../src/data/fusee.json`, et
+prévient si quelque chose passe derrière la fusée de la boucle. À refaire si la croisière (`CRUISE`), la caméra de
+l'espace ou son cadrage téléphone changent :
+
+```bash
+cd apps/portfolio/design/renders
+node fusee-render.mjs
+MODE=sheet OUT=depart.png node fusee-render.mjs   # pour la régler : une planche du départ, monde compris
+```
+
 ## La maquette
 
 ```bash

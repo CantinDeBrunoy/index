@@ -188,6 +188,8 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
                   <source media="(max-width: 700px)" srcset={`/voyage/stills/${s.scene}-mobile.webp`} data-loop={`/voyage/${s.scene}-mobile.webp`} />
                   <img class="scene scene--still" src={`/voyage/${s.scene}.webp`} alt="" width="1280" height="720" loading="lazy" decoding="async" />
                 </picture>
+                {/* L'escale 1 : la fusée qui repart vers la Terre, dessinée par-dessus la boucle (scripts/voyage-fusee.ts). */}
+                {s.n === 1 && <canvas class="scene scene--fusee" width="1" height="1" aria-hidden="true" data-fusee />}
                 {/* Sur téléphone, la fermeture seule : téléchargée d'avance, elle se lit sans attendre le réseau. */}
                 {
                   last && (
@@ -369,7 +371,7 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
     top: 50%;
     width: max(100%, 177.78svh);
     aspect-ratio: 16 / 9;
-    transform: translate(-50%, -50%);
+    translate: -50% -50%;
   }
   .scene {
     position: absolute;
@@ -941,6 +943,44 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
     opacity: 1;
   }
 
+  /* — La fusée de l'escale 1 qui repart vers la Terre (scripts/voyage-fusee.ts) : son canvas couvre la boucle ; le
+     cartel, l'anneau et la barre des escales s'effacent pendant qu'elle part. — */
+  .scene--fusee {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .stop:global(.fusee) .scene--fusee {
+    visibility: visible;
+  }
+  .stop:global(.fusee) .ui,
+  .stop:global(.fusee) .spot {
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.45s ease,
+      translate 0.45s ease;
+  }
+  .stop:global(.fusee) .cartel,
+  .stop:global(.fusee) .stop-nav {
+    translate: 0 8px;
+  }
+  /* Le plongeon emporte la scène d'un bloc (la boucle et le canvas par-dessus) : si chacune s'effaçait de son côté,
+     la fusée de la boucle réapparaîtrait sous la pièce de ciel. */
+  .stop:global(.fusee.leave) .scene {
+    animation: none;
+  }
+  .stop:global(.fusee.leave) .scene-box {
+    transform-origin: var(--x) var(--y);
+    animation: dive-box 0.75s cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
+  }
+  @keyframes dive-box {
+    to {
+      scale: 2.8;
+      opacity: 0;
+      filter: blur(6px);
+    }
+  }
+
   /* — La fiche sous l'escale (scripts/voyage-fiche.ts), telle que sur sa page : son en-tête de la couleur de l'escale,
      puis le papier crème. Fermée, elle n'existe pas : la page s'arrête au bas de l'escale. Celle-là se lit, elle :
      son texte se sélectionne. Son copilote n'apparaît qu'une fois la fiche ouverte, pas pendant qu'on la tire. — */
@@ -1001,9 +1041,10 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
       width: 100%;
       aspect-ratio: 780 / 760;
       overflow: hidden;
-      transform: none;
+      translate: none;
     }
-    .scene {
+    .scene,
+    .stop:global(.fusee.leave) .scene-box {
       transform-origin: var(--mx) var(--my);
     }
     .spot,
@@ -1029,8 +1070,9 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
       height: 26%;
       background: linear-gradient(180deg, transparent 0%, var(--stop-bg) 100%);
     }
-    /* Ici, le voile fond le bas de la scène dans la page : il reste pendant la sortie du voyage. */
-    .stop:global(.exit) .poster-veil {
+    /* Ici, le voile fond le bas de la scène dans la page : il reste pendant la sortie du voyage et le départ de la fusée. */
+    .stop:global(.exit) .poster-veil,
+    .stop:global(.fusee) .poster-veil {
       opacity: 1;
     }
     .cartel {
