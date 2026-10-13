@@ -23,6 +23,8 @@ dist/
 !apps/portfolio/public/voyage/*.mp4
 # De même, la sortie du voyage (le dossier qui se ferme, scripts/voyage-sortie.ts).
 !apps/portfolio/public/voyage/sortie/*.mp4
+# Et les passages d'une escale à la suivante (scripts/voyage-passage.ts, 1 à 3 Mo chacun).
+!apps/portfolio/public/voyage/passage/*.mp4
 # Et les démos des fiches (scripts/demo-videos.ts, 1280 × 800, 4 à 7 Mo chacune), pour la même raison.
 !apps/portfolio/public/demos/*.mp4
 # Les planches de vignettes des démos, pour les relire, restent en local, comme les enregistrements sources
