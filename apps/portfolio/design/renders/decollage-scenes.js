@@ -4,8 +4,9 @@
 //   decollage-pied     boucle d'1 s : au pied de l'échelle, il salue (première bulle) ;
 //   decollage-echelle  2,5 s        : il grimpe jusqu'à la trappe ;
 //   decollage-trappe   boucle d'1 s : à la trappe, tourné vers nous, il salue (deuxième bulle) ;
-//   decollage-envol    9 s          : il entre, la trappe se ferme, l'échelle se couche, compte à rebours, la fusée
-//                                     décolle ; la caméra la suit, puis recule jusqu'au cadre de l'escale 1.
+//   decollage-envol    13,5 s       : il entre, la trappe se ferme, l'échelle se couche, compte à rebours, la fusée
+//                                     décolle ; la caméra la suit, puis recule jusqu'au cadre de l'escale 1, où la
+//                                     fusée fait le tour de la planète avant de prendre sa place de croisière.
 // Chaque plan commence là où finit le précédent : sa première image est la suite de la dernière de l'autre.
 // Le monde est celui de la scène « espace » (même planète, même anneau, mêmes lunes, même Terre, mêmes étoiles), plus
 // finement maillé : la dernière image de l'envol précède la première de la boucle de l'espace, et le site passe de
@@ -82,9 +83,10 @@ const ROCKET = (() => {
   const LIFT = 0.55;
   const radius = (y) => (y < 1.3 ? 0.62 + 0.23 * Math.sin((Math.PI / 2) * (y / 1.3)) : 0.85 * Math.sqrt(Math.max(0, 1 - ((y - 1.3) / 3.3) ** 2)));
   const NOSE = 3.55; // le nez de laiton commence là
-  // La trappe face à la caméra (un peu à gauche), entre deux ailerons ; le hublot au-dessus.
-  const HATCH = { phi: -0.12, y: 1.5, hw: 0.36, hh: 0.56 }; // direction, centre, demi-largeur (arc), demi-hauteur
-  const PORT = { phi: 0.02, y: 2.85, r: 0.23 };
+  // La trappe face à la caméra (un peu à gauche), entre deux ailerons ; le hublot au-dessus. Elle est à la taille du
+  // copilote (1,7 de haut, 0,9 de casque) : il y passe en baissant à peine la tête.
+  const HATCH = { phi: -0.12, y: 1.64, hw: 0.5, hh: 0.86 }; // direction, centre, demi-largeur (arc), demi-hauteur
+  const PORT = { phi: 0.02, y: 2.95, r: 0.23 };
   const inHatch = (phi, y, grow = 0) => {
     const u = (angleTo(phi, HATCH.phi) * radius(y)) / (HATCH.hw + grow), v = (y - HATCH.y) / (HATCH.hh + grow);
     return u ** 4 + v ** 4 < 1;
@@ -92,7 +94,15 @@ const ROCKET = (() => {
   const inPort = (phi, y) => (angleTo(phi, PORT.phi) * radius(y)) ** 2 + (y - PORT.y) ** 2 < PORT.r ** 2;
   const dirOf = (phi) => new THREE.Vector3(Math.sin(phi), 0, Math.cos(phi));
   const onBody = (phi, y, out = 0) => dirOf(phi).multiplyScalar(radius(y) + out).setY(y);
-  return { LIFT, radius, NOSE, HATCH, PORT, inHatch, inPort, dirOf, onBody };
+  // Le marchepied sous la trappe : son dessus au ras du seuil ; `r` son centre, `outer` son bord, depuis l'axe.
+  const sill = HATCH.y - HATCH.hh;
+  const STEP = { w: 0.9, d: 0.52, h: 0.05, y: sill - 0.03 };
+  STEP.top = STEP.y + STEP.h / 2;
+  STEP.r = radius(sill) + STEP.d / 2 - 0.02;
+  STEP.outer = STEP.r + STEP.d / 2;
+  // La porte ouverte : rabattue contre la coque, loin du passage.
+  const DOOR_OPEN = 2.25;
+  return { LIFT, radius, NOSE, HATCH, PORT, STEP, DOOR_OPEN, inHatch, inPort, dirOf, onBody };
 })();
 
 function rocket(M) {
@@ -205,8 +215,9 @@ function rocket(M) {
   body.add(face);
 
   // Le marchepied sous la trappe, où il se tient avant d'entrer.
-  const stepAt = R.dirOf(H.phi).multiplyScalar(R.radius(H.y - H.hh) + 0.2).setY(H.y - H.hh - 0.03);
-  const step = mesh(new RoundedBoxGeometry(0.62, 0.05, 0.42, 2, 0.015), brass, stepAt.x, stepAt.y, stepAt.z);
+  const S = R.STEP;
+  const stepAt = R.dirOf(H.phi).multiplyScalar(S.r).setY(S.y);
+  const step = mesh(new RoundedBoxGeometry(S.w, S.h, S.d, 2, 0.015), brass, stepAt.x, stepAt.y, stepAt.z);
   step.rotation.y = H.phi;
   body.add(step);
 
@@ -283,17 +294,21 @@ function launchPad(M) {
   return g;
 }
 
-// L'échelle : deux montants de laiton, cinq barreaux d'argile. Son origine est à son pied (la charnière) ; elle
-// monte selon y, et `tilt` (rotation x) la penche vers la fusée (valeur négative) ou la couche vers l'extérieur.
-const LADDER = { length: 1.36, rungs: 5 };
+// L'échelle : deux montants de laiton, cinq barreaux d'argile, assez large pour ses épaules. Son origine est à son
+// pied (la charnière) ; elle monte selon y, et `tilt` (rotation x) la penche vers la fusée (valeur négative) ou la
+// couche vers l'extérieur. Penchée de `lean`, son dernier barreau arrive au ras du marchepied, juste devant lui.
+const LADDER = { rungs: 5, lean: 0.3, half: 0.36 };
+LADDER.rise = ROCKET.LIFT + ROCKET.STEP.top - 0.03;
+LADDER.length = LADDER.rise / Math.cos(LADDER.lean);
 function ladder(M) {
   const yaw = new THREE.Group();
   const tilt = new THREE.Group();
   yaw.add(tilt);
   const brass = new THREE.MeshStandardMaterial({ color: 0xc9a063, metalness: 0.9, roughness: 0.32 });
-  for (const x of [-0.25, 0.25]) tilt.add(mesh(new THREE.CylinderGeometry(0.032, 0.032, LADDER.length + 0.18, 14), brass, x, (LADDER.length + 0.18) / 2, 0));
+  const tall = LADDER.length - 0.02; // les montants s'arrêtent au dernier barreau, sous le marchepied
+  for (const x of [-LADDER.half, LADDER.half]) tilt.add(mesh(new THREE.CylinderGeometry(0.032, 0.032, tall, 14), brass, x, tall / 2, 0));
   for (let k = 1; k <= LADDER.rungs; k++) {
-    const r = mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.5, 12), M.clay, 0, (k * LADDER.length) / LADDER.rungs, 0);
+    const r = mesh(new THREE.CylinderGeometry(0.026, 0.026, 2 * LADDER.half, 12), M.clay, 0, (k * LADDER.length) / LADDER.rungs, 0);
     r.rotation.z = Math.PI / 2;
     tilt.add(r);
   }
@@ -306,31 +321,76 @@ function ladder(M) {
 const SITE = (() => {
   const R0 = new THREE.Vector3(1.0, 0, -0.6);
   const h = ROCKET.dirOf(ROCKET.HATCH.phi); // vers la trappe
-  const s = new THREE.Vector3(h.z, 0, -h.x); // à sa droite, vue de l'échelle
+  const s = new THREE.Vector3(h.z, 0, -h.x); // à sa droite, vue de l'échelle : l'axe x de l'échelle
   const PAD_Y = 0.16;
-  const stepY = ROCKET.LIFT + ROCKET.HATCH.y - ROCKET.HATCH.hh - 0.005; // le dessus du marchepied
-  const topR = ROCKET.radius(ROCKET.HATCH.y - ROCKET.HATCH.hh) + 0.42; // le haut de l'échelle, au bord du marchepied
-  const rise = stepY - PAD_Y;
-  const footR = topR + Math.sqrt(LADDER.length ** 2 - rise ** 2);
-  const lean = Math.asin((footR - topR) / LADDER.length);
+  const stepY = PAD_Y + ROCKET.LIFT + ROCKET.STEP.top; // le dessus du marchepied
+  const topR = ROCKET.STEP.outer + 0.03; // le haut de l'échelle, juste devant le marchepied
+  const lean = LADDER.lean;
+  const footR = topR + LADDER.length * Math.sin(lean);
   const at = (r, y = 0) => R0.clone().addScaledVector(h, r).setY(y);
+  // Le centre du barreau k (0 : le pied de l'échelle), décalé de x le long du barreau.
+  const rung = (k, x = 0) => at(footR - (k / LADDER.rungs) * LADDER.length * Math.sin(lean), PAD_Y + (k / LADDER.rungs) * LADDER.rise).addScaledVector(s, x);
   return {
-    R0, h, s, PAD_Y, stepY, topR, footR, lean, at,
-    // Où il se tient : au pied de l'échelle, un pas à sa gauche (vu de la caméra) ; puis devant l'échelle ; puis sur
-    // le marchepied ; puis dedans.
-    standA: at(footR + 0.15, PAD_Y).addScaledVector(s, -0.85),
-    foot: at(footR + 0.32, PAD_Y),
-    landing: at(topR - 0.2, stepY),
-    inside: at(ROCKET.radius(ROCKET.HATCH.y) - 0.65, stepY),
+    R0, h, s, PAD_Y, stepY, topR, footR, lean, at, rung,
+    // Où il se tient : un pas devant le pied de l'échelle, à sa gauche (vu de la caméra) ; puis sur le marchepied ;
+    // puis dedans.
+    standA: at(footR + 0.05, PAD_Y).addScaledVector(s, -0.85),
+    landing: at(ROCKET.STEP.r + 0.08, stepY),
+    inside: at(0.1, stepY),
     // Les directions où il regarde (rotation y de son corps ; son avant est +z).
     faceCam: 0.25,
     faceLadder: Math.atan2(-h.x, -h.z),
   };
 })();
 
+// Sur l'échelle : ses pieds sur le barreau k (0 : la dalle), les orteils juste au-delà du barreau, le corps derrière.
+const CLIMB_OFF = 0.14;
+const footOn = (k) => {
+  const c = SITE.rung(k);
+  return (k === 0 ? c.setY(SITE.PAD_Y) : c.setY(c.y + 0.026)).addScaledVector(SITE.h, CLIMB_OFF);
+};
+// Ses prises, de bas en haut : les barreaux 1 à 5, le bord du marchepied, puis les côtés de la trappe. `side` est le
+// côté de la main dans son repère (+1 : le bras du salut) ; face à l'échelle, son +x est le -x de l'échelle.
+function hold(j, side) {
+  const x = -side * 0.2;
+  if (j <= LADDER.rungs) return SITE.rung(j, x).addScaledVector(SITE.h, 0.09).add(new THREE.Vector3(0, 0.115, 0));
+  if (j === LADDER.rungs + 1) return SITE.at(ROCKET.STEP.outer - 0.06, SITE.stepY + 0.12).addScaledVector(SITE.s, x);
+  const H = ROCKET.HATCH, by = SITE.stepY - SITE.PAD_Y - ROCKET.LIFT + 0.4;
+  const phi = H.phi - (side * (H.hw - 0.12)) / ROCKET.radius(by);
+  return ROCKET.dirOf(phi).multiplyScalar(ROCKET.radius(by) + 0.06).add(SITE.R0).setY(SITE.PAD_Y + ROCKET.LIFT + by);
+}
+
 // Les poses du copilote. Chaque pose : position (pieds), lacet du corps, rebond, inclinaison, tête, bras droit (le
 // salut) et gauche, coudes, jambes. Les angles des bras suivent ceux de copilot() : z ouvre le bras sur le côté
-// (positif à droite, négatif à gauche), x le lève vers l'avant (négatif).
+// (positif à droite, négatif à gauche), x le lève vers l'avant (négatif). Une pose peut aussi donner une prise à une
+// main (rh, lh : un point du pas de tir) et le poids de cette prise (rw, lw) : le bras s'y tend (armIK).
+const ARM = { L1: 0.24, L2: 0.29, x: 0.33, y: 0.14, hip: 0.63 };
+const UP = new THREE.Vector3(0, 1, 0);
+function armIK(p, side, target) {
+  // La prise, ramenée dans le repère de l'épaule (pieds, lacet, hanches, inclinaison du corps).
+  const T = target.clone().sub(p.pos).applyAxisAngle(UP, -p.yaw);
+  T.y -= ARM.hip + (p.bob ?? 0);
+  T.applyQuaternion(new THREE.Quaternion().setFromEuler(new THREE.Euler(p.lean ?? 0, 0, p.roll ?? 0)).invert());
+  T.x -= side * ARM.x;
+  T.y -= ARM.y;
+  const { L1, L2 } = ARM;
+  const D = Math.min(L1 + L2 - 1e-4, Math.max(L2 - L1 + 1e-4, T.length()));
+  T.setLength(D);
+  // Le coude plie vers l'avant ; l'épaule (x, z) place la main sur la prise, le coude le plus bas possible.
+  const ex = -Math.acos((D * D - L1 * L1 - L2 * L2) / (2 * L1 * L2));
+  const N = -(L1 + L2 * Math.cos(ex));
+  const A = Math.hypot(T.y, T.z), phiA = Math.atan2(T.y, T.z);
+  const c = Math.max(-1, Math.min(1, (-L2 * Math.sin(ex)) / A));
+  let best = null;
+  for (const sgn of [1, -1]) {
+    const x = -phiA + sgn * Math.acos(c);
+    const B = T.y * Math.cos(x) + T.z * Math.sin(x);
+    const z = Math.atan2(-T.x * N, B * N);
+    const low = -Math.cos(z) * Math.cos(x);
+    if (!best || low < best.low) best = { x: Math.atan2(Math.sin(x), Math.cos(x)), z, low };
+  }
+  return { a: [best.x, 0, best.z], e: [ex, 0, 0] };
+}
 function posePilot(parts, root, p) {
   const { fig, head, wave, rest, legL, legR } = parts;
   root.position.copy(p.pos);
@@ -338,10 +398,19 @@ function posePilot(parts, root, p) {
   fig.position.set(0, p.bob ?? 0, 0);
   fig.rotation.set(p.lean ?? 0, 0, p.roll ?? 0);
   head.rotation.set(...(p.head ?? [0, 0, 0]));
-  wave.a.rotation.set(...p.ra);
-  wave.elbow.rotation.set(...p.re);
-  rest.a.rotation.set(...p.la);
-  rest.elbow.rotation.set(...p.le);
+  let { ra, re, la, le } = p;
+  if (p.rh && p.rw > 0) {
+    const ik = armIK(p, 1, p.rh);
+    (ra = mixV(ra, ik.a, p.rw)), (re = mixV(re, ik.e, p.rw));
+  }
+  if (p.lh && p.lw > 0) {
+    const ik = armIK(p, -1, p.lh);
+    (la = mixV(la, ik.a, p.lw)), (le = mixV(le, ik.e, p.lw));
+  }
+  wave.a.rotation.set(...ra);
+  wave.elbow.rotation.set(...re);
+  rest.a.rotation.set(...la);
+  rest.elbow.rotation.set(...le);
   legL.rotation.set(p.ll ?? 0, 0, 0);
   legR.rotation.set(p.lr ?? 0, 0, 0);
 }
@@ -351,10 +420,12 @@ const waving = (u, amp = 1) => ({
   ra: [0.1, 0, 1.25 + 0.06 * amp * Math.sin(2 * Math.PI * u)],
   re: [0, 0, 1.2 + 0.5 * amp * Math.sin(2 * Math.PI * u)],
 });
+// Les prises (rh, lh) ne se mélangent pas : seul leur poids (rw, lw) passe de l'une à l'autre.
 const lerpPose = (a, b, t) => {
-  const out = {};
+  const out = { ...a };
   for (const k of Object.keys(b)) {
     if (k === "pos") out.pos = a.pos.clone().lerp(b.pos, t);
+    else if (k === "rh" || k === "lh") out[k] = b[k];
     else if (Array.isArray(b[k])) out[k] = mixV(a[k] ?? [0, 0, 0], b[k], t);
     else out[k] = mix(a[k] ?? 0, b[k], t);
   }
@@ -365,7 +436,7 @@ const lerpPose = (a, b, t) => {
 const poseA = (u) => ({
   pos: SITE.standA,
   yaw: SITE.faceCam - 0.4,
-  bob: 0.012 * Math.sin(4 * Math.PI * u),
+  bob: 0.006 * (1 + Math.sin(4 * Math.PI * u)),
   head: [0.05, 0.12, 0.06 * Math.sin(2 * Math.PI * u + 0.5)],
   ...waving(u),
   la: [-0.15, 0, -0.32],
@@ -375,15 +446,15 @@ const poseA = (u) => ({
   lean: 0,
   roll: 0.02 * Math.sin(2 * Math.PI * u),
 });
-// Sur le marchepied, tourné vers nous, la main gauche au cadre de la trappe, il salue.
+// Sur le marchepied, tourné vers nous, il salue, l'autre main sur la hanche (loin de la porte ouverte).
 const poseB = (u) => ({
   pos: SITE.landing,
   yaw: SITE.faceCam - 0.3,
-  bob: 0.01 * Math.sin(4 * Math.PI * u),
+  bob: 0.005 * (1 + Math.sin(4 * Math.PI * u)),
   head: [0.08, -0.1, 0.06 * Math.sin(2 * Math.PI * u + 0.5)],
   ...waving(u),
-  la: [-0.6, 0, -1.0],
-  le: [-0.9, 0, 0],
+  la: [-0.1, 0, -0.75],
+  le: [0, 0, 1.2],
   ll: 0,
   lr: 0,
   lean: 0,
@@ -391,79 +462,94 @@ const poseB = (u) => ({
 });
 
 // La montée (plan « echelle », t en secondes sur 2,5 s) : il cesse de saluer, fait un pas de côté jusqu'à l'échelle en
-// se tournant vers elle, grimpe cinq barreaux, et se retourne vers nous sur le marchepied.
+// se tournant vers elle et l'empoigne ; il grimpe cinq barreaux, les mains l'une après l'autre deux prises plus haut,
+// les pieds qui montent puis se posent sur le barreau suivant ; en haut, il passe sur le marchepied et se retourne.
+const CLIMB = { walk: [0.1, 0.85], climb: [0.85, 2.05], turn: [2.05, 2.5] };
 function poseClimb(t) {
-  const CLIMB0 = 0.85, CLIMB1 = 2.05, TURN1 = 2.5;
+  const [W0, CLIMB0] = CLIMB.walk, CLIMB1 = CLIMB.climb[1], TURN1 = CLIMB.turn[1];
+  const n = LADDER.rungs;
+  // Les deux mains : la prise k+2 pour l'une, k+3 pour l'autre ; à chaque barreau, celle du bas passe deux crans
+  // plus haut. Les prises paires sont à la main du salut.
+  const handsAt = (k) => (k % 2 === 0 ? { rh: hold(k + 2, 1), lh: hold(k + 3, -1) } : { rh: hold(k + 3, 1), lh: hold(k + 2, -1) });
+  const onLadder = { yaw: SITE.faceLadder, bob: 0, lean: 0.06, roll: 0, head: [-0.3, 0, 0], ...NEUTRAL, ll: 0, lr: 0, rw: 1, lw: 1 };
   if (t < CLIMB0) {
-    const k = span(t, 0.1, CLIMB0);
+    const k = span(t, W0, CLIMB0);
     const turn = ease.inOut(span(t, 0.05, 0.7));
     const stepPhase = Math.sin(Math.PI * 2 * k);
-    const from = poseA(t);
-    const to = { ...NEUTRAL, pos: SITE.foot, yaw: SITE.faceLadder, bob: 0, head: [-0.1, 0, 0], ll: 0, lr: 0, lean: 0.06, roll: 0 };
+    const from = { ...poseA(t), rw: 0, lw: 0 };
+    const to = { ...onLadder, pos: footOn(0), ...handsAt(0), rw: 0, lw: 0 };
     const p = lerpPose(from, to, ease.inOut(span(t, 0.05, 0.45)));
-    p.pos = SITE.standA.clone().lerp(SITE.foot, ease.inOut(k));
+    // Il longe l'échelle un peu en retrait (ses pieds passent devant les montants), puis s'en approche.
+    const back = 0.24 * ease.inOut(span(k, 0, 0.3)) * (1 - ease.inOut(span(k, 0.8, 1)));
+    p.pos = SITE.standA.clone().lerp(footOn(0), ease.inOut(span(k, 0, 0.8))).addScaledVector(SITE.h, back);
     p.yaw = mix(SITE.faceCam - 0.4, SITE.faceLadder, turn);
     p.bob = 0.04 * Math.abs(stepPhase) * (k > 0 && k < 1 ? 1 : 0);
     p.ll = -0.45 * stepPhase * (k < 1 ? 1 : 0);
     p.lr = 0.45 * stepPhase * (k < 1 ? 1 : 0);
+    // Il empoigne l'échelle à la fin du pas.
+    p.rw = p.lw = ease.inOut(span(t, 0.62, CLIMB0));
     return p;
   }
   if (t < CLIMB1) {
-    // Cinq barreaux, une main puis l'autre ; le pied suit la main opposée.
-    const k = span(t, CLIMB0, CLIMB1) * LADDER.rungs;
-    const n = Math.floor(Math.min(LADDER.rungs - 1e-6, k));
-    const f = k - n;
-    const lift = ease.inOut(f);
-    const y = SITE.PAD_Y + ((n + lift) / LADDER.rungs) * (SITE.stepY - SITE.PAD_Y);
-    const r = mix(SITE.footR, SITE.topR, (y - SITE.PAD_Y) / (SITE.stepY - SITE.PAD_Y)) + 0.32;
-    const pos = SITE.at(r, y);
-    const odd = n % 2 === 0;
-    const reachHi = -2.75, reachLo = -2.0;
-    const armA = odd ? mix(reachLo, reachHi, lift) : mix(reachHi, reachLo, lift);
-    const armB = odd ? mix(reachHi, reachLo, lift) : mix(reachLo, reachHi, lift);
-    const legHi = -0.75 * Math.sin(Math.PI * f);
-    return {
-      pos,
-      yaw: SITE.faceLadder,
-      bob: 0,
-      lean: 0.12,
-      roll: 0.05 * (odd ? 1 : -1) * Math.sin(Math.PI * f),
-      head: [-0.25, 0, 0],
-      ra: [armA, 0, 0.12],
-      re: [-0.35, 0, 0],
-      la: [armB, 0, -0.12],
-      le: [-0.35, 0, 0],
-      ll: odd ? legHi : 0,
-      lr: odd ? 0 : legHi,
-    };
+    const kf = span(t, CLIMB0, CLIMB1) * n;
+    const k = Math.floor(Math.min(n - 1e-6, kf));
+    const f = kf - k;
+    // Les pieds montent d'abord (un peu plus haut que le barreau, pour le passer), puis se posent dessus.
+    const a = footOn(k), b = footOn(k + 1);
+    const up = ease.inOut(span(f, 0, 0.6)), over = 0.03 * Math.sin(Math.PI * span(f, 0.2, 1));
+    const pos = a.clone().lerp(b, ease.inOut(span(f, 0.45, 1)));
+    pos.y = mix(a.y, b.y, up) + over;
+    // La main du bas lâche sa prise, s'écarte, et va deux crans plus haut ; l'autre tient.
+    const g = ease.inOut(span(f, 0.05, 0.8));
+    const from = handsAt(k), to = handsAt(k + 1);
+    const moving = k % 2 === 0 ? "rh" : "lh";
+    const hands = { rh: from.rh, lh: from.lh };
+    hands[moving] = from[moving].clone().lerp(to[moving], g).addScaledVector(SITE.h, 0.12 * Math.sin(Math.PI * g));
+    // La jambe du côté de la main qui monte se replie en arrière, et revient.
+    const kick = 0.4 * Math.sin(Math.PI * span(f, 0, 0.9));
+    const p = { ...onLadder, pos, ...hands, roll: 0.04 * (k % 2 === 0 ? 1 : -1) * Math.sin(Math.PI * f) };
+    if (k % 2 === 0) p.lr = kick;
+    else p.ll = kick;
+    return p;
   }
-  // Sur le marchepied : il lâche l'échelle et se retourne vers nous, le bras qui se lève pour saluer.
-  const k = ease.inOut(span(t, CLIMB1, TURN1));
-  const from = { pos: SITE.landing, yaw: SITE.faceLadder, bob: 0, lean: 0.12, roll: 0, head: [-0.25, 0, 0], ra: [-2.0, 0, 0.12], re: [-0.35, 0, 0], la: [-2.75, 0, -0.12], le: [-0.35, 0, 0], ll: 0, lr: 0 };
-  const to = poseB(0);
-  const p = lerpPose(from, to, k);
+  // En haut : il se hisse sur le marchepied en tenant la trappe, la lâche, se retourne vers nous les bras le long du
+  // corps, puis lève le bras pour saluer.
+  const kin = ease.inOut(span(t, CLIMB1, CLIMB1 + 0.2));
+  const kturn = ease.inOut(span(t, CLIMB1 + 0.15, TURN1));
+  const karm = ease.inOut(span(t, CLIMB1 + 0.25, TURN1));
+  const to = { ...poseB(0), rw: 0, lw: 0 };
+  const p = lerpPose({ ...onLadder, pos: footOn(n), ...handsAt(n) }, to, kturn);
+  for (const k of ["ra", "re", "la", "le"]) p[k] = mixV(NEUTRAL[k], to[k], karm);
+  p.rw = p.lw = 1 - ease.inOut(span(t, CLIMB1 + 0.12, CLIMB1 + 0.25));
   // Il tourne par la gauche (le plus court chemin vers la caméra).
-  p.yaw = mix(SITE.faceLadder, SITE.faceCam - 0.3, k);
-  p.pos = SITE.at(SITE.topR + 0.32, SITE.stepY).lerp(SITE.landing, k);
+  p.yaw = mix(SITE.faceLadder, SITE.faceCam - 0.3, kturn);
+  p.pos = footOn(n).lerp(SITE.landing, kin).setY(SITE.stepY);
   return p;
 }
 
-// L'envol (t en secondes sur 9 s) : il se tourne vers la trappe et entre ; elle se ferme ; il paraît au hublot ;
+// L'envol (t en secondes sur 13,5 s) : il se tourne vers la trappe et entre ; elle se ferme ; il paraît au hublot ;
 // l'échelle se couche ; les trois feux s'allument ; la fusée tremble, s'allume, décolle.
-const ENVOL = { duration: 9, enter: [0.1, 0.95], door: [0.95, 1.5], face: [1.45, 3.6], ladder: [1.6, 2.4], lights: [2.4, 3.0, 3.6], ignite: 4.2, liftoff: 4.8, follow: [4.8, 6.6], back: [6.0, 9.0] };
+const ENVOL = { duration: 13.5, enter: [0.1, 0.95], door: [0.95, 1.5], face: [1.45, 3.6], ladder: [1.6, 2.4], lights: [2.4, 3.0, 3.6], ignite: 4.2, liftoff: 4.8, follow: [4.8, 6.6], back: [6.0, 9.0] };
 function poseEnter(t) {
   const [a, b] = ENVOL.enter;
   const k = span(t, a, b);
-  const turn = ease.inOut(span(k, 0, 0.45));
-  const walk = ease.in(span(k, 0.3, 1));
-  const p = lerpPose(poseB(0), { ...NEUTRAL, pos: SITE.landing, yaw: SITE.faceLadder, bob: 0, head: [0, 0, 0], ll: 0, lr: 0, lean: 0.08, roll: 0 }, ease.inOut(span(k, 0, 0.4)));
-  // Il se tourne vers la trappe (face à la fusée, comme sur l'échelle) puis avance dedans.
+  const turn = ease.inOut(span(k, 0, 0.4));
+  const walk = ease.in(span(k, 0.42, 1));
+  // Les bras rentrés devant lui ; il se penche, baisse la tête et l'incline pour passer l'antenne.
+  const tucked = { ra: [-0.6, 0, -0.12], re: [-0.3, 0, 0], la: [-0.6, 0, 0.12], le: [-0.3, 0, 0] };
+  const p = lerpPose(poseB(0), { ...tucked, pos: SITE.landing, yaw: SITE.faceLadder, bob: 0, head: [0, 0, 0], ll: 0, lr: 0, lean: 0, roll: 0 }, ease.inOut(span(k, 0, 0.4)));
   p.yaw = mix(SITE.faceCam - 0.3, SITE.faceLadder, turn);
   p.pos = SITE.landing.clone().lerp(SITE.inside, walk);
-  const step = Math.sin(Math.PI * 2 * span(k, 0.3, 1));
-  p.ll = -0.4 * step;
-  p.lr = 0.4 * step;
-  p.bob = 0.03 * Math.abs(step);
+  // D'abord la tête qui s'incline (l'antenne rentre dans la largeur de la trappe), puis il se penche.
+  p.head = mixV(p.head, [0, 0, -0.6], ease.inOut(span(k, 0.2, 0.42)));
+  const duck = ease.inOut(span(k, 0.35, 0.6));
+  p.head[0] = 0.35 * duck;
+  const step = Math.sin(Math.PI * 2 * span(k, 0.42, 1));
+  p.lean = 0.7 * duck;
+  // Les jambes compensent l'inclinaison : elles restent droites sous lui.
+  p.ll = -p.lean - 0.4 * step;
+  p.lr = -p.lean + 0.4 * step;
+  p.bob = 0;
   return p;
 }
 
@@ -598,7 +684,8 @@ function decollage(M, clip) {
     m2.position.set(Math.cos(-phi + 1) * 1.05, 1.0 + Math.cos(phi) * 0.55, Math.sin(-phi + 1) * 0.8);
     m2.rotation.set(phi, 0, phi);
     ringMesh.rotation.z = 0.2 + 0.08 * Math.sin(phi);
-    earth.rotation.y = -1.75 + phi;
+    // La Terre tourne EARTH_LAPS fois moins vite que le reste (voyage-scenes.js) et retrouve -1,75 à la coupure.
+    earth.rotation.y = -1.75 + (phi - 2 * Math.PI) / EARTH_LAPS;
   };
 
   // — Le pas de tir, à l'échelle du bonhomme —
@@ -666,43 +753,111 @@ function decollage(M, clip) {
   const trail = [];
   {
     const r = rng(9);
-    for (let i = 0; i < 46; i++) {
+    // Assez serrées pour former une traînée continue, même quand la fusée file, tout le long du tour.
+    for (let i = 0; i < 260; i++) {
       const o = new THREE.Mesh(puffGeo, smokeMat);
       o.castShadow = false;
       o.visible = false;
       site.add(o);
-      trail.push({ o, t0: ENVOL.liftoff + 0.25 + i * 0.075, j: [r() - 0.5, r() - 0.5, r() - 0.5], s: 0.45 + r() * 0.35 });
+      trail.push({ o, t0: ENVOL.liftoff + 0.25 + i * 0.03, j: [r() - 0.5, r() - 0.5, r() - 0.5], s: 0.36 + r() * 0.28 });
     }
   }
 
   // — La trajectoire de la fusée : d'abord droit vers le ciel de la planète, à l'échelle du pas de tir (τ en secondes
-  //   depuis le décollage : un départ lent, puis de plus en plus vite) ; puis, pendant que la caméra recule, une courbe
-  //   dans le monde jusqu'à sa croisière (cruise(0)), où elle grandit pour rester lisible. —
+  //   depuis le décollage : un départ lent, puis de plus en plus vite). Puis, pendant que la caméra recule jusqu'au
+  //   cadre de l'escale 1, elle s'éloigne en un long virage (la montée ralentit pendant que le tour s'amorce), puis
+  //   fait le tour de la planète (ORBIT : un cercle au-delà de l'anneau
+  //   et des lunes, dans le plan de la verticale du pas de tir et de la caméra de l'escale 1, penché de `tilt` vers
+  //   elle pour que tout le tour reste dans l'image ; elle tourne dans le sens inverse des aiguilles d'une montre, vers
+  //   la gauche d'abord). Au bas de la planète, un tour et demi plus loin, elle quitte l'orbite et ralentit jusqu'à
+  //   sa croisière (cruise(0)), le nez vers la Terre. Elle grandit en route pour rester lisible. —
   const altitude = (tau) => (tau <= 0 ? 0 : 0.9 * tau * tau + 0.3 * Math.pow(tau, 5));
   const rocketLocal = (tau) => SITE.R0.clone().setY(SITE.PAD_Y + altitude(tau));
-  const FREE = 6.0; // l'instant où elle quitte la verticale pour la courbe
+  const FREE = 6.0; // l'instant où elle quitte la verticale pour la spirale
+  const PULLED = 8.4; // l'instant où la caméra atteint le cadre de l'escale 1
+  const ORBIT = { r: 1.9, tilt: 0.3, climb: [FREE, 8.6], spin: [FREE, 8.8], exit: ENVOL.duration - 1.8, turns: 1.5, scale: 0.08 };
   const toSite = new THREE.Matrix4().compose(LAUNCH.P, LAUNCH.Q, new THREE.Vector3(LAUNCH.KL, LAUNCH.KL, LAUNCH.KL)).invert();
   const end = cruise(0);
+  const C = LAUNCH.C, U = LAUNCH.U;
+  const toCam = ESPACE_CAM.pos.clone().sub(C).normalize();
+  const N = toCam.clone().addScaledVector(U, -toCam.dot(U)).normalize(); // l'axe de l'orbite
+  const E2 = new THREE.Vector3().crossVectors(N, U); // le sens du tour : vers la gauche de l'image, au départ
+  const tiltAxis = new THREE.Vector3().crossVectors(U, toCam).normalize();
+  const tiltAt = (t) => new THREE.Quaternion().setFromAxisAngle(tiltAxis, ORBIT.tilt * ease.inOut(span(t, ORBIT.climb[0], ORBIT.climb[1])));
   const B0 = L2W(rocketLocal(FREE - ENVOL.liftoff));
-  const B1 = B0.clone().addScaledVector(LAUNCH.U, 0.7);
-  const B2 = end.pos.clone().addScaledVector(CRUISE.heading, -0.9);
-  const B3 = end.pos.clone();
-  const bezier = (s) => {
-    const a = 1 - s;
-    return B0.clone().multiplyScalar(a * a * a).addScaledVector(B1, 3 * a * a * s).addScaledVector(B2, 3 * a * s * s).addScaledVector(B3, s * s * s);
-  };
-  // La courbe part à la vitesse de la montée (sans à-coup) et arrive à l'arrêt.
+  const r0 = B0.distanceTo(C);
+  const drift = B0.clone().sub(C).addScaledVector(U, -r0); // la fusée n'est pas pile sur la verticale du centre
   const tau0 = FREE - ENVOL.liftoff;
-  const v0 = (1.8 * tau0 + 1.5 * tau0 ** 4) * LAUNCH.KL;
-  const m0 = (v0 * (ENVOL.duration - FREE)) / (3 * B1.distanceTo(B0));
-  const hermite = (u) => m0 * (u ** 3 - 2 * u ** 2 + u) + 3 * u ** 2 - 2 * u ** 3;
+  const v0 = (1.8 * tau0 + 1.5 * tau0 ** 4) * LAUNCH.KL; // sa vitesse à la fin de la montée verticale
+  // La distance au centre : de la montée verticale à l'orbite, sans à-coup (Hermite cubique).
+  const [c0, c1] = ORBIT.climb;
+  const radius = (t) => {
+    const u = span(t, c0, c1), T = c1 - c0;
+    return (2 * u ** 3 - 3 * u ** 2 + 1) * r0 + (u ** 3 - 2 * u ** 2 + u) * T * v0 + (3 * u ** 2 - 2 * u ** 3) * ORBIT.r;
+  };
+  // L'angle parcouru : la vitesse angulaire monte en douceur pendant la montée, puis reste constante ; elle est
+  // réglée pour que la fusée ait fait ORBIT.turns tours à la sortie.
+  const [s0, s1] = ORBIT.spin;
+  const omega = (ORBIT.turns * 2 * Math.PI) / ((s1 - s0) / 2 + (ORBIT.exit - s1));
+  const angle = (t) => {
+    const u = span(t, s0, s1);
+    return omega * ((s1 - s0) * (u ** 6 - 3 * u ** 5 + 2.5 * u ** 4) + Math.max(0, t - s1));
+  };
+  const around = (t) => {
+    const a = angle(t), r = radius(t);
+    const rel = U.clone().multiplyScalar(r * Math.cos(a)).addScaledVector(E2, r * Math.sin(a)).applyQuaternion(tiltAt(t));
+    return rel.add(C).addScaledVector(drift, 1 - ease.inOut(span(t, c0, c1)));
+  };
+  // Sa vitesse, par différence finie (le plan qui se penche pendant la montée y ajoute la sienne).
+  const aroundDir = (t) => around(t + 1e-3).sub(around(t - 1e-3)).divideScalar(2e-3);
+  // La sortie : une courbe de Bézier qui part dans l'axe de l'orbite, à sa vitesse, et arrive à l'arrêt dans l'axe
+  // de la croisière (la vitesse décroît régulièrement).
+  const TX = ORBIT.exit, TE = ENVOL.duration - TX;
+  const X0 = around(TX), vx = aroundDir(TX);
+  const X1 = X0.clone().addScaledVector(vx.clone().normalize(), (vx.length() * TE) / 6);
+  const X2 = end.pos.clone().addScaledVector(CRUISE.heading, -0.5);
+  const X3 = end.pos.clone();
+  const exitAt = (s) => {
+    const a = 1 - s;
+    return X0.clone().multiplyScalar(a * a * a).addScaledVector(X1, 3 * a * a * s).addScaledVector(X2, 3 * a * s * s).addScaledVector(X3, s * s * s);
+  };
+  const exitDir = (s) => {
+    const a = 1 - s;
+    return X1.clone().sub(X0).multiplyScalar(a * a).addScaledVector(X2.clone().sub(X1), 2 * a * s).addScaledVector(X3.clone().sub(X2), s * s);
+  };
+  const exitS = (t) => {
+    const u = span(t, TX, ENVOL.duration);
+    return 2 * u - u * u;
+  };
+  const pathAt = (t) => (t <= TX ? around(t) : exitAt(exitS(t)));
+  const pathDir = (t) => (t <= TX ? aroundDir(t) : exitDir(exitS(t))).normalize();
+  // Son orientation : le nez suit la trajectoire, sans tourner sur lui-même (chaque pas fait tourner la fusée du
+  // plus petit angle qui amène son axe sur la nouvelle direction), puis, en ralentissant, la pose de croisière.
+  const STEP_S = 1 / 480;
+  const turned = [LAUNCH.Q.clone()];
+  {
+    let prev = U.clone();
+    for (let t = FREE + STEP_S; t <= ENVOL.duration + STEP_S; t += STEP_S) {
+      const d = pathDir(Math.min(t, ENVOL.duration));
+      turned.push(new THREE.Quaternion().setFromUnitVectors(prev, d).multiply(turned[turned.length - 1]));
+      prev = d;
+    }
+  }
+  const turnedAt = (t) => {
+    const k = (t - FREE) / STEP_S, i = Math.min(turned.length - 2, Math.floor(k));
+    return turned[i].clone().slerp(turned[i + 1], Math.min(1, k - i));
+  };
+  const scaleAt = (t) =>
+    t < TX
+      ? Math.exp(mix(Math.log(LAUNCH.KL), Math.log(ORBIT.scale), ease.inOut(span(t, FREE + 0.2, c1 + 0.2))))
+      : Math.exp(mix(Math.log(ORBIT.scale), Math.log(CRUISE.scale), ease.inOut(span(t, TX, ENVOL.duration))));
   /** La fusée dans le monde après le décollage : position, orientation, et la taille d'une unité locale. */
   const flight = (t) => {
     if (t <= FREE) return { pos: L2W(rocketLocal(t - ENVOL.liftoff)), quat: LAUNCH.Q.clone(), scale: LAUNCH.KL };
     return {
-      pos: bezier(hermite(span(t, FREE, ENVOL.duration))),
-      quat: LAUNCH.Q.clone().slerp(end.quat, ease.inOut(span(t, FREE, ENVOL.duration - 0.3))),
-      scale: Math.exp(mix(Math.log(LAUNCH.KL), Math.log(CRUISE.scale), ease.inOut(span(t, FREE + 0.4, ENVOL.duration)))),
+      pos: pathAt(t),
+      quat: turnedAt(t).slerp(end.quat, ease.inOut(span(t, ENVOL.duration - 1.2, ENVOL.duration))),
+      scale: scaleAt(t),
     };
   };
   // La fusée vit dans le repère du pas de tir : on y ramène sa place dans le monde.
@@ -719,7 +874,7 @@ function decollage(M, clip) {
     setWorld(worldPhase(t));
     const R = ship.userData;
     // Par défaut : trappe ouverte, échelle posée, feux éteints, pas de flamme ni de fumée.
-    let doorOpen = 1, ladderTilt = -SITE.lean, lit = 0, flameK = 0, shake = 0, faceK = 0, cleanup = 0, starFade = 0;
+    let doorOpen = 1, ladderTilt = -SITE.lean, lit = 0, flameK = 0, shake = 0, faceK = 0, cleanup = 0, trailOut = 0, starFade = 0;
     let pose;
     if (clip === "pied") pose = poseA(u);
     else if (clip === "echelle") pose = poseClimb(t);
@@ -733,13 +888,14 @@ function decollage(M, clip) {
       shake = span(t, ENVOL.lights[2], ENVOL.ignite) * (1 - span(t, ENVOL.liftoff + 1.2, ENVOL.liftoff + 2));
       flameK = ease.out(span(t, ENVOL.ignite, ENVOL.ignite + 0.4));
       cleanup = ease.inOut(span(t, 7.4, 8.6));
+      trailOut = ease.inOut(span(t, ENVOL.duration - 1, ENVOL.duration - 0.2));
       starFade = ease.inOut(span(t, 6.6, 8.4));
     }
     // Le copilote : caché une fois entré.
     pilot.visible = !(clip === "envol" && t > ENVOL.enter[1]);
     posePilot(parts, pilot, pose);
     // La trappe : ouverte, elle a pivoté vers l'extérieur autour de sa charnière.
-    R.door.rotation.y = -1.9 * doorOpen;
+    R.door.rotation.y = -ROCKET.DOOR_OPEN * doorOpen;
     R.face.visible = faceK > 0;
     R.face.position.y = ROCKET.PORT.y - 0.05 - 0.25 * (1 - ease.out(faceK));
     R.face.rotation.z = 0.15 * Math.sin(t * 7);
@@ -760,7 +916,7 @@ function decollage(M, clip) {
     }
     // La flamme : celle du décollage, puis, à l'approche de la croisière, la sienne (comme la boucle de l'espace).
     R.flame.visible = flameK > 0;
-    const calm = ease.inOut(span(t, 7.4, 8.8));
+    const calm = ease.inOut(span(t, ENVOL.duration - 1.6, ENVOL.duration - 0.2));
     R.flames.forEach((f, i) => {
       const fl = 1 + 0.12 * Math.sin(t * 37 + i) + 0.07 * Math.sin(t * 23 + 2 * i);
       const lift = [flameK * (1 + 0.04 * Math.sin(t * 41 + i)), flameK * fl * (1 + 0.6 * span(t, ENVOL.liftoff, ENVOL.liftoff + 1.5)), flameK * (1 + 0.04 * Math.sin(t * 43 + i))];
@@ -778,17 +934,20 @@ function decollage(M, clip) {
       p.o.position.set(x, SITE.PAD_Y + s * 0.6 + p.up * tau * 0.6, z);
       p.o.scale.set(s, s * p.squash, s);
     }
-    // La traînée : laissée derrière la fusée, elle gonfle puis fond.
+    // La traînée : laissée derrière la fusée, elle gonfle puis fond, en une queue de comète (TRAIL_LIFE).
+    const TRAIL_LIFE = 1.4;
     for (const p of trail) {
       const tau = clip === "envol" ? t - p.t0 : -1;
-      p.o.visible = tau > 0 && cleanup < 1;
+      p.o.visible = tau > 0 && tau < TRAIL_LIFE && trailOut < 1;
       if (!p.o.visible) continue;
       // Sous la tuyère, là où était la fusée à l'instant où la bouffée est partie, à sa taille d'alors.
+      // Quand elle file, chaque bouffée couvre au moins l'écart jusqu'à la suivante : la traînée reste continue.
       const w = flight(p.t0);
       const k = w.scale / LAUNCH.KL;
+      const gap = flight(p.t0 + 0.03).pos.distanceTo(w.pos) / LAUNCH.KL;
       const at = w.pos.addScaledVector(new THREE.Vector3(0, 1, 0).applyQuaternion(w.quat), -0.4 * w.scale).applyMatrix4(toSite);
       p.o.position.set(at.x + p.j[0] * 0.3 * k, at.y + p.j[1] * 0.3 * k, at.z + p.j[2] * 0.3 * k);
-      const s = p.s * k * (0.4 + 1.2 * (1 - Math.exp(-tau / 0.5))) * Math.max(0, 1 - tau / 2.6) * (1 - cleanup);
+      const s = Math.max(p.s * k, 0.6 * gap) * (0.4 + 1.2 * (1 - Math.exp(-tau / 0.5))) * Math.max(0, 1 - tau / TRAIL_LIFE) * (1 - trailOut);
       p.o.scale.setScalar(Math.max(0.0001, s));
     }
     local.scale.setScalar(1 - cleanup * 0.9999);
@@ -810,30 +969,43 @@ function decollage(M, clip) {
       fov2 = mix(a.fov, b.fov, k);
       box = mixV(PHONE_BOX.A, PHONE_BOX.B, k);
     } else {
-      // De B à C (on recule pour voir toute la fusée), puis on la suit, puis on rejoint la caméra de l'espace.
-      const b = shot("B"), c = shot("C");
-      const kc = ease.inOut(span(t, 1.2, 3.6));
-      let p = b.pos.lerp(c.pos, kc), tg = b.target.lerp(c.target, kc);
-      // Suivre : la cible monte avec la fusée (un peu en retard), la caméra se soulève.
-      const fw = flight(Math.max(t, ENVOL.liftoff));
-      const rocketW = fw.pos.addScaledVector(new THREE.Vector3(0, 1, 0).applyQuaternion(fw.quat), 2.2 * fw.scale);
-      const kf = ease.inOut(span(t, ENVOL.follow[0], ENVOL.follow[1]));
-      tg = tg.lerp(rocketW, kf * 0.85);
-      p = p.add(L2Wdir(new THREE.Vector3(0, 1, 0)).multiplyScalar(LAUNCH.KL * 3 * kf));
-      // Reculer : la position glisse depuis la planète, de plus en plus loin, jusqu'à la caméra de l'espace.
-      const kb = span(t, ENVOL.back[0], ENVOL.back[1]);
-      const eb = ease.inOut(kb);
-      const C = LAUNCH.C;
-      const d0 = p.distanceTo(C), d1 = ESPACE_CAM.pos.distanceTo(C);
-      const dir0 = p.clone().sub(C).normalize(), dir1 = ESPACE_CAM.pos.clone().sub(C).normalize();
-      const dist = Math.exp(mix(Math.log(d0), Math.log(d1), ease.inOut(span(kb, 0.0, 1))));
-      const qd = new THREE.Quaternion().setFromUnitVectors(dir0, dir1);
-      const dir = dir0.clone().applyQuaternion(new THREE.Quaternion().slerp(qd, ease.inOut(span(kb, 0.05, 1))));
-      pos2 = kb > 0 ? C.clone().addScaledVector(dir, dist) : p;
-      target2 = tg.lerp(ESPACE_CAM.target, ease.inOut(span(kb, 0.15, 1)));
-      fov2 = mix(c.fov, ESPACE_CAM.fov, eb);
-      up = LAUNCH.U.clone().lerp(upWorld, ease.inOut(span(kb, 0.1, 0.9))).normalize();
-      box = mixV(mixV(PHONE_BOX.B, PHONE_BOX.C, kc), PHONE_BOX.espace, ease.inOut(span(kb, 0.2, 1)));
+      // De B à C (on recule pour voir toute la fusée), puis on la suit qui monte : la cible monte avec elle (un peu
+      // en retard), la caméra se soulève.
+      const follow = (t) => {
+        const b = shot("B"), c = shot("C");
+        const kc = ease.inOut(span(t, 1.2, 3.6));
+        const fw = flight(Math.max(t, ENVOL.liftoff));
+        const rocketW = fw.pos.addScaledVector(new THREE.Vector3(0, 1, 0).applyQuaternion(fw.quat), 2.2 * fw.scale);
+        const kf = ease.inOut(span(t, ENVOL.follow[0], ENVOL.follow[1]));
+        return {
+          pos: b.pos.lerp(c.pos, kc).add(L2Wdir(new THREE.Vector3(0, 1, 0)).multiplyScalar(LAUNCH.KL * 3 * kf)),
+          target: b.target.lerp(c.target, kc).lerp(rocketW, kf * 0.85),
+          box: mixV(PHONE_BOX.B, PHONE_BOX.C, kc),
+        };
+      };
+      if (t <= FREE) {
+        ({ pos: pos2, target: target2, box } = follow(t));
+        fov2 = SHOTS.C.fov;
+      } else {
+        // Puis la caméra part avec elle et s'en éloigne jusqu'au cadre de l'escale 1 : sa place et sa cible, vues
+        // d'un point d'attache, glissent de celles du suivi à celles de l'espace (la distance en progression
+        // géométrique), et ce point, d'abord sur la fusée, passe à sa place de croisière quand la caméra est déjà
+        // loin. Le cadre atteint (PULLED), la caméra
+        // ne bouge plus : la fusée fait le tour de la planète sous nos yeux.
+        const f0 = follow(FREE), at0 = flight(FREE).pos;
+        const O0 = f0.pos.sub(at0), O1 = ESPACE_CAM.pos.clone().sub(end.pos);
+        const T0 = f0.target.sub(at0).divideScalar(O0.length()), T1 = ESPACE_CAM.target.clone().sub(end.pos).divideScalar(O1.length());
+        const e = ease.inOut(span(t, FREE, PULLED));
+        const anchor = flight(t).pos.lerp(end.pos, ease.inOut(span(t, PULLED - 1, PULLED)));
+        const len = Math.exp(mix(Math.log(O0.length()), Math.log(O1.length()), e));
+        const turn = new THREE.Quaternion().setFromUnitVectors(O0.clone().normalize(), O1.clone().normalize());
+        const dir = O0.clone().normalize().applyQuaternion(new THREE.Quaternion().slerp(turn, e));
+        pos2 = anchor.clone().addScaledVector(dir, len);
+        target2 = anchor.clone().addScaledVector(T0.lerp(T1, e), len);
+        fov2 = mix(SHOTS.C.fov, ESPACE_CAM.fov, e);
+        up = LAUNCH.U.clone().lerp(upWorld, e).normalize();
+        box = mixV(f0.box, PHONE_BOX.espace, e);
+      }
     }
     placeCamera(cur, pos2, target2, fov2, box, up);
     // Le soleil : resserré sur le pas de tir, puis sur le cadre de l'espace.

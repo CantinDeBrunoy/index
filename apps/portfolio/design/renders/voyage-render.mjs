@@ -26,14 +26,15 @@ const BG = {
 // La carte du monde est riche en détails : 9 images/s et une qualité plus basse la gardent légère (2,1 Mo).
 // Le passeport : le tampon s'encre, traverse, tamponne et revient ; 6 s pour que le geste reste posé.
 // L'espace, l'avion et la route : 8 s plutôt que 4, pour que tout y bouge deux fois moins vite (2026-10-09).
-// Le décollage (decollage-scenes.js) : deux boucles d'une seconde (le salut), la montée de 2,5 s, l'envol de 9 s.
+// Le décollage (decollage-scenes.js) : deux boucles d'une seconde (le salut), la montée de 2,5 s, l'envol de 13,5 s
+// (avec le tour de la planète).
 // La Terre de l'espace et du globe : un tour en 24 s (EARTH_LAPS, voyage-scenes.js), trois cycles de 8 s du reste.
 // Le globe passe à 6 images/s en WebP (un pas de 2,5°, la moitié d'avant) pour rester léger sur téléphone.
 const LOOPS = {
   terre: [144, 24000, 45], passeport: [120, 6000, 72], espace: [360, 24000], avion: [120, 8000], route: [120, 8000],
   // Le départ : l'espace d'avant le décollage, sans la fusée (decollage-scenes.js).
   depart: [360, 24000],
-  "decollage-pied": [24, 1000], "decollage-echelle": [60, 2500], "decollage-trappe": [24, 1000], "decollage-envol": [216, 9000],
+  "decollage-pied": [24, 1000], "decollage-echelle": [60, 2500], "decollage-trappe": [24, 1000], "decollage-envol": [324, 13500],
 };
 // Les boucles de 24 s de la Terre, en vidéo : [AV1, H.264] en débit variable (bit/s). Au quantizer 32, l'espace
 // pesait 6,9 Mo en AV1 ; ainsi, chaque fichier reste autour de 3 Mo. RATE / BITRATE / QP gardent la main.
