@@ -733,7 +733,11 @@ const T = (text: string) => typo(lang, text);
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 32px 0 56px;
+    padding: 32px 0 8px;
+  }
+  /* Sous le pied de page, la ligne invisible de la connexion ; puis, de près, la bande qui reprend le voyage. */
+  .foot + :global(.colophon) {
+    padding-bottom: 20px;
   }
   .foot p {
     margin: 0;
