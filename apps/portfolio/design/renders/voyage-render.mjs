@@ -8,6 +8,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join, extname, normalize } from "node:path";
 import { pathToFileURL } from "node:url";
+import { fixAv1 } from "./av1c.mjs";
 
 const dir = process.env.RENDER_DIR;
 // sharp et playwright-core viennent du monorepo : le script tourne depuis le dossier de travail.
@@ -143,7 +144,9 @@ for (const name of names) {
     await page.evaluate((hex) => window.setBackground(hex), BG[name] ?? "#888888");
     const b64 = await page.evaluate((o) => window.encodeVideo(o), { frames, from: Number(process.env.FROM ?? 0), to: Number(process.env.TO ?? frames), fps, codec, quantizer: Number(process.env.QP ?? 32), bitrate: Number(process.env.BITRATE ?? bitrate), rate: process.env.RATE ?? rate });
     const out = `${name}${process.env.SUFFIX ?? ""}${codec.startsWith("av01") ? "-av1" : ""}.mp4`;
-    await writeFile(join(dir, "anim", out), Buffer.from(b64, "base64"));
+    // L'AV1 de mp4-muxer porte une boîte av1C vide, que Safari ne sait pas lire : av1c.mjs la remplit.
+    const mp4 = Buffer.from(b64, "base64");
+    await writeFile(join(dir, "anim", out), av1 ? fixAv1(mp4) : mp4);
     console.log(`✓ ${out}  ${frames} images  ${Math.round(Buffer.byteLength(b64, "base64") / 1024)} Ko  ${((Date.now() - t0) / 1000).toFixed(1)} s`);
   } else if (MODE === "shot") {
     const [n] = LOOPS[name] ?? [96];

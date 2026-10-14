@@ -24,7 +24,10 @@ RENDER_DIR="$PWD" REPO_DIR="$(git rev-parse --show-toplevel)" MODE=shot node voy
 - `MODE=shot` rend une image fixe dans `check/` et affiche où tombe le point cliquable.
 - `MODE=encode` écrit la boucle animée WebP dans `anim/`.
 - `MODE=video` écrit la vidéo d'ordinateur dans `anim/`, en 2560 × 1440 à 24 images par seconde. L'encodage passe par WebCodecs dans Edge, et le fichier MP4 est assemblé par mp4-muxer (licence MIT, dans `vendor/`) :
-  - `CODEC=av01.0.12M.08 QP=32` donne l'AV1 à qualité constante, `<scène>-av1.mp4` ;
+  - `CODEC=av01.0.12M.08 QP=32` donne l'AV1 à qualité constante, `<scène>-av1.mp4`. mp4-muxer y écrit une boîte
+    `av1C` vide, que Chrome ignore mais dont Safari se sert pour régler son décodeur AV1 (Mac M3 et suivants) : la
+    vidéo n'y part jamais. `av1c.mjs` la remplit d'après le flux ; le rendu l'applique, et `node av1c.mjs <fichiers>`
+    corrige un fichier rendu avant (sans rien changer à un fichier déjà corrigé) ;
   - `CODEC=avc1.640034 BITRATE=3000000` donne le H.264 de secours, `<scène>.mp4`, pour les navigateurs sans AV1 comme Safari sur la plupart des Mac.
   - Les scènes chargées en mouvement sont encodées en H.264 à un débit plus élevé : `BITRATE=4000000` pour l'espace et le tourne-disque, `3500000` pour la route.
   - La Terre est encodée à débit variable dans les deux formats (`RATE=variable BITRATE=3000000`). Toute la carte bouge, et la qualité constante donnait plus de 6 Mo.
