@@ -15,8 +15,8 @@ const WIKI = link("https://commons.wikimedia.org/wiki/File:Arc_de_Triomphe.stl",
 const OFL = link("https://openfontlicense.org", "SIL Open Font");
 
 export const CREDITS: Record<Lang, string> = {
-  fr: `Crédits, tous repeints : l'avion de ligne est « very cute airplane » d'Akash Rudra, sous licence ${BY3}, via ${POLY} ; l'arc de triomphe est un modèle de Microsoft, sous licence ${BY4}, via ${WIKI} ; la tour Eiffel, d'ingoenius (CC0) ; les voitures, de Quaternius (CC0) ; la carte du monde vient de Natural Earth (domaine public).`,
-  en: `Credits, all repainted: the airliner is “very cute airplane” by Akash Rudra, licensed ${BY3}, via ${POLY}; the Arc de Triomphe is a model by Microsoft, licensed ${BY4}, via ${WIKI}; the Eiffel Tower is by ingoenius (CC0); the cars are by Quaternius (CC0); the world map comes from Natural Earth (public domain).`,
+  fr: `Certains modèles 3D des scènes viennent d'autres créateurs, et je les ai tous repeints. L'avion de ligne est « very cute airplane » d'Akash Rudra, sous licence ${BY3}, via ${POLY}. L'arc de triomphe est un modèle de Microsoft, sous licence ${BY4}, via ${WIKI}. La tour Eiffel (d'ingoenius) et les voitures (de Quaternius) sont libres de droits (CC0). La carte du monde vient de Natural Earth, dans le domaine public.`,
+  en: `Some of the 3D models in the scenes come from other creators, and I repainted them all. The airliner is “very cute airplane” by Akash Rudra, licensed ${BY3}, via ${POLY}. The Arc de Triomphe is a model by Microsoft, licensed ${BY4}, via ${WIKI}. The Eiffel Tower (by ingoenius) and the cars (by Quaternius) are free to use (CC0). The world map comes from Natural Earth, in the public domain.`,
 };
 
 /** La liste des mentions légales : [ce qui est crédité, sa licence et sa source]. */

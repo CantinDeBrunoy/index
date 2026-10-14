@@ -21,9 +21,9 @@ export const TENUES = ["espace", "terre", "avion", "paris", "monuments", "route"
 const fr = {
   who: "Adam, ton copilote",
   hello: "Salut, voyageur !",
-  intro: "Ici, chaque escale est l'un de mes projets. Deux façons de les visiter :",
+  intro: "Je suis Adam. Ici, chaque escale est l'un des projets de Cantin. Deux façons de les visiter :",
   again: "Deux façons de visiter",
-  againIntro: "Chaque escale est l'un de mes projets.",
+  againIntro: "Chaque escale est l'un des projets de Cantin.",
   voyage: "Le voyage.",
   voyageText: "Clique sur l'objet entouré d'or : il t'emmène au projet suivant.",
   voyageTextPhone: "Touche l'anneau doré ou le bouton du bas : il t'emmène au projet suivant.",
@@ -45,9 +45,9 @@ const fr = {
 const en: { [K in keyof typeof fr]: string } = {
   who: "Adam, your co-pilot",
   hello: "Hi, traveller!",
-  intro: "Each stop here is one of my projects. Two ways to visit them:",
+  intro: "I'm Adam. Each stop here is one of Cantin's projects. Two ways to visit them:",
   again: "Two ways to visit",
-  againIntro: "Each stop is one of my projects.",
+  againIntro: "Each stop is one of Cantin's projects.",
   voyage: "The journey.",
   voyageText: "Click the object circled in gold: it takes you to the next project.",
   voyageTextPhone: "Tap the golden ring or the bottom button: it takes you to the next project.",
@@ -75,7 +75,7 @@ export const COPILOTE: Record<Lang, typeof en> = { fr, en };
 const decollageFr = {
   aria: "Le décollage : Adam, le copilote, explique le voyage",
   hello: "Salut, voyageur !",
-  intro: "On part visiter mes {n} projets. Chacun est une escale : une scène en 3D, sa fiche, et son app quand elle est en ligne.",
+  intro: "Je suis Adam. On part visiter les {n} projets de Cantin. Chacun est une escale, avec une scène en 3D, sa fiche, et son app quand elle est en ligne.",
   next: "Suivant →",
   how: "Comment on avance ?",
   howIntro: "À chaque escale, tu as le choix :",
@@ -86,7 +86,7 @@ const decollageFr = {
 const decollageEn: { [K in keyof typeof decollageFr]: string } = {
   aria: "Take-off: Adam, the co-pilot, explains the journey",
   hello: "Hi, traveller!",
-  intro: "We're off to visit my {n} projects. Each one is a stop: a 3D scene, its project page, and its app when it's live.",
+  intro: "I'm Adam. We're off to visit Cantin's {n} projects. Each one is a stop, with a 3D scene, its project page, and its app when it's live.",
   next: "Next →",
   how: "How do we move on?",
   howIntro: "At each stop, you get to choose:",

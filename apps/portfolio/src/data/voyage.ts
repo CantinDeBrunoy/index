@@ -59,7 +59,7 @@ export interface StopText {
   pitch: string;
   /** L'invitation à cliquer, qui mène à l'escale suivante. */
   cta: string;
-  /** Remplace le lien vers l'app quand il n'y en a pas (INDEX : vous y êtes). */
+  /** Remplace le lien vers l'app quand il n'y en a pas (INDEX : tu y es déjà). */
   noApp?: string;
 }
 
@@ -104,7 +104,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "Sur la route",
       alt: "Sur la route : des voitures circulent dans les deux sens, quelques toits de tuile, quatre salles de sport ; une voiture de laiton suit le trajet le plus rapide, de la maison à la salle la moins embouteillée.",
       kind: "App web · 2026 · En ligne",
-      pitch: "Mes quatre salles de sport classées selon les bouchons. Un geste et Waze m'y emmène.",
+      pitch: "Mes quatre salles de sport, classées selon le temps de trajet en voiture, bouchons compris. Je touche la plus rapide, et Waze m'y emmène.",
       cta: "Rentrer à la maison",
     },
     "api-rest-dotnet": {
@@ -118,23 +118,23 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "Le tourne-disque",
       alt: "Le tourne-disque : le vinyle tourne sous le bras de lecture, des notes de laiton s'envolent, certaines vers le calendrier punaisé au mur ; à côté, la pochette du disque, couleur terre cuite.",
       kind: "Application installable · 2026 · En ligne",
-      pitch: "Une chanson qu'on aime, on la retient sans effort. Alors j'apprends l'espagnol en chantant.",
+      pitch: "J'apprends l'espagnol en chantant. L'app affiche les paroles avec leur traduction, et chaque mot que je touche devient une carte à réviser.",
       cta: "Choisir la couleur du jour",
     },
     tonalli: {
       place: "Le calendrier",
       alt: "Le calendrier collé au mur : chaque jour d'octobre a sa couleur d'émotion, un jour manqué est hachuré, la case d'aujourd'hui se remplit d'une couleur après l'autre ; à gauche, les photos des journées affichées au mur ; à droite, sous le calendrier, une pile de dossiers ouverts sur un banc.",
       kind: "Application web · 2026 · En ligne",
-      pitch: "Chaque jour prend la couleur de son émotion.",
+      pitch: "Un calendrier où chaque jour prend la couleur de son émotion.",
       cta: "Ouvrir les dossiers",
     },
     index: {
       place: "Les dossiers",
       alt: "Les dossiers : celui du dessus est ouvert sur sa page de titre et sur le sommaire des dix projets, de 001 à 010 ; un stylo de laiton parcourt la liste ; dessous, les onglets des autres dossiers, aux couleurs des escales.",
-      kind: "Monorepo et portfolio · 2026 · En cours",
-      pitch: "Un seul dépôt pour tous mes projets, des robots pour qu'aucun ne s'endorme, et ce voyage pour les montrer.",
+      kind: "Portfolio et dépôt de code · 2026 · En cours",
+      pitch: "Le site que tu visites, et le dépôt de code qui réunit mes projets en cours. Un robot vérifie toutes les heures qu'ils sont toujours en ligne.",
       cta: "Faire connaissance",
-      noApp: "Vous y êtes : c'est ce site",
+      noApp: "Tu y es déjà, c'est ce site",
     },
   },
   en: {
@@ -177,7 +177,7 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "On the road",
       alt: "On the road: cars drive both ways, a few tiled roofs, four gyms; a brass car takes the fastest route, from home to the least congested gym.",
       kind: "Web app · 2026 · Live",
-      pitch: "My four gyms ranked by traffic. One tap and Waze takes me there.",
+      pitch: "My four gyms, ranked by driving time, traffic included. I tap the quickest one, and Waze takes me there.",
       cta: "Head home",
     },
     "api-rest-dotnet": {
@@ -191,23 +191,23 @@ export const STOP_TEXTS: Record<Lang, Record<string, StopText>> = {
       place: "The record player",
       alt: "The record player: the vinyl spins under the tonearm, brass notes float up, some towards the calendar pinned on the wall; beside it, the terracotta record sleeve.",
       kind: "Installable app · 2026 · Live",
-      pitch: "A song you love sticks without effort. So I'm learning Spanish by singing.",
+      pitch: "I'm learning Spanish by singing. The app shows the lyrics with their translation, and every word I tap becomes a card to review.",
       cta: "Pick today's colour",
     },
     tonalli: {
       place: "The calendar",
       alt: "The calendar on the wall: each day of October has its emotion colour, a missed day is hatched, today's square fills with one colour after another; on the left, photos of the days pinned to the wall; on the right, below the calendar, a pile of open folders on a bench.",
       kind: "Web app · 2026 · Live",
-      pitch: "Every day takes on the colour of its emotion.",
+      pitch: "A calendar where every day takes on the colour of its emotion.",
       cta: "Open the folders",
     },
     index: {
       place: "The folders",
       alt: "The folders: the top one lies open on its title page and on the contents of all ten projects, from 001 to 010; a brass pen runs down the list; below, the tabs of the other folders, in the colours of the stops.",
-      kind: "Monorepo and portfolio · 2026 · In progress",
-      pitch: "One repository for all my projects, bots so that none of them falls asleep, and this journey to show them.",
+      kind: "Portfolio and code repository · 2026 · In progress",
+      pitch: "The site you're browsing, and the code repository that brings my current projects together. A bot checks every hour that they're still online.",
       cta: "Get to know me",
-      noApp: "You're on it: this very site",
+      noApp: "You're already on it, it's this site",
     },
   },
 };
