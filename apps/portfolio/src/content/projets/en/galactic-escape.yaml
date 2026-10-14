@@ -1,42 +1,42 @@
-# Galactic Escape, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "A school project, five of us, in 2022: build a complete game that runs in the browser. We started from Temple Run, where you run to escape a monster, and took it to space: here, the player lays the tiles of the path."
+# Galactic Escape, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "A school project, five of us, in 2022. We had to create a complete game that runs in the browser. We started from Temple Run, where you run to escape a monster, and took it to space, with one difference: the player lays the tiles of the path themselves."
 features:
   - title: "A path, tile by tile"
-    text: "You lay tiles with one, two or three exits to extend your route, and a preview shows whether it connects."
+    text: "You extend your route by laying tiles with one, two or three exits. Before you lay a tile, a preview shows whether it connects to the path."
   - title: "The taxman on your heels"
-    text: "Michel, a little alien, is fleeing Roberto, the tax agent on his trail: every tile laid quickly buys him a head start."
+    text: "Michel, a little alien, is chased by Roberto, a tax agent. The faster you lay tiles, the bigger Michel's head start."
   - title: "Meteors in the way"
-    text: "They block tiles and force you to go around. Four levels, from “easy” to “impossible”: the higher you go, the faster it gets."
+    text: "Meteors block some tiles and force you to take a detour. There are four levels, from “easy” to “impossible”, and the higher the level, the faster everything goes."
 choices:
   - title: "Three.js for the scene, React for the rest"
-    text: "The game itself is 3D; the menus, the inventory and the timer are plain React components."
+    text: "Three.js displays the game in 3D in the browser. The menus, the inventory and the timer are built with React, like a regular web page."
   - title: "Game logic kept apart, and tested"
-    text: "Tile placement, the inventory and map generation live outside the 3D code, checked by tests: Jest back then, Vitest since the 2026 port."
+    text: "The game rules (laying tiles, the inventory, building the map) are coded separately from the 3D, which means they can be tested automatically. The tests ran on Jest in 2022, and have run on Vitest since the project was revived in 2026."
 video:
   src: "/demos/galactic-escape.mp4"
-  caption: "The menu on Mars, then a game: every tile laid extends the path, with the monster in pursuit."
+  caption: "The menu on Mars, then a game, where every tile laid extends Michel's path, with Roberto on his heels."
 screens:
   - image: "menu"
     title: "The menu on Mars"
-    text: "A planet spinning in 3D behind the menus: play, scores, settings, help and credits."
+    text: "Behind the menus (play, scores, settings, help, credits), Mars spins in 3D."
     alt: "The Galactic Escape menu: six green entries on the left, and Mars spinning on the right."
   - image: "depart"
     title: "The first tile"
-    text: "The inventory on the left; around Michel, three places to lay a tile. The preview turns red when its doors don't connect."
+    text: "On the left, the tile inventory. Around Michel, three places to lay one. The preview turns red when the tile doesn't connect to the path."
     alt: "The start of a game: the inventory on the left, three places around the alien, the top one in red, and “Place une case pour commencer”."
   - image: "chemin"
     title: "The path"
-    text: "Tiles laid down draw the road in blue; at the top, the timer and the score, which climbs faster the longer the game lasts."
+    text: "The tiles laid down draw the road in blue. At the top, the timer and the score, which climbs faster and faster the longer the game lasts."
     alt: "A game after 21 seconds: a path of blue tiles under the alien, the timer and a score of 14."
 architecture:
-  intro: "A React game with no server. The game logic is plain JavaScript; a Three.js scene redraws it on every frame."
+  intro: "A game that runs entirely in the browser, with no server. The rules are written separately, in plain JavaScript, and a Three.js scene redraws the game on every frame."
   groups: []
   nodes:
     - { id: "ui", at: [1, 1], kind: "app", title: "React", text: "The menus, the five-slot inventory, the timer and the score." }
-    - { id: "store", at: [2, 1], kind: "app", title: "The store", text: "A context and a reducer: every action goes to the logic and to the 3D." }
-    - { id: "core", at: [3, 1], kind: "file", title: "The logic", text: "Plain JavaScript: the grid, four-door tiles, the crumbling edge." }
+    - { id: "store", at: [2, 1], kind: "app", title: "The store", text: "A React context and a reducer. Every player move goes through it before reaching the logic and the 3D." }
+    - { id: "core", at: [3, 1], kind: "file", title: "The logic", text: "In plain JavaScript: the grid, the four-door tiles, the board's crumbling edge." }
     - { id: "storage", at: [1, 2], kind: "data", title: "localStorage", text: "Settings, and the best score for each difficulty." }
-    - { id: "three", at: [2, 2], span: [2, 1], kind: "app", title: "Three.js", text: "Redraws the grid every frame; a ray under the mouse aims at the places to lay a tile." }
+    - { id: "three", at: [2, 2], span: [2, 1], kind: "app", title: "Three.js", text: "Redraws the grid every frame, and finds the spot under the mouse where a tile can go." }
   links:
     - { from: "ui", to: "store", label: "the moves" }
     - { from: "store", to: "core", label: "the actions" }
@@ -45,13 +45,13 @@ architecture:
     - { from: "core", to: "three", label: "the grid's state" }
 crew:
   title: "A crew of five"
-  text: "A school project, with five of us. I loaded the character and the first meteors in 3D, then built the inventory and tile rotation, the difficulty menu, the timer, the score, and the help and credits pages. The game engine and the 3D scene were a teammate's work."
+  text: "A school project, with five of us. I added the 3D character and the first meteors, then coded the inventory, tile rotation, the difficulty menu, the timer, the score, and the help and credits pages. The game engine and the 3D scene were a teammate's work."
   log:
     - title: "Timeline"
-      text: "January to April 2022; brought into INDEX in 2026."
+      text: "January to April 2022. Brought into INDEX in 2026."
     - title: "Method"
-      text: "Git flow: master, develop and one branch per ticket. 78 tickets labelled “must have” or “nice to have”, four milestones, 60 reviewed pull requests."
+      text: "One branch per ticket, merged into develop then master (Git flow). 78 tickets sorted into “must have” and “nice to have”, four milestones and 60 reviewed pull requests."
     - title: "Quality"
-      text: "ESLint and Prettier; Jest tests on the game logic, moved to Vitest in the 2026 port."
+      text: "ESLint and Prettier for clean, consistent code. Jest tests on the game logic, moved to Vitest when the project was revived in 2026."
     - title: "Shipping"
-      text: "On Heroku back then; today, in a Cloudflare Worker."
+      text: "On Heroku back then, at Cloudflare today."

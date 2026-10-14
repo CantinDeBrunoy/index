@@ -1,19 +1,19 @@
-# Visit Match, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "An engineering school project, taken all the way to a business plan. In a city you're discovering, you don't always know what to visit: Visit Match suggests the places around you, and you keep the ones you like."
+# Visit Match, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "When you're discovering a city, you don't always know what to visit. Visit Match suggests the places around you, and you keep the ones you like. Six of us came up with it at engineering school, and took it all the way to a business plan."
 features:
   - title: "Your interests first"
     text: "When signing up, you pick what you're into: monuments, museums, parks, hikes…"
   - title: "One place, one swipe"
-    text: "The places around you go by, to keep or skip with a swipe; each has its own page, with its distance, price, photos and map."
+    text: "The places around you go by, and a single swipe keeps or skips each one. Every place has its own page, with the distance, the price, photos and the map."
   - title: "A notebook per trip"
-    text: "The places you keep go into the trip's notebook, sort by date, price or category, and get pinned on the map."
+    text: "The places you keep go into the trip's notebook. You can sort them by date, price or category, and pin them on the map."
 choices:
   - title: "Flutter"
-    text: "One codebase, for iOS as well as Android."
+    text: "Flutter lets you write the app once for both iPhone and Android."
   - title: "Firebase"
-    text: "Accounts and data, with no server to maintain."
+    text: "Firebase, Google's service, takes care of accounts and data. So we had no server to run ourselves."
   - title: "Figma first"
-    text: "Screens designed and shown to future users before the first line of code."
+    text: "We designed the screens in Figma and showed them to future users before writing a single line of code."
 video:
   src: "/demos/visit-match.mp4"
   caption: "Sign-up, places to keep or skip, trip notebooks, likes, the map and the profile, with a test account."
@@ -22,7 +22,7 @@ video:
 screens:
   - image: "carte-lieu"
     title: "A place"
-    text: "Places around you come one at a time, with their distance, category and price: skip it, add it to a notebook, or like it."
+    text: "Places around you come one at a time, with their distance, category and price. Each has three buttons: skip it, add it to a notebook, or like it."
     alt: "The Panthéon card: 2 km away, monument, two dollar signs, and the skip, notebook and like buttons."
   - image: "detail"
     title: "Its page"
@@ -34,7 +34,7 @@ screens:
     alt: "The list of liked places, Notre-Dame and the Trocadéro, under the sort menu: chronological, price range, category."
   - image: "plan"
     title: "The map"
-    text: "Places on a Mapbox map, each with its category icon."
+    text: "Places on a map (Mapbox), each with its category icon."
     alt: "A map where about twenty pins cluster in the centre."
 architecture:
   intro: "A Flutter mobile app, with Firebase for accounts and data, and Mapbox for the map."
@@ -55,4 +55,4 @@ crew:
     - title: "Timeline"
       text: "2023."
     - title: "Method"
-      text: "Agile, with Scrum; screens drawn in Figma and shown to future users before the first line of code."
+      text: "Agile, with Scrum. The screens were drawn in Figma and shown to future users before the first line of code."

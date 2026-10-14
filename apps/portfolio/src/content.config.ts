@@ -17,7 +17,7 @@ const projets = defineCollection({
   // le nom de son dossier, comme une page.
   loader: glob({ pattern: "**/*.yaml", base: "./src/content/projets", generateId: ({ entry }) => entry.replace(/\.yaml$/, "") }),
   schema: z.object({
-    /** « Pourquoi je l'ai fabriqué ». */
+    /** « Pourquoi ce projet ». */
     why: z.string().optional(),
     /** « Ce que ça fait » : trois cartes. */
     features: z.array(item).default([]),

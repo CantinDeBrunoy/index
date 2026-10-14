@@ -1,17 +1,17 @@
-# Magellan, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "I wanted to see everywhere I've already been at a glance."
+# Magellan, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "I wanted to see at a glance everywhere I've already been in the world, and find all my trips in one place."
 features:
   - title: "The globe fills in"
-    text: "Visited countries light up, each city gets its flag and an arc links the stops."
+    text: "On a 3D globe, visited countries light up. Each city gets its flag, and arcs link the stops."
   - title: "Trips as index cards"
-    text: "Sorted by year, with a sticky note per stop, a postcard per city and the budget."
+    text: "Each trip has its own card, sorted by year. It holds a sticky note per stop, a postcard per city and the budget."
   - title: "Photos sort themselves"
-    text: "On the web version, the app reads the date and place of the iCloud photos and files each one under the right stop; the ones it isn't sure about wait for my approval."
+    text: "On the web version, the app reads the date and place of my iCloud photos, and files each one under the right stop. When it isn't sure, it waits for me to confirm."
 choices:
   - title: "One codebase"
-    text: "Expo and React Native for iOS, Android and the web, from the same code."
+    text: "With Expo and React Native, the same code runs the app on iPhone, on Android and on the web."
   - title: "globe.gl for the Earth"
-    text: "A proven 3D globe, the same on phones and on the web: a WebView on one side, a frame in the page on the other."
+    text: "globe.gl is a tried and tested 3D globe library. To have the same globe everywhere, it lives in a small web page, shown inside the app on phones and in a frame on the web."
 video:
   src: "/demos/magellan.mp4"
   caption: "The globe, the list of trips, then two of them: Tokyo, Kyoto and Osaka, and Marrakech. With the demo trips."
@@ -21,26 +21,26 @@ capture:
 screens:
   - image: "globe"
     title: "The globe"
-    text: "Visited countries in green, a flag on each city, and the count of trips, cities and countries. It spins with the mouse; clicking a country shows its trips."
+    text: "Visited countries in green, a flag on each city, and the number of trips, cities and countries. The globe spins with the mouse, and clicking a country shows the trips that went there."
     alt: "Magellan on a computer: the globe, visited countries in green and the counter “14 voyages · 22 villes · 13 pays”."
   - image: "voyages"
     title: "The trips"
-    text: "Sorted by year, filtered into road trips or single-city stays, with three sticky notes for the totals at the top."
+    text: "Trips are sorted by year and can be filtered into road trips or single-city stays. At the top, three sticky notes give the totals."
     alt: "The list of demo trips: three sticky notes (14 trips, 22 cities, 13 countries), the filters, then the trips of 2025, 2024 and 2023 as cards."
   - image: "voyage"
     title: "One trip"
-    text: "On a walnut table, the route stop by stop as pinned sticky notes, with the days and budget of each city; beside it, the budget by category and who's coming along."
+    text: "On a walnut table, the route as pinned sticky notes, with the days and budget for each city. Beside it, the detailed budget and the travel companions."
     alt: "The demo trip to Japan: 3 stops, 10 days, a €2,050 budget, Tokyo, Kyoto and Osaka as sticky notes, and the detailed budget."
 architecture:
-  intro: "A single Expo app, exported as a static site and served by a Cloudflare Worker. A visitor sees demo trips, kept in their browser; once I'm signed in, I get my own from a separate database."
+  intro: "A single Expo app, turned into a website and served by a Cloudflare Worker. A visitor sees demo trips, kept in their browser. Once I'm signed in, I get my own, stored in a separate database."
   groups:
     - { label: "In the browser", from: [1, 1], to: [2, 2] }
     - { label: "Cloudflare", from: [3, 1], to: [4, 2] }
   nodes:
-    - { id: "globe", at: [1, 1], kind: "app", title: "globe.gl · three.js", text: "The 3D globe, in a frame on the web, a WebView on phones." }
+    - { id: "globe", at: [1, 1], kind: "app", title: "globe.gl · three.js", text: "The 3D globe, shown in a frame on the web and in a WebView on phones." }
     - { id: "app", at: [2, 1], kind: "app", title: "The Expo app", text: "One React Native codebase, exported as a static site." }
-    - { id: "local", at: [2, 2], kind: "data", title: "localStorage · IndexedDB", text: "A visitor's trips; the photo folder and its thumbnails." }
-    - { id: "worker", at: [3, 1], kind: "server", title: "magellan Worker", text: "Serves the site; its API only answers me." }
+    - { id: "local", at: [2, 2], kind: "data", title: "localStorage · IndexedDB", text: "A visitor's trips, the photo folder and its thumbnails." }
+    - { id: "worker", at: [3, 1], kind: "server", title: "magellan Worker", text: "Serves the site. Its API only answers me." }
     - { id: "d1", at: [3, 2], kind: "data", title: "Cloudflare D1", text: "My real trips, never in the repository." }
     - { id: "hub", at: [4, 1], kind: "server", title: "INDEX Worker", text: "GitHub sign-in: it tells whether the session is mine." }
   links:
@@ -56,8 +56,8 @@ crew:
     - title: "Timeline"
       text: "The skeleton in January 2026, the first real version in late June, the redesign in September."
     - title: "Method"
-      text: "A phased roadmap in the README, a working guide, conventional commits; a branch and a pull request for the redesign."
+      text: "A roadmap in stages in the README, a working guide and conventional commits. The redesign had its own branch and pull request."
     - title: "Quality"
-      text: "ESLint and TypeScript on every push; CI also checks that the Android app builds."
+      text: "ESLint and TypeScript check the code on every push, and CI also makes sure the Android app builds."
     - title: "Shipping"
       text: "Every push to main redeploys the Worker, through GitHub Actions."

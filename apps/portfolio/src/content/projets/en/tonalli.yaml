@@ -1,21 +1,21 @@
-# Tonalli, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "I wanted to keep track of my days without turning it into a social network: no feed, no comments, just a month filling with colour, square by square."
+# Tonalli, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "I wanted to keep track of my days without turning it into a social network. In Tonalli, there's no feed and no comments, just a calendar where each day takes on a colour."
 features:
   - title: "A colour a day"
-    text: "One emotion out of twelve, in three intensities, gives the day its colour."
+    text: "You pick your day's emotion from twelve, with three possible intensities, and the day's square takes on its colour."
   - title: "Two photos in the moment"
-    text: "The scene, then your face, in a single tap in the app, never from the gallery."
-  - title: "The other's calendar"
-    text: "It only reveals itself once you've filled in your own day, and you reply with an emoji."
-  - title: "A reminder at my hour"
-    text: "A notification, at the time you choose, reminds you to fill in your day; a day saved offline is sent as soon as you're back online."
+    text: "A single tap takes two photos, the scene and then your face. They're taken in the app, in the moment, never from the gallery."
+  - title: "The other person's calendar"
+    text: "You only see the other person's calendar once you've filled in your own day. You can then react to it with an emoji."
+  - title: "A reminder at my time"
+    text: "At the time you chose, a notification reminds you to fill in your day. If you save it offline, it's sent as soon as the network comes back."
 choices:
-  - title: "Reciprocity written into the database"
-    text: "Supabase access rules enforce it in SQL, and it can't be got around from the browser."
-  - title: "The author's day"
-    text: "An entry's date is computed in its author's time zone, never in UTC; otherwise, in the evening, the day shifts."
+  - title: "A rule the database enforces"
+    text: "The rule “you only see my day once you've filled in yours” is checked by the database itself, through Supabase's access rules. There's no getting around it from the browser."
+  - title: "Everyone's own time zone"
+    text: "A day is dated in the time zone of the person writing it, not in universal time (UTC). Otherwise, a day filled in during the evening could end up on the wrong date."
   - title: "A website rather than an app"
-    text: "Tonalli started as a mobile app, then became a website you can install: a link is all it takes to start."
+    text: "Tonalli started as a mobile app, then became a website you can install on your phone. To get started, a link is enough, with no app store involved."
 video:
   src: "/demos/tonalli.mp4"
   caption: "The concept, the day's emotion, the two photos, the other's day revealed, the calendar and the character. With a demo account."
@@ -27,28 +27,28 @@ capture:
 screens:
   - image: "emotion"
     title: "Today's emotion"
-    text: "Twelve emotions and three intensities, 36 shades in all; the character strikes the pose of the one you pick."
+    text: "Twelve emotions and three intensities, 36 colours in all. The character strikes the pose of the chosen emotion."
     alt: "The “Comment te sens-tu ?” screen: twelve emotions, Colère selected, and three intensities."
   - image: "aujourdhui"
     title: "Today"
-    text: "The two characters act out a scene based on both emotions; the other person's day waits until you've filled in yours."
+    text: "The two characters act out a scene based on the day's two emotions. The other person's day stays hidden until you've filled in yours."
     alt: "The “Aujourd'hui” screen: two characters side by side, “Ma journée” and “La journée de Léa”."
   - image: "calendrier"
     title: "The calendar"
-    text: "One square per day, hatched when it's missing or still hidden, and the year's breakdown of emotions."
+    text: "One square per day, hatched when it's empty or still hidden. Below, the year's breakdown of emotions."
     alt: "The year calendar: a row of coloured squares per month, then the year's breakdown by emotion."
   - image: "personnage"
     title: "The character"
-    text: "Accessories to choose; it keeps the colour of the day and wears them in every scene."
+    text: "You choose accessories for it. It keeps the colour of the day and wears them in every scene."
     alt: "The “Mon personnage” screen: the orange character with ears and a scarf, and the accessories to choose from."
 architecture:
-  intro: "A React web app you install on your phone, hosted on Vercel, with Supabase behind it: sign-in, the Postgres database, the photos, and two functions that send the notifications."
+  intro: "A React web app you install on your phone, hosted on Vercel. Behind it, Supabase handles sign-in, the database (Postgres), the photos, and two functions that send the notifications."
   groups:
     - { label: "Supabase", from: [2, 1], to: [3, 2] }
   nodes:
     - { id: "app", at: [1, 1], span: [1, 2], kind: "app", title: "The React app", text: "On the phone, installed like an app. A day saved offline waits for the network to come back." }
-    - { id: "db", at: [2, 1], kind: "data", title: "Postgres", text: "Days and reactions; the other person's day stays hidden until you've filled in yours." }
-    - { id: "storage", at: [2, 2], kind: "data", title: "Auth · Storage", text: "Email sign-in; the photos, private, read through signed links." }
+    - { id: "db", at: [2, 1], kind: "data", title: "Postgres", text: "Days and reactions. The other person's day stays hidden until you've filled in yours." }
+    - { id: "storage", at: [2, 2], kind: "data", title: "Auth · Storage", text: "Email sign-in. The photos stay private, read through temporary links." }
     - { id: "fn", at: [3, 1], kind: "server", title: "Edge Functions", text: "Tell the other person, and remind you to fill in your day." }
     - { id: "cron", at: [3, 2], kind: "job", title: "Scheduled job", text: "Every quarter of an hour, finds who is due a reminder." }
     - { id: "push", at: [4, 1], kind: "ext", title: "Push service", text: "The browser's own: it wakes the phone up." }
@@ -62,13 +62,13 @@ architecture:
     - { from: "push", to: "sw", label: "the notification" }
 crew:
   title: "Solo flight"
-  text: "A personal project, from mock-up to launch: I made every decision, coded it with the help of Claude Code, and reviewed every branch before merging it."
+  text: "A personal project, from mock-up to launch. I made every decision, coded it with the help of Claude Code, and reviewed every branch before merging it."
   log:
     - title: "Timeline"
       text: "From late August to late September 2026, then into INDEX in October."
     - title: "Method"
       text: "A handover guide of over a thousand lines: the rules, the pitfalls already met, what's left to do. One branch per piece of work, merged after review."
     - title: "Quality"
-      text: "About 250 home-made checks (dates and time zones, shades, reactions…), oxlint and TypeScript on every push."
+      text: "About 250 home-made checks (dates and time zones, colours, reactions…). oxlint and TypeScript run on every push."
     - title: "Shipping"
-      text: "Vercel for the site; the database and its functions deployed by hand; a robot keeps Supabase awake."
+      text: "The site on Vercel. The database and its functions are deployed by hand, and a robot stops Supabase from going to sleep."

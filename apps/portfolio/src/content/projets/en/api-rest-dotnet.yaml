@@ -1,52 +1,52 @@
-# .NET REST API (Shard), la fiche en anglais. Vérifiée dans le code (le dépôt GitLab de l'école, public depuis) le 11 octobre 2026.
-why: "A C# school project: building, as a team, the server of a space strategy game, one version after another. Each version added rules, and the course's tests told us whether the API followed them."
+# .NET REST API (Shard), la fiche en anglais. Vérifiée dans le code (le dépôt GitLab de l'école, public depuis) le 11 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "A C# school project, with two of us. We had to write the server for a strategy game set in space, one version after another. Each version added rules, and the tests provided by the course checked that our server followed them."
 features:
   - title: "A universe to explore"
-    text: "Star systems and their planets, generated at start-up. I wrote the first routes, the ones that list the systems and their planets."
+    text: "At start-up, the server creates star systems and their planets. I wrote the API's first routes, the ones that return the list of systems and their planets."
   - title: "Units and buildings"
-    text: "Scouts, builders, fighters, cruisers… travel from system to system, and mines extract their planet's resources, minute after minute."
+    text: "Players send their ships (scouts, builders, fighters, cruisers…) from system to system. Mines, meanwhile, extract their planet's resources every minute."
   - title: "Battles and wormholes"
-    text: "Every six seconds, armed ships fire at enemy units; a wormhole sends a unit over to another Shard server."
+    text: "Every six seconds, armed ships fire at enemy units. A wormhole sends a unit over to another server of the game."
 choices:
   - title: "ASP.NET Core"
-    text: "REST controllers, dependency injection, and a background service for the battles."
+    text: "It's Microsoft's web framework for C#. REST controllers answer the game's requests, and a background service settles the battles."
   - title: "A clock you can swap"
-    text: "Game time goes through the course's clock: the tests move it forward by hand, without waiting six seconds or a minute."
+    text: "The server doesn't read the time itself, it goes through a clock provided by the course. That way, the tests can move time forward in one go, without waiting six seconds or a minute."
   - title: "Tests as the judge"
-    text: "Six versions, each validated by the course's xUnit integration tests in GitLab CI: from 8 to 45 tests, all green."
+    text: "Each of the six versions had to pass the course's tests (xUnit), run automatically on GitLab. There were 8 for the first version and 45 for the last, all green."
 video:
   src: "/demos/api-rest-dotnet.mp4"
-  caption: "A real game on the API, run locally: the universe, a player, a journey, a mine, a battle, then the CI tests. Real requests and responses, with the waits cut."
+  caption: "A real game played against the API, run on my computer: the universe, a player, a journey, a mine, a battle, then the tests. The requests and responses are real, only the waits were cut in editing."
   width: 1280
   height: 720
 screens:
   - image: "systemes"
     title: "The planets"
-    text: "A system, then one of its planets: the first version's routes, the ones I wrote."
+    text: "We ask for a system, then one of its planets. These are the first version's routes, the ones I wrote."
     alt: "The demo console: GET on a planet of a system, and its JSON response, a name and a size."
   - image: "voyage"
     title: "The journey"
-    text: "One game minute later, the scout has arrived: the response gives its system, its destination and its resources."
+    text: "One game minute later, the scout has arrived. The response shows its system, its destination and its resources."
     alt: "GET on a “scout” unit one minute later: its arrival system is highlighted."
   - image: "combat"
     title: "The fight"
-    text: "The admin places a fighter in the system; its weapons fire every six seconds, following a list of priority targets."
+    text: "The admin places a fighter in the system. Its weapons fire every six seconds, aiming at its priority targets first."
     alt: "PUT of a fighter as admin: its health, priority targets and weapons."
   - image: "tests"
     title: "The tests"
-    text: "The GitLab CI results, version by version: from 8 to 45 integration tests, all passing."
+    text: "The test results on GitLab, version by version: from 8 to 45 tests, all passing."
     alt: "Six green bars, v1 to v6: 8/8, 15/15, 21/21, 21/21, 45/45 and 21/21 tests passed."
 architecture:
-  intro: "The server for a space strategy game in ASP.NET Core: a REST API, a world kept in memory, and a clock you can swap out to test minutes of play in an instant."
+  intro: "The game's server, written in C# with ASP.NET Core. A REST API answers the players, the game world is kept in memory, and a swappable clock lets the tests run minutes of play in an instant."
   groups:
     - { label: "The server, in .NET 7", from: [1, 2], to: [3, 2] }
   nodes:
-    - { id: "tests", at: [1, 1], kind: "ext", title: "The course's tests", text: "xUnit: whole games played against the API, with a fake clock." }
-    - { id: "api", at: [2, 1], kind: "server", title: "The ASP.NET Core API", text: "Systems, players, units, buildings; Basic authentication, an admin role." }
+    - { id: "tests", at: [1, 1], kind: "ext", title: "The course's tests", text: "Written with xUnit, they play whole games against the API, moving the clock forward themselves." }
+    - { id: "api", at: [2, 1], kind: "server", title: "The ASP.NET Core API", text: "Systems, players, units and buildings. Sign-in with a username and password (Basic), and an admin role." }
     - { id: "other", at: [3, 1], kind: "ext", title: "Another Shard server", text: "A ship can jump there through a wormhole." }
-    - { id: "clock", at: [1, 2], kind: "job", title: "The clock", text: "The course's own: journeys, construction and combat wait on it." }
-    - { id: "game", at: [2, 2], kind: "app", title: "The game", text: "Units, mines, starports; a background job runs combat every 6 s." }
-    - { id: "memory", at: [3, 2], kind: "data", title: "In memory", text: "The world, generated at startup; MongoDB tried in v7, unfinished." }
+    - { id: "clock", at: [1, 2], kind: "job", title: "The clock", text: "Provided by the course. Journeys, construction and battles all run on it." }
+    - { id: "game", at: [2, 2], kind: "app", title: "The game", text: "Units, mines and starports. A background job runs the battles every 6 s." }
+    - { id: "memory", at: [3, 2], kind: "data", title: "In memory", text: "The world, created at start-up. A move to MongoDB, attempted in v7, was never finished." }
   links:
     - { from: "tests", to: "api", label: "HTTP" }
     - { from: "api", to: "other", label: "the jump: PUT, then 308" }
@@ -55,13 +55,13 @@ architecture:
     - { from: "game", to: "memory", label: "the world", both: true }
 crew:
   title: "A crew of two"
-  text: "A course project, with two of us, mostly in pair programming. I wrote the beginning: the systems and planets routes, the first player and unit models, and moving the scouts; for the rest, from mines to combat, my teammate took the keyboard."
+  text: "A course project, with two of us, mostly coded side by side on the same screen (pair programming). I wrote the beginning: the systems and planets routes, the first player and unit models, and moving the scouts. For the rest, from mines to battles, my teammate was at the keyboard."
   log:
     - title: "Timeline"
       text: "September 2023 to January 2024."
     - title: "The course"
-      text: "A C# course at EFREI: the template, the clock and the grading tests came from the teacher."
+      text: "A C# course at EFREI. The project skeleton, the clock and the grading tests came from the teacher."
     - title: "Method"
-      text: "Pair programming, one branch per version, v1 to v7; each reaches prod through a merge request."
+      text: "Pair programming and one branch per version, v1 to v7. Each one reached the prod branch through a merge request."
     - title: "Quality"
-      text: "GitLab CI compiles, then runs the grading tests a day after each push; a bot writes the grade into the repository."
+      text: "On every push, GitLab CI compiled the project, then ran the grading tests a day later. A bot then wrote the grade into the repository."

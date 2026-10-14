@@ -1,42 +1,42 @@
-# Galactic Escape, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "Un projet d'école, à cinq, en 2022 : faire un jeu complet qui tourne dans le navigateur. Nous sommes partis de Temple Run, où l'on court pour échapper à un monstre, et nous l'avons emmené dans l'espace : ici, c'est le joueur qui pose les cases du chemin."
+# Galactic Escape, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "Un projet d'école, à cinq, en 2022. Il fallait créer un jeu complet qui tourne dans le navigateur. Nous sommes partis de Temple Run, où l'on court pour échapper à un monstre, et nous l'avons emmené dans l'espace, avec une différence : c'est le joueur qui pose lui-même les cases du chemin."
 features:
   - title: "Un chemin case par case"
-    text: "On pose des cases à une, deux ou trois sorties pour prolonger sa route, et un aperçu montre si elle se raccorde."
+    text: "On prolonge sa route en posant des cases à une, deux ou trois sorties. Avant de poser une case, un aperçu montre si elle se raccorde au chemin."
   - title: "Le fisc aux trousses"
-    text: "Michel, un petit alien, fuit Roberto, l'agent du fisc lancé à sa poursuite : chaque case posée vite lui donne de l'avance."
+    text: "Michel, un petit alien, est poursuivi par Roberto, un agent du fisc. Plus on pose les cases vite, plus Michel prend de l'avance."
   - title: "Des météores sur la route"
-    text: "Ils condamnent des cases et forcent à faire le tour. Quatre niveaux, de « facile » à « impossible » : plus on monte, plus ça va vite."
+    text: "Des météores bloquent certaines cases et obligent à faire un détour. Il y a quatre niveaux, de « facile » à « impossible », et plus le niveau est haut, plus tout va vite."
 choices:
   - title: "Three.js pour la scène, React pour le reste"
-    text: "La partie se joue en 3D ; les menus, l'inventaire et le chronomètre sont de simples composants React."
+    text: "Three.js affiche la partie en 3D dans le navigateur. Les menus, l'inventaire et le chronomètre sont faits avec React, comme une page web classique."
   - title: "La logique à part, et testée"
-    text: "Le placement des cases, l'inventaire et la génération de la carte vivent hors de la 3D, vérifiés par des tests : Jest à l'époque, Vitest depuis le portage de 2026."
+    text: "Les règles du jeu (le placement des cases, l'inventaire, la création de la carte) sont codées à part de la 3D, ce qui permet de les tester automatiquement. Les tests tournaient avec Jest en 2022, et tournent avec Vitest depuis la reprise du projet en 2026."
 video:
   src: "/demos/galactic-escape.mp4"
-  caption: "Le menu sur Mars, puis une partie : chaque case posée trace le chemin, le monstre aux trousses."
+  caption: "Le menu sur Mars, puis une partie, où chaque case posée prolonge le chemin de Michel, Roberto à ses trousses."
 screens:
   - image: "menu"
     title: "Le menu sur Mars"
-    text: "Une planète qui tourne en 3D derrière les menus : la partie, les scores, les réglages, l'aide et les crédits."
+    text: "Derrière les menus (jouer, scores, réglages, aide, crédits), Mars tourne en 3D."
     alt: "Le menu de Galactic Escape : six entrées en vert à gauche, et Mars qui tourne à droite."
   - image: "depart"
     title: "La première case"
-    text: "À gauche, l'inventaire ; autour de Michel, trois places où poser une case. L'aperçu vire au rouge quand ses portes ne se raccordent pas."
+    text: "À gauche, l'inventaire des cases. Autour de Michel, trois places où en poser une. L'aperçu devient rouge quand la case ne se raccorde pas au chemin."
     alt: "Le début d'une partie : l'inventaire à gauche, trois places autour de l'alien, celle du haut en rouge, et « Place une case pour commencer »."
   - image: "chemin"
     title: "Le chemin"
-    text: "Les cases posées tracent la route en bleu ; en haut, le chrono et le score, qui grimpe d'autant plus vite que la partie dure."
+    text: "Les cases posées tracent la route en bleu. En haut, le chrono et le score, qui monte de plus en plus vite à mesure que la partie dure."
     alt: "Une partie après 21 secondes : un chemin de cases bleues sous l'alien, le chrono et un score de 14."
 architecture:
-  intro: "Un jeu React sans serveur. La logique du jeu tient en JavaScript pur ; une scène Three.js la redessine à chaque image."
+  intro: "Un jeu qui tourne entièrement dans le navigateur, sans serveur. Les règles sont écrites à part, en JavaScript simple, et une scène Three.js redessine la partie à chaque image."
   groups: []
   nodes:
     - { id: "ui", at: [1, 1], kind: "app", title: "React", text: "Les menus, l'inventaire de cinq cases, le chrono et le score." }
-    - { id: "store", at: [2, 1], kind: "app", title: "Le store", text: "Un contexte et un reducer : chaque geste part vers la logique et la 3D." }
-    - { id: "core", at: [3, 1], kind: "file", title: "La logique", text: "JavaScript pur : la grille, les cases à quatre portes, le bord qui s'effondre." }
+    - { id: "store", at: [2, 1], kind: "app", title: "Le store", text: "Un contexte React et un reducer. Chaque geste du joueur y passe avant d'aller à la logique et à la 3D." }
+    - { id: "core", at: [3, 1], kind: "file", title: "La logique", text: "En JavaScript simple : la grille, les cases à quatre portes, le bord du plateau qui s'effondre." }
     - { id: "storage", at: [1, 2], kind: "data", title: "localStorage", text: "Les réglages et le meilleur score de chaque difficulté." }
-    - { id: "three", at: [2, 2], span: [2, 1], kind: "app", title: "Three.js", text: "Redessine la grille à chaque image ; un rayon sous la souris vise les places où poser une case." }
+    - { id: "three", at: [2, 2], span: [2, 1], kind: "app", title: "Three.js", text: "Redessine la grille à chaque image, et repère sous la souris la place où poser une case." }
   links:
     - { from: "ui", to: "store", label: "les gestes" }
     - { from: "store", to: "core", label: "les actions" }
@@ -45,13 +45,13 @@ architecture:
     - { from: "core", to: "three", label: "l'état de la grille" }
 crew:
   title: "À cinq"
-  text: "Un projet d'école, à cinq. J'ai chargé le personnage et les premiers météores en 3D, puis fait l'inventaire et la rotation des cases, le menu des difficultés, le chrono, le score, et les pages d'aide et de crédits. Le moteur du jeu et la scène 3D, eux, sont d'un coéquipier."
+  text: "Un projet d'école, à cinq. J'ai intégré le personnage et les premiers météores en 3D, puis codé l'inventaire, la rotation des cases, le menu des difficultés, le chrono, le score et les pages d'aide et de crédits. Le moteur du jeu et la scène 3D sont l'œuvre d'un coéquipier."
   log:
     - title: "Période"
-      text: "De janvier à avril 2022 ; repris dans INDEX en 2026."
+      text: "De janvier à avril 2022. Repris dans INDEX en 2026."
     - title: "Méthode"
-      text: "Git flow : master, develop et une branche par ticket. 78 tickets classés « must have » ou « nice to have », quatre jalons, 60 pull requests relues."
+      text: "Une branche par ticket, fusionnée dans develop puis dans master (Git flow). 78 tickets triés entre « indispensable » et « bonus », quatre étapes et 60 pull requests relues."
     - title: "Qualité"
-      text: "ESLint et Prettier ; des tests Jest sur la logique du jeu, passés à Vitest au portage de 2026."
+      text: "ESLint et Prettier pour un code propre et uniforme. Des tests Jest sur la logique du jeu, passés à Vitest lors de la reprise en 2026."
     - title: "Mise en ligne"
-      text: "Sur Heroku à l'époque ; aujourd'hui, dans un Worker Cloudflare."
+      text: "Sur Heroku à l'époque, chez Cloudflare aujourd'hui."

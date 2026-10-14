@@ -1,17 +1,17 @@
-# Magellan, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "Je voulais voir d'un coup d'œil tout ce que j'ai déjà parcouru."
+# Magellan, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "Je voulais voir d'un coup d'œil tout ce que j'ai déjà parcouru dans le monde, et retrouver tous mes voyages au même endroit."
 features:
   - title: "Le globe se colore"
-    text: "Les pays visités s'allument, chaque ville porte son drapeau et un arc relie les étapes."
+    text: "Sur un globe en 3D, les pays visités s'illuminent. Chaque ville porte son drapeau, et des arcs relient les étapes."
   - title: "Les voyages en fiches"
-    text: "Rangés par année, avec un post-it par étape, une carte postale par ville et le budget."
+    text: "Chaque voyage a sa fiche, rangée par année. On y trouve un post-it par étape, une carte postale par ville et le budget."
   - title: "Les photos se rangent seules"
-    text: "Sur la version web, l'app lit la date et le lieu des photos d'iCloud et range chacune dans la bonne étape ; celles dont elle doute attendent qu'on les valide."
+    text: "Sur la version web, l'app lit la date et le lieu de mes photos iCloud, et range chacune dans la bonne étape. Quand elle hésite, elle attend que je confirme."
 choices:
   - title: "Une seule base de code"
-    text: "Expo et React Native pour iOS, Android et le web, à partir du même code."
+    text: "Avec Expo et React Native, le même code fait tourner l'app sur iPhone, sur Android et sur le web."
   - title: "globe.gl pour la Terre"
-    text: "Un globe 3D éprouvé, le même sur téléphone et sur le web : une WebView d'un côté, un cadre dans la page de l'autre."
+    text: "globe.gl est une bibliothèque de globes 3D qui a fait ses preuves. Pour avoir le même globe partout, il vit dans une petite page web, affichée dans l'app sur téléphone et dans un cadre sur le web."
 video:
   src: "/demos/magellan.mp4"
   caption: "Le globe, la liste des voyages, puis deux d'entre eux : Tokyo, Kyoto et Osaka, et Marrakech. Avec les voyages de démonstration."
@@ -21,26 +21,26 @@ capture:
 screens:
   - image: "globe"
     title: "Le globe"
-    text: "Les pays visités en vert, un drapeau sur chaque ville, et le compte des voyages, des villes et des pays. Il tourne à la souris ; cliquer sur un pays montre ses voyages."
+    text: "Les pays visités en vert, un drapeau sur chaque ville, et le nombre de voyages, de villes et de pays. Le globe tourne à la souris, et un clic sur un pays montre les voyages qui y sont passés."
     alt: "Magellan sur ordinateur : le globe, les pays visités en vert et le compteur « 14 voyages · 22 villes · 13 pays »."
   - image: "voyages"
     title: "Les voyages"
-    text: "Rangés par année, triés en road trips ou séjours d'une ville, avec en tête trois post-it pour les totaux."
+    text: "Les voyages sont rangés par année et se filtrent entre road trips et séjours dans une ville. En haut, trois post-it donnent les totaux."
     alt: "La liste des voyages de démonstration : trois post-it (14 voyages, 22 villes, 13 pays), les filtres, puis les voyages de 2025, 2024 et 2023 en fiches."
   - image: "voyage"
     title: "Un voyage"
-    text: "Sur une table en noyer, l'itinéraire étape par étape en post-it épinglés, avec les jours et le budget de chaque ville ; à côté, le budget par poste et avec qui on part."
+    text: "Sur une table en noyer, l'itinéraire en post-it épinglés, avec les jours et le budget de chaque ville. À côté, le budget détaillé et les compagnons de voyage."
     alt: "Le voyage de démonstration au Japon : 3 étapes, 10 jours, 2 050 € de budget, Tokyo, Kyoto et Osaka en post-it, et le budget détaillé."
 architecture:
-  intro: "Une seule app Expo, exportée en site statique et servie par un Worker Cloudflare. Un visiteur voit des voyages de démonstration, gardés dans son navigateur ; moi, une fois connecté, je retrouve les miens dans une base à part."
+  intro: "Une seule app Expo, transformée en site web et servie par un Worker Cloudflare. Un visiteur voit des voyages de démonstration, gardés dans son navigateur. Moi, une fois connecté, je retrouve les miens, rangés dans une base de données à part."
   groups:
     - { label: "Dans le navigateur", from: [1, 1], to: [2, 2] }
     - { label: "Cloudflare", from: [3, 1], to: [4, 2] }
   nodes:
-    - { id: "globe", at: [1, 1], kind: "app", title: "globe.gl · three.js", text: "Le globe 3D, dans un cadre sur le web, une WebView sur téléphone." }
+    - { id: "globe", at: [1, 1], kind: "app", title: "globe.gl · three.js", text: "Le globe 3D, affiché dans un cadre sur le web et dans une WebView sur téléphone." }
     - { id: "app", at: [2, 1], kind: "app", title: "L'app Expo", text: "Un seul code React Native, exporté en site statique." }
-    - { id: "local", at: [2, 2], kind: "data", title: "localStorage · IndexedDB", text: "Les voyages d'un visiteur ; le dossier de photos et ses vignettes." }
-    - { id: "worker", at: [3, 1], kind: "server", title: "Worker magellan", text: "Sert le site ; son API ne répond qu'à moi." }
+    - { id: "local", at: [2, 2], kind: "data", title: "localStorage · IndexedDB", text: "Les voyages d'un visiteur, le dossier de photos et ses vignettes." }
+    - { id: "worker", at: [3, 1], kind: "server", title: "Worker magellan", text: "Sert le site. Son API ne répond qu'à moi." }
     - { id: "d1", at: [3, 2], kind: "data", title: "Cloudflare D1", text: "Mes vrais voyages, jamais dans le dépôt." }
     - { id: "hub", at: [4, 1], kind: "server", title: "Worker INDEX", text: "La connexion GitHub : il dit si la session est la mienne." }
   links:
@@ -56,8 +56,8 @@ crew:
     - title: "Période"
       text: "Le squelette en janvier 2026, la première vraie version fin juin, la refonte en septembre."
     - title: "Méthode"
-      text: "Une feuille de route en phases dans le README, un guide de travail, des commits conventionnels ; une branche et une pull request pour la refonte."
+      text: "Une feuille de route par étapes dans le README, un guide de travail et des commits conventionnels. La refonte a eu sa branche et sa pull request."
     - title: "Qualité"
-      text: "ESLint et TypeScript à chaque push ; la CI vérifie aussi que l'app Android se construit."
+      text: "ESLint et TypeScript vérifient le code à chaque push, et la CI s'assure aussi que l'app Android se construit."
     - title: "Mise en ligne"
       text: "Chaque push sur main redéploie le Worker, par GitHub Actions."

@@ -1,52 +1,52 @@
-# API REST .NET (Shard), la fiche en français. Vérifiée dans le code (le dépôt GitLab de l'école, public depuis) le 11 octobre 2026.
-why: "Un projet d'école en C# : construire en équipe le serveur d'un jeu de stratégie spatiale, une version après l'autre. Chaque version ajoutait des règles, et les tests du cours disaient si l'API les respectait."
+# API REST .NET (Shard), la fiche en français. Vérifiée dans le code (le dépôt GitLab de l'école, public depuis) le 11 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "Un projet d'école en C#, à deux. Nous devions écrire le serveur d'un jeu de stratégie dans l'espace, version après version. Chaque version ajoutait des règles, et les tests fournis par le cours vérifiaient que notre serveur les respectait."
 features:
   - title: "Un univers à explorer"
-    text: "Des systèmes stellaires et leurs planètes, générés au démarrage. J'en ai écrit les premières routes, celles qui listent les systèmes et leurs planètes."
+    text: "Au démarrage, le serveur crée des systèmes d'étoiles et leurs planètes. J'ai écrit les premières routes de l'API, celles qui renvoient la liste des systèmes et de leurs planètes."
   - title: "Des unités et des bâtiments"
-    text: "Éclaireurs, constructeurs, chasseurs, croiseurs… voyagent de système en système, et les mines extraient les ressources de leur planète, minute après minute."
+    text: "Les joueurs envoient leurs vaisseaux (éclaireurs, constructeurs, chasseurs, croiseurs…) de système en système. Les mines, elles, extraient chaque minute les ressources de leur planète."
   - title: "Des combats et des trous de ver"
-    text: "Toutes les six secondes, les vaisseaux armés font feu sur les unités ennemies ; un trou de ver fait passer une unité sur un autre serveur Shard."
+    text: "Toutes les six secondes, les vaisseaux armés tirent sur les unités ennemies. Un trou de ver fait passer une unité vers un autre serveur du jeu."
 choices:
   - title: "ASP.NET Core"
-    text: "Des contrôleurs REST, l'injection de dépendances, et un service en tâche de fond pour les combats."
+    text: "C'est le framework web de Microsoft pour C#. Des contrôleurs REST répondent aux requêtes du jeu, et un service en arrière-plan règle les combats."
   - title: "Une horloge qu'on remplace"
-    text: "Le temps du jeu passe par l'horloge du cours : les tests l'avancent à la main, sans attendre six secondes ni une minute."
+    text: "Le serveur ne lit pas l'heure lui-même, il passe par une horloge fournie par le cours. Les tests peuvent ainsi avancer le temps d'un coup, sans attendre six secondes ou une minute."
   - title: "Les tests pour juge"
-    text: "Six versions, chacune validée par les tests d'intégration xUnit du cours, dans la CI GitLab : de 8 à 45 tests, tous au vert."
+    text: "Chacune des six versions devait passer les tests du cours (xUnit), lancés automatiquement sur GitLab. Il y en avait 8 à la première version et 45 à la dernière, tous au vert."
 video:
   src: "/demos/api-rest-dotnet.mp4"
-  caption: "Une vraie partie sur l'API, lancée en local : l'univers, un joueur, un voyage, une mine, un combat, puis les tests de la CI. Requêtes et réponses réelles, attentes coupées."
+  caption: "Une vraie partie jouée contre l'API, lancée sur mon ordinateur : l'univers, un joueur, un voyage, une mine, un combat, puis les tests. Les requêtes et les réponses sont réelles, seules les attentes ont été coupées au montage."
   width: 1280
   height: 720
 screens:
   - image: "systemes"
     title: "Les planètes"
-    text: "Un système, puis l'une de ses planètes : les routes de la première version, celles que j'ai écrites."
+    text: "On demande un système, puis l'une de ses planètes. Ce sont les routes de la première version, celles que j'ai écrites."
     alt: "La console de la démo : GET sur une planète d'un système, et sa réponse JSON, un nom et une taille."
   - image: "voyage"
     title: "Le voyage"
-    text: "Une minute de jeu plus tard, l'éclaireur est arrivé : la réponse donne son système, sa destination et ses ressources."
+    text: "Une minute de jeu plus tard, l'éclaireur est arrivé. La réponse indique son système, sa destination et ses ressources."
     alt: "GET sur une unité « scout » une minute plus tard : son système d'arrivée est surligné."
   - image: "combat"
     title: "Le combat"
-    text: "L'administrateur pose un chasseur dans le système ; ses armes tirent toutes les six secondes, selon une liste de cibles prioritaires."
+    text: "L'administrateur place un chasseur dans le système. Ses armes tirent toutes les six secondes, en visant d'abord ses cibles prioritaires."
     alt: "PUT d'un chasseur en tant qu'admin : sa santé, ses cibles prioritaires et ses armes."
   - image: "tests"
     title: "Les tests"
-    text: "Le bilan de la CI GitLab, version par version : de 8 à 45 tests d'intégration, tous passés."
+    text: "Le bilan des tests sur GitLab, version par version : de 8 à 45 tests, tous réussis."
     alt: "Six barres vertes, de v1 à v6 : 8/8, 15/15, 21/21, 21/21, 45/45 et 21/21 tests passés."
 architecture:
-  intro: "Le serveur d'un jeu de stratégie spatiale en ASP.NET Core : une API REST, un monde gardé en mémoire, et une horloge qu'on remplace pour tester des minutes de jeu en un instant."
+  intro: "Le serveur du jeu, écrit en C# avec ASP.NET Core. Une API REST répond aux joueurs, le monde du jeu est gardé en mémoire, et une horloge remplaçable permet aux tests de faire passer des minutes de jeu en un instant."
   groups:
     - { label: "Le serveur, en .NET 7", from: [1, 2], to: [3, 2] }
   nodes:
-    - { id: "tests", at: [1, 1], kind: "ext", title: "Les tests du cours", text: "xUnit : des parties entières jouées contre l'API, avec une horloge truquée." }
-    - { id: "api", at: [2, 1], kind: "server", title: "L'API ASP.NET Core", text: "Systèmes, joueurs, unités, bâtiments ; authentification Basic, un rôle admin." }
+    - { id: "tests", at: [1, 1], kind: "ext", title: "Les tests du cours", text: "Écrits avec xUnit, ils jouent des parties entières contre l'API, en avançant l'horloge eux-mêmes." }
+    - { id: "api", at: [2, 1], kind: "server", title: "L'API ASP.NET Core", text: "Systèmes, joueurs, unités et bâtiments. Connexion par identifiant et mot de passe (Basic), et un rôle administrateur." }
     - { id: "other", at: [3, 1], kind: "ext", title: "Un autre serveur Shard", text: "Un vaisseau peut y sauter par un trou de ver." }
-    - { id: "clock", at: [1, 2], kind: "job", title: "L'horloge", text: "Celle du cours : voyages, chantiers et combats l'attendent." }
-    - { id: "game", at: [2, 2], kind: "app", title: "Le jeu", text: "Unités, mines, ports spatiaux ; une tâche de fond fait combattre toutes les 6 s." }
-    - { id: "memory", at: [3, 2], kind: "data", title: "En mémoire", text: "Le monde, généré au démarrage ; MongoDB essayé en v7, inachevé." }
+    - { id: "clock", at: [1, 2], kind: "job", title: "L'horloge", text: "Fournie par le cours. Les voyages, les constructions et les combats se règlent sur elle." }
+    - { id: "game", at: [2, 2], kind: "app", title: "Le jeu", text: "Unités, mines et ports spatiaux. Une tâche en arrière-plan lance les combats toutes les 6 s." }
+    - { id: "memory", at: [3, 2], kind: "data", title: "En mémoire", text: "Le monde, créé au démarrage. Un passage à MongoDB, tenté en v7, est resté inachevé." }
   links:
     - { from: "tests", to: "api", label: "HTTP" }
     - { from: "api", to: "other", label: "le saut : PUT, puis 308" }
@@ -55,13 +55,13 @@ architecture:
     - { from: "game", to: "memory", label: "le monde", both: true }
 crew:
   title: "En binôme"
-  text: "Un projet de cours, à deux, en grande partie en pair programming. J'ai écrit les débuts : les routes des systèmes et des planètes, les premiers modèles de joueurs et d'unités, et les déplacements des éclaireurs ; pour la suite, des mines aux combats, mon binôme a pris le clavier."
+  text: "Un projet de cours, à deux, codé en grande partie côte à côte sur le même écran (pair programming). J'ai écrit les débuts : les routes des systèmes et des planètes, les premiers modèles de joueurs et d'unités, et les déplacements des éclaireurs. Pour la suite, des mines aux combats, c'est mon binôme qui tenait le clavier."
   log:
     - title: "Période"
       text: "De septembre 2023 à janvier 2024."
     - title: "Le cours"
-      text: "Un cours de C# à l'EFREI : le gabarit, l'horloge et les tests de notation venaient du professeur."
+      text: "Un cours de C# à l'EFREI. Le squelette du projet, l'horloge et les tests de notation venaient du professeur."
     - title: "Méthode"
-      text: "Du pair programming, une branche par version, de v1 à v7 ; chacune rejoint prod par une merge request."
+      text: "Du pair programming et une branche par version, de v1 à v7. Chacune rejoignait la branche prod par une merge request."
     - title: "Qualité"
-      text: "La CI GitLab compile, puis lance les tests de notation un jour après chaque push ; un robot inscrit la note dans le dépôt."
+      text: "À chaque push, la CI GitLab compilait le projet, puis lançait les tests de notation un jour plus tard. Un robot inscrivait ensuite la note dans le dépôt."

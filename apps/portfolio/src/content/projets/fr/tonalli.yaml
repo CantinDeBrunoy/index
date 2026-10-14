@@ -1,21 +1,21 @@
-# Tonalli, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "Je voulais garder la trace de mes journées sans en faire un réseau social : pas de fil d'actualité, pas de commentaires, juste un mois qui se colore case après case."
+# Tonalli, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "Je voulais garder une trace de mes journées sans en faire un réseau social. Dans Tonalli, il n'y a ni fil d'actualité ni commentaires, seulement un calendrier dont chaque jour prend une couleur."
 features:
   - title: "Une couleur par jour"
-    text: "Une émotion parmi douze, en trois intensités, donne sa couleur à la journée."
+    text: "On choisit l'émotion de sa journée parmi douze, avec trois intensités possibles, et la case du jour prend sa couleur."
   - title: "Deux photos sur le moment"
-    text: "La scène puis le visage, d'un seul appui dans l'app, jamais depuis la galerie."
+    text: "Un seul appui prend deux photos, la scène puis son visage. Elles se prennent dans l'app, sur le moment, jamais depuis la galerie."
   - title: "Le calendrier de l'autre"
-    text: "Il ne se dévoile qu'une fois sa propre journée remplie, et on y répond d'un emoji."
+    text: "On ne voit le calendrier de l'autre qu'après avoir rempli sa propre journée. On peut alors y réagir avec un emoji."
   - title: "Un rappel à mon heure"
-    text: "Une notification, à l'heure choisie, rappelle de remplir sa journée ; une journée validée hors ligne part dès que la connexion revient."
+    text: "À l'heure qu'on a choisie, une notification rappelle de remplir sa journée. Si on la valide sans connexion, elle part dès que le réseau revient."
 choices:
-  - title: "La réciprocité écrite dans la base"
-    text: "Les règles d'accès de Supabase l'appliquent en SQL, et on ne peut pas la contourner depuis le navigateur."
-  - title: "Le jour de l'auteur"
-    text: "La date d'une entrée se calcule dans le fuseau horaire de celui qui l'écrit, jamais en UTC ; sinon, le soir, la journée se décale."
+  - title: "Une règle gardée par la base"
+    text: "La règle « tu ne vois ma journée qu'après avoir rempli la tienne » est vérifiée par la base de données elle-même, avec les règles d'accès de Supabase. Impossible de la contourner depuis le navigateur."
+  - title: "Le fuseau horaire de chacun"
+    text: "Une journée est datée selon le fuseau horaire de la personne qui l'écrit, pas selon l'heure universelle (UTC). Sinon, une journée remplie le soir pouvait se retrouver à la mauvaise date."
   - title: "Un site plutôt qu'une app"
-    text: "Tonalli a commencé en app mobile, puis est devenu un site qu'on peut installer : un lien suffit pour commencer."
+    text: "Tonalli a commencé comme une app mobile, puis il est devenu un site qu'on peut installer sur son téléphone. Pour commencer, un lien suffit, sans passer par un store."
 video:
   src: "/demos/tonalli.mp4"
   caption: "Le concept, l'émotion du jour, les deux photos, la journée de l'autre qui se découvre, le calendrier et le personnage. Avec un compte de démonstration."
@@ -27,28 +27,28 @@ capture:
 screens:
   - image: "emotion"
     title: "L'émotion du jour"
-    text: "Douze émotions et trois intensités, soit 36 teintes ; le personnage prend la pose de celle qu'on choisit."
+    text: "Douze émotions et trois intensités, soit 36 couleurs. Le personnage prend la pose de l'émotion choisie."
     alt: "L'écran « Comment te sens-tu ? » : douze émotions, Colère choisie, et trois intensités."
   - image: "aujourdhui"
     title: "Aujourd'hui"
-    text: "Les deux personnages jouent une scène selon nos deux émotions ; la journée de l'autre attend qu'on ait rempli la sienne."
+    text: "Les deux personnages jouent une scène selon les deux émotions du jour. La journée de l'autre reste cachée tant qu'on n'a pas rempli la sienne."
     alt: "L'écran « Aujourd'hui » : deux personnages côte à côte, « Ma journée » et « La journée de Léa »."
   - image: "calendrier"
     title: "Le calendrier"
-    text: "Une case par jour, hachurée quand elle manque ou reste masquée, et la répartition des émotions de l'année."
+    text: "Une case par jour, hachurée quand elle est vide ou encore cachée. Dessous, la répartition des émotions de l'année."
     alt: "Le calendrier de l'année : une ligne de cases colorées par mois, puis la répartition de l'année par émotion."
   - image: "personnage"
     title: "Le personnage"
-    text: "Des accessoires à choisir ; il garde la couleur du jour et les porte dans chaque scène."
+    text: "On lui choisit des accessoires. Il garde la couleur du jour et les porte dans chaque scène."
     alt: "L'écran « Mon personnage » : le personnage orange avec des oreilles et une écharpe, et les accessoires à choisir."
 architecture:
-  intro: "Une app web React qu'on installe sur son téléphone, hébergée sur Vercel, avec Supabase derrière : la connexion, la base Postgres, les photos, et deux fonctions qui envoient les notifications."
+  intro: "Une app web React qu'on installe sur son téléphone, hébergée sur Vercel. Derrière, Supabase s'occupe de la connexion, de la base de données (Postgres), des photos, et de deux fonctions qui envoient les notifications."
   groups:
     - { label: "Supabase", from: [2, 1], to: [3, 2] }
   nodes:
     - { id: "app", at: [1, 1], span: [1, 2], kind: "app", title: "L'app React", text: "Sur le téléphone, installée comme une app. Une journée validée hors ligne attend le retour du réseau." }
-    - { id: "db", at: [2, 1], kind: "data", title: "Postgres", text: "Les journées et les réactions ; celle de l'autre reste cachée tant qu'on n'a pas rempli la sienne." }
-    - { id: "storage", at: [2, 2], kind: "data", title: "Auth · Storage", text: "La connexion par e-mail ; les photos, privées, lues par liens signés." }
+    - { id: "db", at: [2, 1], kind: "data", title: "Postgres", text: "Les journées et les réactions. Celle de l'autre reste cachée tant qu'on n'a pas rempli la sienne." }
+    - { id: "storage", at: [2, 2], kind: "data", title: "Auth · Storage", text: "La connexion par e-mail. Les photos restent privées, lues par des liens temporaires." }
     - { id: "fn", at: [3, 1], kind: "server", title: "Edge Functions", text: "Préviennent l'autre, et rappellent de remplir sa journée." }
     - { id: "cron", at: [3, 2], kind: "job", title: "Tâche planifiée", text: "Tous les quarts d'heure, cherche qui doit recevoir son rappel." }
     - { id: "push", at: [4, 1], kind: "ext", title: "Service push", text: "Celui du navigateur : il réveille le téléphone." }
@@ -62,13 +62,13 @@ architecture:
     - { from: "push", to: "sw", label: "la notification" }
 crew:
   title: "Seul à bord"
-  text: "Un projet personnel, de la maquette à la mise en ligne : j'ai tout décidé, codé avec l'aide de Claude Code, et relu chaque branche avant de la fusionner."
+  text: "Un projet personnel, de la maquette à la mise en ligne. J'ai tout décidé, codé avec l'aide de Claude Code, et relu chaque branche avant de la fusionner."
   log:
     - title: "Période"
       text: "De fin août à fin septembre 2026, puis l'arrivée dans INDEX en octobre."
     - title: "Méthode"
       text: "Un guide de reprise de plus de mille lignes : les règles, les pièges déjà rencontrés, ce qui reste à faire. Une branche par chantier, fusionnée après relecture."
     - title: "Qualité"
-      text: "Environ 250 vérifications maison (dates et fuseaux, teintes, réactions…), oxlint et TypeScript à chaque push."
+      text: "Environ 250 vérifications maison (dates et fuseaux horaires, couleurs, réactions…). oxlint et TypeScript passent à chaque push."
     - title: "Mise en ligne"
-      text: "Vercel pour le site ; la base et ses fonctions déployées à la main ; un robot garde Supabase éveillé."
+      text: "Le site sur Vercel. La base et ses fonctions sont déployées à la main, et un robot empêche Supabase de se mettre en veille."

@@ -1,19 +1,19 @@
-# Hublot, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "Ticket prices change all the time, and I didn't want to keep watching them myself. Hublot checks them for me."
+# Hublot, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "Plane ticket prices vary constantly, and I don't have time to check them myself every day. Hublot watches them for me and lets me know when a flight drops below the price I've set."
 features:
-  - title: "Watches"
-    text: "For each one: a destination, a departure window, a length of stay and a price not to exceed."
+  - title: "I choose what to watch"
+    text: "For each trip I'm interested in, I enter the destination, the possible departure dates, the length of stay and the most I'm willing to pay. Hublot calls this a watch."
   - title: "Every six hours"
-    text: "A bot checks the round-trip prices of each watch."
+    text: "Every six hours, a robot fetches the round-trip prices for each watch."
   - title: "An alert, not a flood"
-    text: "A notification when a price drops below the threshold: on each check, at most one per watch and per departure month, for the cheapest deal. A deal already sent, at the same price, then stays quiet for 30 days."
+    text: "When a price drops below my maximum, I get a notification for the cheapest deal, at most one per departure month. If that deal stays at the same price, Hublot won't mention it again for 30 days."
 choices:
   - title: "GitHub Actions as the server"
-    text: "The bot runs as a free scheduled job, with no machine to look after."
+    text: "The robot runs on GitHub Actions, GitHub's service that runs jobs on a schedule. It's free, and there's no machine for me to look after."
   - title: "A management page of my own"
-    text: "Watches are managed on a page served by a Cloudflare Worker, open only to me once signed in; the GitHub key stays on the server."
+    text: "My watches are managed on a web page, and once signed in, I'm the only one who can change them. The page runs at Cloudflare, which keeps the GitHub key on its side, away from the browser."
   - title: "ntfy for alerts"
-    text: "Alerts reach my phone without me having to write an app."
+    text: "ntfy is a free app that receives notifications on your phone. Hublot sends it its alerts, so I didn't have to build an app of my own."
 video:
   src: "/demos/hublot.mp4"
   caption: "Deals under the threshold, the watches, then a new one to Reykjavik. With fictional watches and prices."
@@ -26,23 +26,23 @@ screens:
     alt: "Hublot in demo mode: three deals to Lisbon, from €84 to €96, each under the €120 threshold."
   - image: "surveillances"
     title: "My watches"
-    text: "A destination, a period, a length of stay and a maximum price; below, the best price for each departure month."
+    text: "A destination, a period, a length of stay and a maximum price. Below, the best price found for each departure month."
     alt: "The Lisbon watch, €120 at most, with the table of the best price per departure month."
   - image: "nouvelle"
     title: "A new watch"
-    text: "Cities are searched by name. Once the watch is saved, the robot is restarted and the page waits for its first prices."
+    text: "You search for the city by name. Once the watch is saved, the robot sets off straight away and the page waits for its first prices."
     alt: "The “Nouvelle surveillance” dialog: “Rey” typed, Reykjavik suggested, then the period, the stay and the maximum price."
 architecture:
-  intro: "No server to maintain: a GitHub Actions robot checks the prices, stores them in JSON files in the repository and alerts me on my phone. A page, served by a Cloudflare Worker, lets me manage my watches."
+  intro: "There's no server to maintain. A GitHub Actions robot checks the prices, stores them in JSON files in the repository and alerts me on my phone. A page, served by a Cloudflare Worker, lets me manage my watches."
   groups:
     - { label: "Cloudflare", from: [2, 1], to: [3, 1] }
     - { label: "GitHub", from: [2, 2], to: [2, 3] }
   nodes:
-    - { id: "page", at: [1, 1], kind: "app", title: "The page", text: "The deals and my watches; read-only for visitors." }
-    - { id: "worker", at: [2, 1], kind: "server", title: "hublot Worker", text: "The only one holding the GitHub key; lets just a few requests through." }
+    - { id: "page", at: [1, 1], kind: "app", title: "The page", text: "The deals and my watches. Visitors can see them, but not change them." }
+    - { id: "worker", at: [2, 1], kind: "server", title: "hublot Worker", text: "The only one holding the GitHub key. It limits the number of requests." }
     - { id: "hub", at: [3, 1], kind: "server", title: "INDEX Worker", text: "GitHub sign-in: it tells whether the session is mine." }
     - { id: "repo", at: [2, 2], kind: "file", title: "JSON files", text: "The watches, latest prices, history and alerts already sent." }
-    - { id: "robot", at: [2, 3], kind: "job", title: "The robot", text: "GitHub Actions, every 6 hours: checks prices, decides on alerts." }
+    - { id: "robot", at: [2, 3], kind: "job", title: "The robot", text: "On GitHub Actions, every 6 hours, it checks prices and decides on alerts." }
     - { id: "tp", at: [1, 3], kind: "ext", title: "Travelpayouts", text: "Round-trip prices from Paris." }
     - { id: "ntfy", at: [3, 3], kind: "ext", title: "ntfy", text: "The alert, on my phone." }
   links:
@@ -54,13 +54,13 @@ architecture:
     - { from: "robot", to: "ntfy", label: "under the threshold" }
 crew:
   title: "Solo flight"
-  text: "A tool for myself, built on my own with the help of Claude Code. The robot works too: most of the project's commits are its price checks."
+  text: "A tool for myself, built on my own with the help of Claude Code. The robot pitches in too, in its own way, since most of the project's commits are its price checks."
   log:
     - title: "Timeline"
-      text: "Late September 2026; in October, the page moved to Cloudflare, with GitHub sign-in."
+      text: "Late September 2026. In October, the page moved to Cloudflare, with GitHub sign-in."
     - title: "Method"
-      text: "Conventional commits; the API's rules, discovered on the real API, kept as tests."
+      text: "Conventional commits. What I learned by querying the real API is kept as tests."
     - title: "Quality"
-      text: "About 80 Vitest tests, including real API responses; TypeScript checked in three passes (the robot, the page, the Worker)."
+      text: "About 80 Vitest tests, some of them on real API responses. TypeScript checks the robot, the page and the Worker separately."
     - title: "Shipping"
-      text: "The robot runs in GitHub Actions; the page, in a Cloudflare Worker redeployed on every push."
+      text: "The robot runs on GitHub Actions. The page runs in a Cloudflare Worker, redeployed on every push."

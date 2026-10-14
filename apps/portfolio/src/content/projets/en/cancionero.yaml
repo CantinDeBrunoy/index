@@ -1,19 +1,19 @@
-# Cancionero, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "Cancionero turns every song into a Spanish lesson: you read it, understand it, sing it, and the words stay."
+# Cancionero, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "Cancionero is for learning Spanish through songs. You read the lyrics with their translation, sing them, then review the words you want to remember."
 features:
   - title: "Translated lyrics"
-    text: "Each line with its French translation, and its pronunciation to listen to."
+    text: "Each line of the song is shown with its French translation, and you can listen to how it's pronounced."
   - title: "Karaoke"
-    text: "The current line grows and fills, in time with the lyrics when they are timestamped; without sound, for now."
+    text: "The line to sing grows and fills as the song goes on, in perfect time when the lyrics are timed. For now, the karaoke runs without the song's sound."
   - title: "Words to review"
-    text: "A word tapped in the lyrics or the karaoke becomes a card, to flip and then swipe to sort, even offline."
+    text: "A word tapped in the lyrics or during the karaoke becomes a flashcard. You flip it, then swipe it to sort it, even offline."
 choices:
   - title: "An installable app"
-    text: "It installs from the browser and works offline, whereas an iOS app would have needed an Apple developer account."
+    text: "Cancionero installs from the browser, like an app, and works offline. A real iPhone app would have required an Apple developer account, which is paid."
   - title: "Expo and React Native Web"
-    text: "The same code serves the web today, and will serve phones tomorrow."
-  - title: "Next to no server"
-    text: "Lyrics come from LRCLIB, missing translations from MyMemory, and the vocabulary stays on the device."
+    text: "With Expo and React Native, the same code can run on the web and on phones. Today Cancionero is a website, and moving to phones won't mean rewriting everything."
+  - title: "Almost no server"
+    text: "Lyrics come from LRCLIB, a free lyrics database, and missing translations from the MyMemory service. The words to review stay on the device, so there's almost nothing to run on a server."
 video:
   src: "/demos/cancionero.mp4"
   caption: "Three words saved from “Hola, ¿cómo estás?”, the karaoke, then the flashcards."
@@ -23,29 +23,29 @@ capture:
 screens:
   - image: "accueil"
     title: "The songs"
-    text: "Three songs written for the app, from beginner to intermediate, with the pile of words to review at the top."
+    text: "Three songs written for the app, from beginner to intermediate. At the top, the pile of words to review."
     alt: "Cancionero's home screen: a garland of flags, the “Vocabulaire à réviser” card and three songs."
   - image: "chanson"
     title: "A song"
-    text: "Every word can be tapped and goes into your review pile; every line has its translation and a synthetic voice."
+    text: "Tap a word to add it to your reviews. Every line has its translation, and a synthetic voice reads it aloud."
     alt: "The song “Hola, ¿cómo estás?”: three highlighted words and the message “noches ajouté à tes révisions”."
   - image: "karaoke"
     title: "The karaoke"
-    text: "The current line grows and fills, its translation just below. Without timestamped lyrics, lines are spaced out by estimate, and the app says so."
+    text: "The current line grows and fills, with its translation just below. When the lyrics aren't timed, the app spaces the lines out roughly, and says so."
     alt: "Full-screen karaoke: the line “Muy bien, gracias, ¿y tú qué tal?” in large type, its translation below, and “Timing approximatif”."
   - image: "cartes"
     title: "The cards"
-    text: "The words you set aside, flipped with a tap, then swiped: “I know it” or “Review again”."
+    text: "The words you set aside flip over with a tap, then swipe towards “I know it” or “Review again”."
     alt: "A review card: the word “noches”, the song it comes from, and the “À revoir” and “Je le connais” buttons."
 architecture:
-  intro: "An Expo app exported as a static site, installable like an app and usable offline. No account, no database: whatever you keep stays on the device."
+  intro: "An Expo app turned into a website, installable like an app and able to open without a network. There's no account and no database, everything you keep stays on the device."
   groups:
     - { label: "On the device", from: [1, 1], to: [3, 1] }
   nodes:
     - { id: "local", at: [1, 1], kind: "data", title: "localStorage", text: "Added songs, words to review, translations already fetched." }
     - { id: "app", at: [2, 1], kind: "app", title: "The Expo app", text: "React Native Web, and the app's three songs." }
-    - { id: "sw", at: [3, 1], kind: "app", title: "Service worker", text: "Keeps the site in cache: the app opens without a network." }
-    - { id: "worker", at: [4, 1], kind: "server", title: "cancionero Worker", text: "Serves the site; about ten lines give each song its own page." }
+    - { id: "sw", at: [3, 1], kind: "app", title: "Service worker", text: "Keeps a copy of the site, so the app opens without a network." }
+    - { id: "worker", at: [4, 1], kind: "server", title: "cancionero Worker", text: "Serves the site. About ten lines of code give each song its own page." }
     - { id: "apis", at: [2, 2], kind: "ext", title: "LRCLIB · MyMemory", text: "Lyrics for real songs, and the missing translations." }
   links:
     - { from: "app", to: "local", label: "what you keep", both: true }
@@ -54,12 +54,12 @@ architecture:
     - { from: "app", to: "apis", label: "on demand", both: true }
 crew:
   title: "Solo flight"
-  text: "I came up with it and built it on my own, with Claude Code as an assistant: each piece of work on its own branch, reviewed then merged."
+  text: "I came up with it and built it on my own, with Claude Code as an assistant. Each piece of work had its own branch, which I reviewed before merging it."
   log:
     - title: "Timeline"
       text: "October 2026: the first version, the installable app and the “Papel” redesign, then the move to Cloudflare."
     - title: "Method"
-      text: "One branch per piece of work, merged by hand. Main is production."
+      text: "One branch per piece of work, merged by hand. Whatever lands on main goes live."
     - title: "Quality"
       text: "TypeScript checked and the site rebuilt on every push."
     - title: "Shipping"

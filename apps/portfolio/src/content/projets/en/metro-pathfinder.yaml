@@ -1,40 +1,40 @@
-# Métro Pathfinder, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "A school project: computing the shortest route on the Paris metro, which isn't always the one you'd think."
+# Métro Pathfinder, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "A school project, for the graph theory course at EFREI. Four of us had to find the fastest route between two stations of the Paris metro."
 features:
   - title: "Two stations, one route"
-    text: "Pick the start and the end, and the shortest path appears."
+    text: "You click the departure station, then the arrival, and the fastest route is drawn on the map."
   - title: "The network as a graph"
-    text: "Each station is a node, once per line that serves it; the sections between them are the edges."
-  - title: "A desktop app"
-    text: "A Java window: two clicks on the map, and the route is drawn on it."
+    text: "The program sees the metro as a graph: stations are points, and the sections between them are links. A station served by three lines counts three times, once per line."
+  - title: "A program for your computer"
+    text: "Métro Pathfinder isn't a website. It's a Java program you run on your computer, and the metro map opens in a window."
 choices:
-  - title: "Dijkstra"
-    text: "It finds the shortest path in a graph with positive distances, with an exact result that's easy to check by hand."
+  - title: "Dijkstra's algorithm"
+    text: "It's the classic method for finding the shortest path in a graph. Since travel times are never negative, it always gives the right answer, and you can check it by hand."
   - title: "Java and Swing"
-    text: "A language the team already knew, so all the effort could go into the algorithm."
+    text: "The whole team already knew Java, and Swing, its toolkit for windows, was enough to display the map. So our time went into the algorithm, not into learning a new tool."
 video:
   src: "/demos/metro-pathfinder.mp4"
-  caption: "The metro map as a graph, a computed route, then Dijkstra and the code. Edited from the 2022 recording."
+  caption: "The metro map seen as a graph, a computed route, then Dijkstra's algorithm and the code. Edited from the 2022 recording."
   width: 1280
   height: 720
 screens:
   - image: "plan"
     title: "The map"
-    text: "The metro map in a Swing window: click the departure station, then the arrival."
+    text: "The metro and RER map opens in a window. You click the departure station, then the arrival."
     alt: "The Métro Pathfinder window: the Paris metro and RER map."
   - image: "trajet"
     title: "The route"
-    text: "The shortest path is drawn as blue dots on the map; the station-by-station detail is printed in the console."
+    text: "The route is drawn as blue dots on the map. The station-by-station detail is printed as text in the console."
     alt: "The same map, with a route in blue dots from Pont de Levallois to the east of Paris."
 architecture:
-  intro: "A Java desktop application, with no database or network: the metro and its travel times fit in two text files, read at launch."
+  intro: "A Java program that runs on the computer, with no database and no connection. The whole metro, with its travel times, fits in two text files read at launch."
   groups: []
   nodes:
-    - { id: "files", at: [1, 1], kind: "file", title: "Two text files", text: "376 vertices, 473 sections and their durations; where each station sits on the map." }
+    - { id: "files", at: [1, 1], kind: "file", title: "Two text files", text: "376 vertices, 473 sections with their duration, and where each station sits on the map." }
     - { id: "graph", at: [2, 1], kind: "data", title: "The graph", text: "A station served by three lines counts as three vertices." }
     - { id: "algos", at: [3, 1], kind: "app", title: "The algorithms", text: "Depth-first search, Dijkstra for the shortest path, Kruskal for the spanning tree." }
     - { id: "user", at: [2, 2], kind: "user", title: "Me", text: "Two clicks on the map." }
-    - { id: "ui", at: [3, 2], kind: "app", title: "The Swing window", text: "The map, and the route in blue dots; the detail is printed in the console." }
+    - { id: "ui", at: [3, 2], kind: "app", title: "The Swing window", text: "The map and the route in blue dots. The detail is printed in the console." }
   links:
     - { from: "files", to: "graph", label: "read at launch" }
     - { from: "graph", to: "algos", label: "vertices, edges" }

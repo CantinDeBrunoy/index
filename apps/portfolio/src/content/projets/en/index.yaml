@@ -1,45 +1,45 @@
-# INDEX, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "My projects each lived in their own corner, and some fell asleep on free tiers. INDEX gathers them in a single repository, keeps them awake and shows them here, like the stops of a journey."
+# INDEX, la fiche en anglais. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "My projects were scattered, and some went to sleep on free hosting plans when nobody used them. INDEX brings them together in one place, keeps them online and presents them here, as the stops of a journey."
 features:
   - title: "One repository"
-    text: "My active projects gathered in one repository, each in its own folder, nearly all with their history."
+    text: "My current projects live in a single code repository, each in its own folder. Almost all of them kept their original history."
   - title: "Nothing falls asleep"
-    text: "A bot keeps Tonalli's database awake, checks every site each hour and opens an issue when one goes down."
+    text: "A robot stops Tonalli's database from going to sleep. It also checks every site every hour, and opens an issue if one of them stops answering."
   - title: "Every project in its place"
-    text: "A stop, a project page and, when it has one, its app to open from here."
+    text: "Each project has its stop on this journey, its page, and its app when it's online, ready to open from here."
 choices:
   - title: "pnpm and Turborepo"
-    text: "Each project keeps its own versions, and only the ones that change are rebuilt and tested."
+    text: "pnpm installs each project's dependencies without mixing their versions, and Turborepo only rebuilds and tests the projects that changed."
   - title: "Cloudflare, except Tonalli"
-    text: "The apps run on Cloudflare Workers; only Tonalli stays on Vercel, so its users don't get signed out."
-  - title: "The wake-up call on Cloudflare"
-    text: "A scheduled job on the Worker keeps Supabase awake with a real request; if GitHub suspends one of the repository's jobs, an issue tells me."
+    text: "All the apps are hosted for free at Cloudflare, except Tonalli, which stays on Vercel: moving it would have signed its users out."
+  - title: "The wake-up call at Cloudflare"
+    text: "Supabase puts unused databases to sleep, so a scheduled job at Cloudflare regularly sends it a real request. And if GitHub suspends one of the repository's jobs, an issue tells me so I can restart it."
 video:
   src: "/demos/index.mp4"
   caption: "The departure, three stops, Hublot's page, then the journal and its shortcuts to the apps."
 screens:
   - image: "escale"
     title: "The journey"
-    text: "Each project is a stop: a 3D scene, its pitch, and the choice between its page and the next stop. Here, INDEX's own."
+    text: "Each project is a stop, with a 3D scene and a short pitch. You then choose to open its page or move on to the next stop. Here, INDEX's own."
     alt: "The INDEX stop on a computer: a folder open on the contents of the ten projects, and the “Faire connaissance” button."
   - image: "carnet"
     title: "The logbook"
-    text: "The ten projects in order and, at the top, the apps to open: their green dot comes from the Worker, which checks that they answer."
+    text: "The ten projects in order and, at the top, the apps to open. A green dot marks the ones that answer, based on the site Worker's checks."
     alt: "The travel logbook: shortcuts to the six live apps, “statut vérifié il y a 3 min”, and the list of projects."
   - image: "a-propos"
     title: "About"
-    text: "The passport: my background, in figures and then as metro lines."
+    text: "My background as a passport, in figures and then as metro lines."
     alt: "The About page: my name, my introduction, and the stamped passport scene."
 architecture:
-  intro: "A single pnpm and Turborepo repository for all my projects. The portfolio is a static Astro site, with 3D scenes rendered ahead of time, served by a Cloudflare Worker that also checks the other apps answer."
+  intro: "A single repository for all my projects, organised with pnpm and Turborepo. The portfolio is an Astro site, with 3D scenes computed ahead of time. It's served by a Cloudflare Worker, which also checks that the other apps answer."
   groups:
     - { label: "GitHub", from: [1, 1], to: [2, 1] }
   nodes:
     - { id: "repo", at: [1, 1], kind: "file", title: "The repository", text: "pnpm and Turborepo: the apps, the Astro site, the shared packages." }
     - { id: "gha", at: [2, 1], kind: "job", title: "GitHub Actions", text: "CI on whatever changed, one deployment per app, a wake-up call every 6 h." }
-    - { id: "apps", at: [3, 1], span: [1, 2], kind: "app", title: "The apps", text: "On Cloudflare Workers; Tonalli on Vercel, with its Supabase database." }
+    - { id: "apps", at: [3, 1], span: [1, 2], kind: "app", title: "The apps", text: "On Cloudflare Workers, except Tonalli, on Vercel with its Supabase database." }
     - { id: "visitor", at: [1, 2], kind: "user", title: "The visitor", text: "The journey, the project pages, the logbook." }
-    - { id: "worker", at: [2, 2], kind: "server", title: "index Worker", text: "Serves the site and its videos, /api/status and GitHub sign-in; a job every hour." }
+    - { id: "worker", at: [2, 2], kind: "server", title: "index Worker", text: "Serves the site, its videos, the apps' status (/api/status) and GitHub sign-in. A job runs every hour." }
     - { id: "issues", at: [2, 3], kind: "ext", title: "GitHub issues", text: "Opened when an app goes down, closed when it comes back." }
   links:
     - { from: "repo", to: "gha", label: "a push" }
@@ -54,8 +54,8 @@ crew:
     - title: "Timeline"
       text: "Since October 2026."
     - title: "Method"
-      text: "Mock-ups first, variants side by side; then the code, in conventional commits. Every project page text reviewed and checked against the projects' code."
+      text: "Mock-ups first, with several variants side by side, then the code, in conventional commits. Every project page text is reviewed and checked against the projects' code."
     - title: "Quality"
-      text: "Turborepo CI that only checks what changed (lint, types, tests, build); Vitest tests on the project list and the sign-in."
+      text: "Turborepo CI that only checks what changed (lint, types, tests, build), and Vitest tests on the project list and the sign-in."
     - title: "Shipping"
       text: "One deployment workflow per app. Everything fits in free tiers, with no credit card."

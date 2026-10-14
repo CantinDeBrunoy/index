@@ -1,19 +1,19 @@
-# Cancionero, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "Cancionero fait de chaque chanson une leçon d'espagnol : on la lit, on la comprend, on la chante, et les mots restent."
+# Cancionero, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "Cancionero sert à apprendre l'espagnol avec des chansons. On lit les paroles avec leur traduction, on les chante, puis on révise les mots qu'on veut retenir."
 features:
   - title: "Les paroles traduites"
-    text: "Chaque ligne avec sa traduction en français, et sa prononciation à écouter."
+    text: "Chaque ligne de la chanson s'affiche avec sa traduction en français, et on peut écouter comment elle se prononce."
   - title: "Le karaoké"
-    text: "La ligne en cours grossit et se remplit, au rythme des paroles quand elles sont horodatées ; sans le son, pour l'instant."
+    text: "La ligne à chanter grossit et se remplit au fil de la chanson, au bon rythme quand les paroles sont minutées. Pour l'instant, le karaoké tourne sans le son de la chanson."
   - title: "Les mots à réviser"
-    text: "Un mot touché dans les paroles ou le karaoké devient une carte, à retourner puis à glisser pour la trier, même hors ligne."
+    text: "Un mot touché dans les paroles ou pendant le karaoké devient une carte de révision. On la retourne, puis on la fait glisser pour la trier, même sans connexion."
 choices:
   - title: "Une application installable"
-    text: "Elle s'installe depuis le navigateur et marche hors ligne, alors qu'une app iOS aurait demandé un compte développeur Apple."
+    text: "Cancionero s'installe depuis le navigateur, comme une app, et marche hors ligne. Une vraie app iPhone aurait demandé un compte développeur Apple, qui est payant."
   - title: "Expo et React Native Web"
-    text: "Le même code sert le web aujourd'hui, et servira le téléphone demain."
+    text: "Avec Expo et React Native, le même code peut tourner sur le web et sur téléphone. Aujourd'hui, Cancionero est un site, et passer au téléphone ne demandera pas de tout réécrire."
   - title: "Presque pas de serveur"
-    text: "Les paroles viennent de LRCLIB, les traductions qui manquent de MyMemory, et le vocabulaire reste sur l'appareil."
+    text: "Les paroles viennent de LRCLIB, une base de paroles gratuite, et les traductions manquantes du service MyMemory. Les mots à réviser restent sur l'appareil, donc il n'y a presque rien à faire tourner côté serveur."
 video:
   src: "/demos/cancionero.mp4"
   caption: "Trois mots mis de côté dans « Hola, ¿cómo estás? », le karaoké, puis les cartes à réviser."
@@ -23,29 +23,29 @@ capture:
 screens:
   - image: "accueil"
     title: "Les chansons"
-    text: "Trois chansons écrites pour l'app, du niveau débutant à intermédiaire, et en tête la pile de mots à réviser."
+    text: "Trois chansons écrites pour l'app, du niveau débutant à intermédiaire. En haut, la pile de mots à réviser."
     alt: "L'accueil de Cancionero : une guirlande de drapeaux, la carte « Vocabulaire à réviser » et trois chansons."
   - image: "chanson"
     title: "Une chanson"
-    text: "Chaque mot se touche et part dans les révisions ; chaque ligne a sa traduction et sa voix de synthèse."
+    text: "On touche un mot pour l'ajouter aux révisions. Chaque ligne a sa traduction, et une voix de synthèse la lit à voix haute."
     alt: "La chanson « Hola, ¿cómo estás? » : trois mots surlignés et le message « noches ajouté à tes révisions »."
   - image: "karaoke"
     title: "Le karaoké"
-    text: "La ligne en cours grossit et se remplit, sa traduction juste dessous. Sans paroles horodatées, les lignes se répartissent au jugé, et l'app le dit."
+    text: "La ligne en cours grossit et se remplit, avec sa traduction juste dessous. Quand les paroles ne sont pas minutées, l'app répartit les lignes à peu près, et le signale."
     alt: "Le karaoké en plein écran : la ligne « Muy bien, gracias, ¿y tú qué tal? » en grand, sa traduction dessous, et « Timing approximatif »."
   - image: "cartes"
     title: "Les cartes"
-    text: "Les mots mis de côté, à retourner d'un toucher, puis à glisser : « Je le connais » ou « À revoir »."
+    text: "Les mots mis de côté se retournent d'un toucher, puis se glissent vers « Je le connais » ou « À revoir »."
     alt: "Une carte de révision : le mot « noches », la chanson d'où il vient, et les boutons « À revoir » et « Je le connais »."
 architecture:
-  intro: "Une app Expo exportée en site statique, qu'on installe comme une app et qui s'ouvre hors ligne. Ni compte ni base de données : ce qu'on garde reste sur l'appareil."
+  intro: "Une app Expo transformée en site web, qu'on installe comme une app et qui s'ouvre sans réseau. Il n'y a ni compte ni base de données, tout ce qu'on garde reste sur l'appareil."
   groups:
     - { label: "Sur l'appareil", from: [1, 1], to: [3, 1] }
   nodes:
     - { id: "local", at: [1, 1], kind: "data", title: "localStorage", text: "Les chansons ajoutées, les mots à réviser, les traductions déjà faites." }
     - { id: "app", at: [2, 1], kind: "app", title: "L'app Expo", text: "React Native Web, et les trois chansons de l'app." }
-    - { id: "sw", at: [3, 1], kind: "app", title: "Service worker", text: "Garde le site en cache : l'app s'ouvre sans réseau." }
-    - { id: "worker", at: [4, 1], kind: "server", title: "Worker cancionero", text: "Sert le site ; une dizaine de lignes donnent à chaque chanson sa page." }
+    - { id: "sw", at: [3, 1], kind: "app", title: "Service worker", text: "Garde une copie du site, pour que l'app s'ouvre sans réseau." }
+    - { id: "worker", at: [4, 1], kind: "server", title: "Worker cancionero", text: "Sert le site. Une dizaine de lignes de code donnent à chaque chanson sa page." }
     - { id: "apis", at: [2, 2], kind: "ext", title: "LRCLIB · MyMemory", text: "Les paroles des vraies chansons, et les traductions qui manquent." }
   links:
     - { from: "app", to: "local", label: "ce qu'on garde", both: true }
@@ -54,12 +54,12 @@ architecture:
     - { from: "app", to: "apis", label: "à la demande", both: true }
 crew:
   title: "Seul à bord"
-  text: "Je l'ai imaginé et construit seul, avec Claude Code comme assistant : chaque chantier sur sa branche, relue puis fusionnée."
+  text: "Je l'ai imaginé et construit seul, avec Claude Code comme assistant. Chaque chantier avait sa branche, que je relisais avant de la fusionner."
   log:
     - title: "Période"
       text: "Octobre 2026 : la première version, l'app installable et la refonte « Papel », puis le passage chez Cloudflare."
     - title: "Méthode"
-      text: "Une branche par chantier, fusionnée à la main. Sur main, c'est la production."
+      text: "Une branche par chantier, fusionnée à la main. Ce qui arrive sur main part en ligne."
     - title: "Qualité"
       text: "TypeScript vérifié et le site reconstruit à chaque push."
     - title: "Mise en ligne"

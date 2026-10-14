@@ -1,19 +1,19 @@
-# Visit Match, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "Un projet d'école d'ingénieur, mené jusqu'au business plan. Dans une ville qu'on découvre, on ne sait pas toujours quoi visiter : Visit Match propose les lieux autour de soi, et on garde ceux qui donnent envie."
+# Visit Match, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "Quand on découvre une ville, on ne sait pas toujours quoi visiter. Visit Match propose les lieux autour de soi, et on garde ceux qui donnent envie. Nous l'avons imaginé à six, en école d'ingénieur, et mené jusqu'au business plan."
 features:
   - title: "Ses envies d'abord"
-    text: "À l'inscription, on choisit ses centres d'intérêt : monuments, musées, parcs, randonnées…"
+    text: "À l'inscription, on choisit ce qui nous intéresse : monuments, musées, parcs, randonnées…"
   - title: "Un lieu, un geste"
-    text: "Les lieux autour de soi défilent, à garder ou à passer d'un geste ; chacun a sa fiche, avec sa distance, son prix, ses photos et son plan."
+    text: "Les lieux autour de soi défilent, et un geste suffit pour garder un lieu ou le passer. Chaque lieu a sa fiche, avec la distance, le prix, des photos et le plan."
   - title: "Un carnet par voyage"
-    text: "Les lieux gardés se rangent dans le carnet du voyage, se trient par date, par prix ou par catégorie, et s'épinglent sur la carte."
+    text: "Les lieux gardés vont dans le carnet du voyage. On peut les trier par date, par prix ou par catégorie, et les épingler sur la carte."
 choices:
   - title: "Flutter"
-    text: "Une seule base de code, pour iOS comme pour Android."
+    text: "Flutter permet d'écrire l'application une seule fois pour l'iPhone et pour Android."
   - title: "Firebase"
-    text: "Les comptes et les données, sans serveur à maintenir."
+    text: "Firebase, le service de Google, s'occupe des comptes et des données. Nous n'avions donc aucun serveur à faire tourner nous-mêmes."
   - title: "Figma d'abord"
-    text: "Les écrans dessinés et montrés à de futurs utilisateurs avant la première ligne de code."
+    text: "Nous avons dessiné les écrans sur Figma et nous les avons montrés à de futurs utilisateurs, avant d'écrire la moindre ligne de code."
 video:
   src: "/demos/visit-match.mp4"
   caption: "L'inscription, les lieux à garder ou à passer, les carnets, les likes, la carte et le profil, avec un compte de test."
@@ -22,7 +22,7 @@ video:
 screens:
   - image: "carte-lieu"
     title: "Un lieu"
-    text: "Les lieux autour de soi arrivent un par un, avec leur distance, leur catégorie et leur prix : on passe, on le met dans un carnet, ou on l'aime."
+    text: "Les lieux autour de soi arrivent un par un, avec leur distance, leur catégorie et leur prix. Pour chacun, trois boutons : passer, le mettre dans un carnet, ou l'aimer."
     alt: "La carte du Panthéon : à 2 km, monument, deux dollars, et les boutons passer, carnet et aimer."
   - image: "detail"
     title: "Sa fiche"
@@ -34,7 +34,7 @@ screens:
     alt: "La liste des lieux aimés, Notre-Dame et le Trocadéro, sous le menu de tri : chronologique, gamme de prix, catégorie."
   - image: "plan"
     title: "La carte"
-    text: "Les lieux sur une carte Mapbox, chacun avec l'icône de sa catégorie."
+    text: "Les lieux sur une carte (Mapbox), chacun avec l'icône de sa catégorie."
     alt: "Une carte où une vingtaine d'épingles se regroupent au centre."
 architecture:
   intro: "Une app mobile Flutter, avec Firebase pour les comptes et les données, et Mapbox pour la carte."
@@ -55,4 +55,4 @@ crew:
     - title: "Période"
       text: "2023."
     - title: "Méthode"
-      text: "L'agilité avec Scrum ; les écrans dessinés dans Figma et montrés à de futurs utilisateurs avant la première ligne de code."
+      text: "En méthode agile (Scrum). Les écrans ont été dessinés dans Figma et montrés à de futurs utilisateurs avant la première ligne de code."

@@ -1,45 +1,45 @@
-# INDEX, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026.
-why: "Mes projets vivaient chacun dans son coin, et certains s'endormaient sur les offres gratuites. INDEX les réunit dans un seul dépôt, les garde éveillés et les présente ici, comme les escales d'un voyage."
+# INDEX, la fiche en français. Relue et vérifiée dans le code le 10 octobre 2026, réécrite plus simplement le 14 octobre.
+why: "Mes projets étaient éparpillés, et certains se mettaient en veille sur les hébergements gratuits quand personne ne s'en servait. INDEX les réunit au même endroit, les garde en ligne et les présente ici, comme les escales d'un voyage."
 features:
   - title: "Un seul dépôt"
-    text: "Mes projets actifs réunis dans un même dépôt, chacun dans son dossier, presque tous avec leur historique."
+    text: "Mes projets en cours sont rangés dans un même dépôt de code, chacun dans son dossier. Presque tous ont gardé leur historique d'origine."
   - title: "Rien ne s'endort"
-    text: "Un robot garde la base de Tonalli éveillée, vérifie chaque site toutes les heures et ouvre un ticket quand l'un d'eux tombe."
+    text: "Un robot empêche la base de données de Tonalli de se mettre en veille. Il vérifie aussi chaque site toutes les heures, et ouvre un ticket si l'un d'eux ne répond plus."
   - title: "Chaque projet à sa place"
-    text: "Une escale, une fiche et, quand il en a une, son app à ouvrir d'ici."
+    text: "Chaque projet a son escale dans ce voyage, sa fiche, et son app quand elle est en ligne, à ouvrir directement d'ici."
 choices:
   - title: "pnpm et Turborepo"
-    text: "Chaque projet garde ses propres versions, et seuls ceux qui changent sont reconstruits et testés."
+    text: "pnpm installe les dépendances de chaque projet sans mélanger leurs versions, et Turborepo ne reconstruit et ne teste que les projets qui ont changé."
   - title: "Cloudflare, sauf Tonalli"
-    text: "Les apps tournent sur Cloudflare Workers ; seul Tonalli reste sur Vercel, pour ne pas déconnecter ses utilisateurs."
+    text: "Toutes les apps sont hébergées gratuitement chez Cloudflare, sauf Tonalli, qui reste sur Vercel : le déménager aurait déconnecté ses utilisateurs."
   - title: "Le réveil chez Cloudflare"
-    text: "Une tâche planifiée du Worker garde Supabase éveillé par une vraie requête ; si GitHub suspend une tâche du dépôt, un ticket me prévient."
+    text: "Supabase met en veille les bases qui ne servent pas, alors une tâche planifiée chez Cloudflare lui envoie régulièrement une vraie requête. Et si GitHub suspend une tâche du dépôt, un ticket me prévient pour que je la relance."
 video:
   src: "/demos/index.mp4"
   caption: "Le départ, trois escales, la fiche de Hublot, puis le carnet et ses raccourcis vers les apps."
 screens:
   - image: "escale"
     title: "Le voyage"
-    text: "Chaque projet est une escale : une scène 3D, son accroche, et le choix entre sa fiche et l'escale suivante. Ici, celle d'INDEX."
+    text: "Chaque projet est une escale, avec une scène en 3D et une phrase d'accroche. On choisit ensuite d'ouvrir sa fiche ou de passer à l'escale suivante. Ici, celle d'INDEX."
     alt: "L'escale d'INDEX sur ordinateur : un dossier ouvert sur le sommaire des dix projets, et le bouton « Faire connaissance »."
   - image: "carnet"
     title: "Le carnet"
-    text: "Les dix projets dans l'ordre et, en tête, les apps à ouvrir : leur point vert vient du Worker, qui vérifie qu'elles répondent."
+    text: "Les dix projets dans l'ordre et, en haut, les apps à ouvrir. Un point vert signale celles qui répondent, d'après les vérifications du Worker du site."
     alt: "Le carnet de voyage : les raccourcis des six apps en ligne, « statut vérifié il y a 3 min », et la liste des projets."
   - image: "a-propos"
     title: "À propos"
-    text: "Le passeport : mon parcours, en chiffres puis en lignes de métro."
+    text: "Mon parcours sous forme de passeport, en chiffres puis en lignes de métro."
     alt: "La page À propos : mon nom, ma présentation, et la scène du passeport tamponné."
 architecture:
-  intro: "Un seul dépôt pnpm et Turborepo pour tous mes projets. Le portfolio est un site Astro statique, avec des scènes 3D rendues à l'avance, servi par un Worker Cloudflare qui vérifie aussi que les autres apps répondent."
+  intro: "Un seul dépôt pour tous mes projets, organisé avec pnpm et Turborepo. Le portfolio est un site Astro, avec des scènes 3D calculées à l'avance. Il est servi par un Worker Cloudflare, qui vérifie aussi que les autres apps répondent."
   groups:
     - { label: "GitHub", from: [1, 1], to: [2, 1] }
   nodes:
     - { id: "repo", at: [1, 1], kind: "file", title: "Le dépôt", text: "pnpm et Turborepo : les apps, le site Astro, les paquets partagés." }
     - { id: "gha", at: [2, 1], kind: "job", title: "GitHub Actions", text: "La CI sur ce qui change, un déploiement par app, un réveil toutes les 6 h." }
-    - { id: "apps", at: [3, 1], span: [1, 2], kind: "app", title: "Les apps", text: "Sur Cloudflare Workers ; Tonalli sur Vercel, avec sa base Supabase." }
+    - { id: "apps", at: [3, 1], span: [1, 2], kind: "app", title: "Les apps", text: "Sur Cloudflare Workers, sauf Tonalli, sur Vercel avec sa base Supabase." }
     - { id: "visitor", at: [1, 2], kind: "user", title: "Le visiteur", text: "Le voyage, les fiches, le carnet." }
-    - { id: "worker", at: [2, 2], kind: "server", title: "Worker index", text: "Sert le site et ses vidéos, /api/status et la connexion GitHub ; une tâche toutes les heures." }
+    - { id: "worker", at: [2, 2], kind: "server", title: "Worker index", text: "Sert le site, ses vidéos, l'état des apps (/api/status) et la connexion GitHub. Une tâche tourne toutes les heures." }
     - { id: "issues", at: [2, 3], kind: "ext", title: "Tickets GitHub", text: "Ouverts quand une app tombe, refermés quand elle revient." }
   links:
     - { from: "repo", to: "gha", label: "un push" }
@@ -54,8 +54,8 @@ crew:
     - title: "Période"
       text: "Depuis octobre 2026."
     - title: "Méthode"
-      text: "Les maquettes d'abord, variantes côte à côte ; puis le code, en commits conventionnels. Chaque texte des fiches relu et vérifié dans le code des projets."
+      text: "Les maquettes d'abord, avec plusieurs variantes côte à côte, puis le code, en commits conventionnels. Chaque texte des fiches est relu et vérifié dans le code des projets."
     - title: "Qualité"
-      text: "Une CI Turborepo qui ne vérifie que ce qui change (lint, types, tests, build) ; des tests Vitest sur la liste des projets et la connexion."
+      text: "Une CI Turborepo qui ne vérifie que ce qui change (lint, types, tests, build), et des tests Vitest sur la liste des projets et la connexion."
     - title: "Mise en ligne"
       text: "Un workflow de déploiement par app. Tout tient dans les offres gratuites, sans carte bancaire."

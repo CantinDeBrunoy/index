@@ -73,7 +73,7 @@ export const FICHE: Record<
     depart: "Le départ",
     demo: "La démo",
     stop: "Escale",
-    why: "Pourquoi je l'ai fabriqué",
+    why: "Pourquoi ce projet",
     what: "Ce que ça fait",
     how: "Comment c'est fait",
     pass: {
@@ -107,7 +107,7 @@ export const FICHE: Record<
     depart: "The departure",
     demo: "The demo",
     stop: "Stop",
-    why: "Why I built it",
+    why: "Why this project",
     what: "What it does",
     how: "How it's made",
     pass: {
