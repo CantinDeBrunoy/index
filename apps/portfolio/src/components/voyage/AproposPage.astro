@@ -96,7 +96,6 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
         <i class="metro__zone metro__zone--work"></i>
         <div class="metro__plan">
           <i class="metro__band" style={`left: ${pct(LINES.band.from)}%; width: ${pct(LINES.band.to) - pct(LINES.band.from)}%`}></i>
-          <span class="metro__band-label" style={`left: ${pct(LINES.band.from)}%`}>{R.band}</span>
           <i class="metro__line" style={`top: 190px; left: ${pct(LINES.school[0].at)}%; width: ${pct(LINES.interchange) - pct(LINES.school[0].at)}%; background: ${INK.school}`}></i>
           <i class="metro__line" style={`top: 380px; left: ${pct(LINES.work[0].at)}%; width: ${today - pct(LINES.work[0].at)}%; background: ${INK.work}`}></i>
           <i class="metro__arrow" style={`left: ${today}%`}></i>
@@ -423,24 +422,6 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     border: 1px dashed rgba(36, 30, 24, 0.28);
     border-radius: 22px;
     background: rgba(251, 247, 240, 0.32);
-  }
-  /* Sur la limite des deux fonds : les deux lignes à la fois. */
-  .metro__band-label {
-    position: absolute;
-    top: 274px;
-    display: flex;
-    align-items: center;
-    height: 22px;
-    margin-left: 16px;
-    padding: 0 12px;
-    border-radius: 999px;
-    background: var(--card);
-    color: var(--brass-text);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    white-space: nowrap;
   }
   .metro__line {
     position: absolute;

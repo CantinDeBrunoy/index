@@ -96,7 +96,6 @@ interface AproposStrings {
   /** Les titres des rubriques. */
   titles: { route: string; langs: string; bag: string; away: string };
   route: {
-    band: string;
     stations: Record<StationId, [string, string]>;
     school: Leg;
     work: Leg;
@@ -145,7 +144,6 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       away: "Loin du clavier",
     },
     route: {
-      band: "Cinq ans d'alternance, sur les deux lignes à la fois",
       stations: {
         dut: ["DUT Informatique", "UPEC · 2019"],
         licence: ["Licence pro", "CY Gennevilliers · 2021"],
@@ -154,7 +152,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
         espagne: ["Espagne · 3 mois", "Krakento, Cullera · 2024"],
         frontend: ["Frontend", "en alternance · 2020"],
         fullstack: ["Fullstack", "en alternance, jusqu'en 2025"],
-        mobile: ["Ingénieur diplômé", "mobile · 2025"],
+        mobile: ["Mobile", "2025"],
         today: ["Aujourd'hui", "fullstack mobile, en CDI"],
       },
       school: {
@@ -241,7 +239,6 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       away: "Away from the keyboard",
     },
     route: {
-      band: "Five years of work-study, on both lines at once",
       stations: {
         dut: ["Technical degree", "UPEC · 2019"],
         licence: ["Bachelor's", "CY Gennevilliers · 2021"],
@@ -250,7 +247,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
         espagne: ["Spain · 3 months", "Krakento, Cullera · 2024"],
         frontend: ["Front end", "work-study · 2020"],
         fullstack: ["Full-stack", "work-study, until 2025"],
-        mobile: ["Graduate engineer", "mobile · 2025"],
+        mobile: ["Mobile", "2025"],
         today: ["Today", "full-stack mobile, permanent"],
       },
       school: {
