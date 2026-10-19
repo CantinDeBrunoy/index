@@ -40,6 +40,12 @@ const fr = {
   /** À l'escale 1, au bout du décollage, une petite bulle vers sa pastille (scripts/decollage.ts). */
   hint: "Bon voyage ! Si tu as besoin de moi en route, je suis juste là, en bas à droite de ton écran.",
   hintPhone: "Bon voyage ! Si tu as besoin de moi en route, je suis juste là, en bas de ton écran.",
+  /**
+   * Au clic sur « M'écrire », sur toutes les pages (scripts/mail.ts) : sans messagerie sur l'ordinateur, le lien
+   * ne fait rien, alors il annonce l'adresse copiée. `mailShown` : si la copie n'a pas pu se faire.
+   */
+  mailCopied: "C'est copié ! L'adresse de Cantin est prête, tu n'as plus qu'à la coller dans ta messagerie.",
+  mailShown: "Voici l'adresse de Cantin, à recopier dans ta messagerie.",
 };
 
 const en: { [K in keyof typeof fr]: string } = {
@@ -63,6 +69,8 @@ const en: { [K in keyof typeof fr]: string } = {
   dock: "Adam, your co-pilot: how to visit?",
   hint: "Have a good trip! If you need me along the way, I'm right here, at the bottom right of your screen.",
   hintPhone: "Have a good trip! If you need me along the way, I'm right here, at the bottom of your screen.",
+  mailCopied: "Copied! Cantin's address is ready, just paste it into your email.",
+  mailShown: "Here's Cantin's address, to copy into your email.",
 };
 
 export const COPILOTE: Record<Lang, typeof en> = { fr, en };

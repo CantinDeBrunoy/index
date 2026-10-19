@@ -417,49 +417,98 @@ a {
   }
 }
 
-/* — L'adresse copiée (scripts/mail.ts) : une carte en bas de l'écran, quelques secondes — */
+/* — Adam annonce l'adresse copiée (scripts/mail.ts) : sa bulle en bas à droite, crème bordée de laiton comme
+   celles du voyage, et lui qui dépasse en haut en faisant coucou. Un clic sur la bulle la range. — */
 
-.mail-toast {
+.mail-adam {
+  --card: #fbf7f0;
+  --ink: #241e18;
+  --brass-text: #84652f;
   position: fixed;
-  left: 50%;
+  right: 24px;
   bottom: calc(24px + env(safe-area-inset-bottom));
   z-index: 90;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.mail-adam.is-shown {
+  pointer-events: auto;
+}
+/* L'image a de la marge autour de lui : ses pieds sont à 81 % de sa hauteur, posés derrière le haut de la bulle. */
+.mail-adam__face {
+  position: absolute;
+  right: -4px;
+  bottom: calc(100% - 50px);
+  display: block;
+  width: 200px;
+  height: 200px;
+  opacity: 0;
+  transform: translate(50px, 60px) rotate(18deg) scale(0.6);
+  transition:
+    opacity 0.3s,
+    transform 0.3s ease-in;
+}
+.mail-adam__bulle {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  width: max-content;
-  max-width: calc(100vw - 32px);
+  gap: 6px;
   margin: 0;
-  padding: 14px 24px;
-  border: 1px solid var(--brass);
-  border-radius: var(--radius-m);
+  padding: 16px 20px 18px;
+  border: 3px solid var(--brass);
+  border-radius: 20px;
   background: var(--card);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
   color: var(--ink);
-  text-align: center;
+  font-size: 15px;
+  line-height: 1.45;
+  cursor: pointer;
   opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, 12px);
+  transform: translateY(16px) scale(0.9);
+  transform-origin: 85% 100%;
   transition:
     opacity 0.25s,
-    transform 0.25s;
+    transform 0.25s ease-in;
 }
-.mail-toast.is-shown {
+.mail-adam.is-shown .mail-adam__bulle,
+.mail-adam.is-shown .mail-adam__face {
   opacity: 1;
-  pointer-events: auto;
-  transform: translate(-50%, 0);
+  transform: none;
 }
-.mail-toast__title {
+.mail-adam.is-shown .mail-adam__bulle {
+  transition:
+    opacity 0.25s,
+    transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+.mail-adam.is-shown .mail-adam__face {
+  transition:
+    opacity 0.3s 0.1s,
+    transform 0.8s 0.1s cubic-bezier(0.2, 0.8, 0.25, 1.2);
+}
+.mail-adam__who {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--brass-text);
 }
-.mail-toast__address {
+.mail-adam__address {
   font-family: var(--font-mono);
   font-size: 15px;
+  font-weight: 500;
   overflow-wrap: anywhere;
   user-select: all;
+  cursor: text;
+}
+
+@media (max-width: 700px) {
+  .mail-adam {
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  .mail-adam__face {
+    width: 160px;
+    height: 160px;
+    bottom: calc(100% - 40px);
+  }
 }
 
 /* Juste au-dessus du téléphone, les marges se resserrent : les onglets (« À propos de moi ») tiennent sur une ligne. */

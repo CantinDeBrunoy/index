@@ -12,8 +12,9 @@ import sansUrl from "@index/ui/fonts/geist-latin-wght-normal.woff2?url";
 import monoUrl from "@index/ui/fonts/geist-mono-latin-wght-normal.woff2?url";
 import serifUrl from "@index/ui/fonts/instrument-serif-latin-400-normal.woff2?url";
 import { ogImageFor } from "../data/apercus";
+import { COPILOTE } from "../data/copilote";
 import { WEB_ANALYTICS_TOKEN } from "../data/stats";
-import { LANGS, STRINGS, type Lang } from "../i18n/voyage";
+import { LANGS, STRINGS, typo, type Lang } from "../i18n/voyage";
 
 interface Props {
   lang: Lang;
@@ -33,6 +34,7 @@ interface Props {
 
 const { lang, title, alternates, type = "website", noindex = false, palette = "night" } = Astro.props;
 const t = STRINGS[lang];
+const adam = COPILOTE[lang];
 const description = Astro.props.description ?? t.siteDescription;
 const image = Astro.props.image ?? ogImageFor(Astro.url.pathname, lang);
 const background = Astro.props.background ?? (palette === "night" ? "var(--night)" : "var(--paper)");
@@ -85,11 +87,25 @@ const ogImage = absolute(image);
   <body class={`pal-${palette}`} style={`--page-bg: ${background}`}>
     <a class="skip-link" href="#contenu">{t.skip}</a>
     <slot />
-    {/* L'adresse copiée au clic sur « M'écrire » (scripts/mail.ts). */}
-    <p class="mail-toast" data-mail-toast data-copied={t.mailCopied} data-shown={t.mailShown} role="status">
-      <span class="mail-toast__title" data-mail-title></span>
-      <span class="mail-toast__address" data-mail-address></span>
-    </p>
+    {
+      /* Au clic sur « M'écrire », Adam annonce l'adresse copiée (scripts/mail.ts). Son image ne se charge qu'à ce
+         moment-là. */
+    }
+    <div
+      class="mail-adam"
+      data-mail-adam
+      data-copied={typo(lang, adam.mailCopied)}
+      data-shown={typo(lang, adam.mailShown)}
+      data-loop="/voyage/copilote/accueil.webp"
+      data-still="/voyage/copilote/accueil-fixe.webp"
+    >
+      <img class="mail-adam__face" data-mail-face alt="" width="640" height="640" aria-hidden="true" />
+      <p class="mail-adam__bulle" role="status">
+        <span class="mail-adam__who">{adam.who}</span>
+        <span data-mail-text></span>
+        <span class="mail-adam__address" data-mail-address></span>
+      </p>
+    </div>
     <script>
       import "../scripts/mail";
     </script>
