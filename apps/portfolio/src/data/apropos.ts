@@ -91,7 +91,10 @@ interface AproposStrings {
   linkedin: string;
   alt: string;
   labels: { route: string; langs: string; bag: string; away: string };
-  /** Sous l'en-tête, quatre chiffres : [le chiffre, ce qu'il compte]. */
+  /**
+   * Sous l'en-tête, quatre chiffres sur le travail : [le chiffre, ce qu'il compte]. Les 4 rôles sont les stations
+   * de la ligne STIME (LINES.work). Les projets perso sont comptés sous l'itinéraire.
+   */
   stats: [string, string][];
   /** Les titres des rubriques. */
   titles: { route: string; langs: string; bag: string; away: string };
@@ -135,7 +138,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       ["5 ans", "d'alternance : l'école et la STIME en même temps"],
       ["3 000+", "points de vente et des dizaines de milliers d'employés utilisent l'app mobile à laquelle j'ai contribué en alternance"],
       ["1 700", "magasins comptent sur l'app que je développe pour commander leurs produits frais"],
-      [String(projects.length), `projets à côté du travail : ${inWords("fr", SCHOOL)} en école, ${inWords("fr", OWN)} sur mon temps libre`],
+      ["4 rôles", "à la STIME depuis 2020 : frontend, puis fullstack, puis mobile, et aujourd'hui fullstack mobile"],
     ],
     titles: {
       route: "Deux lignes, une correspondance",
@@ -230,7 +233,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       ["5 years", "of work-study: school and STIME at the same time"],
       ["3,000+", "stores and tens of thousands of employees use the mobile app I worked on as an apprentice"],
       ["1,700", "stores rely on the app I build to order their fresh products"],
-      [String(projects.length), `projects alongside work: ${inWords("en", SCHOOL)} at school, ${inWords("en", OWN)} in my free time`],
+      ["4 roles", "at STIME since 2020: front end, then full-stack, then mobile, and today full-stack mobile"],
     ],
     titles: {
       route: "Two lines, one interchange",
