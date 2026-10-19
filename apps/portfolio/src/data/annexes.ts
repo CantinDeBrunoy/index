@@ -69,6 +69,9 @@ export const NOT_FOUND: Record<Lang, NotFoundStrings> = {
  * ne charge rien d'un autre site (les polices sont
  * auto-hébergées), sauf le script de mesure d'audience sans cookie quand il est actif (data/stats.ts), et n'a
  * aucun formulaire.
+ * La rubrique « Les apps » suit le relevé du 19 octobre 2026 (comptes, stockage, services tiers de chaque app) :
+ * la revoir quand une app change de service, et « Hublot » suppose que les visiteurs y voient la démo
+ * (apps/hublot/docs/app.js, state.demo).
  */
 
 const mail = `<a href="mailto:${EMAIL}">${EMAIL}</a>`;
@@ -118,6 +121,16 @@ export const LEGAL: Record<Lang, LegalStrings> = {
         ],
       ],
       [
+        "Les apps",
+        [
+          "Ces mentions valent pour ce site. Chaque app qu'il ouvre est un site à part. Voici ce que chacune fait de vos données.",
+          "<strong>Tonalli</strong> demande un compte, avec votre e-mail, un mot de passe et un prénom. Vos journées, vos notes et vos photos sont gardées chez Supabase, et seule la personne à qui vous êtes lié peut les voir. Ses polices viennent de Google Fonts, qui voit donc votre adresse IP. La suppression proposée dans ses réglages efface vos journées et vos photos, mais pas encore le compte lui-même. Pour le supprimer aussi, écrivez-moi.",
+          "<strong>Magellan</strong>, <strong>Cancionero</strong> et <strong>Galactic Escape</strong> n'ont pas de compte. Ce que vous y faites reste dans votre navigateur. Quelques demandes partent quand même vers d'autres sites. Magellan cherche les villes chez Open-Meteo et charge son globe et ses drapeaux depuis d'autres serveurs. Cancionero envoie le mot à traduire à MyMemory et la chanson recherchée à LRCLIB. Galactic Escape charge sa police chez Google Fonts.",
+          "<strong>gym-picker</strong> envoie votre position à son serveur, qui la transmet à TomTom pour calculer les temps de trajet. Le serveur ne la garde pas.",
+          "<strong>Hublot</strong> ne montre qu'une démo aux visiteurs, et rien n'en est envoyé.",
+        ],
+      ],
+      [
         "Propriété intellectuelle",
         [
           "Les textes, les scènes 3D et le code de ce site sont de Cantin Roquier, sauf ce qui est crédité ci-dessous.",
@@ -127,7 +140,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
     ],
     creditsLabel: "Crédits",
     repainted: "Tous les modèles sont repeints dans la matière du voyage.",
-    updated: "Mise à jour le 10 octobre 2026",
+    updated: "Mise à jour le 19 octobre 2026",
   },
   en: {
     pageTitle: "Legal notice",
@@ -157,6 +170,16 @@ export const LEGAL: Record<Lang, LegalStrings> = {
         ],
       ],
       [
+        "The apps",
+        [
+          "This notice covers this site. Each app it opens is a separate site. Here is what each one does with your data.",
+          "<strong>Tonalli</strong> needs an account, with your email, a password and a first name. Your days, notes and photos are stored with Supabase, and only the person you are paired with can see them. Its fonts come from Google Fonts, which therefore sees your IP address. The deletion offered in its settings erases your days and photos, but not yet the account itself. To delete that too, write to me.",
+          "<strong>Magellan</strong>, <strong>Cancionero</strong> and <strong>Galactic Escape</strong> have no accounts. What you do there stays in your browser. A few requests still go to other sites. Magellan looks up cities with Open-Meteo and loads its globe and flags from other servers. Cancionero sends the word to translate to MyMemory and the song you search for to LRCLIB. Galactic Escape loads its font from Google Fonts.",
+          "<strong>gym-picker</strong> sends your position to its server, which passes it to TomTom to work out travel times. The server doesn't keep it.",
+          "<strong>Hublot</strong> only shows visitors a demo, and nothing is sent from it.",
+        ],
+      ],
+      [
         "Intellectual property",
         [
           "The texts, 3D scenes and code of this site are by Cantin Roquier, except what is credited below.",
@@ -166,6 +189,6 @@ export const LEGAL: Record<Lang, LegalStrings> = {
     ],
     creditsLabel: "Credits",
     repainted: "Every model is repainted in the journey's own materials.",
-    updated: "Updated on 10 October 2026",
+    updated: "Updated on 19 October 2026",
   },
 };
