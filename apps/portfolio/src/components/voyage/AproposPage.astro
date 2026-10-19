@@ -202,7 +202,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
         <ol class="buses">
           {
             a.bag.map(([group, items], k) => (
-              <li class="bus" style={`--c: ${BAG_LINES[k]}; --n: ${items.length}`}>
+              <li class="bus" style={`--c: ${BAG_LINES[k]}`}>
                 <span class="bus__num" aria-hidden="true">
                   {k + 1}
                 </span>
@@ -707,9 +707,8 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     font-size: 24px;
     line-height: 1.05;
   }
-  /* Les arrêts : sur la ligne, répartis ; quand la place manque, ils passent à la ligne en pastilles. La ligne
-     s'allonge avec ses arrêts (`--n`), pour qu'une ligne de deux ou trois arrêts ne les écarte pas d'un bout à
-     l'autre de la colonne. */
+  /* Les arrêts : sur la ligne, répartis ; quand la place manque, ils passent à la ligne en pastilles. Toutes les
+     lignes font la largeur de la colonne, quel que soit leur nombre d'arrêts : les traits ont la même longueur. */
   .bus__stops {
     position: relative;
     display: flex;
@@ -717,7 +716,6 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 8px 12px;
-    max-width: calc(var(--n) * 120px);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -984,7 +982,6 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     }
     .bus__stops {
       justify-content: flex-start;
-      max-width: none;
     }
     .bus__stops::before,
     .bus__stops i {
