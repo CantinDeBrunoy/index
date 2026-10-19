@@ -38,7 +38,7 @@ architecture:
     - { label: "Cloudflare", from: [2, 1], to: [3, 1] }
     - { label: "GitHub", from: [2, 2], to: [2, 3] }
   nodes:
-    - { id: "page", at: [1, 1], kind: "app", title: "The page", text: "The deals and my watches. Visitors can see them, but not change them." }
+    - { id: "page", at: [1, 1], kind: "app", title: "The page", text: "The deals and my watches. Visitors see a demo with made-up prices. Once I'm signed in, I see the real ones and can change them." }
     - { id: "worker", at: [2, 1], kind: "server", title: "hublot Worker", text: "The only one holding the GitHub key. It limits the number of requests." }
     - { id: "hub", at: [3, 1], kind: "server", title: "INDEX Worker", text: "GitHub sign-in: it tells whether the session is mine." }
     - { id: "repo", at: [2, 2], kind: "file", title: "JSON files", text: "The watches, latest prices, history and alerts already sent." }

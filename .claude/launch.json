@@ -21,6 +21,12 @@
       "port": 4321
     },
     {
+      "name": "hublot-docs",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8790", "--bind", "127.0.0.1", "--directory", "apps/hublot/docs"],
+      "port": 8790
+    },
+    {
       "name": "magellan",
       "runtimeExecutable": "node",
       "runtimeArgs": ["apps/magellan/node_modules/expo/bin/cli", "start", "apps/magellan", "--web", "--port", "8082"],

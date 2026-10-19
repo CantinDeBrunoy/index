@@ -148,11 +148,24 @@ section > h2,
   white-space: nowrap;
 }
 
-/* Mode démo (?demo) : à la place du bouton de connexion. */
+/* Mode démo : à la place du bouton de connexion avec ?demo, à côté de lui pour un visiteur. */
 .badge.demo {
   background: var(--warning-bg);
   color: var(--warning);
   font-weight: 600;
+}
+
+/* Sur un téléphone, le badge et le bouton passent sous le titre plutôt que de le couper en deux. */
+.top {
+  flex-wrap: wrap;
+}
+
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .empty {

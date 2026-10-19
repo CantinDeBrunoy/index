@@ -38,7 +38,7 @@ architecture:
     - { label: "Cloudflare", from: [2, 1], to: [3, 1] }
     - { label: "GitHub", from: [2, 2], to: [2, 3] }
   nodes:
-    - { id: "page", at: [1, 1], kind: "app", title: "La page", text: "Les bons plans et mes surveillances. Un visiteur peut les voir, pas les modifier." }
+    - { id: "page", at: [1, 1], kind: "app", title: "La page", text: "Les bons plans et mes surveillances. Un visiteur voit une démo avec des prix inventés. Moi, une fois connecté, je vois les vraies et je les modifie." }
     - { id: "worker", at: [2, 1], kind: "server", title: "Worker hublot", text: "Le seul à détenir la clé GitHub. Il limite le nombre de requêtes." }
     - { id: "hub", at: [3, 1], kind: "server", title: "Worker INDEX", text: "La connexion GitHub : il dit si la session est la mienne." }
     - { id: "repo", at: [2, 2], kind: "file", title: "Des fichiers JSON", text: "Les surveillances, les derniers prix, l'historique, les alertes envoyées." }

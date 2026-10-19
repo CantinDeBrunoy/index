@@ -1,6 +1,6 @@
 // @ts-check
-// Mode démo de la page (« ?demo » dans l'adresse) : des surveillances et des prix fictifs, pour montrer
-// ou filmer la page sans dévoiler les vrais voyages surveillés. Le relevé fictif (demo/latest.json, au
+// Mode démo de la page (« ?demo » dans l'adresse, et pour tout visiteur non connecté) : des surveillances
+// et des prix fictifs, pour montrer ou filmer la page sans dévoiler les vrais voyages surveillés. Le relevé fictif (demo/latest.json, au
 // format de data/latest.json) est ramené au mois en cours. Rien ne part vers GitHub ni vers l'API des
 // villes : les modifications restent dans la page et la recherche des prix est simulée.
 // Testé dans test/web-demo.test.ts.

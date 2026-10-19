@@ -30,7 +30,7 @@ Adresse : celle du Worker Cloudflare `hublot` (voir le tableau des déploiements
 - **Mes surveillances** : ajouter (avec recherche de la ville), modifier, supprimer ; meilleur prix actuel et par mois de départ.
 - Après un ajout ou une modification, la page lance tout de suite une vérification des prix : résultats en 2 minutes environ.
 - **Démo** : avec `?demo` à la fin de l'adresse, la page montre des surveillances et des prix fictifs (`docs/demo/latest.json`, ramené au mois en cours) au lieu des vrais, pour la montrer ou la filmer. Rien ne part vers GitHub ni vers l'API des villes : ajouts, modifications et suppressions restent dans la page, et la recherche des prix est simulée en quelques secondes.
-- Pour modifier, il faut être **connecté** (bouton « Connexion » en haut à droite, qui passe par le hub INDEX puis revient ici). Sans connexion, la page reste consultable en lecture seule.
+- Les vraies surveillances ne s'affichent qu'une fois **connecté** (bouton « Connexion » en haut à droite, qui passe par le hub INDEX puis revient ici), et c'est là qu'on les modifie. Sans connexion, un visiteur voit la démo, avec le badge « Démo · données fictives » à côté du bouton.
 
 ## Configuration (`config.json`)
 

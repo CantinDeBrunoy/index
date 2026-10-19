@@ -62,6 +62,8 @@ const state = {
   snapshot: null,
   /** Le propriétaire est connecté (sur le hub INDEX) : il peut modifier. Jamais en démo. */
   owner: false,
+  /** Données fictives : avec « ?demo », et pour tout visiteur. Les vraies surveillances ne s'affichent qu'au propriétaire. */
+  demo: site.demo,
   /** Watch ids whose prices are being searched right now. */
   searching: new Set(),
 };
@@ -93,12 +95,20 @@ const ui = {
 
 setUpWatchDialog();
 ui.addWatch.addEventListener("click", () => openWatchDialog(null));
-// Démo : un badge le dit, et la connexion n'a plus de raison d'être proposée.
-if (site.demo) ui.account.replaceWith(el("span", { class: "badge demo", text: "Démo · données fictives" }));
+// Démo : un badge le dit. Avec « ?demo », la connexion n'a plus de raison d'être proposée.
+const demoBadge = () => el("span", { class: "badge demo", text: "Démo · données fictives" });
+if (site.demo) ui.account.replaceWith(demoBadge());
 void start();
 
 async function start() {
   if (!site.demo) state.owner = await fetchOwner();
+  state.demo = site.demo || !state.owner;
+  if (state.demo && !site.demo) {
+    // Un visiteur voit la démo, et garde la connexion : c'est par elle que le propriétaire retrouve les siennes.
+    const account = el("div", { class: "account" });
+    ui.account.replaceWith(account);
+    account.append(demoBadge(), ui.account);
+  }
   renderAccount();
   await refresh();
 }
@@ -137,7 +147,7 @@ async function refresh() {
 
 /** @returns {Promise<{ config: Config, sha: string | null, snapshot: Snapshot | null }>} */
 async function loadData() {
-  if (site.demo) {
+  if (state.demo) {
     // Le relevé fictif livré avec la page, et jamais les fichiers du dépôt.
     const snapshot = shiftSnapshot(await fetchJson(DEMO_SNAPSHOT_FILE), new Date());
     return { config: demoConfig(snapshot), sha: null, snapshot };
@@ -379,7 +389,7 @@ async function suggestCities(term) {
   citySearch = new AbortController();
   try {
     const url = `${AUTOCOMPLETE_URL}?term=${encodeURIComponent(term)}&locale=fr&types[]=city`;
-    const cities = (site.demo ? demoCities(term) : parseCities(await fetchJson(url, citySearch.signal))).slice(0, 6);
+    const cities = (state.demo ? demoCities(term) : parseCities(await fetchJson(url, citySearch.signal))).slice(0, 6);
     if (cities.length === 0) {
       ui.citySuggestions.replaceChildren(el("li", { class: "muted", text: "Aucune ville trouvée" }));
     } else {
@@ -452,7 +462,7 @@ async function deleteWatch(watch) {
  * @returns {Promise<string | null>} why the configuration was not saved, null once saved
  */
 async function saveConfig(next, message, searchFor) {
-  if (site.demo) return saveDemoConfig(next, searchFor);
+  if (state.demo) return saveDemoConfig(next, searchFor);
   if (!state.owner) return "Pour modifier, connecte-toi d'abord : bouton « Connexion » en haut de la page.";
   if (!state.configSha) return "Le serveur n'a pas pu lire la configuration : recharge la page.";
   const github = gitHub();
