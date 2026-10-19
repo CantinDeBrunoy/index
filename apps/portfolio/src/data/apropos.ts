@@ -107,6 +107,8 @@ interface AproposStrings {
   };
   /** Dans l'ordre de LANG_LINES : la langue, le niveau, et le lien de l'espagnol vers Cancionero. */
   langs: { name: string; level: string; link?: string }[];
+  /** Sous les langues : la certification SAFe, à l'encre de la ligne « Méthodes » du sac. */
+  cert: { title: string; name: string; level: string };
   bag: [string, string[]][];
   /** Dans l'ordre d'AWAY. `text` : une phrase de Cantin, à écrire (les questions sont en commentaire). */
   away: { title: string; alt: string; text?: string }[];
@@ -186,6 +188,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       { name: "Anglais", level: "C1 · TOEIC 900" },
       { name: "Espagnol", level: "B1, en progrès", link: "Avec Cancionero →" },
     ],
+    cert: { title: "Ma certification", name: "Certifié SAFe", level: "La méthode agile pour faire avancer plusieurs équipes ensemble" },
     bag: [
       ["Front-end et mobile", ["React", "React Native", "Expo", "TypeScript", "JavaScript", "HTML", "CSS"]],
       ["Back-end et données", ["Node.js", "Supabase", "PostgreSQL", "C# et .NET", "Java", "SQL", "Couchbase"]],
@@ -281,6 +284,7 @@ export const APROPOS: Record<Lang, AproposStrings> = {
       { name: "English", level: "C1 · TOEIC 900" },
       { name: "Spanish", level: "B1, improving", link: "With Cancionero →" },
     ],
+    cert: { title: "My certification", name: "SAFe certified", level: "The agile method for moving several teams forward together" },
     bag: [
       ["Front end and mobile", ["React", "React Native", "Expo", "TypeScript", "JavaScript", "HTML", "CSS"]],
       ["Back end and data", ["Node.js", "Supabase", "PostgreSQL", "C# and .NET", "Java", "SQL", "Couchbase"]],

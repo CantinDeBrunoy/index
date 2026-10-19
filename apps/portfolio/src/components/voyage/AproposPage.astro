@@ -40,6 +40,8 @@ const today = pct(NOW);
 
 const legs = [R.school, R.work];
 const langs = LANG_LINES.map((l, k) => ({ ...l, ...a.langs[k]! }));
+/** La certification prend l'encre de la ligne du sac où passe SAFe. */
+const certInk = BAG_LINES[a.bag.findIndex(([, tools]) => tools.includes("SAFe"))];
 const away = AWAY.map((object, k) => ({ object, bg: AWAY_BG[object], ...a.away[k]! }));
 const still = (name: string) => `/voyage/stills/${name}.webp`;
 ---
@@ -185,6 +187,14 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
             ))
           }
         </ul>
+        <h3 class="serif cert__title">{a.cert.title}</h3>
+        <p class="cert">
+          <span class="serif cert__badge" style={`background: ${certInk}`} aria-hidden="true">SAFe</span>
+          <span>
+            <span class="serif roundel__name">{a.cert.name}</span>
+            <span class="roundel__level">{a.cert.level}</span>
+          </span>
+        </p>
       </div>
       <div>
         <p class="label">{a.labels.bag}</p>
@@ -192,7 +202,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
         <ol class="buses">
           {
             a.bag.map(([group, items], k) => (
-              <li class="bus" style={`--c: ${BAG_LINES[k]}`}>
+              <li class="bus" style={`--c: ${BAG_LINES[k]}; --n: ${items.length}`}>
                 <span class="bus__num" aria-hidden="true">
                   {k + 1}
                 </span>
@@ -643,6 +653,29 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     min-height: 0;
     margin-top: 4px;
   }
+  /* La certification : une plaque carrée, comme les numéros des lignes du sac, et non une pastille de langue. */
+  .cert__title {
+    margin: 48px 0 0;
+    font-size: 32px;
+    line-height: 1.05;
+  }
+  .cert {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin: 24px 0 0;
+  }
+  .cert__badge {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 84px;
+    height: 84px;
+    border-radius: 18px;
+    color: #fbf7f0;
+    font-size: 26px;
+  }
   .buses {
     display: flex;
     flex-direction: column;
@@ -674,7 +707,9 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     font-size: 24px;
     line-height: 1.05;
   }
-  /* Les arrêts : sur la ligne, répartis ; quand la place manque, ils passent à la ligne en pastilles. */
+  /* Les arrêts : sur la ligne, répartis ; quand la place manque, ils passent à la ligne en pastilles. La ligne
+     s'allonge avec ses arrêts (`--n`), pour qu'une ligne de deux ou trois arrêts ne les écarte pas d'un bout à
+     l'autre de la colonne. */
   .bus__stops {
     position: relative;
     display: flex;
@@ -682,6 +717,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 8px 12px;
+    max-width: calc(var(--n) * 120px);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -929,10 +965,15 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     .legs li {
       grid-template-columns: 88px minmax(0, 1fr);
     }
-    .roundel {
+    .roundel,
+    .cert__badge {
       width: 64px;
       height: 64px;
       font-size: 28px;
+    }
+    .cert__badge {
+      border-radius: 14px;
+      font-size: 20px;
     }
     .bus {
       grid-template-columns: 36px minmax(0, 1fr);
@@ -943,6 +984,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     }
     .bus__stops {
       justify-content: flex-start;
+      max-width: none;
     }
     .bus__stops::before,
     .bus__stops i {
