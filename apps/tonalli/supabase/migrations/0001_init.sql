@@ -438,11 +438,6 @@ create policy "entries_select" on public.entries
     )
   );
 
-drop policy if exists "entries_insert_own" on public.entries;
-create policy "entries_insert_own" on public.entries
-  for insert to authenticated
-  with check (user_id = auth.uid());
-
 -- La date du jour telle que la vit une personne, dans son propre fuseau.
 create or replace function public.local_today(uid uuid)
 returns date
@@ -458,6 +453,18 @@ $$;
 
 revoke execute on function public.local_today(uuid) from public, anon;
 grant execute on function public.local_today(uuid) to authenticated, service_role;
+
+-- On n'écrit que sa journée du jour : remplir un jour passé débloquerait la
+-- journée du binôme ce jour-là, que la réciprocité ne protège que par
+-- l'existence de ma ligne à la même date. Hier reste permis pour la file
+-- d'attente hors ligne, qui peut partir après minuit.
+drop policy if exists "entries_insert_own" on public.entries;
+create policy "entries_insert_own" on public.entries
+  for insert to authenticated
+  with check (
+    user_id = auth.uid()
+    and date between public.local_today(auth.uid()) - 1 and public.local_today(auth.uid())
+  );
 
 -- On peut corriger SA journée du jour, et elle seule : un jour passé reste
 -- impossible à repeindre. Le `with check` interdit aussi de déplacer une
