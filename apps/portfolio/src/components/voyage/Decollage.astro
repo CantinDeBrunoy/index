@@ -10,7 +10,7 @@
  */
 import { COPILOTE, DECOLLAGE } from "../../data/copilote";
 import { fill } from "../../data/voyage";
-import { inWords, ROUTES, typo, type Lang } from "../../i18n/voyage";
+import { inWords, typo, type Lang } from "../../i18n/voyage";
 
 interface Props {
   lang: Lang;
@@ -70,7 +70,6 @@ const CLIPS = [
     </ul>
     <div class="actions">
       <button type="button" class="go" data-dec-next>{d.go}</button>
-      <a class="pill" href={ROUTES.projets[lang]}>{c.projects}</a>
     </div>
   </div>
 
