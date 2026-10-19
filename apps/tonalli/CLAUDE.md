@@ -183,6 +183,13 @@ l'auteur, et le `with check` interdit de déplacer une entrée vers une autre
 date. Un calendrier qu'on pourrait réécrire ne vaudrait plus rien comme
 témoignage.
 
+L'INSERT suit la même règle depuis `0013` : une journée ne s'écrit qu'à la date
+locale de l'auteur, ou la veille. Avant, seule l'interface l'empêchait. Depuis
+la console, remplir après coup un jour manqué débloquait la journée du binôme
+ce jour-là. La veille reste ouverte pour la file d'attente hors ligne, qui peut
+partir après minuit : c'est une fenêtre d'un jour, assumée. Une journée restée
+en attente plus longtemps est refusée par la base.
+
 ### La palette est fermée
 
 12 émotions, **3 crans d'intensité**, donc 36 couples (émotion, couleur) —
@@ -633,8 +640,9 @@ les rejouer ne casse rien.
 | `0010_emotion_intensity.sql` | `emotion_shades` et la clé étrangère de `entries` qui s'y déplace |
 | `0011_character_outfit.sql` | les quatre colonnes de la tenue du personnage et leurs listes fermées |
 | `0012_character_flag.sql` | la colonne du drapeau et sa liste fermée |
+| `0013_insert_today.sql` | une journée ne s'écrit qu'aujourd'hui, ou hier pour la file hors ligne |
 
-Les migrations 0003 à 0007 et 0009 à 0012 sont des **rattrapages** : leur
+Les migrations 0003 à 0007 et 0009 à 0013 sont des **rattrapages** : leur
 contenu est déjà intégré à `0001`. Sur une base neuve, `0001` + `0002` suffisent.
 
 `0008` est à part : elle ne crée pas de schéma mais le **trigger de
