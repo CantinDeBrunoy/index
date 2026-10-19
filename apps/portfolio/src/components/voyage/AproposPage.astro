@@ -207,7 +207,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
                   {k + 1}
                 </span>
                 <h3 class="serif bus__name">{group}</h3>
-                <ul class="bus__stops">
+                <ul class:list={["bus__stops", { "bus__stops--pair": items.length === 2 }]}>
                   {items.map((tool) => (
                     <li>
                       <i aria-hidden="true" />
@@ -719,6 +719,10 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     margin: 0;
     padding: 0;
     list-style: none;
+  }
+  /* Deux arrêts aux deux bouts du trait seraient trop loin l'un de l'autre : ils se resserrent vers le milieu. */
+  .bus__stops--pair {
+    justify-content: space-evenly;
   }
   .bus__stops::before {
     content: "";
