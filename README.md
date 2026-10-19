@@ -153,7 +153,7 @@ pnpm --filter portfolio exec wrangler secret put TONALLI_SUPABASE_ANON_KEY
 pnpm --filter portfolio exec wrangler secret put GITHUB_ALERTS_TOKEN
 ```
 
-`GITHUB_ALERTS_TOKEN` est un jeton GitHub à grain fin limité au dépôt `index`, avec *Issues* en lecture/écriture et *Actions* en lecture.
+`GITHUB_ALERTS_TOKEN` est un jeton GitHub à grain fin limité au dépôt `index`, avec *Issues* en lecture/écriture et *Actions* en lecture. Deux semaines avant qu'il n'expire, le Worker ouvre une issue avec la marche à suivre. Comme il agit au nom du propriétaire, GitHub n'en prévient personne : le workflow `keep-alive` commente donc une fois chaque issue ouverte par le Worker, et ce commentaire arrive par e-mail.
 
 **La connexion du propriétaire** (le lien « Connexion » en bas des pages du hub) :
 

@@ -3,7 +3,8 @@
  *
  * - sonde chaque démo listée dans @index/projects (même code que le statut live du portfolio) ;
  * - fait une vraie requête sur les bases qui se mettent en pause (Supabase de Tonalli) ;
- * - ouvre une issue GitHub quand un service ne répond plus, la ferme quand il revient.
+ * - ouvre une issue GitHub quand un service ne répond plus, la ferme quand il revient ;
+ * - commente une fois les issues ouvertes par le Worker, pour qu'elles arrivent par e-mail.
  *
  * Usage :
  *   node scripts/keep-alive.ts            # sonde + issues (GITHUB_TOKEN et GITHUB_REPOSITORY requis)
@@ -13,7 +14,14 @@
  */
 
 import { appendFile } from "node:fs/promises";
-import { createGitHubClient, projectAlerts, syncIssues, workflowAlerts, type AlertBatch } from "../packages/projects/src/alerts.ts";
+import {
+  createGitHubClient,
+  projectAlerts,
+  relayIssues,
+  syncIssues,
+  workflowAlerts,
+  type AlertBatch,
+} from "../packages/projects/src/alerts.ts";
 import { checkProject, type Health } from "../packages/projects/src/check.ts";
 import { projects } from "../packages/projects/src/index.ts";
 
@@ -54,4 +62,6 @@ if (dryRun || !token) {
   console.log(
     `Issues : ${report.opened.length} ouverte(s), ${report.updated.length} mise(s) à jour, ${report.closed.length} fermée(s).`,
   );
+  const relayed = await relayIssues(github);
+  if (relayed.length > 0) console.log(`Relayées par e-mail : ${relayed.map((n) => `#${n}`).join(", ")}.`);
 }

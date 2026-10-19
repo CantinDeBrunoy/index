@@ -1,6 +1,6 @@
 import { handleAuth } from "@index/auth/hub";
 import { projects } from "@index/projects";
-import { createGitHubClient, projectAlerts, syncIssues, workflowAlerts } from "@index/projects/alerts";
+import { createGitHubClient, projectAlerts, syncIssues, tokenAlerts, workflowAlerts } from "@index/projects/alerts";
 import { checkProject, type CheckOptions, type Health, type ProjectCheck } from "@index/projects/check";
 
 /**
@@ -11,7 +11,8 @@ import { checkProject, type CheckOptions, type Health, type ProjectCheck } from 
  *   dans Magellan et Hublot ;
  * - cron Cloudflare (toutes les heures) : les mêmes sondes que keep-alive.yml, donc Supabase
  *   reste éveillé même si GitHub coupe ses crons, et une issue s'ouvre quand un service tombe
- *   ou quand GitHub désactive un workflow planifié (à réactiver à la main).
+ *   ou quand GitHub désactive un workflow planifié (à réactiver à la main), et deux semaines avant
+ *   que son propre jeton GitHub n'expire.
  *
  * Secrets (facultatifs) : TONALLI_SUPABASE_ANON_KEY pour sonder la base de Tonalli,
  * GITHUB_ALERTS_TOKEN (jeton à grain fin sur CantinDeBrunoy/index : Issues en écriture,
@@ -108,7 +109,11 @@ async function keepAlive(env: Env): Promise<void> {
   const token = secrets(env).GITHUB_ALERTS_TOKEN;
   if (!token) return;
   const github = createGitHubClient({ token });
-  const report = await syncIssues(github, [projectAlerts(projects, checks), await workflowAlerts(github)]);
+  const report = await syncIssues(github, [
+    projectAlerts(projects, checks),
+    await workflowAlerts(github),
+    await tokenAlerts(github),
+  ]);
   console.log(JSON.stringify({ issues: report }));
 }
 

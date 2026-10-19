@@ -110,6 +110,7 @@ export class GitHubApiError extends Error {
 export function createGitHubClient({ repository = REPOSITORY, token, fetch: fetchImpl }: GitHubOptions) {
   const doFetch = fetchImpl ?? globalThis.fetch.bind(globalThis);
   const base = `https://api.github.com/repos/${repository}`;
+  let expiration: string | null = null;
 
   async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const response = await doFetch(`${base}${path}`, {
@@ -123,6 +124,7 @@ export function createGitHubClient({ repository = REPOSITORY, token, fetch: fetc
       },
       body: body === undefined ? null : JSON.stringify(body),
     });
+    expiration = response.headers.get("github-authentication-token-expiration");
     if (!response.ok) {
       const detail = (await response.json().catch(() => ({}))) as { message?: string };
       throw new GitHubApiError(response.status, `${method} ${path} : HTTP ${response.status} ${detail.message ?? ""}`.trim());
@@ -130,7 +132,10 @@ export function createGitHubClient({ repository = REPOSITORY, token, fetch: fetc
     return (response.status === 204 ? null : await response.json()) as T;
   }
 
-  return { repository, request };
+  /** La date d'expiration du jeton, lue sur la dernière réponse ; null pour un jeton sans date. */
+  const tokenExpiration = () => expiration;
+
+  return { repository, request, tokenExpiration };
 }
 
 export type GitHubClient = ReturnType<typeof createGitHubClient>;
@@ -176,6 +181,57 @@ export async function workflowAlerts(github: GitHubClient): Promise<AlertBatch> 
   }
 
   return { alerts, checkedKeys };
+}
+
+/** L'issue de rappel s'ouvre quand il reste au plus ce nombre de jours au jeton. */
+export const TOKEN_NOTICE_DAYS = 14;
+
+const TOKEN_KEY = "token:github-alerts";
+
+/**
+ * L'en-tête GitHub-Authentication-Token-Expiration : « 2027-01-03 12:00:00 UTC », ou avec un décalage
+ * comme « -0800 ».
+ */
+export function parseTokenExpiration(value: string): Date | null {
+  const match = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})\s*(UTC|Z|[+-]\d{2}:?\d{2})?$/.exec(value.trim());
+  if (!match) return null;
+  const offset = /^([+-]\d{2}):?(\d{2})$/.exec(match[3] ?? "");
+  const date = new Date(`${match[1]}T${match[2]}${offset ? `${offset[1]}:${offset[2]}` : "Z"}`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Le rappel avant que GITHUB_ALERTS_TOKEN, le jeton du Worker, n'expire : sans lui, plus aucune issue
+ * d'alerte. Seul le Worker l'appelle : le GITHUB_TOKEN des Actions expire au bout d'une heure.
+ */
+export async function tokenAlerts(github: GitHubClient, now = new Date()): Promise<AlertBatch> {
+  await github.request("GET", "");
+  const header = github.tokenExpiration();
+  if (header === null) return { alerts: [], checkedKeys: [TOKEN_KEY] };
+  const expires = parseTokenExpiration(header);
+  // Un format inattendu ne doit ni ouvrir ni fermer l'issue.
+  if (!expires) return { alerts: [], checkedKeys: [] };
+  if (expires.getTime() - now.getTime() > TOKEN_NOTICE_DAYS * 86_400_000) return { alerts: [], checkedKeys: [TOKEN_KEY] };
+
+  const date = expires.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" });
+  return {
+    checkedKeys: [TOKEN_KEY],
+    alerts: [
+      {
+        key: TOKEN_KEY,
+        title: `[keep-alive] Le jeton des alertes expire le ${date}`,
+        body: [
+          `\`GITHUB_ALERTS_TOKEN\`, le jeton GitHub du Worker \`index\`, expire le **${date}**. Sans lui, le Worker n'ouvre plus d'issue quand un service tombe ou qu'un cron est désactivé. Les sondes et le réveil de Supabase, eux, continuent.`,
+          "",
+          "**Que faire ?**",
+          "1. Sur https://github.com/settings/personal-access-tokens, ouvrir le jeton des alertes et le régénérer (*Regenerate token*), ou en créer un nouveau avec les mêmes droits : le dépôt `index` seulement, *Issues* en lecture et écriture, *Actions* en lecture. Copier la nouvelle valeur.",
+          "2. Dans le tableau de bord Cloudflare, *Workers & Pages → index → Settings → Variables and Secrets* : modifier `GITHUB_ALERTS_TOKEN`, garder le type **Secret** et coller la valeur. Un type *Text* serait effacé au déploiement suivant.",
+          "3. C'est tout : au passage suivant du cron, dans l'heure, cette issue se fermera d'elle-même.",
+          marker(TOKEN_KEY),
+        ].join("\n"),
+      },
+    ],
+  };
 }
 
 async function ensureLabel(github: GitHubClient) {
@@ -238,4 +294,31 @@ export async function syncIssues(github: GitHubClient, batches: readonly AlertBa
   }
 
   return report;
+}
+
+const RELAY = "<!-- keep-alive:relay -->";
+
+/**
+ * Les issues ouvertes par le Worker portent le nom de Cantin (c'est son jeton), et GitHub ne prévient
+ * personne de ses propres actions. Le bot des Actions laisse donc un commentaire, une seule fois, sur
+ * chacune : Cantin en est l'auteur, il reçoit ce commentaire par e-mail.
+ */
+export async function relayIssues(github: GitHubClient): Promise<number[]> {
+  const open = await github.request<(IssueSummary & { user?: { type?: string } })[]>(
+    "GET",
+    `/issues?state=open&labels=${ALERT_LABEL}&per_page=100`,
+  );
+  const relayed: number[] = [];
+
+  for (const issue of open) {
+    if (issue.pull_request || issue.user?.type === "Bot" || !MARKER_PATTERN.test(issue.body ?? "")) continue;
+    const comments = await github.request<{ body?: string | null }[]>("GET", `/issues/${issue.number}/comments?per_page=100`);
+    if (comments.some((c) => c.body?.includes(RELAY))) continue;
+    await github.request("POST", `/issues/${issue.number}/comments`, {
+      body: ["Le Worker du portfolio a ouvert cette alerte : ce commentaire du bot des Actions la fait arriver par e-mail.", RELAY].join("\n"),
+    });
+    relayed.push(issue.number);
+  }
+
+  return relayed;
 }
