@@ -41,7 +41,7 @@ architecture:
     - { id: "tomtom", at: [4, 1], kind: "ext", title: "TomTom Matrix Routing", text: "Travel times to every gym at once, traffic included." }
   links:
     - { from: "app", to: "local", label: "the position" }
-    - { from: "app", to: "worker", label: "the position, in the body", both: true }
+    - { from: "app", to: "worker", label: "the position, not in the URL", both: true }
     - { from: "worker", to: "tomtom", label: "one call, 4 s at most", both: true }
     - { from: "app", to: "waze", label: "a tap" }
 crew:

@@ -47,7 +47,7 @@ architecture:
     - { id: "ntfy", at: [3, 3], kind: "ext", title: "ntfy", text: "L'alerte, sur mon téléphone." }
   links:
     - { from: "page", to: "worker", label: "une fois connecté", both: true }
-    - { from: "worker", to: "hub", label: "la session ?" }
+    - { from: "worker", to: "hub", label: "est-ce bien moi ?" }
     - { from: "worker", to: "repo", label: "surveillances, prix", both: true }
     - { from: "robot", to: "repo", label: "les relevés", both: true }
     - { from: "robot", to: "tp", label: "les prix", both: true }

@@ -46,9 +46,9 @@ architecture:
   links:
     - { from: "app", to: "globe", label: "la caméra" }
     - { from: "app", to: "local", label: "sans compte", both: true }
-    - { from: "app", to: "worker", label: "le site, /api/trips", both: true }
-    - { from: "worker", to: "d1", label: "une ligne versionnée", both: true }
-    - { from: "worker", to: "hub", label: "la session ?" }
+    - { from: "app", to: "worker", label: "le site et mes voyages", both: true }
+    - { from: "worker", to: "d1", label: "une seule ligne", both: true }
+    - { from: "worker", to: "hub", label: "est-ce bien moi ?" }
 crew:
   title: "Seul à bord"
   text: "Je l'ai imaginé, construit et mis en ligne seul, puis refait de fond en comble en septembre, avec Claude Code comme assistant."

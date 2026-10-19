@@ -58,7 +58,7 @@ architecture:
     - { from: "app", to: "storage", label: "sign-in, photos", both: true }
     - { from: "db", to: "fn", label: "a trigger" }
     - { from: "cron", to: "fn", label: "reminder time" }
-    - { from: "fn", to: "push", label: "Web Push" }
+    - { from: "fn", to: "push", label: "the message" }
     - { from: "push", to: "sw", label: "the notification" }
 crew:
   title: "Solo flight"

@@ -46,9 +46,9 @@ architecture:
   links:
     - { from: "app", to: "globe", label: "the camera" }
     - { from: "app", to: "local", label: "no account", both: true }
-    - { from: "app", to: "worker", label: "the site, /api/trips", both: true }
-    - { from: "worker", to: "d1", label: "one versioned row", both: true }
-    - { from: "worker", to: "hub", label: "whose session?" }
+    - { from: "app", to: "worker", label: "the site and my trips", both: true }
+    - { from: "worker", to: "d1", label: "a single row", both: true }
+    - { from: "worker", to: "hub", label: "is it really me?" }
 crew:
   title: "Solo flight"
   text: "I came up with it, built it and shipped it on my own, then redesigned it from top to bottom in September, with Claude Code as an assistant."

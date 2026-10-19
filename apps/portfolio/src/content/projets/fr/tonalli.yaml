@@ -58,7 +58,7 @@ architecture:
     - { from: "app", to: "storage", label: "connexion, photos", both: true }
     - { from: "db", to: "fn", label: "un déclencheur" }
     - { from: "cron", to: "fn", label: "l'heure du rappel" }
-    - { from: "fn", to: "push", label: "Web Push" }
+    - { from: "fn", to: "push", label: "le message" }
     - { from: "push", to: "sw", label: "la notification" }
 crew:
   title: "Seul à bord"

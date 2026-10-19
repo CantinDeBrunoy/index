@@ -48,9 +48,9 @@ architecture:
     - { id: "game", at: [2, 2], kind: "app", title: "Le jeu", text: "Unités, mines et ports spatiaux. Une tâche en arrière-plan lance les combats toutes les 6 s." }
     - { id: "memory", at: [3, 2], kind: "data", title: "En mémoire", text: "Le monde, créé au démarrage. Un passage à MongoDB, tenté en v7, est resté inachevé." }
   links:
-    - { from: "tests", to: "api", label: "HTTP" }
-    - { from: "api", to: "other", label: "le saut : PUT, puis 308" }
-    - { from: "api", to: "game", label: "injection de dépendances" }
+    - { from: "tests", to: "api", label: "des requêtes" }
+    - { from: "api", to: "other", label: "un vaisseau qui saute" }
+    - { from: "api", to: "game", label: "lui passe les ordres" }
     - { from: "game", to: "clock", label: "attend" }
     - { from: "game", to: "memory", label: "le monde", both: true }
 crew:

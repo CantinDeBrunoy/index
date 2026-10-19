@@ -41,7 +41,7 @@ architecture:
     - { id: "tomtom", at: [4, 1], kind: "ext", title: "TomTom Matrix Routing", text: "Les temps de trajet vers toutes les salles d'un coup, trafic compris." }
   links:
     - { from: "app", to: "local", label: "la position" }
-    - { from: "app", to: "worker", label: "la position, dans le corps", both: true }
+    - { from: "app", to: "worker", label: "la position, pas dans l'URL", both: true }
     - { from: "worker", to: "tomtom", label: "un appel, 4 s au plus", both: true }
     - { from: "app", to: "waze", label: "un toucher" }
 crew:

@@ -47,7 +47,7 @@ architecture:
     - { id: "ntfy", at: [3, 3], kind: "ext", title: "ntfy", text: "The alert, on my phone." }
   links:
     - { from: "page", to: "worker", label: "once signed in", both: true }
-    - { from: "worker", to: "hub", label: "whose session?" }
+    - { from: "worker", to: "hub", label: "is it really me?" }
     - { from: "worker", to: "repo", label: "watches, prices", both: true }
     - { from: "robot", to: "repo", label: "the checks", both: true }
     - { from: "robot", to: "tp", label: "the prices", both: true }

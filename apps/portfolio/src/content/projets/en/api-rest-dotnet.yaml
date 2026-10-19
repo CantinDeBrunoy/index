@@ -48,9 +48,9 @@ architecture:
     - { id: "game", at: [2, 2], kind: "app", title: "The game", text: "Units, mines and starports. A background job runs the battles every 6 s." }
     - { id: "memory", at: [3, 2], kind: "data", title: "In memory", text: "The world, created at start-up. A move to MongoDB, attempted in v7, was never finished." }
   links:
-    - { from: "tests", to: "api", label: "HTTP" }
-    - { from: "api", to: "other", label: "the jump: PUT, then 308" }
-    - { from: "api", to: "game", label: "dependency injection" }
+    - { from: "tests", to: "api", label: "requests" }
+    - { from: "api", to: "other", label: "a ship jumping across" }
+    - { from: "api", to: "game", label: "passes on the orders" }
     - { from: "game", to: "clock", label: "waits" }
     - { from: "game", to: "memory", label: "the world", both: true }
 crew:
