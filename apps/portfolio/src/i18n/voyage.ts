@@ -75,6 +75,12 @@ const fr = {
   signedIn: "Connecté : {login}",
   /** Au pied du carnet et d'« À propos », avant l'adresse où m'écrire. En HTML : l'italique. */
   nextIdea: "Une idée pour la prochaine <em>escale</em> ?",
+  /**
+   * Au clic sur un lien vers l'adresse (scripts/mail.ts) : sans messagerie sur l'ordinateur, le lien ne fait rien,
+   * alors l'adresse est copiée et montrée. `mailShown` : si la copie n'a pas pu se faire, l'adresse seule.
+   */
+  mailCopied: "Adresse copiée",
+  mailShown: "Mon adresse",
   /** Les pastilles d'un projet (Badge de @index/projects), et leur explication au survol. */
   badges: { ecole: "École", ia: "Assisté par IA", "ia-refonte": "Refonte assistée par IA" },
   badgeTitles: {
@@ -101,6 +107,8 @@ const en: Strings = {
   logout: "Sign out",
   signedIn: "Signed in: {login}",
   nextIdea: "An idea for the next <em>stop</em>?",
+  mailCopied: "Address copied",
+  mailShown: "My address",
   badges: { ecole: "School", ia: "AI-assisted", "ia-refonte": "AI-assisted rebuild" },
   badgeTitles: {
     ecole: "A school project",

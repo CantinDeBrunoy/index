@@ -85,5 +85,13 @@ const ogImage = absolute(image);
   <body class={`pal-${palette}`} style={`--page-bg: ${background}`}>
     <a class="skip-link" href="#contenu">{t.skip}</a>
     <slot />
+    {/* L'adresse copiée au clic sur « M'écrire » (scripts/mail.ts). */}
+    <p class="mail-toast" data-mail-toast data-copied={t.mailCopied} data-shown={t.mailShown} role="status">
+      <span class="mail-toast__title" data-mail-title></span>
+      <span class="mail-toast__address" data-mail-address></span>
+    </p>
+    <script>
+      import "../scripts/mail";
+    </script>
   </body>
 </html>

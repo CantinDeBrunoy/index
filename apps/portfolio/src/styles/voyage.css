@@ -417,6 +417,51 @@ a {
   }
 }
 
+/* — L'adresse copiée (scripts/mail.ts) : une carte en bas de l'écran, quelques secondes — */
+
+.mail-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 14px 24px;
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-m);
+  background: var(--card);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  transition:
+    opacity 0.25s,
+    transform 0.25s;
+}
+.mail-toast.is-shown {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+.mail-toast__title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--brass-text);
+}
+.mail-toast__address {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
 /* Juste au-dessus du téléphone, les marges se resserrent : les onglets (« À propos de moi ») tiennent sur une ligne. */
 @media (min-width: 701px) and (max-width: 760px) {
   .site-header {
