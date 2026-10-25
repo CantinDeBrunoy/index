@@ -110,10 +110,14 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
                 </p>
                 <h3 class="serif panel__title">{p.titre}</h3>
               </div>
-              <p class="panel__big">
-                <b class="serif">{p.chiffre}</b>
-                <span>{T(p.chiffreLabel)}</span>
-              </p>
+              {
+                p.chiffre && (
+                  <p class="panel__big">
+                    <b class="serif">{p.chiffre}</b>
+                    <span>{T(p.chiffreLabel)}</span>
+                  </p>
+                )
+              }
               <p class="panel__meta">
                 {p.quand} · {p.role}
                 <br />
@@ -128,7 +132,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
             <div class="panel__text">
               <p>{T(p.quoi)}</p>
               <p>{T(p.moi)}</p>
-              <p class="panel__todo">{T(p.resultat)}</p>
+              {p.resultat && <p>{T(p.resultat)}</p>}
             </div>
           </article>
         ))
@@ -469,10 +473,6 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     margin: 0;
     font-size: 20px;
     line-height: 1.6;
-  }
-  .panel__text .panel__todo {
-    color: var(--brass-text);
-    font-style: italic;
   }
   .body__nav {
     display: flex;

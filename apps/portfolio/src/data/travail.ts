@@ -2,7 +2,8 @@
  * « Au travail », sur la page À propos : quatre apps faites à la STIME, chacune à l'endroit du magasin où elle sert.
  * La scène est un magasin en coupe (design/renders/magasin-scenes.js), avec un point par app ; dessous, la tournée
  * d'un camion de livraison, un arrêt par app dans l'ordre où Cantin les a faites, et la fiche de l'app choisie.
- * D'après son CV, sans nom de projet interne. [Entre crochets] : à écrire par Cantin.
+ * D'après son CV, sans nom de projet interne. Un champ vide (ce que l'app a changé, le chiffre de l'app des
+ * adhérents) ne s'affiche pas : Cantin les écrira.
  */
 
 import type { Lang } from "../i18n/voyage";
@@ -38,6 +39,7 @@ interface Projet {
   chiffreLabel: string;
   quoi: string;
   moi: string;
+  /** Ce que l'app a changé : vide tant que Cantin ne l'a pas écrit, et alors rien ne s'affiche. */
   resultat: string;
   outils: string[];
 }
@@ -84,7 +86,7 @@ export const TRAVAIL: Record<Lang, TravailStrings> = {
         chiffreLabel: "magasins Intermarché, et certains Bricomarché",
         quoi: "L'app mobile des employés en magasin. Ils s'en servent pour les inventaires, les dates limites de consommation et la mise en rayon.",
         moi: "J'y ai contribué pendant cinq ans, avec de nouvelles fonctions et des correctifs au fil des besoins.",
-        resultat: "[À toi : un exemple de ce que tu y as apporté]",
+        resultat: "",
         outils: ["React Native", "Node.js"],
       },
       sav: {
@@ -99,7 +101,7 @@ export const TRAVAIL: Record<Lang, TravailStrings> = {
         chiffreLabel: "apps web créées de zéro, pour tout le service après-vente",
         quoi: "Deux apps web dont tout le service après-vente se sert pour dépanner un magasin lors d'un incident.",
         moi: "Je les ai développées de zéro. J'ai aussi travaillé sur le BFF, un petit serveur Node.js qui prépare les données de ces deux apps et de celle des magasins.",
-        resultat: "[À toi : ce que ça a changé pour le SAV]",
+        resultat: "",
         outils: ["React", "Node.js"],
       },
       bureau: {
@@ -110,11 +112,11 @@ export const TRAVAIL: Record<Lang, TravailStrings> = {
         quand: "2025 – 2026",
         role: "Développeur mobile",
         equipe: "Équipe d'environ six personnes",
-        chiffre: "[?]",
-        chiffreLabel: "[à compléter : combien d'adhérents, ou d'indicateurs]",
+        chiffre: "",
+        chiffreLabel: "",
         quoi: "Une app mobile pour les adhérents, les patrons indépendants qui possèdent chacun leur magasin Intermarché. Elle leur montre comment se porte leur magasin.",
         moi: "J'ai ajouté de nombreux indicateurs et tableaux de bord. J'ai aussi mené le passage de l'app à une nouvelle API, le service qui lui fournit ses données.",
-        resultat: "[À toi : ce que ça a changé pour les adhérents]",
+        resultat: "",
         outils: ["React Native"],
       },
       frais: {
@@ -129,7 +131,7 @@ export const TRAVAIL: Record<Lang, TravailStrings> = {
         chiffreLabel: "magasins Intermarché s'en servent",
         quoi: "Une app pour commander les fruits, les légumes et tous les produits frais du magasin. Elle marche sur Android, sur iPhone et sur le web, avec un site de gestion à part, le back-office.",
         moi: "J'ai refait le panier de l'app. J'ai aussi ajouté un module d'actualités et développé les écrans du déstockage.",
-        resultat: "[À toi : ce que ça a changé pour les magasins, avec un chiffre si tu peux]",
+        resultat: "",
         outils: ["React Native", "Expo", "React"],
       },
     },
@@ -157,7 +159,7 @@ export const TRAVAIL: Record<Lang, TravailStrings> = {
         chiffreLabel: "Intermarché stores, and some Bricomarché",
         quoi: "The mobile app store staff use for stock counts, use-by dates and restocking the shelves.",
         moi: "I contributed to it for five years, with new features and fixes as needed.",
-        resultat: "[To write: an example of what you brought to it]",
+        resultat: "",
         outils: ["React Native", "Node.js"],
       },
       sav: {
@@ -172,7 +174,7 @@ export const TRAVAIL: Record<Lang, TravailStrings> = {
         chiffreLabel: "web apps built from scratch, for the whole after-sales team",
         quoi: "Two web apps the whole after-sales team uses to help a store during an incident.",
         moi: "I built them from scratch. I also worked on the BFF, a small Node.js server that prepares the data for these two apps and for the store app.",
-        resultat: "[To write: what it changed for after-sales]",
+        resultat: "",
         outils: ["React", "Node.js"],
       },
       bureau: {
@@ -183,11 +185,11 @@ export const TRAVAIL: Record<Lang, TravailStrings> = {
         quand: "2025 – 2026",
         role: "Mobile developer",
         equipe: "A team of about six",
-        chiffre: "[?]",
-        chiffreLabel: "[To complete: how many store owners, or indicators]",
+        chiffre: "",
+        chiffreLabel: "",
         quoi: "A mobile app for Intermarché's store owners, the independent bosses who each own their store. It shows them how their store is doing.",
         moi: "I added many indicators and dashboards. I also led the app's move to a new API, the service that supplies its data.",
-        resultat: "[To write: what it changed for store owners]",
+        resultat: "",
         outils: ["React Native"],
       },
       frais: {
@@ -202,7 +204,7 @@ export const TRAVAIL: Record<Lang, TravailStrings> = {
         chiffreLabel: "Intermarché stores use it",
         quoi: "An app to order fruit, vegetables and all the store's fresh products. It runs on Android, on iPhone and on the web, with a separate management site, the back office.",
         moi: "I rebuilt the app's shopping cart. I also added a news module and built the clearance screens.",
-        resultat: "[To write: what it changed for the stores, with a figure if you can]",
+        resultat: "",
         outils: ["React Native", "Expo", "React"],
       },
     },
