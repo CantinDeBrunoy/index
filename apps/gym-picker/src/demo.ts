@@ -1,12 +1,15 @@
 import type { EtaResponse, GymEta, LatLng } from '../shared/api';
 import type { Gym } from '../shared/gyms';
 
-// Mode démo, pour filmer l'app sans montrer de vraies données : les vraies
-// salles, et plus encore le domicile, diraient où l'on habite. Il s'active par
-// l'adresse (`/?demo`) et tient le temps de l'onglet (sessionStorage), même
-// après un rechargement. Tout y est inventé, au centre de Paris : la position
-// ne vient jamais du GPS, les temps ne viennent jamais du Worker (une page
-// servie seule, sans API, suffit), et le vrai domicile n'est ni lu ni écrasé.
+// Mode démo : les vraies salles, et plus encore le domicile, diraient où l'on
+// habite. Il s'active de deux façons :
+// - par l'adresse (`/?demo`), pour filmer l'app. Il tient alors le temps de
+//   l'onglet (sessionStorage), même après un rechargement ;
+// - de lui-même chez un visiteur (`owner.ts`) : seul le propriétaire voit ses
+//   vraies salles.
+// Tout y est inventé, au centre de Paris : la position ne vient jamais du GPS,
+// les temps ne viennent jamais du Worker (une page servie seule, sans API,
+// suffit), et le vrai domicile n'est ni lu ni écrasé.
 //
 // `?demo=domicile` joue le GPS en panne : les trajets partent du domicile de
 // secours, déjà enregistré.
@@ -15,7 +18,17 @@ export type DemoMode = 'gps' | 'domicile';
 
 const STORAGE_KEY = 'gym-picker:demo';
 
-export const DEMO: DemoMode | null = readDemoMode();
+/** Fixé avant le premier affichage (main.tsx), et plus jamais ensuite. */
+export let DEMO: DemoMode | null = readDemoMode();
+
+/** La démo vient de ce que la page s'ouvre chez un visiteur, pas de l'adresse : la connexion lui reste proposée. */
+export let VISITOR = false;
+
+/** Un visiteur voit la démo sans l'avoir demandée. À appeler avant le premier affichage. */
+export function showDemoToVisitor(): void {
+  DEMO = 'gps';
+  VISITOR = true;
+}
 
 /** Point de départ inventé : le parvis de l'Hôtel de Ville. Sert aussi de domicile. */
 export const DEMO_POSITION: LatLng = { lat: 48.8566, lng: 2.3522 };

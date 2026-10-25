@@ -50,8 +50,8 @@ jour.
 
 ## Mettre en ligne
 
-Le Worker `gym-picker` est relié à ce dépôt GitHub (Workers Builds). À chaque
-push sur `main`, Cloudflare lance `npm run build` puis `npx wrangler deploy`.
+Le workflow `.github/workflows/deploy-gym-picker.yml` déploie le Worker à chaque
+push sur `main` qui touche ce dossier, un package partagé ou le lockfile.
 **Un push sur `main` est donc une mise en production.**
 
 Avant le tout premier déploiement, la clé TomTom doit exister sur le Worker :
@@ -81,10 +81,14 @@ Le HTTPS est obligatoire : sans lui, le navigateur refuse la géolocalisation.
 
 ## Mode démo
 
-`/?demo` montre l'app avec des salles et des trajets inventés, au centre de
-Paris, sans GPS ni clé TomTom : de quoi la filmer sans révéler où tu habites.
-`/?demo=domicile` joue le GPS en panne. Le mode tient jusqu'à la fermeture de
-l'onglet.
+Un visiteur voit toujours la démo : des salles et des trajets inventés, au
+centre de Paris, sans GPS ni appel au serveur. Tes vraies salles ne s'affichent
+que dans l'app installée sur ton écran d'accueil, ou dans un navigateur quand
+tu es connecté au hub INDEX (lien « Connexion » à côté du badge de démo).
+
+`/?demo` force la démo, même pour toi : de quoi filmer l'app sans révéler où tu
+habites. `/?demo=domicile` joue le GPS en panne. Ce mode tient jusqu'à la
+fermeture de l'onglet.
 
 ## Changer les salles
 

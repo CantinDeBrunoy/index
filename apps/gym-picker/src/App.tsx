@@ -1,26 +1,25 @@
 import type { Leg } from '../shared/api';
 import { GYMS, type Gym } from '../shared/gyms';
-import { DEMO, DEMO_GYMS } from './demo';
+import { DEMO, DEMO_GYMS, VISITOR } from './demo';
 import { formatClock, formatDistance, formatDuration, formatElapsed, NBSP } from './format';
 import { HomeSettings } from './HomeSettings';
 import { googleMapsUrl, wazeUrl } from './links';
 import { useEtas, type EtasState } from './useEtas';
 
-// En démo, des salles fictives : les vraies n'apparaissent jamais à l'écran.
-const gyms = DEMO ? DEMO_GYMS : GYMS;
-const gymsById = new Map(gyms.map((gym) => [gym.id, gym]));
-
 /** `leg` : `undefined` tant que rien n'est calculé, `null` si aucun itinéraire. */
 type Row = { gym: Gym; leg: Leg | null | undefined };
 
 export function App() {
+  // En démo, des salles fictives : les vraies n'apparaissent jamais à l'écran.
+  // Lu ici, pas au chargement du module : le mode se décide au démarrage (main.tsx).
+  const gyms = DEMO ? DEMO_GYMS : GYMS;
   const { state, refresh } = useEtas();
   const busy = state.phase === 'locating' || state.phase === 'computing';
   const { result } = state;
 
   const rows: Row[] = result
     ? result.etas.flatMap(({ gymId, leg }) => {
-        const gym = gymsById.get(gymId);
+        const gym = gyms.find((candidate) => candidate.id === gymId);
         return gym ? [{ gym, leg }] : [];
       })
     : gyms.map((gym) => ({ gym, leg: undefined }));
@@ -29,7 +28,17 @@ export function App() {
     <main className="app">
       <header>
         <h1>Quelle salle&nbsp;?</h1>
-        {DEMO && <p className="demo-tag">Démo · salles et trajets fictifs</p>}
+        {DEMO && (
+          <p className="demo">
+            <span className="demo-tag">Démo · salles et trajets fictifs</span>
+            {/* Un visiteur garde la connexion : c'est par elle que le propriétaire retrouve ses salles. */}
+            {VISITOR && (
+              <a className="demo-login" href="/api/auth/login">
+                Connexion
+              </a>
+            )}
+          </p>
+        )}
         <p className="status" aria-live="polite">
           {statusLine(state)}
         </p>

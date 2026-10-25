@@ -21,8 +21,9 @@ Un seul Worker Cloudflare sert tout :
 
 - les fichiers statiques (le build Vite de `src/`), sans exécuter le code du
   Worker ;
-- `POST /api/etas` ([worker/index.ts](worker/index.ts)), la seule route
-  dynamique (`run_worker_first` dans `wrangler.jsonc`).
+- `POST /api/etas` ([worker/index.ts](worker/index.ts)), le calcul, et la
+  connexion du propriétaire (`GET /api/session`, `/api/auth/*`), vérifiée
+  auprès du hub (`run_worker_first` dans `wrangler.jsonc`).
 
 Parcours d'une recherche : position (GPS rapide, sinon domicile) →
 `POST /api/etas {lat, lng}` → Worker → TomTom Matrix Routing v2 (1 départ ×
@@ -72,14 +73,29 @@ cache. Il est désactivé en dev. Si sa stratégie change, incrémenter `CACHE`.
 La précision Wi-Fi ou antenne suffit pour un temps de trajet et répond bien plus
 vite. La haute précision ne sert qu'à enregistrer le domicile.
 
-**Mode démo** (`/?demo`, [src/demo.ts](src/demo.ts)), pour filmer l'app sans
-montrer les vraies salles ni le domicile : quatre salles fictives au centre de
-Paris, une position inventée, des temps calculés dans la page, qui changent à
-chaque actualisation. Ni GPS ni appel au Worker : un `dist/client` servi seul
-suffit. Il tient le temps de l'onglet (sessionStorage) ; `?demo=domicile`
-simule un GPS en panne. Les branchements sont en bas de pile (`getPosition`,
-`fetchEtas`, `home.ts`) : en démo, rien n'atteint le vrai GPS, l'API ni le
-domicile enregistré.
+**Mode démo** ([src/demo.ts](src/demo.ts)) : quatre salles fictives au centre
+de Paris, une position inventée, des temps calculés dans la page, qui changent
+à chaque actualisation. Ni GPS ni appel au Worker : un `dist/client` servi seul
+suffit. `/?demo` le force, pour filmer l'app ; il tient alors le temps de
+l'onglet (sessionStorage), et `?demo=domicile` simule un GPS en panne. Les
+branchements sont en bas de pile (`getPosition`, `fetchEtas`, `home.ts`) : en
+démo, rien n'atteint le vrai GPS, l'API ni le domicile enregistré.
+
+**Un visiteur voit la démo** ([src/owner.ts](src/owner.ts)), décidé avant le
+premier affichage. Le propriétaire, c'est l'app installée sur l'écran
+d'accueil (son iPhone), ou un navigateur où sa session du hub INDEX est
+ouverte (`GET /api/session`, que le Worker vérifie auprès du hub par la
+liaison de service `HUB`, avec `@index/auth/app`). L'app installée ne peut pas
+compter sur cette session : iOS lui donne ses propres cookies, et le détour
+par GitHub s'y ferait dans un navigateur à part. Contrepartie : un visiteur
+qui installerait l'app verrait les vraies salles, déjà publiques dans le repo.
+Sans réponse claire du Worker, la page reste en démo. Un visiteur garde le
+lien « Connexion », par lequel le propriétaire retrouve ses salles dans un
+navigateur.
+
+**`POST /api/etas` reste ouvert**, sans session : l'app installée du
+propriétaire n'a pas le cookie du hub. La page d'un visiteur ne l'appelle
+jamais (démo), et la limite de débit protège le quota.
 
 ## 4. Pièges
 
@@ -87,10 +103,15 @@ domicile enregistré.
   nvm-windows : `nvm use 24.13.0`.
 - **`worker-configuration.d.ts`** est généré (`postinstall`) et ignoré par git.
   Après une modification de `wrangler.jsonc` : `npm run cf-typegen`.
-- **Déploiement : Workers Builds.** Le Worker est relié au dépôt GitHub, et
-  chaque push sur `main` est construit (`npm run build`) puis déployé
-  (`npx wrangler deploy`) par Cloudflare. Un push sur `main` part donc en
-  production.
+- **Déploiement : `.github/workflows/deploy-gym-picker.yml`**, à chaque push
+  sur `main` qui touche ce dossier, un package partagé ou le lockfile. Un push
+  sur `main` part donc en production.
+- **`DEMO` est fixé au démarrage** (`main.tsx`, après la réponse de
+  `/api/session`). Ne pas le lire au chargement d'un module : une constante
+  calculée hors d'une fonction garderait la valeur d'avant la décision, et
+  montrerait les vraies salles à un visiteur.
+- **En local, on est visiteur** : la liaison `HUB` vise le Worker `index`, qui
+  ne tourne pas. `/api/session` répond donc `owner: false`.
 - **Secret `TOMTOM_API_KEY`** : `.dev.vars` en local, secret du Worker en
   production (`wrangler secret put`, ou Settings › Variables and Secrets du
   Worker — pas le « Secrets Store » du compte, que le Worker ne lit pas). Il

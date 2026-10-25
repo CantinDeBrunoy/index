@@ -35,7 +35,7 @@ architecture:
     - { label: "Cloudflare", from: [3, 1], to: [3, 1] }
   nodes:
     - { id: "local", at: [1, 1], kind: "data", title: "GPS · domicile", text: "Une position rapide plutôt que précise. Sans GPS, le domicile de secours, gardé ici." }
-    - { id: "app", at: [2, 1], kind: "app", title: "L'app React", text: "S'ouvre depuis le cache, mais les temps de trajet se calculent toujours en direct." }
+    - { id: "app", at: [2, 1], kind: "app", title: "L'app React", text: "S'ouvre depuis le cache, mais les temps de trajet se calculent toujours en direct. Un visiteur voit une démo, avec des salles inventées." }
     - { id: "waze", at: [2, 2], kind: "ext", title: "Waze · Google Maps", text: "Toucher une salle ouvre le trajet." }
     - { id: "worker", at: [3, 1], kind: "server", title: "Worker gym-picker", text: "Vérifie la position, limite à 20 appels par minute, trie les salles." }
     - { id: "tomtom", at: [4, 1], kind: "ext", title: "TomTom Matrix Routing", text: "Les temps de trajet vers toutes les salles d'un coup, trafic compris." }

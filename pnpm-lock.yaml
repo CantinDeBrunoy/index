@@ -303,6 +303,9 @@ importers:
 
   apps/gym-picker:
     dependencies:
+      '@index/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       react:
         specifier: ^19.3.0
         version: 19.3.0

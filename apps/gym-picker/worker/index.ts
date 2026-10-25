@@ -1,3 +1,4 @@
+import { handleAppAuth } from '@index/auth/app';
 import { isLatLng, type ApiError, type EtaResponse } from '../shared/api';
 import { GYMS } from '../shared/gyms';
 import { rankEtas } from './rank';
@@ -7,6 +8,11 @@ import { fetchMatrix, TomTomError } from './tomtom';
 // reste est servi comme fichiers statiques par Cloudflare.
 export default {
   async fetch(request, env) {
+    // La connexion du propriétaire (GET /api/session, /api/auth/*), vérifiée
+    // auprès du hub. Elle décide si la page montre la démo (src/owner.ts).
+    const auth = await handleAppAuth(request, env.HUB);
+    if (auth) return auth;
+
     const { pathname } = new URL(request.url);
     if (pathname !== '/api/etas') return fail(404, 'Route inconnue.');
     if (request.method !== 'POST') return fail(405, 'Utilise POST.');

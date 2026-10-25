@@ -69,15 +69,27 @@ h1 {
 }
 
 /* Mode démo : rappelle à l'écran que rien n'est réel. */
-.demo-tag {
-  display: inline-block;
+.demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
   margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.demo-tag {
   padding: 0.125rem 0.625rem;
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 600;
+}
+
+/* Pour le propriétaire, arrivé sans sa session du hub. */
+.demo-login {
+  padding: 0.25rem 0;
+  color: var(--accent);
 }
 
 .notice,

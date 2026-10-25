@@ -114,7 +114,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
           WEB_ANALYTICS_TOKEN
             ? "Ce site ne dépose aucun cookie chez ses visiteurs et n'a aucun formulaire. Il compte ses visites avec Cloudflare Web Analytics, sans cookie ni identifiant : seulement des chiffres d'ensemble (pages vues, pays, navigateur). Si vous m'écrivez, votre adresse sert seulement à vous répondre."
             : "Ce site ne dépose aucun cookie chez ses visiteurs, ne mesure pas l'audience et n'a aucun formulaire. Si vous m'écrivez, votre adresse sert seulement à vous répondre.",
-          "Seule exception, le lien « Connexion » en bas des pages, qui ne sert qu'à moi : il passe par GitHub et dépose des cookies strictement nécessaires à la connexion, pour ouvrir mes propres données dans Magellan et Hublot.",
+          "Seule exception, le lien « Connexion » en bas des pages, qui ne sert qu'à moi : il passe par GitHub et dépose des cookies strictement nécessaires à la connexion, pour ouvrir mes propres données dans Magellan, Hublot et gym-picker.",
           "Sinon, votre navigateur ne garde qu'une chose : que vous avez déjà vu les accueils d'Adam, le copilote, au voyage et sur les fiches, pour ne pas vous les remontrer. Rien n'en est envoyé.",
           "Comme tout hébergeur, Cloudflare tient des journaux techniques, dont l'adresse IP, pour faire fonctionner et protéger le service.",
           `Une question sur vos données ? Écrivez-moi. Vous pouvez aussi vous adresser à la <a href="https://www.cnil.fr" target="_blank" rel="noopener">CNIL</a>.`,
@@ -126,7 +126,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
           "Ces mentions valent pour ce site. Chaque app qu'il ouvre est un site à part. Voici ce que chacune fait de vos données.",
           "<strong>Tonalli</strong> demande un compte, avec votre e-mail, un mot de passe et un prénom. Vos journées, vos notes et vos photos sont gardées chez Supabase, et seule la personne à qui vous êtes lié peut les voir. Ses polices viennent de Google Fonts, qui voit donc votre adresse IP. La suppression proposée dans ses réglages efface vos journées et vos photos, mais pas encore le compte lui-même. Pour le supprimer aussi, écrivez-moi.",
           "<strong>Magellan</strong>, <strong>Cancionero</strong> et <strong>Galactic Escape</strong> n'ont pas de compte. Ce que vous y faites reste dans votre navigateur. Quelques demandes partent quand même vers d'autres sites. Magellan cherche les villes chez Open-Meteo et charge son globe et ses drapeaux depuis d'autres serveurs. Cancionero envoie le mot à traduire à MyMemory et la chanson recherchée à LRCLIB. Galactic Escape charge sa police chez Google Fonts.",
-          "<strong>gym-picker</strong> envoie votre position à son serveur, qui la transmet à TomTom pour calculer les temps de trajet. Le serveur ne la garde pas.",
+          "<strong>gym-picker</strong> ne montre qu'une démo dans le navigateur, avec des salles et une position inventées, et rien n'en est envoyé. Une fois installée comme une app, elle envoie la position à son serveur, qui la transmet à TomTom pour calculer les temps de trajet. Le serveur ne la garde pas.",
           "<strong>Hublot</strong> ne montre qu'une démo aux visiteurs, et rien n'en est envoyé.",
         ],
       ],
@@ -140,7 +140,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
     ],
     creditsLabel: "Crédits",
     repainted: "Tous les modèles sont repeints dans la matière du voyage.",
-    updated: "Mise à jour le 19 octobre 2026",
+    updated: "Mise à jour le 25 octobre 2026",
   },
   en: {
     pageTitle: "Legal notice",
@@ -163,7 +163,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
           WEB_ANALYTICS_TOKEN
             ? "This site sets no cookies on its visitors and has no forms. It counts its visits with Cloudflare Web Analytics, with no cookies and no identifiers: only overall figures (page views, countries, browsers). If you write to me, your address is only used to reply."
             : "This site sets no cookies on its visitors, runs no analytics and has no forms. If you write to me, your address is only used to reply.",
-          "The one exception is the “Sign in” link at the bottom of the pages, which is for me only: it goes through GitHub and sets cookies strictly needed to sign in, to open my own data in Magellan and Hublot.",
+          "The one exception is the “Sign in” link at the bottom of the pages, which is for me only: it goes through GitHub and sets cookies strictly needed to sign in, to open my own data in Magellan, Hublot and gym-picker.",
           "Otherwise, your browser keeps just one thing: that you have already seen the welcomes from Adam, the co-pilot, on the journey and on the project pages, so they aren't shown again. None of it is sent anywhere.",
           "Like any host, Cloudflare keeps technical logs, including IP addresses, to run and protect the service.",
           `A question about your data? Write to me. You can also contact the <a href="https://www.cnil.fr/en" target="_blank" rel="noopener">CNIL</a>, the French data protection authority.`,
@@ -175,7 +175,7 @@ export const LEGAL: Record<Lang, LegalStrings> = {
           "This notice covers this site. Each app it opens is a separate site. Here is what each one does with your data.",
           "<strong>Tonalli</strong> needs an account, with your email, a password and a first name. Your days, notes and photos are stored with Supabase, and only the person you are paired with can see them. Its fonts come from Google Fonts, which therefore sees your IP address. The deletion offered in its settings erases your days and photos, but not yet the account itself. To delete that too, write to me.",
           "<strong>Magellan</strong>, <strong>Cancionero</strong> and <strong>Galactic Escape</strong> have no accounts. What you do there stays in your browser. A few requests still go to other sites. Magellan looks up cities with Open-Meteo and loads its globe and flags from other servers. Cancionero sends the word to translate to MyMemory and the song you search for to LRCLIB. Galactic Escape loads its font from Google Fonts.",
-          "<strong>gym-picker</strong> sends your position to its server, which passes it to TomTom to work out travel times. The server doesn't keep it.",
+          "<strong>gym-picker</strong> only shows a demo in the browser, with made-up gyms and a made-up position, and nothing is sent from it. Once installed as an app, it sends the position to its server, which passes it to TomTom to work out travel times. The server doesn't keep it.",
           "<strong>Hublot</strong> only shows visitors a demo, and nothing is sent from it.",
         ],
       ],
@@ -189,6 +189,6 @@ export const LEGAL: Record<Lang, LegalStrings> = {
     ],
     creditsLabel: "Credits",
     repainted: "Every model is repainted in the journey's own materials.",
-    updated: "Updated on 19 October 2026",
+    updated: "Updated on 25 October 2026",
   },
 };

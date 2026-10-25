@@ -35,7 +35,7 @@ architecture:
     - { label: "Cloudflare", from: [3, 1], to: [3, 1] }
   nodes:
     - { id: "local", at: [1, 1], kind: "data", title: "GPS · home", text: "A fix that's fast rather than precise. Without GPS, the backup home, kept here." }
-    - { id: "app", at: [2, 1], kind: "app", title: "The React app", text: "Opens from cache, but travel times are always computed live." }
+    - { id: "app", at: [2, 1], kind: "app", title: "The React app", text: "Opens from cache, but travel times are always computed live. A visitor sees a demo with made-up gyms." }
     - { id: "waze", at: [2, 2], kind: "ext", title: "Waze · Google Maps", text: "Tapping a gym opens the route." }
     - { id: "worker", at: [3, 1], kind: "server", title: "gym-picker Worker", text: "Checks the position, allows 20 calls a minute, sorts the gyms." }
     - { id: "tomtom", at: [4, 1], kind: "ext", title: "TomTom Matrix Routing", text: "Travel times to every gym at once, traffic included." }

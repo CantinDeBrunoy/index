@@ -19,6 +19,7 @@
     "postinstall": "wrangler types"
   },
   "dependencies": {
+    "@index/auth": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
