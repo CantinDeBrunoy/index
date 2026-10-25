@@ -12,10 +12,11 @@
  * (scripts/voyage-fiche.ts).
  */
 import { getProject } from "@index/projects";
+import { APROPOS } from "../../data/apropos";
 import { nameOf } from "../../data/fiches";
 import PASSAGES from "../../data/passages.json";
 import { appOf, EXIT, fill, kindOf, START, STOP_TEXTS, STOPS, VOYAGE } from "../../data/voyage";
-import { ficheFragmentPath, fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
+import { EMAIL, ficheFragmentPath, fichePath, LANGS, ROUTES, STRINGS, TABS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import Copilote from "./Copilote.astro";
 import CopiloteAccueil from "./CopiloteAccueil.astro";
@@ -28,6 +29,7 @@ interface Props {
 const { lang } = Astro.props;
 const v = VOYAGE[lang];
 const t = STRINGS[lang];
+const cv = APROPOS[lang].cv;
 const alternates = { fr: ROUTES.voyage.fr, en: ROUTES.voyage.en };
 
 const stops = STOPS.map((stop, i) => {
@@ -133,6 +135,16 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
           <p class="intro__text">{typo(lang, v.introText)}</p>
           <div class="intro__actions">
             <a class="go" href="#escale-1" data-go="1">{v.takeOff}</a>
+            <div class="intro__more">
+              {
+                cv && (
+                  <a class="pill" href={cv.href} download={cv.file}>
+                    {v.cv}
+                  </a>
+                )
+              }
+              <a class="pill" href={`mailto:${EMAIL}`}>{v.write}</a>
+            </div>
           </div>
         </div>
       </section>
@@ -818,10 +830,17 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
     font-size: 19px;
     line-height: 1.6;
   }
-  /* Seul bouton du départ : plus grand que le laiton des escales. */
+  /* Le bouton du départ, plus grand que le laiton des escales ; à côté, le CV et l'adresse. */
   .intro__actions {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
     padding-top: 6px;
+  }
+  .intro__more {
+    display: flex;
+    gap: 10px;
   }
   .intro__actions .go {
     min-height: 62px;
@@ -1239,11 +1258,16 @@ const places = [v.relaunch, ...stops.map((s) => s.text.place)];
     .intro__actions {
       flex-direction: column;
       align-items: stretch;
+      gap: 10px;
       padding-top: 4px;
     }
     .intro__actions .go {
       min-height: 58px;
       font-size: 17px;
+    }
+    .intro__more .pill {
+      flex: 1;
+      justify-content: center;
     }
   }
 

@@ -219,6 +219,9 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     introTitle: `Un voyage en ${inWords("fr", STOPS.length)} <em>escales</em>.`,
     introText: `Je suis développeur full-stack et mobile, et voici mes ${inWords("fr", STOPS.length)} projets. Chacun est une escale : une scène en 3D, sa fiche et son app quand elle est en ligne. À chaque escale, tu auras le choix : découvrir la fiche projet ou passer au suivant.`,
     takeOff: "Décoller →",
+    /** À côté de « Décoller » : le CV (son fichier est dans data/apropos.ts) et l'adresse, sans passer par le voyage. */
+    cv: "Mon CV",
+    write: "M'écrire",
     start: "Le départ",
     /** Le retour de l'escale 1 : il rejoue le décollage (scripts/decollage.ts). */
     relaunch: "Le décollage",
@@ -245,6 +248,8 @@ export const VOYAGE: Record<Lang, Record<string, string>> = {
     introTitle: `A journey in ${inWords("en", STOPS.length)} <em>stops</em>.`,
     introText: `I'm a full-stack and mobile developer, and these are my ${inWords("en", STOPS.length)} projects. Each one is a stop: a 3D scene, its project page and its app when it's live. At each stop, you'll have a choice: discover the project page or move on to the next one.`,
     takeOff: "Take off →",
+    cv: "My résumé",
+    write: "Email me",
     start: "Departure",
     relaunch: "Take-off",
     announce: "Stop {i}: {place}, {name}",
