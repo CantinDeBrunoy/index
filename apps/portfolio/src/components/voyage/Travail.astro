@@ -228,6 +228,7 @@ const groups = t.groups.map((g) => g.split(" · "));
   }
   .shop {
     position: relative;
+    align-self: start;
     aspect-ratio: 16 / 9;
     overflow: hidden;
     border-radius: 24px;
@@ -296,8 +297,9 @@ const groups = t.groups.map((g) => g.split(" · "));
   .spot.on .ring::before {
     background: var(--card);
   }
+  /* Sur la scène, seul le point choisi montre son étiquette ; les autres, leur anneau. */
   .spot__label {
-    display: inline-flex;
+    display: none;
     align-items: center;
     min-height: 42px;
     padding: 0 18px;
@@ -311,8 +313,8 @@ const groups = t.groups.map((g) => g.split(" · "));
       background 0.2s,
       color 0.2s;
   }
-  .spot:hover .spot__label,
   .spot.on .spot__label {
+    display: inline-flex;
     border-color: var(--ink);
     background: var(--ink);
     color: var(--card);
@@ -326,6 +328,7 @@ const groups = t.groups.map((g) => g.split(" · "));
      les feux et le camion s'y placent en %. Le feu choisi est rouge, ceux d'avant verts, les autres éteints. — */
   .snake {
     display: flex;
+    align-items: center;
     justify-content: center;
     padding: 24px;
     border-radius: 22px;
@@ -615,6 +618,15 @@ const groups = t.groups.map((g) => g.split(" · "));
     }
   }
 
+  /* Sur grand écran, la scène et la tournée débordent un peu de la colonne de lecture, jusqu'à 1 300 px : la scène
+     prend la place gagnée, la tournée garde sa taille et se centre à côté, à la hauteur de la scène. */
+  @media (min-width: 1280px) {
+    .top {
+      grid-template-columns: minmax(0, 1fr) 400px;
+      align-items: stretch;
+      margin-inline: calc((100% - min(1300px, 100vw - 80px)) / 2);
+    }
+  }
   @media (max-width: 1000px) {
     .top {
       grid-template-columns: minmax(0, 1fr);
@@ -642,7 +654,8 @@ const groups = t.groups.map((g) => g.split(" · "));
       transform: translate(-22px, -22px);
     }
     .ring,
-    .spot__label {
+    .spot__label,
+    .spot.on .spot__label {
       display: none;
     }
     .spot__num {
