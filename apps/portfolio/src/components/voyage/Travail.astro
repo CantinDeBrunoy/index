@@ -1,10 +1,11 @@
 ---
 /**
- * « Au travail », dans « À propos » : un magasin en coupe, un point par app faite à la STIME ; dessous, la tournée
- * d'un camion de livraison, un arrêt par app dans l'ordre où Cantin les a faites ; puis la fiche de l'app choisie,
- * en deux colonnes, comme un point de fiche projet. Un point, un arrêt ou précédent / suivant choisit l'app : le
- * camion roule jusqu'à son arrêt, ceux d'avant sont livrés (scripts/travail.ts). Les fiches sont superposées : la
- * hauteur reste celle de la plus longue. Sans script, la tournée disparaît et les quatre fiches se lisent à la suite.
+ * « Au travail », dans « À propos » : un magasin en coupe, un point par app faite à la STIME ; à côté, la tournée
+ * d'un camion de livraison sur une route en serpent, un feu par app dans l'ordre où Cantin les a faites ; dessous,
+ * la fiche de l'app choisie, en deux colonnes, comme un point de fiche projet. Un point, un feu ou précédent /
+ * suivant choisit l'app : le camion suit la route jusqu'à son feu, qui passe au rouge, et ceux d'avant au vert
+ * (scripts/travail.ts). Les fiches sont superposées : la hauteur reste celle de la plus longue. Sans script, la
+ * tournée disparaît et les quatre fiches se lisent à la suite.
  * Textes et points : data/travail.ts ; la scène : design/renders/magasin-scenes.js.
  */
 import { ORDER, SPOTS, TRAVAIL } from "../../data/travail";
@@ -21,78 +22,115 @@ const items = ORDER.map((id, i) => ({ id, i, n: i + 1, nn: String(i + 1).padStar
 const LAST = items.length - 1;
 const ARROW = { prev: "M19 12H5M11 18l-6-6 6-6", next: "M5 12h14M13 6l6 6-6 6" };
 const still = (name: string) => `/voyage/stills/${name}.webp`;
+
+// La route en serpent, dans une boîte de 360 × 370 où le SVG, les feux et le camion se placent en % : quatre rangs
+// reliés par des demi-cercles de 45, un feu au milieu de chacun (x 200). Les rangs 1 et 3 vont vers la droite, 2 et
+// 4 vers la gauche.
+const BOX = { w: 360, h: 370 };
+const ROAD = "M 40 60 H 300 A 45 45 0 0 1 300 150 H 60 A 45 45 0 0 0 60 240 H 300 A 45 45 0 0 1 300 330 H 40";
+const ROWS = [60, 150, 240, 330];
+const STOP_X = 200;
+const ARC = Math.PI * 45;
+const LENGTH = 260 + 240 + 240 + 260 + 3 * ARC;
+/** Où tombe chaque feu sur la route, en % de sa longueur (le tracé du trajet fait, et le camion pour le script). */
+const AT = [160, 260 + ARC + 100, 260 + 240 + 2 * ARC + 140, 260 + 2 * 240 + 3 * ARC + 100].map((d) => (d / LENGTH) * 100);
+/** Le camion se gare à 40 de son feu, avant lui dans le sens de la route. */
+const PARK = 40;
+const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
+const rightward = LAST % 2 === 0;
+const truck = `left: ${pct(STOP_X + (rightward ? -PARK : PARK), BOX.w)}; top: ${pct(ROWS[LAST]!, BOX.h)}; --flip: ${rightward ? 1 : -1}`;
+const groups = t.groups.map((g) => g.split(" · "));
 ---
 
-<div class="travail" data-travail style={`--at: ${LAST}`}>
+<div class="travail" data-travail>
   <script is:inline>document.currentScript.parentElement.classList.add("js");</script>
   <p class="travail__lead">{T(t.lead)}</p>
 
-  <div class="shop">
-    <picture>
-      <source media="(max-width: 700px) and (prefers-reduced-motion: reduce)" srcset={still("magasin-mobile")} width="780" height="760" />
-      <source media="(max-width: 700px)" srcset="/voyage/magasin-mobile.webp" width="780" height="760" />
-      <source media="(prefers-reduced-motion: reduce)" srcset={still("magasin")} />
-      <img src="/voyage/magasin.webp" alt={t.alt} width="1280" height="720" loading="lazy" decoding="async" />
-    </picture>
-    {
-      items.map((p) => (
-        <button
-          type="button"
-          class:list={["spot", `spot--${p.spot.side}`, { on: p.i === LAST }]}
-          style={`--x: ${p.spot.desk[0]}%; --y: ${p.spot.desk[1]}%; --mx: ${p.spot.phone[0]}%; --my: ${p.spot.phone[1]}%`}
-          data-pick={p.i}
-          aria-pressed={p.i === LAST ? "true" : "false"}
-          aria-label={`${p.n}. ${p.lieu}, ${p.titre}`}
-        >
-          <span class="ring" aria-hidden="true" />
-          <span class="spot__num" aria-hidden="true">
-            {p.n}
-          </span>
-          <span class="spot__label" aria-hidden="true">
-            {p.n} · {p.lieu}
-          </span>
-        </button>
-      ))
-    }
-  </div>
+  <div class="top">
+    <div class="shop">
+      <picture>
+        <source media="(max-width: 700px) and (prefers-reduced-motion: reduce)" srcset={still("magasin-mobile")} width="780" height="760" />
+        <source media="(max-width: 700px)" srcset="/voyage/magasin-mobile.webp" width="780" height="760" />
+        <source media="(prefers-reduced-motion: reduce)" srcset={still("magasin")} />
+        <img src="/voyage/magasin.webp" alt={t.alt} width="1280" height="720" loading="lazy" decoding="async" />
+      </picture>
+      {
+        items.map((p) => (
+          <button
+            type="button"
+            class:list={["spot", `spot--${p.spot.side}`, { on: p.i === LAST }]}
+            style={`--x: ${p.spot.desk[0]}%; --y: ${p.spot.desk[1]}%; --mx: ${p.spot.phone[0]}%; --my: ${p.spot.phone[1]}%`}
+            data-pick={p.i}
+            aria-pressed={p.i === LAST ? "true" : "false"}
+            aria-label={`${p.n}. ${p.lieu}, ${p.titre}`}
+          >
+            <span class="ring" aria-hidden="true" />
+            <span class="spot__num" aria-hidden="true">
+              {p.n}
+            </span>
+            <span class="spot__label" aria-hidden="true">
+              {p.n} · {p.lieu}
+            </span>
+          </button>
+        ))
+      }
+    </div>
 
-  <div class="tour">
-    <div class="tour__route">
-      <span class="tour__group" style="left: 25%">{t.groups[0]}</span>
-      <span class="tour__group" style="left: 75%">{t.groups[1]}</span>
-      <span class="tour__road" aria-hidden="true" />
-      <span class="tour__trail" aria-hidden="true" />
-      <svg class="tour__truck" viewBox="0 0 46 30" aria-hidden="true">
-        <rect x="1" y="2" width="27" height="19" rx="3" fill="currentColor" />
-        <rect x="5" y="7" width="19" height="2.5" rx="1.25" fill="#f6f1e9" opacity="0.7" />
-        <path d="M29 8h8.5l6.5 6.5V21H29z" fill="currentColor" />
-        <path d="M32 10.5h4.6l4 4H32z" fill="#f6f1e9" />
-        <circle cx="10" cy="23" r="5" fill="#241e18" />
-        <circle cx="10" cy="23" r="1.8" fill="#f6f1e9" />
-        <circle cx="36" cy="23" r="5" fill="#241e18" />
-        <circle cx="36" cy="23" r="1.8" fill="#f6f1e9" />
-      </svg>
-      <div class="tour__stops" role="group" aria-label={t.stops}>
-        {
-          items.map((p) => (
-            <button
-              type="button"
-              class:list={["tour__stop", { on: p.i === LAST, done: p.i < LAST }]}
-              style={`--i: ${p.i}`}
-              data-pick={p.i}
-              aria-pressed={p.i === LAST ? "true" : "false"}
-              aria-label={`${p.nn} · ${p.groupe} · ${p.titre}`}
-            >
-              <span class="tour__dot" />
-              <span class="tour__num" aria-hidden="true">
-                {p.nn}
-              </span>
-              <span class="tour__name" aria-hidden="true">
-                {p.court}
-              </span>
-            </button>
-          ))
-        }
+    <div class="snake">
+      <div class="snake__box">
+        <svg class="snake__road" viewBox={`0 0 ${BOX.w} ${BOX.h}`} aria-hidden="true">
+          <path class="snake__band" d={ROAD} data-road />
+          <path class="snake__dash" d={ROAD} />
+          <path class="snake__trail" d={ROAD} pathLength="100" style={`stroke-dashoffset: ${(100 - AT[LAST]!).toFixed(3)}`} data-trail />
+        </svg>
+        <p class="snake__group" style={`left: ${pct(44, BOX.w)}; top: ${pct(4, BOX.h)}`}>
+          {groups[0]![0]}
+          <br />
+          {groups[0]![1]}
+        </p>
+        <p class="snake__group" style={`left: ${pct(70, BOX.w)}; top: ${pct(178, BOX.h)}`}>
+          {groups[1]![0]}
+          <br />
+          {groups[1]![1]}
+        </p>
+        <svg class="snake__truck" viewBox="0 0 46 30" style={truck} data-truck aria-hidden="true">
+          <rect x="1" y="2" width="27" height="19" rx="3" fill="currentColor" />
+          <rect x="5" y="7" width="19" height="2.5" rx="1.25" fill="#f6f1e9" opacity="0.7" />
+          <path d="M29 8h8.5l6.5 6.5V21H29z" fill="currentColor" />
+          <path d="M32 10.5h4.6l4 4H32z" fill="#f6f1e9" />
+          <circle cx="10" cy="23" r="5" fill="#241e18" />
+          <circle cx="10" cy="23" r="1.8" fill="#f6f1e9" />
+          <circle cx="36" cy="23" r="5" fill="#241e18" />
+          <circle cx="36" cy="23" r="1.8" fill="#f6f1e9" />
+        </svg>
+        <div role="group" aria-label={t.stops}>
+          {
+            items.map((p) => (
+              <button
+                type="button"
+                class:list={["feu", { on: p.i === LAST, done: p.i < LAST }]}
+                style={`left: ${pct(STOP_X, BOX.w)}; top: ${pct(ROWS[p.i]! - 7, BOX.h)}`}
+                data-pick={p.i}
+                data-at={AT[p.i]!.toFixed(3)}
+                aria-pressed={p.i === LAST ? "true" : "false"}
+                aria-label={`${p.nn} · ${p.groupe} · ${p.titre}`}
+              >
+                <svg class="feu__svg" viewBox="0 0 18 46" aria-hidden="true">
+                  <circle class="feu__halo" cx="9" cy="9" r="13" />
+                  <rect class="feu__boite" x="1" y="1" width="16" height="34" rx="5" />
+                  <circle class="feu__lampe feu__rouge" cx="9" cy="8" r="4.2" />
+                  <circle class="feu__lampe feu__orange" cx="9" cy="18" r="4.2" />
+                  <circle class="feu__lampe feu__vert" cx="9" cy="28" r="4.2" />
+                  <rect class="feu__boite" x="7.5" y="35" width="3" height="11" />
+                </svg>
+                <span class="feu__name" aria-hidden="true">
+                  <b>{p.nn}</b>
+                  {p.court}
+                </span>
+              </button>
+            ))
+          }
+        </div>
       </div>
     </div>
   </div>
@@ -180,10 +218,17 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
   }
 
   /* — La scène : le magasin en coupe, ses quatre points (l'anneau et l'étiquette du voyage) — */
+  /* En haut : la scène à gauche, la tournée à droite, à peu près de la même hauteur ; l'une sous l'autre sous 1000 px. */
+  .top {
+    display: grid;
+    grid-template-columns: minmax(0, 1.82fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 28px;
+    margin-top: 36px;
+  }
   .shop {
     position: relative;
     aspect-ratio: 16 / 9;
-    margin-top: 36px;
     overflow: hidden;
     border-radius: 24px;
     background: #f0e2da;
@@ -276,59 +321,68 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
     display: none;
   }
 
-  /* — La tournée : la route sur le rosé du plan de ligne, un arrêt par app, le trajet fait en laiton, le camion
-     garé juste avant l'arrêt choisi. --at : l'arrêt choisi ; les arrêts au 1/8, 3/8, 5/8 et 7/8 de la route. — */
-  .tour {
-    --road-ink: #63491f;
-    --road-muted: #574a3e;
-    margin-top: 24px;
-    padding: 28px 40px 24px;
+  /* — La tournée : une route en serpent sur le rosé du plan de ligne, un feu par app, le trajet fait en laiton, le
+     camion garé juste avant le feu de l'app choisie. La boîte garde les proportions du dessin (360 × 370) : le SVG,
+     les feux et le camion s'y placent en %. Le feu choisi est rouge, ceux d'avant verts, les autres éteints. — */
+  .snake {
+    display: flex;
+    justify-content: center;
+    padding: 24px;
     border-radius: 22px;
     background: #f0e3cc;
   }
-  .tour__route {
+  .snake__box {
     position: relative;
-    height: 170px;
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 360 / 370;
   }
-  .tour__group {
+  .snake__road {
     position: absolute;
-    top: 0;
-    color: var(--road-ink);
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .snake__band,
+  .snake__dash,
+  .snake__trail {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .snake__band {
+    stroke: #e2cdaa;
+    stroke-width: 14;
+  }
+  .snake__dash {
+    stroke: rgba(251, 247, 240, 0.95);
+    stroke-width: 2;
+    stroke-dasharray: 12 16;
+  }
+  .snake__trail {
+    stroke: var(--brass);
+    stroke-width: 4;
+    stroke-dasharray: 100 100;
+    transition: stroke-dashoffset 0.9s cubic-bezier(0.5, 0, 0.2, 1);
+  }
+  .snake__group {
+    position: absolute;
+    margin: 0;
+    color: #63491f;
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 11px;
+    line-height: 1.5;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
-    transform: translateX(-50%);
   }
-  .tour__road {
+  .snake__truck {
     position: absolute;
-    right: 0;
-    bottom: 60px;
-    left: 0;
-    height: 14px;
-    border-radius: var(--radius-pill);
-    background: #e2cdaa repeating-linear-gradient(90deg, rgba(251, 247, 240, 0.95) 0 14px, transparent 14px 30px) center / 100% 2px
-      no-repeat;
-  }
-  .tour__trail {
-    position: absolute;
-    bottom: 65px;
-    left: 12.5%;
-    width: calc(var(--at) * 25%);
-    height: 4px;
-    border-radius: var(--radius-pill);
-    background: var(--brass);
-    transition: width 0.9s cubic-bezier(0.5, 0, 0.2, 1);
-  }
-  .tour__truck {
-    position: absolute;
-    bottom: 62px;
-    left: calc(var(--at) * 25% + 12.5% - 74px);
-    width: 58px;
-    height: 38px;
+    width: 46px;
+    height: 30px;
     color: var(--brass);
-    transition: left 0.9s cubic-bezier(0.5, 0, 0.2, 1);
+    transform: translate(-50%, -85%) scaleX(var(--flip, 1));
     animation: moteur 0.5s ease-in-out infinite;
   }
   @keyframes moteur {
@@ -336,70 +390,81 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
       translate: 0 -1px;
     }
   }
-  .tour__stop {
+  /* Un feu : son pied posé au bord de la route, au point du rang ; son nom à droite. */
+  .feu {
     position: absolute;
-    bottom: 45px;
-    left: calc(var(--i) * 25% + 12.5%);
-    z-index: 1;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     width: 44px;
-    height: 44px;
-    margin-left: -22px;
-    border-radius: var(--radius-pill);
+    height: 50px;
+    margin: -50px 0 0 -22px;
   }
-  .tour__dot {
-    width: 22px;
-    height: 22px;
-    box-sizing: border-box;
-    border: 5px solid var(--brass);
-    border-radius: var(--radius-pill);
-    background: var(--card);
-    transition:
-      width 0.25s,
-      height 0.25s,
-      background 0.25s;
+  .feu__svg {
+    display: block;
+    width: 18px;
+    height: 46px;
+    overflow: visible;
+    transform-origin: 50% 100%;
+    transition: transform 0.25s;
   }
-  .tour__stop.done .tour__dot,
-  .tour__stop:hover .tour__dot {
-    background: var(--brass);
+  .feu__boite {
+    fill: #2b2b2f;
   }
-  .tour__stop.on .tour__dot {
-    width: 32px;
-    height: 32px;
-    border-width: 6px;
-    background: var(--card);
-    animation: livre 2.4s ease-in-out infinite;
+  .feu__lampe {
+    fill: #55565d;
+    transition: fill 0.25s;
   }
-  @keyframes livre {
+  .feu__halo {
+    fill: #e5483d;
+    opacity: 0;
+  }
+  .feu.done .feu__vert {
+    fill: #5cbf6a;
+  }
+  .feu:hover:not(.on) .feu__orange {
+    fill: #f0b44a;
+  }
+  .feu.on .feu__svg {
+    transform: scale(1.15);
+  }
+  .feu.on .feu__rouge {
+    fill: #e5483d;
+  }
+  .feu.on .feu__halo {
+    animation: rouge 2.4s ease-in-out infinite;
+  }
+  @keyframes rouge {
+    0%,
+    100% {
+      opacity: 0.15;
+    }
     50% {
-      box-shadow: 0 0 0 12px rgba(176, 138, 79, 0.2);
+      opacity: 0.45;
     }
   }
-  .tour__num,
-  .tour__name {
+  .feu__name {
     position: absolute;
-    left: 50%;
-    color: var(--road-muted);
-    white-space: nowrap;
-    transform: translateX(-50%);
-  }
-  .tour__num {
-    top: 100%;
-    font-family: var(--font-mono);
-    font-size: 12px;
-  }
-  .tour__name {
-    top: calc(100% + 20px);
+    top: 12px;
+    left: calc(100% - 6px);
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    color: #574a3e;
     font-size: 13px;
     font-weight: 500;
+    white-space: nowrap;
   }
-  .tour__stop.on .tour__num {
-    color: var(--road-ink);
+  .feu__name b {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
   }
-  .tour__stop.on .tour__name {
+  .feu.on .feu__name {
     color: var(--ink);
+  }
+  .feu.on .feu__name b {
+    color: #63491f;
   }
 
   /* — La fiche de l'app choisie : deux colonnes, comme un point de fiche projet ; les fiches superposées — */
@@ -526,7 +591,7 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
   .travail:global(.js) .panel[data-off] {
     visibility: hidden;
   }
-  .travail:not(:global(.js)) .tour,
+  .travail:not(:global(.js)) .snake,
   .travail:not(:global(.js)) .body__nav {
     display: none;
   }
@@ -536,23 +601,35 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
       animation: none;
       opacity: 0;
     }
-    .tour__truck,
-    .tour__stop.on .tour__dot {
+    .snake__truck,
+    .feu.on .feu__halo {
       animation: none;
     }
-    .tour__trail,
-    .tour__truck,
-    .tour__dot {
+    .feu.on .feu__halo {
+      opacity: 0.3;
+    }
+    .snake__trail,
+    .feu__svg,
+    .feu__lampe {
       transition: none;
     }
   }
 
-  /* Sur téléphone : la scène carrée du téléphone et des numéros à la place des étiquettes ; la tournée sans les
-     noms ; la fiche en une colonne. */
+  @media (max-width: 1000px) {
+    .top {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* Sur téléphone : la scène carrée du téléphone et des numéros à la place des étiquettes ; la tournée plus serrée ;
+     la fiche en une colonne. */
   @media (max-width: 700px) {
+    .top {
+      gap: 16px;
+      margin-top: 28px;
+    }
     .shop {
       aspect-ratio: 780 / 760;
-      margin-top: 28px;
       border-radius: 18px;
     }
     .spot,
@@ -587,41 +664,13 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
       background: var(--brass);
       color: var(--on-brass);
     }
-    .tour {
-      margin-top: 16px;
-      padding: 18px 16px 16px;
+    .snake {
+      padding: 16px;
       border-radius: 18px;
     }
-    .tour__route {
-      height: 74px;
-    }
-    .tour__group,
-    .tour__name {
-      display: none;
-    }
-    .tour__road {
-      bottom: 36px;
-    }
-    .tour__trail {
-      bottom: 41px;
-    }
-    .tour__truck {
-      bottom: 40px;
-      left: calc(var(--at) * 25% + 12.5% - 48px);
+    .snake__truck {
       width: 37px;
       height: 24px;
-    }
-    .tour__stop {
-      bottom: 25px;
-      width: 36px;
-      height: 36px;
-      margin-left: -18px;
-    }
-    .tour__dot {
-      border-width: 4px;
-    }
-    .tour__num {
-      font-size: 10px;
     }
     .body {
       grid-template-columns: minmax(0, 1fr);

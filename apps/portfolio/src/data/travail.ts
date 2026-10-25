@@ -18,7 +18,7 @@ export const ORDER: readonly TravailId[] = ["rayon", "sav", "bureau", "frais"];
  * sur ordinateur (magasin.webp, 16:9), puis sur téléphone (magasin-mobile.webp). `side` : le côté de l'étiquette.
  */
 export const SPOTS: Record<TravailId, { desk: [number, number]; phone: [number, number]; side: "left" | "right" }> = {
-  rayon: { desk: [43.4, 69.1], phone: [42.4, 60.9], side: "right" },
+  rayon: { desk: [43.4, 69.1], phone: [42.4, 60.9], side: "left" },
   sav: { desk: [80.2, 63.6], phone: [75.7, 57], side: "left" },
   bureau: { desk: [83.4, 41.4], phone: [83.4, 44.8], side: "left" },
   frais: { desk: [29.4, 33.6], phone: [27, 39.9], side: "right" },
