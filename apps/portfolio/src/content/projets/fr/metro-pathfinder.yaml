@@ -14,9 +14,10 @@ choices:
     text: "Toute l'équipe connaissait déjà Java, et Swing, sa boîte à outils pour les fenêtres, suffisait pour afficher le plan. Notre temps est donc allé à l'algorithme, pas à l'apprentissage d'un nouvel outil."
 video:
   src: "/demos/metro-pathfinder.mp4"
-  caption: "Le plan du métro vu comme un graphe, un trajet calculé, puis l'algorithme de Dijkstra et le code. Monté à partir de l'enregistrement de 2022."
-  width: 1280
-  height: 720
+  caption: "Le programme qui s'ouvre sur le plan du métro, puis un trajet calculé avec Dijkstra. Monté à partir de l'enregistrement de 2022. Mets le son, il y a de la musique."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "plan"
     title: "Le plan"

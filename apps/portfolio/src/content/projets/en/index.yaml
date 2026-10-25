@@ -16,7 +16,10 @@ choices:
     text: "Supabase puts unused databases to sleep, so a scheduled job at Cloudflare regularly sends it a real request. And if GitHub suspends one of the repository's jobs, an issue tells me so I can restart it."
 video:
   src: "/demos/index.mp4"
-  caption: "The departure, three stops, Hublot's page, then the journal and its shortcuts to the apps."
+  caption: "The take-off with Adam, the stops one by one, Tonalli's page, the journal and its live apps, then the tenth stop. Turn the sound on, there's music."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "escale"
     title: "The journey"

@@ -18,9 +18,10 @@ choices:
     text: "Tonalli a commencé comme une app mobile, puis il est devenu un site qu'on peut installer sur son téléphone. Pour commencer, un lien suffit, sans passer par un store."
 video:
   src: "/demos/tonalli.mp4"
-  caption: "Le concept, l'émotion du jour, les deux photos, la journée de l'autre qui se découvre, le calendrier et le personnage. Avec un compte de démonstration."
-  width: 1280
-  height: 720
+  caption: "L'émotion du jour, les deux photos, la journée de l'autre qui se découvre, le calendrier et le personnage. Avec un compte de démonstration. Mets le son, il y a de la musique."
+  width: 1920
+  height: 1080
+  rate: 1
 capture:
   alt: "Capture de Tonalli : l'écran d'accueil, le personnage-goutte et les boutons de connexion."
   caption: "L'écran d'accueil."

@@ -16,7 +16,10 @@ choices:
     text: "Lyrics come from LRCLIB, a free lyrics database, and missing translations from the MyMemory service. The words to review stay on the device, so there's almost nothing to run on a server."
 video:
   src: "/demos/cancionero.mp4"
-  caption: "Three words saved from “Hola, ¿cómo estás?”, the karaoke, then the flashcards."
+  caption: "Three words saved from “Hola, ¿cómo estás?”, the translation, the karaoke, then the flashcards. Turn the sound on, there's music."
+  width: 1920
+  height: 1080
+  rate: 1
 capture:
   alt: "Screenshot of Cancionero: the vocabulary to review and the list of songs, from “Hola, ¿cómo estás?” to “En el mercado”."
   caption: "The songs and the vocabulary to review."

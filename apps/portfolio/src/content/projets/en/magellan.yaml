@@ -14,7 +14,10 @@ choices:
     text: "globe.gl is a tried and tested 3D globe library. To have the same globe everywhere, it lives in a small web page, shown inside the app on phones and in a frame on the web."
 video:
   src: "/demos/magellan.mp4"
-  caption: "The globe, the list of trips, then two of them: Tokyo, Kyoto and Osaka, and Marrakech. With the demo trips."
+  caption: "The globe, the list of trips, then two of them, Japan and Marrakech. With the demo trips. Turn the sound on, there's music."
+  width: 1920
+  height: 1080
+  rate: 1
 capture:
   alt: "Screenshot of Magellan: the globe and its coloured countries, with the counter of the demo data (14 trips, 22 cities, 13 countries)."
   caption: "The globe, with the demo trips."

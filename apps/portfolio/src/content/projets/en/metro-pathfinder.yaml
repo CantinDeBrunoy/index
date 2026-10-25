@@ -14,9 +14,10 @@ choices:
     text: "The whole team already knew Java, and Swing, its toolkit for windows, was enough to display the map. So our time went into the algorithm, not into learning a new tool."
 video:
   src: "/demos/metro-pathfinder.mp4"
-  caption: "The metro map seen as a graph, a computed route, then Dijkstra's algorithm and the code. Edited from the 2022 recording."
-  width: 1280
-  height: 720
+  caption: "The program opening on the metro map, then a route computed with Dijkstra. Edited from the 2022 recording. Turn the sound on, there's music."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "plan"
     title: "The map"

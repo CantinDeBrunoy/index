@@ -59,7 +59,7 @@ const T = (text: string) => typo(lang, text);
       <div class="pictures__row">
       <figure>
         {video ? (
-          <video class="shot shot--video" src={video.src} poster={lazyPoster ? undefined : demoPoster(video.src)} data-poster={lazyPoster ? demoPoster(video.src) : undefined} controls muted loop playsinline preload="none" width={video.width} height={video.height} data-demo />
+          <video class="shot shot--video" src={video.src} poster={lazyPoster ? undefined : demoPoster(video.src)} data-poster={lazyPoster ? demoPoster(video.src) : undefined} controls muted loop playsinline preload="none" width={video.width} height={video.height} data-demo data-rate={video.rate} />
         ) : (
         shot && shotSet && capture && <picture>
           {shotPhone && shotPhoneSet && (

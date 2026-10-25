@@ -16,9 +16,10 @@ choices:
     text: "Nous avons dessiné les écrans sur Figma et nous les avons montrés à de futurs utilisateurs, avant d'écrire la moindre ligne de code."
 video:
   src: "/demos/visit-match.mp4"
-  caption: "L'inscription, les lieux à garder ou à passer, les carnets, les likes, la carte et le profil, avec un compte de test."
-  width: 1280
-  height: 720
+  caption: "Les lieux à garder ou à passer, leur fiche, les carnets, les likes et la carte, avec un compte de test. Mets le son, il y a de la musique."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "carte-lieu"
     title: "Un lieu"

@@ -16,7 +16,10 @@ choices:
     text: "Les paroles viennent de LRCLIB, une base de paroles gratuite, et les traductions manquantes du service MyMemory. Les mots à réviser restent sur l'appareil, donc il n'y a presque rien à faire tourner côté serveur."
 video:
   src: "/demos/cancionero.mp4"
-  caption: "Trois mots mis de côté dans « Hola, ¿cómo estás? », le karaoké, puis les cartes à réviser."
+  caption: "Trois mots mis de côté dans « Hola, ¿cómo estás? », la traduction, le karaoké, puis les cartes à réviser. Mets le son, il y a de la musique."
+  width: 1920
+  height: 1080
+  rate: 1
 capture:
   alt: "Capture de Cancionero : le vocabulaire à réviser et la liste des chansons, de « Hola, ¿cómo estás? » à « En el mercado »."
   caption: "Les chansons et le vocabulaire à réviser."

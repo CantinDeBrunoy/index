@@ -12,9 +12,10 @@ choices:
     text: "The app sends my location in the body of the request, not in the address. Since server logs record addresses, my location never shows up in them."
 video:
   src: "/demos/gym-picker.mp4"
-  caption: "Gyms ranked by driving time, the ranking that follows the traffic, then the fallback home. With fictional gyms and trips."
-  width: 1280
-  height: 720
+  caption: "Gyms ranked by driving time, the ranking that follows the traffic, then the fallback home. With fictional gyms and trips. Turn the sound on, there's music."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "classement"
     title: "The ranking"

@@ -16,9 +16,10 @@ choices:
     text: "We designed the screens in Figma and showed them to future users before writing a single line of code."
 video:
   src: "/demos/visit-match.mp4"
-  caption: "Sign-up, places to keep or skip, trip notebooks, likes, the map and the profile, with a test account."
-  width: 1280
-  height: 720
+  caption: "Places to keep or skip, their page, trip notebooks, likes and the map, with a test account. Turn the sound on, there's music."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "carte-lieu"
     title: "A place"

@@ -39,6 +39,10 @@ if (root && media && img && video) {
     if (calm.matches || !wide.matches || saveData()) return;
     if (row.dataset.demo) {
       video.dataset.row = String(rows.indexOf(row));
+      // Sa vitesse avant sa source : un nouveau `src` repart de `defaultPlaybackRate`.
+      if (row.dataset.demoRate) video.dataset.rate = row.dataset.demoRate;
+      else delete video.dataset.rate;
+      speedUp(video);
       video.src = row.dataset.demo;
       void video.play().catch((error: unknown) => console.debug("carnet : lecture de la démo refusée", error));
       return;

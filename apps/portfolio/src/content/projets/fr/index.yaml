@@ -16,7 +16,10 @@ choices:
     text: "Supabase met en veille les bases qui ne servent pas, alors une tâche planifiée chez Cloudflare lui envoie régulièrement une vraie requête. Et si GitHub suspend une tâche du dépôt, un ticket me prévient pour que je la relance."
 video:
   src: "/demos/index.mp4"
-  caption: "Le départ, trois escales, la fiche de Hublot, puis le carnet et ses raccourcis vers les apps."
+  caption: "Le décollage avec Adam, les escales une à une, la fiche de Tonalli, le carnet et ses apps en ligne, puis la dixième escale. Mets le son, il y a de la musique."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "escale"
     title: "Le voyage"

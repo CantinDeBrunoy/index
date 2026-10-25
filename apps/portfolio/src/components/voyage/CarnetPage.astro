@@ -38,12 +38,12 @@ const cards = STOPS.map((stop, i) => {
   return { ...stop, n: i + 1, project, name: nameOf(project, lang), text, kind: kindOf(project, text, lang).line, app: appOf(project, text, lang) };
 });
 const still = (scene: string, size = "") => `/voyage/stills/${scene}${size}.webp`;
-// La démo de chaque escale, celle de sa fiche (sa vidéo et son image d'attente) ; sans démo, sa scène.
+// La démo de chaque escale, celle de sa fiche (sa vidéo, son image d'attente, sa vitesse) ; sans démo, sa scène.
 const demos = Object.fromEntries(
   await Promise.all(
     cards.map(async (s) => {
       const video = (await getEntry("projets", `${lang}/${s.slug}`))?.data.video;
-      return [s.slug, video ? { src: video.src, poster: video.src.replace(/\.mp4$/, ".webp") } : undefined] as const;
+      return [s.slug, video ? { src: video.src, poster: video.src.replace(/\.mp4$/, ".webp"), rate: video.rate } : undefined] as const;
     }),
   ),
 );
@@ -130,6 +130,7 @@ const statusStrings = { states, checking, online, asleep, offline, checkedNow, c
                   data-still={demos[s.slug]?.poster ?? still(s.scene)}
                   data-loop={demos[s.slug] ? undefined : `/voyage/${s.scene}.webp`}
                   data-demo={demos[s.slug]?.src}
+                  data-demo-rate={demos[s.slug]?.rate}
                   data-on={k === 0 ? "" : undefined}
                   aria-current={k === 0 ? "true" : undefined}
                   aria-describedby="atlas-hint"

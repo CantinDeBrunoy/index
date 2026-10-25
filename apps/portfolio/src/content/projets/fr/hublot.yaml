@@ -16,9 +16,10 @@ choices:
     text: "ntfy est une application gratuite qui reçoit des notifications sur le téléphone. Hublot lui envoie ses alertes, et je n'ai pas eu à développer ma propre application."
 video:
   src: "/demos/hublot.mp4"
-  caption: "Les bons plans sous le seuil, les surveillances, puis une nouvelle vers Reykjavik. Avec des surveillances et des prix fictifs."
-  width: 1280
-  height: 720
+  caption: "Les bons plans sous le seuil, les surveillances, puis une nouvelle vers Reykjavik. Avec des surveillances et des prix fictifs. Mets le son, il y a de la musique."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "bons-plans"
     title: "Les bons plans"

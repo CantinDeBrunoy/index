@@ -16,9 +16,10 @@ choices:
     text: "ntfy is a free app that receives notifications on your phone. Hublot sends it its alerts, so I didn't have to build an app of my own."
 video:
   src: "/demos/hublot.mp4"
-  caption: "Deals under the threshold, the watches, then a new one to Reykjavik. With fictional watches and prices."
-  width: 1280
-  height: 720
+  caption: "Deals under the threshold, the watches, then a new one to Reykjavik. With fictional watches and prices. Turn the sound on, there's music."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "bons-plans"
     title: "The deals"

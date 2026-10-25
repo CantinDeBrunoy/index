@@ -14,7 +14,10 @@ choices:
     text: "Les règles du jeu (le placement des cases, l'inventaire, la création de la carte) sont codées à part de la 3D, ce qui permet de les tester automatiquement. Les tests tournaient avec Jest en 2022, et tournent avec Vitest depuis la reprise du projet en 2026."
 video:
   src: "/demos/galactic-escape.mp4"
-  caption: "Le menu sur Mars, puis une partie, où chaque case posée prolonge le chemin de Michel, Roberto à ses trousses."
+  caption: "Le menu sur Mars et ses niveaux, puis une partie, où chaque case posée prolonge le chemin de Michel. Mets le son, il y a de la musique."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "menu"
     title: "Le menu sur Mars"

@@ -24,11 +24,19 @@ const projets = defineCollection({
     /** « Comment c'est fait » : un choix, et sa raison. */
     choices: z.array(item).default([]),
     /**
-     * La vidéo de démo (public/demos/<slug>.mp4, son affiche <slug>.webp à côté), sans son ni donnée personnelle.
-     * Sa taille : 1280 × 800 pour celles filmées par scripts/demo-videos.ts, 1280 × 720 pour les montages.
+     * La vidéo de démo (public/demos/<slug>.mp4, son affiche <slug>.webp à côté), sans donnée personnelle, muette
+     * sauf les films brag, qui ont leur musique. Sa taille : 1280 × 800 pour celles filmées par
+     * scripts/demo-videos.ts, 1280 × 720 pour les montages, 1920 × 1080 pour les films brag. `rate` : sa vitesse de
+     * lecture quand ce n'est pas celle des démos (scripts/demo-rate.ts), 1 pour un film monté sur sa musique.
      */
     video: z
-      .object({ src: z.string(), caption: z.string(), width: z.number().int().default(1280), height: z.number().int().default(800) })
+      .object({
+        src: z.string(),
+        caption: z.string(),
+        width: z.number().int().default(1280),
+        height: z.number().int().default(800),
+        rate: z.number().positive().optional(),
+      })
       .optional(),
     /** La capture d'écran (src/assets/shots/<slug>-desktop.jpg), sans donnée personnelle. */
     capture: z.object({ alt: z.string(), caption: z.string() }).optional(),

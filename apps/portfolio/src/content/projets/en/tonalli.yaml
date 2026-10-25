@@ -18,9 +18,10 @@ choices:
     text: "Tonalli started as a mobile app, then became a website you can install on your phone. To get started, a link is enough, with no app store involved."
 video:
   src: "/demos/tonalli.mp4"
-  caption: "The concept, the day's emotion, the two photos, the other's day revealed, the calendar and the character. With a demo account."
-  width: 1280
-  height: 720
+  caption: "The day's emotion, the two photos, the other's day revealed, the calendar and the character. With a demo account. Turn the sound on, there's music."
+  width: 1920
+  height: 1080
+  rate: 1
 capture:
   alt: "Screenshot of Tonalli: the home screen, the drop character and the sign-in buttons."
   caption: "The home screen."

@@ -12,9 +12,10 @@ choices:
     text: "L'app envoie ma position dans le contenu de la requête, pas dans l'adresse. Comme les journaux du serveur enregistrent les adresses, ma position n'y apparaît jamais."
 video:
   src: "/demos/gym-picker.mp4"
-  caption: "Les salles classées par temps de trajet, le classement qui suit le trafic, puis le domicile de secours. Avec des salles et des trajets fictifs."
-  width: 1280
-  height: 720
+  caption: "Les salles classées par temps de trajet, le classement qui suit le trafic, puis le domicile de secours. Avec des salles et des trajets fictifs. Mets le son, il y a de la musique."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "classement"
     title: "Le classement"

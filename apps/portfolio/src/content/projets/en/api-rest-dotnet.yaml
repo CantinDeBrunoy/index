@@ -16,9 +16,10 @@ choices:
     text: "Each of the six versions had to pass the course's tests (xUnit), run automatically on GitLab. There were 8 for the first version and 45 for the last, all green."
 video:
   src: "/demos/api-rest-dotnet.mp4"
-  caption: "A real game played against the API, run on my computer: the universe, a player, a journey, a mine, a battle, then the tests. The requests and responses are real, only the waits were cut in editing."
-  width: 1280
-  height: 720
+  caption: "A real game played against the API, on my computer. The universe, the ships, a mine, a battle, then the tests. Turn the sound on, there's music."
+  width: 1920
+  height: 1080
+  rate: 1
 screens:
   - image: "systemes"
     title: "The planets"
