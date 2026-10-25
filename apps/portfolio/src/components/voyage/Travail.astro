@@ -23,17 +23,17 @@ const LAST = items.length - 1;
 const ARROW = { prev: "M19 12H5M11 18l-6-6 6-6", next: "M5 12h14M13 6l6 6-6 6" };
 const still = (name: string) => `/voyage/stills/${name}.webp`;
 
-// La route en serpent, dans une boîte de 360 × 370 où le SVG, les feux et le camion se placent en % : quatre rangs
-// reliés par des demi-cercles de 45, un feu au milieu de chacun (x 200). Les rangs 1 et 3 vont vers la droite, 2 et
-// 4 vers la gauche.
-const BOX = { w: 360, h: 370 };
-const ROAD = "M 40 60 H 300 A 45 45 0 0 1 300 150 H 60 A 45 45 0 0 0 60 240 H 300 A 45 45 0 0 1 300 330 H 40";
-const ROWS = [60, 150, 240, 330];
-const STOP_X = 200;
-const ARC = Math.PI * 45;
-const LENGTH = 260 + 240 + 240 + 260 + 3 * ARC;
+// La route en serpent, dans une boîte de 360 × 480 où le SVG, les feux et le camion se placent en % : quatre rangs
+// reliés par des demi-cercles de 65, un feu au milieu de chacun (x 180). Les rangs 1 et 3 vont vers la droite, 2 et
+// 4 vers la gauche. Haute et étroite, elle tient dans une colonne fine à côté de la scène, à sa hauteur.
+const BOX = { w: 360, h: 480 };
+const ROAD = "M 40 64 H 290 A 65 65 0 0 1 290 194 H 70 A 65 65 0 0 0 70 324 H 290 A 65 65 0 0 1 290 454 H 40";
+const ROWS = [64, 194, 324, 454];
+const STOP_X = 180;
+const ARC = Math.PI * 65;
+const LENGTH = 250 + 220 + 220 + 250 + 3 * ARC;
 /** Où tombe chaque feu sur la route, en % de sa longueur (le tracé du trajet fait, et le camion pour le script). */
-const AT = [160, 260 + ARC + 100, 260 + 240 + 2 * ARC + 140, 260 + 2 * 240 + 3 * ARC + 100].map((d) => (d / LENGTH) * 100);
+const AT = [140, 250 + ARC + 110, 250 + 220 + 2 * ARC + 110, 250 + 2 * 220 + 3 * ARC + 110].map((d) => (d / LENGTH) * 100);
 /** Le camion se gare à 40 de son feu, avant lui dans le sens de la route. */
 const PARK = 40;
 const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
@@ -83,12 +83,12 @@ const groups = t.groups.map((g) => g.split(" · "));
           <path class="snake__dash" d={ROAD} />
           <path class="snake__trail" d={ROAD} pathLength="100" style={`stroke-dashoffset: ${(100 - AT[LAST]!).toFixed(3)}`} data-trail />
         </svg>
-        <p class="snake__group" style={`left: ${pct(44, BOX.w)}; top: ${pct(4, BOX.h)}`}>
+        <p class="snake__group" style={`left: ${pct(30, BOX.w)}; top: ${pct(6, BOX.h)}`}>
           {groups[0]![0]}
           <br />
           {groups[0]![1]}
         </p>
-        <p class="snake__group" style={`left: ${pct(70, BOX.w)}; top: ${pct(178, BOX.h)}`}>
+        <p class="snake__group" style={`left: ${pct(64, BOX.w)}; top: ${pct(204, BOX.h)}`}>
           {groups[1]![0]}
           <br />
           {groups[1]![1]}
@@ -218,11 +218,12 @@ const groups = t.groups.map((g) => g.split(" · "));
   }
 
   /* — La scène : le magasin en coupe, ses quatre points (l'anneau et l'étiquette du voyage) — */
-  /* En haut : la scène à gauche, la tournée à droite, à peu près de la même hauteur ; l'une sous l'autre sous 1000 px. */
+  /* En haut : la scène à gauche, la tournée dans une colonne fine à droite, étirée à la hauteur de la scène ; l'une
+     sous l'autre sous 1180 px, où la colonne de la tournée deviendrait plus haute que la scène. */
   .top {
     display: grid;
-    grid-template-columns: minmax(0, 1.82fr) minmax(0, 1fr);
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: stretch;
     gap: 28px;
     margin-top: 36px;
   }
@@ -324,13 +325,13 @@ const groups = t.groups.map((g) => g.split(" · "));
   }
 
   /* — La tournée : une route en serpent sur le rosé du plan de ligne, un feu par app, le trajet fait en laiton, le
-     camion garé juste avant le feu de l'app choisie. La boîte garde les proportions du dessin (360 × 370) : le SVG,
+     camion garé juste avant le feu de l'app choisie. La boîte garde les proportions du dessin (360 × 480) : le SVG,
      les feux et le camion s'y placent en %. Le feu choisi est rouge, ceux d'avant verts, les autres éteints. — */
   .snake {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px;
+    padding: 20px;
     border-radius: 22px;
     background: #f0e3cc;
   }
@@ -338,7 +339,7 @@ const groups = t.groups.map((g) => g.split(" · "));
     position: relative;
     width: 100%;
     max-width: 420px;
-    aspect-ratio: 360 / 370;
+    aspect-ratio: 360 / 480;
   }
   .snake__road {
     position: absolute;
@@ -618,18 +619,12 @@ const groups = t.groups.map((g) => g.split(" · "));
     }
   }
 
-  /* Sur grand écran, la scène et la tournée débordent un peu de la colonne de lecture, jusqu'à 1 300 px : la scène
-     prend la place gagnée, la tournée garde sa taille et se centre à côté, à la hauteur de la scène. */
-  @media (min-width: 1280px) {
-    .top {
-      grid-template-columns: minmax(0, 1fr) 400px;
-      align-items: stretch;
-      margin-inline: calc((100% - min(1300px, 100vw - 80px)) / 2);
-    }
-  }
-  @media (max-width: 1000px) {
+  @media (max-width: 1180px) {
     .top {
       grid-template-columns: minmax(0, 1fr);
+    }
+    .snake__box {
+      max-width: 340px;
     }
   }
 

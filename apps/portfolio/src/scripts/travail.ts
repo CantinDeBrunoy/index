@@ -4,7 +4,7 @@
  * camion suit la route en serpent jusqu'à son feu, tourné dans le sens où il roule ; sa fiche prend la place de la
  * précédente, et un texte caché l'annonce. Avec le mouvement réduit, le camion se pose directement.
  */
-const BOX = { w: 360, h: 370 };
+const BOX = { w: 360, h: 480 };
 /** Le camion se gare à 40 de son feu, avant lui dans le sens de la route (comme sur la page sans script). */
 const PARK = 40;
 const DURATION = 900;
