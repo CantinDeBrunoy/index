@@ -9,11 +9,13 @@
  */
 import { getProject, GITHUB_URL } from "@index/projects";
 import { APROPOS, AWAY, AWAY_BG, BAG_LINES, LANG_LINES, LINES, NOW, type LineId, type StationId } from "../../data/apropos";
+import { TRAVAIL } from "../../data/travail";
 import { fill } from "../../data/voyage";
 import { EMAIL, fichePath, ROUTES, STRINGS, typo, type Lang } from "../../i18n/voyage";
 import Voyage from "../../layouts/Voyage.astro";
 import Colophon from "./Colophon.astro";
 import SiteHeader from "./SiteHeader.astro";
+import Travail from "./Travail.astro";
 
 interface Props {
   lang: Lang;
@@ -161,6 +163,13 @@ const still = (name: string) => `/voyage/stills/${name}.webp`;
       <p class="route__projects">
         {T(R.projects)} <a class="link" href={ROUTES.voyage[lang]}>{R.projectsLink}</a>
       </p>
+    </section>
+
+    <!-- Au travail : les apps de la STIME dans un magasin en coupe, et la tournée du camion (Travail.astro). -->
+    <section class="block" aria-labelledby="travail-title">
+      <p class="label">{TRAVAIL[lang].label}</p>
+      <h2 class="serif title" id="travail-title">{TRAVAIL[lang].title}</h2>
+      <Travail lang={lang} />
     </section>
 
     <section class="block lines">

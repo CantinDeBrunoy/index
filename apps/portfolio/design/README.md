@@ -111,6 +111,19 @@ MOBILE=1 MODE=video SUFFIX=-mobile TO=53 CODEC=avc1.64001F BITRATE=1000000 node 
 `TO` : la longueur d'un départ (`length` dans passages.json). Les trois vidéos `anim/<escale>-passage(-av1|-mobile).mp4`
 se copient dans `../public/voyage/passage/`.
 
+Le magasin de la section « Au travail » (page À propos) est la scène `magasin` de `magasin-scenes.js`, que
+`build-voyage.cjs` ajoute après les passages : un supermarché en coupe aux bandeaux rouges, et le copilote dans sa
+tenue `magasin` (gilet rouge, téléphone en main). `MODE=shot` affiche aussi ses quatre points (`window.hotspots`), à
+reporter dans `../src/data/travail.ts`. Les boucles, en WebP animé :
+
+```bash
+MODE=encode FRAMES=96 LOOP_MS=8000 Q=62 node voyage-render.mjs magasin            # → ../public/voyage/magasin.webp
+MOBILE=1 MODE=encode FRAMES=96 LOOP_MS=8000 Q=62 node voyage-render.mjs magasin   # → ../public/voyage/magasin-mobile.webp
+```
+
+Leurs premières images, en WebP, vont dans `../public/voyage/stills/` (`magasin.webp`, `magasin-mobile.webp`), pour
+le mouvement réduit.
+
 ## La maquette
 
 ```bash

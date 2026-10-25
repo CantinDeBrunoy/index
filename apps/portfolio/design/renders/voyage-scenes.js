@@ -1070,11 +1070,23 @@ const WARDROBE = {
   salon: { top: 0xd8b39a, sleeves: "long", bottom: 0x6e5444, shoes: 0x2b2b2f },
   calendrier: { top: 0xf1ece4, sleeves: "rolled", bottom: 0x7d6f6a, shoes: 0x6b4a33 },
   dossiers: { top: 0xb08a62, sleeves: "long", bottom: 0x4b4540, shoes: 0x2b2b2f },
+  magasin: { top: 0xf1ece4, sleeves: "rolled", bottom: 0x34405a, shoes: 0x2b2b2f },
 };
 // Le bras au repos, par défaut : pendant, légèrement en avant. L'escale 2 porte le casque, le bras plus plié.
 const REST_POSES = { default: [[-0.25, 0, -0.38], [-0.7, 0, 0]], terre: [[-0.15, 0, -0.42], [-1.15, 0, 0]] };
 
 // `tether: false` : sans le cordon de laiton qui le relie au vaisseau (au décollage, il est à pied sur la planète).
+// L'écran du téléphone du copilote au magasin (« Au travail ») : une liste de commandes, une ligne en laiton.
+const PHONE_SCREEN = canvasTex(150, 260, (c, w, h) => {
+  c.fillStyle = "#F6F1E9";
+  c.fillRect(0, 0, w, h);
+  c.fillStyle = "#C9473D";
+  c.fillRect(0, 0, w, 44);
+  for (let i = 0; i < 6; i++) {
+    c.fillStyle = i === 1 ? "#D9B475" : "#E3D8C8";
+    c.fillRect(12, 60 + i * 32, w - 24, 22);
+  }
+});
 function copilot(M, outfit = "espace", { tether = true } = {}) {
   const g = new THREE.Group();
   const fig = new THREE.Group();
@@ -1483,6 +1495,29 @@ function copilot(M, outfit = "espace", { tether = true } = {}) {
     hold(fold, new THREE.Euler(0.15, 0.32, -0.12));
   }
 
+  if (outfit === "magasin") {
+    // Au travail : le gilet rouge du magasin, un badge de laiton, et le téléphone de l'app des magasins. L'écran est
+    // des deux côtés du téléphone : on le voit quel que soit l'angle de la main.
+    const vest = tinted(0xc9473d, 0.8);
+    for (const sx of [-1, 1]) fig.add(mesh(new RoundedBoxGeometry(0.17, 0.46, 0.05, 2, 0.02), vest, sx * 0.13, 0.02, FRONT - 0.005));
+    fig.add(mesh(new RoundedBoxGeometry(0.44, 0.46, 0.05, 2, 0.02), vest, 0, 0.02, -FRONT + 0.01));
+    fig.add(mesh(new RoundedBoxGeometry(0.09, 0.05, 0.015, 1, 0.006), brass, -0.13, 0.13, FRONT + 0.03));
+    const phone = new THREE.Group();
+    phone.add(mesh(new RoundedBoxGeometry(0.15, 0.26, 0.025, 2, 0.012), M.ink, 0, -0.1, 0));
+    const scr = mesh(
+      new THREE.PlaneGeometry(0.125, 0.22),
+      new THREE.MeshStandardMaterial({ map: PHONE_SCREEN, emissiveMap: PHONE_SCREEN, emissive: 0xffffff, emissiveIntensity: 0.45, roughness: 0.4 }),
+      0, -0.1, 0.014,
+    );
+    phone.add(scr);
+    const back = scr.clone();
+    back.position.z = -0.014;
+    back.rotation.y = Math.PI;
+    phone.add(back);
+    phone.scale.setScalar(1.35);
+    hold(phone, new THREE.Euler(-0.35, 0.45, 0.0));
+    g.userData.phone = phone;
+  }
   fig.rotation.y = -0.32;
   g.userData.animate = (phi) => {
     if (space) {

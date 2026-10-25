@@ -3,8 +3,9 @@ const fs = require("fs");
 const path = require("path");
 const dir = __dirname;
 const anim = fs.readFileSync(path.join(dir, "anim.html"), "utf8");
-// Les scènes du voyage, puis celles du décollage et des passages (qui reprennent leurs outils).
-const scenes = ["voyage-scenes.js", "decollage-scenes.js", "passage-scenes.js"].map((f) => fs.readFileSync(path.join(dir, f), "utf8")).join("\n");
+// Les scènes du voyage, puis celles du décollage et des passages (qui reprennent leurs outils), et le magasin
+// d'« À propos » (magasin-scenes.js, qui habille le copilote).
+const scenes = ["voyage-scenes.js", "decollage-scenes.js", "passage-scenes.js", "magasin-scenes.js"].map((f) => fs.readFileSync(path.join(dir, f), "utf8")).join("\n");
 const marker = "window.ready = true;";
 if (!anim.includes(marker)) throw new Error("marqueur introuvable");
 fs.writeFileSync(path.join(dir, "voyage.html"), anim.replace(marker, scenes + "\n" + marker));

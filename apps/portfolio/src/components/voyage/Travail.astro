@@ -1,0 +1,647 @@
+---
+/**
+ * « Au travail », dans « À propos » : un magasin en coupe, un point par app faite à la STIME ; dessous, la tournée
+ * d'un camion de livraison, un arrêt par app dans l'ordre où Cantin les a faites ; puis la fiche de l'app choisie,
+ * en deux colonnes, comme un point de fiche projet. Un point, un arrêt ou précédent / suivant choisit l'app : le
+ * camion roule jusqu'à son arrêt, ceux d'avant sont livrés (scripts/travail.ts). Les fiches sont superposées : la
+ * hauteur reste celle de la plus longue. Sans script, la tournée disparaît et les quatre fiches se lisent à la suite.
+ * Textes et points : data/travail.ts ; la scène : design/renders/magasin-scenes.js.
+ */
+import { ORDER, SPOTS, TRAVAIL } from "../../data/travail";
+import { typo, type Lang } from "../../i18n/voyage";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = TRAVAIL[lang];
+const T = (text: string) => typo(lang, text);
+const items = ORDER.map((id, i) => ({ id, i, n: i + 1, nn: String(i + 1).padStart(2, "0"), spot: SPOTS[id], ...t.projets[id] }));
+const LAST = items.length - 1;
+const ARROW = { prev: "M19 12H5M11 18l-6-6 6-6", next: "M5 12h14M13 6l6 6-6 6" };
+const still = (name: string) => `/voyage/stills/${name}.webp`;
+---
+
+<div class="travail" data-travail style={`--at: ${LAST}`}>
+  <script is:inline>document.currentScript.parentElement.classList.add("js");</script>
+  <p class="travail__lead">{T(t.lead)}</p>
+
+  <div class="shop">
+    <picture>
+      <source media="(max-width: 700px) and (prefers-reduced-motion: reduce)" srcset={still("magasin-mobile")} width="780" height="760" />
+      <source media="(max-width: 700px)" srcset="/voyage/magasin-mobile.webp" width="780" height="760" />
+      <source media="(prefers-reduced-motion: reduce)" srcset={still("magasin")} />
+      <img src="/voyage/magasin.webp" alt={t.alt} width="1280" height="720" loading="lazy" decoding="async" />
+    </picture>
+    {
+      items.map((p) => (
+        <button
+          type="button"
+          class:list={["spot", `spot--${p.spot.side}`, { on: p.i === LAST }]}
+          style={`--x: ${p.spot.desk[0]}%; --y: ${p.spot.desk[1]}%; --mx: ${p.spot.phone[0]}%; --my: ${p.spot.phone[1]}%`}
+          data-pick={p.i}
+          aria-pressed={p.i === LAST ? "true" : "false"}
+          aria-label={`${p.n}. ${p.lieu}, ${p.titre}`}
+        >
+          <span class="ring" aria-hidden="true" />
+          <span class="spot__num" aria-hidden="true">
+            {p.n}
+          </span>
+          <span class="spot__label" aria-hidden="true">
+            {p.n} · {p.lieu}
+          </span>
+        </button>
+      ))
+    }
+  </div>
+
+  <div class="tour">
+    <div class="tour__route">
+      <span class="tour__group" style="left: 25%">{t.groups[0]}</span>
+      <span class="tour__group" style="left: 75%">{t.groups[1]}</span>
+      <span class="tour__road" aria-hidden="true" />
+      <span class="tour__trail" aria-hidden="true" />
+      <svg class="tour__truck" viewBox="0 0 46 30" aria-hidden="true">
+        <rect x="1" y="2" width="27" height="19" rx="3" fill="currentColor" />
+        <rect x="5" y="7" width="19" height="2.5" rx="1.25" fill="#f6f1e9" opacity="0.7" />
+        <path d="M29 8h8.5l6.5 6.5V21H29z" fill="currentColor" />
+        <path d="M32 10.5h4.6l4 4H32z" fill="#f6f1e9" />
+        <circle cx="10" cy="23" r="5" fill="#241e18" />
+        <circle cx="10" cy="23" r="1.8" fill="#f6f1e9" />
+        <circle cx="36" cy="23" r="5" fill="#241e18" />
+        <circle cx="36" cy="23" r="1.8" fill="#f6f1e9" />
+      </svg>
+      <div class="tour__stops" role="group" aria-label={t.stops}>
+        {
+          items.map((p) => (
+            <button
+              type="button"
+              class:list={["tour__stop", { on: p.i === LAST, done: p.i < LAST }]}
+              style={`--i: ${p.i}`}
+              data-pick={p.i}
+              aria-pressed={p.i === LAST ? "true" : "false"}
+              aria-label={`${p.nn} · ${p.groupe} · ${p.titre}`}
+            >
+              <span class="tour__dot" />
+              <span class="tour__num" aria-hidden="true">
+                {p.nn}
+              </span>
+              <span class="tour__name" aria-hidden="true">
+                {p.court}
+              </span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+    <p class="visually-hidden" aria-live="polite" data-status></p>
+    <div class="panels">
+      {
+        items.map((p) => (
+          <article class="panel" data-panel={p.i} data-title={`${p.n} / ${items.length} · ${p.titre}`} data-off={p.i === LAST ? undefined : ""}>
+            <div class="panel__head">
+              <div>
+                <p class="panel__kicker">
+                  {p.nn} · {p.groupe} · {p.lieu}
+                </p>
+                <h3 class="serif panel__title">{p.titre}</h3>
+              </div>
+              <p class="panel__big">
+                <b class="serif">{p.chiffre}</b>
+                <span>{T(p.chiffreLabel)}</span>
+              </p>
+              <p class="panel__meta">
+                {p.quand} · {p.role}
+                <br />
+                {p.equipe}
+              </p>
+              <ul class="chips">
+                {p.outils.map((o) => (
+                  <li class="chip">{o}</li>
+                ))}
+              </ul>
+            </div>
+            <div class="panel__text">
+              <p>{T(p.quoi)}</p>
+              <p>{T(p.moi)}</p>
+              <p class="panel__todo">{T(p.resultat)}</p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+    <div class="body__nav">
+      <button type="button" class="body__btn" data-step="-1" aria-label={t.prev}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d={ARROW.prev} />
+        </svg>
+      </button>
+      <span class="body__pos" aria-hidden="true">
+        <span data-pos>{items.length}</span> / {items.length}
+      </span>
+      <button type="button" class="body__btn" data-step="1" aria-label={t.next}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d={ARROW.next} />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <p class="travail__note">{T(t.note)}</p>
+</div>
+
+<script>
+  import "../../scripts/travail";
+</script>
+
+<style>
+  .travail__lead {
+    max-width: 760px;
+    margin: 18px 0 0;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1.6;
+  }
+  .travail button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  /* — La scène : le magasin en coupe, ses quatre points (l'anneau et l'étiquette du voyage) — */
+  .shop {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    margin-top: 36px;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #f0e2da;
+  }
+  .shop img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .spot {
+    position: absolute;
+    top: var(--y);
+    left: var(--x);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translate(-26px, -26px);
+  }
+  .spot--left {
+    flex-direction: row-reverse;
+    transform: translate(calc(-100% + 26px), -26px);
+  }
+  .ring {
+    position: relative;
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border: 2px solid var(--brass);
+    border-radius: var(--radius-pill);
+    background: rgba(251, 247, 240, 0.35);
+    box-shadow: 0 0 0 5px var(--halo);
+  }
+  .ring::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-pill);
+    background: var(--brass);
+  }
+  .ring::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border: 2px solid var(--brass);
+    border-radius: var(--radius-pill);
+    animation: sonar 2.4s ease-out infinite;
+  }
+  @keyframes sonar {
+    from {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+    to {
+      transform: scale(1.9);
+      opacity: 0;
+    }
+  }
+  .spot.on .ring {
+    background: var(--brass);
+  }
+  .spot.on .ring::before {
+    background: var(--card);
+  }
+  .spot__label {
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 0 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background 0.2s,
+      color 0.2s;
+  }
+  .spot:hover .spot__label,
+  .spot.on .spot__label {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--card);
+  }
+  .spot__num {
+    display: none;
+  }
+
+  /* — La tournée : la route sur le rosé du plan de ligne, un arrêt par app, le trajet fait en laiton, le camion
+     garé juste avant l'arrêt choisi. --at : l'arrêt choisi ; les arrêts au 1/8, 3/8, 5/8 et 7/8 de la route. — */
+  .tour {
+    --road-ink: #63491f;
+    --road-muted: #574a3e;
+    margin-top: 24px;
+    padding: 28px 40px 24px;
+    border-radius: 22px;
+    background: #f0e3cc;
+  }
+  .tour__route {
+    position: relative;
+    height: 170px;
+  }
+  .tour__group {
+    position: absolute;
+    top: 0;
+    color: var(--road-ink);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+  .tour__road {
+    position: absolute;
+    right: 0;
+    bottom: 60px;
+    left: 0;
+    height: 14px;
+    border-radius: var(--radius-pill);
+    background: #e2cdaa repeating-linear-gradient(90deg, rgba(251, 247, 240, 0.95) 0 14px, transparent 14px 30px) center / 100% 2px
+      no-repeat;
+  }
+  .tour__trail {
+    position: absolute;
+    bottom: 65px;
+    left: 12.5%;
+    width: calc(var(--at) * 25%);
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--brass);
+    transition: width 0.9s cubic-bezier(0.5, 0, 0.2, 1);
+  }
+  .tour__truck {
+    position: absolute;
+    bottom: 62px;
+    left: calc(var(--at) * 25% + 12.5% - 74px);
+    width: 58px;
+    height: 38px;
+    color: var(--brass);
+    transition: left 0.9s cubic-bezier(0.5, 0, 0.2, 1);
+    animation: moteur 0.5s ease-in-out infinite;
+  }
+  @keyframes moteur {
+    50% {
+      translate: 0 -1px;
+    }
+  }
+  .tour__stop {
+    position: absolute;
+    bottom: 45px;
+    left: calc(var(--i) * 25% + 12.5%);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-left: -22px;
+    border-radius: var(--radius-pill);
+  }
+  .tour__dot {
+    width: 22px;
+    height: 22px;
+    box-sizing: border-box;
+    border: 5px solid var(--brass);
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    transition:
+      width 0.25s,
+      height 0.25s,
+      background 0.25s;
+  }
+  .tour__stop.done .tour__dot,
+  .tour__stop:hover .tour__dot {
+    background: var(--brass);
+  }
+  .tour__stop.on .tour__dot {
+    width: 32px;
+    height: 32px;
+    border-width: 6px;
+    background: var(--card);
+    animation: livre 2.4s ease-in-out infinite;
+  }
+  @keyframes livre {
+    50% {
+      box-shadow: 0 0 0 12px rgba(176, 138, 79, 0.2);
+    }
+  }
+  .tour__num,
+  .tour__name {
+    position: absolute;
+    left: 50%;
+    color: var(--road-muted);
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+  .tour__num {
+    top: 100%;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .tour__name {
+    top: calc(100% + 20px);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .tour__stop.on .tour__num {
+    color: var(--road-ink);
+  }
+  .tour__stop.on .tour__name {
+    color: var(--ink);
+  }
+
+  /* — La fiche de l'app choisie : deux colonnes, comme un point de fiche projet ; les fiches superposées — */
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    column-gap: 64px;
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid var(--line);
+  }
+  .panels {
+    grid-column: 1 / -1;
+  }
+  .panel {
+    display: grid;
+    grid-template-columns: subgrid;
+    align-content: start;
+    align-items: start;
+  }
+  .panel + .panel {
+    margin-top: 56px;
+  }
+  .panel__head {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .panel__kicker {
+    margin: 0 0 14px;
+    color: var(--brass-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .panel__title {
+    margin: 0;
+    font-size: clamp(36px, 3.8vw, 52px);
+    line-height: 1.02;
+  }
+  .panel__big {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0;
+  }
+  .panel__big b {
+    font-size: 52px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .panel__big span {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .panel__meta {
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .panel__text {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .panel__text p {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.6;
+  }
+  .panel__text .panel__todo {
+    color: var(--brass-text);
+    font-style: italic;
+  }
+  .body__nav {
+    display: flex;
+    grid-column: 2;
+    align-items: center;
+    gap: 14px;
+    margin-top: 28px;
+  }
+  .travail .body__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 1.5px solid var(--brass);
+    border-radius: var(--radius-pill);
+    background: var(--card);
+    color: var(--ink);
+    transition:
+      background 0.2s,
+      color 0.2s;
+  }
+  .travail .body__btn:hover {
+    background: var(--ink);
+    color: var(--card);
+  }
+  .body__pos {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .travail__note {
+    margin: 32px 0 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  /* Avec le script : les fiches dans la même case, la plus haute donne la hauteur. Sans : la tournée et les
+     boutons disparaissent, les fiches se lisent à la suite. */
+  .travail:global(.js) .panels {
+    display: grid;
+    grid-template-columns: subgrid;
+  }
+  .travail:global(.js) .panel {
+    grid-area: 1 / 1 / 2 / -1;
+  }
+  .travail:global(.js) .panel + .panel {
+    margin-top: 0;
+  }
+  .travail:global(.js) .panel[data-off] {
+    visibility: hidden;
+  }
+  .travail:not(:global(.js)) .tour,
+  .travail:not(:global(.js)) .body__nav {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring::after {
+      animation: none;
+      opacity: 0;
+    }
+    .tour__truck,
+    .tour__stop.on .tour__dot {
+      animation: none;
+    }
+    .tour__trail,
+    .tour__truck,
+    .tour__dot {
+      transition: none;
+    }
+  }
+
+  /* Sur téléphone : la scène carrée du téléphone et des numéros à la place des étiquettes ; la tournée sans les
+     noms ; la fiche en une colonne. */
+  @media (max-width: 700px) {
+    .shop {
+      aspect-ratio: 780 / 760;
+      margin-top: 28px;
+      border-radius: 18px;
+    }
+    .spot,
+    .spot--left {
+      top: var(--my);
+      left: var(--mx);
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      transform: translate(-22px, -22px);
+    }
+    .ring,
+    .spot__label {
+      display: none;
+    }
+    .spot__num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      box-sizing: border-box;
+      border: 2px solid var(--brass);
+      border-radius: var(--radius-pill);
+      background: var(--card);
+      box-shadow: 0 0 0 5px var(--halo);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .spot.on .spot__num {
+      background: var(--brass);
+      color: var(--on-brass);
+    }
+    .tour {
+      margin-top: 16px;
+      padding: 18px 16px 16px;
+      border-radius: 18px;
+    }
+    .tour__route {
+      height: 74px;
+    }
+    .tour__group,
+    .tour__name {
+      display: none;
+    }
+    .tour__road {
+      bottom: 36px;
+    }
+    .tour__trail {
+      bottom: 41px;
+    }
+    .tour__truck {
+      bottom: 40px;
+      left: calc(var(--at) * 25% + 12.5% - 48px);
+      width: 37px;
+      height: 24px;
+    }
+    .tour__stop {
+      bottom: 25px;
+      width: 36px;
+      height: 36px;
+      margin-left: -18px;
+    }
+    .tour__dot {
+      border-width: 4px;
+    }
+    .tour__num {
+      font-size: 10px;
+    }
+    .body {
+      grid-template-columns: minmax(0, 1fr);
+      margin-top: 28px;
+      padding-top: 28px;
+    }
+    .panel__head {
+      gap: 16px;
+    }
+    .panel__text {
+      margin-top: 18px;
+    }
+    .panel__text p {
+      font-size: 17px;
+    }
+    .panel__big b {
+      font-size: 44px;
+    }
+    .body__nav {
+      grid-column: 1;
+    }
+  }
+</style>

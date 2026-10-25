@@ -21,6 +21,8 @@ const BG = {
   route: "#F2DFD3", maison: "#F1E7DA", salon: "#F3D5B5", tonalliA: "#D8C2C6", tonalliB: "#D8C2C6", calendrier: "#D8C2C6",
   passeport: "#0E1018", dossiers: "#E6D5B8", bagage: "#121522", astronaute: "#0B0C14",
   "dossiers-ferme": "#E6D5B8",
+  // « Au travail », sur la page À propos : le magasin, sur le rosé de la tournée.
+  magasin: "#F0E2DA",
   "decollage-pied": "#0B0C14", "decollage-echelle": "#0B0C14", "decollage-trappe": "#0B0C14", "decollage-envol": "#0B0C14",
 };
 // Boucles plus longues là où un tour complet doit rester lent (le globe) : [images, durée, qualité].
@@ -32,6 +34,8 @@ const BG = {
 // La Terre de l'espace et du globe : un tour en 24 s (EARTH_LAPS, voyage-scenes.js), trois cycles de 8 s du reste.
 // Le globe passe à 6 images/s en WebP (un pas de 2,5°, la moitié d'avant) pour rester léger sur téléphone.
 const LOOPS = {
+  // Le magasin : 8 s, comme la route ; le caddie y fait un aller-retour.
+  magasin: [96, 8000, 76],
   terre: [144, 24000, 45], passeport: [120, 6000, 72], espace: [360, 24000], avion: [120, 8000], route: [120, 8000],
   // Le départ : l'espace d'avant le décollage, sans la fusée (decollage-scenes.js).
   depart: [360, 24000],
@@ -95,6 +99,8 @@ const BOXES = {
   "dossiers-ferme": [0.14, 0.08, 0.86, 0.92],
   // La 404 : tout le socle, le panneau du tapis compris.
   bagage: [0.14, 0.12, 0.84, 0.96],
+  // Le magasin : tout le sol.
+  magasin: [0.04, 0.02, 0.98, 0.98],
 };
 if (process.env.BOX) BOXES[names[0]] = process.env.BOX.split(",").map(Number);
 // Les passages (passage-scenes.js) : le cadrage et le fond de leur escale.
@@ -153,6 +159,8 @@ for (const name of names) {
     const f = Number(process.env.FRAME ?? 0);
     const url = await page.evaluate(([i, k]) => window.renderFrame(i, k), [f, n]);
     const spot = await page.evaluate(() => window.hotspot());
+    const spots = await page.evaluate(() => window.hotspots?.());
+    if (spots) console.log(JSON.stringify(spots));
     await sharp(Buffer.from(url.split(",")[1], "base64")).flatten({ background: BG[name] ?? BG[name.replace(/^tenue-/, "")] ?? "#888888" }).png().toFile(join(dir, "check", `${name}${suffix}-shot.png`));
     // Ordinateur : position sur l'artboard 1440 × 900 (rendu 1440 × 810 posé à 45 px du haut).
     // Mobile : position dans l'image elle-même, qui remplit toute la zone de la scène.
